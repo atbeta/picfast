@@ -14,17 +14,10 @@ import (
 
 const countUsers = `-- name: CountUsers :one
 SELECT COUNT(*) FROM users
-WHERE ($1::text IS NULL OR email ILIKE '%' || $1 || '%' OR name ILIKE '%' || $1 || '%')
-AND ($2::smallint IS NULL OR status = $2)
 `
 
-type CountUsersParams struct {
-	Column1 string `json:"column_1"`
-	Column2 int16  `json:"column_2"`
-}
-
-func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countUsers, arg.Column1, arg.Column2)
+func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countUsers)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -226,28 +219,59 @@ func (q *Queries) IncrementUserImageNum(ctx context.Context, id int64) error {
 	return err
 }
 
+const listAllUsers = `-- name: ListAllUsers :many
+SELECT id, group_id, email, password, name, role, capacity_bytes, image_num, album_num, settings, status, email_verified, registered_ip, created_at, updated_at FROM users ORDER BY created_at DESC
+`
+
+func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.Query(ctx, listAllUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.GroupID,
+			&i.Email,
+			&i.Password,
+			&i.Name,
+			&i.Role,
+			&i.CapacityBytes,
+			&i.ImageNum,
+			&i.AlbumNum,
+			&i.Settings,
+			&i.Status,
+			&i.EmailVerified,
+			&i.RegisteredIp,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, group_id, email, password, name, role, capacity_bytes, image_num, album_num, settings, status, email_verified, registered_ip, created_at, updated_at FROM users
-WHERE ($1::text IS NULL OR email ILIKE '%' || $1 || '%' OR name ILIKE '%' || $1 || '%')
-AND ($2::smallint IS NULL OR status = $2)
 ORDER BY created_at DESC
-LIMIT $3 OFFSET $4
+LIMIT $1 OFFSET $2
 `
 
 type ListUsersParams struct {
-	Column1 string `json:"column_1"`
-	Column2 int16  `json:"column_2"`
-	Limit   int32  `json:"limit"`
-	Offset  int32  `json:"offset"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, listUsers,
-		arg.Column1,
-		arg.Column2,
-		arg.Limit,
-		arg.Offset,
-	)
+	rows, err := q.db.Query(ctx, listUsers, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -284,12 +308,12 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users SET
-    name = COALESCE($2, name),
-    password = COALESCE($3, password),
-    group_id = COALESCE($4, group_id),
-    capacity_bytes = COALESCE($5, capacity_bytes),
-    status = COALESCE($6, status),
-    settings = COALESCE($7, settings),
+    name = $2,
+    password = $3,
+    group_id = $4,
+    capacity_bytes = $5,
+    status = $6,
+    settings = $7,
     updated_at = NOW()
 WHERE id = $1
 RETURNING id, group_id, email, password, name, role, capacity_bytes, image_num, album_num, settings, status, email_verified, registered_ip, created_at, updated_at

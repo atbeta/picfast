@@ -33,10 +33,16 @@ func New(
 
 	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg)
 	userHandler := handler.NewUserHandler(queries)
+	adminGroupHandler := handler.NewAdminGroupHandler(queries)
+	adminStrategyHandler := handler.NewAdminStrategyHandler(queries)
+	adminUserHandler := handler.NewAdminUserHandler(queries)
+	adminImageHandler := handler.NewAdminImageHandler(queries)
+	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg))
 
-	loginLimiter := middleware.NewRateLimiter(3, 60*1e9) // 3/min
+	loginLimiter := middleware.NewRateLimiter(3, 60*1e9)
 
 	r.Route("/api/v1", func(r chi.Router) {
+		// Auth
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authHandler.Register)
 			r.With(middleware.RateLimit(loginLimiter, func(r *http.Request) string { return r.RemoteAddr })).
@@ -45,11 +51,50 @@ func New(
 			r.Post("/logout", authHandler.Logout)
 		})
 
+		// Authenticated user routes
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(jwtSvc))
 
 			r.Get("/users/me", userHandler.GetProfile)
 			r.Put("/users/me", userHandler.UpdateProfile)
+
+			// Strategies (available to user's group)
+			r.Get("/strategies", adminStrategyHandler.List)
+		})
+
+		// Admin routes
+		r.Route("/admin", func(r chi.Router) {
+			r.Use(middleware.Auth(jwtSvc))
+			r.Use(middleware.Admin)
+
+			// Users
+			r.Get("/users", adminUserHandler.List)
+			r.Get("/users/{id}", adminUserHandler.Get)
+			r.Put("/users/{id}", adminUserHandler.Update)
+			r.Delete("/users/{id}", adminUserHandler.Delete)
+
+			// Groups
+			r.Get("/groups", adminGroupHandler.List)
+			r.Get("/groups/{id}", adminGroupHandler.Get)
+			r.Post("/groups", adminGroupHandler.Create)
+			r.Put("/groups/{id}", adminGroupHandler.Update)
+			r.Delete("/groups/{id}", adminGroupHandler.Delete)
+			r.Put("/groups/{id}/strategies", adminGroupHandler.SetStrategies)
+
+			// Strategies
+			r.Get("/strategies", adminStrategyHandler.List)
+			r.Get("/strategies/{id}", adminStrategyHandler.Get)
+			r.Post("/strategies", adminStrategyHandler.Create)
+			r.Put("/strategies/{id}", adminStrategyHandler.Update)
+			r.Delete("/strategies/{id}", adminStrategyHandler.Delete)
+
+			// Images
+			r.Get("/images", adminImageHandler.List)
+			r.Delete("/images/{id}", adminImageHandler.Delete)
+
+			// Settings
+			r.Get("/settings", adminSettingHandler.Get)
+			r.Put("/settings", adminSettingHandler.Update)
 		})
 	})
 

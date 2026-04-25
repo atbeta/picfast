@@ -44,6 +44,19 @@ type AppConfig struct {
 	AdminPassword       string `mapstructure:"admin_password"`
 }
 
+type Setter struct {
+	cfg *Config
+}
+
+func NewSetter(cfg *Config) *Setter {
+	return &Setter{cfg: cfg}
+}
+
+func (s *Setter) SetAppName(name string)         { s.cfg.App.Name = name }
+func (s *Setter) SetAllowGuestUpload(v bool)     { s.cfg.App.AllowGuestUpload = v }
+func (s *Setter) SetAllowRegistration(v bool)    { s.cfg.App.AllowRegistration = v }
+func (s *Setter) SetUserInitialCapacity(v int64) { s.cfg.App.UserInitialCapacity = v }
+
 func Load() (*Config, error) {
 	v := viper.New()
 

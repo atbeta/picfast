@@ -14,10 +14,10 @@ RETURNING *;
 
 -- name: UpdateGroup :one
 UPDATE groups SET
-    name = COALESCE($2, name),
-    is_default = COALESCE($3, is_default),
-    is_guest = COALESCE($4, is_guest),
-    configs = COALESCE($5, configs),
+    name = $2,
+    is_default = $3,
+    is_guest = $4,
+    configs = $5,
     updated_at = NOW()
 WHERE id = $1
 RETURNING *;

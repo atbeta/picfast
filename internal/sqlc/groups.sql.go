@@ -232,10 +232,10 @@ func (q *Queries) UnsetOtherGuest(ctx context.Context, id int64) error {
 
 const updateGroup = `-- name: UpdateGroup :one
 UPDATE groups SET
-    name = COALESCE($2, name),
-    is_default = COALESCE($3, is_default),
-    is_guest = COALESCE($4, is_guest),
-    configs = COALESCE($5, configs),
+    name = $2,
+    is_default = $3,
+    is_guest = $4,
+    configs = $5,
     updated_at = NOW()
 WHERE id = $1
 RETURNING id, name, is_default, is_guest, configs, created_at, updated_at

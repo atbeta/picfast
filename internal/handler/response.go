@@ -51,7 +51,7 @@ func FailWithErrors(w http.ResponseWriter, code int, message string, errors map[
 	})
 }
 
-func Paginated(w http.ResponseWriter, data interface{}, total int64, page int, pageSize int) {
+func Paginated(w http.ResponseWriter, data interface{}, total int64, page, pageSize int32) {
 	Success(w, map[string]interface{}{
 		"items": data,
 		"total": total,

@@ -11,12 +11,12 @@ RETURNING *;
 
 -- name: UpdateUser :one
 UPDATE users SET
-    name = COALESCE($2, name),
-    password = COALESCE($3, password),
-    group_id = COALESCE($4, group_id),
-    capacity_bytes = COALESCE($5, capacity_bytes),
-    status = COALESCE($6, status),
-    settings = COALESCE($7, settings),
+    name = $2,
+    password = $3,
+    group_id = $4,
+    capacity_bytes = $5,
+    status = $6,
+    settings = $7,
     updated_at = NOW()
 WHERE id = $1
 RETURNING *;
@@ -26,15 +26,14 @@ DELETE FROM users WHERE id = $1;
 
 -- name: ListUsers :many
 SELECT * FROM users
-WHERE ($1::text IS NULL OR email ILIKE '%' || $1 || '%' OR name ILIKE '%' || $1 || '%')
-AND ($2::smallint IS NULL OR status = $2)
 ORDER BY created_at DESC
-LIMIT $3 OFFSET $4;
+LIMIT $1 OFFSET $2;
+
+-- name: ListAllUsers :many
+SELECT * FROM users ORDER BY created_at DESC;
 
 -- name: CountUsers :one
-SELECT COUNT(*) FROM users
-WHERE ($1::text IS NULL OR email ILIKE '%' || $1 || '%' OR name ILIKE '%' || $1 || '%')
-AND ($2::smallint IS NULL OR status = $2);
+SELECT COUNT(*) FROM users;
 
 -- name: IncrementUserImageNum :exec
 UPDATE users SET image_num = image_num + 1, updated_at = NOW() WHERE id = $1;

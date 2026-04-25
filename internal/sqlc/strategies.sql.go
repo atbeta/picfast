@@ -96,9 +96,9 @@ func (q *Queries) ListStrategies(ctx context.Context) ([]Strategy, error) {
 
 const updateStrategy = `-- name: UpdateStrategy :one
 UPDATE strategies SET
-    name = COALESCE($2, name),
-    strategy_type = COALESCE($3, strategy_type),
-    configs = COALESCE($4, configs),
+    name = $2,
+    strategy_type = $3,
+    configs = $4,
     updated_at = NOW()
 WHERE id = $1
 RETURNING id, name, strategy_type, configs, created_at, updated_at

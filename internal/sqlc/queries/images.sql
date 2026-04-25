@@ -26,18 +26,11 @@ RETURNING *;
 -- name: ListImagesByUser :many
 SELECT * FROM images
 WHERE user_id = $1
-AND ($2::bigint IS NULL OR album_id = $2)
-AND ($3::smallint IS NULL OR permission = $3)
-AND ($4::text IS NULL OR origin_name ILIKE '%' || $4 || '%')
 ORDER BY created_at DESC
-LIMIT $5 OFFSET $6;
+LIMIT $2 OFFSET $3;
 
 -- name: CountImagesByUser :one
-SELECT COUNT(*) FROM images
-WHERE user_id = $1
-AND ($2::bigint IS NULL OR album_id = $2)
-AND ($3::smallint IS NULL OR permission = $3)
-AND ($4::text IS NULL OR origin_name ILIKE '%' || $4 || '%');
+SELECT COUNT(*) FROM images WHERE user_id = $1;
 
 -- name: FindDuplicateImage :one
 SELECT * FROM images
@@ -46,26 +39,19 @@ LIMIT 1;
 
 -- name: CountImagesInWindow :one
 SELECT COUNT(*) FROM images
-WHERE ($1::bigint IS NULL OR user_id = $1)
-AND ($2::text IS NULL OR uploaded_ip = $2)
-AND created_at > NOW() - ($3::text || ' seconds')::interval;
+WHERE user_id = $1
+AND created_at > NOW() - ($2 || ' seconds')::interval;
+
+-- name: CountImagesInWindowByIP :one
+SELECT COUNT(*) FROM images
+WHERE user_id IS NULL AND uploaded_ip = $1
+AND created_at > NOW() - ($2 || ' seconds')::interval;
 
 -- name: ListAllImages :many
-SELECT i.*, u.email as user_email FROM images i
-LEFT JOIN users u ON i.user_id = u.id
-WHERE ($1::text IS NULL OR i.origin_name ILIKE '%' || $1 || '%')
-AND ($2::text IS NULL OR u.email ILIKE '%' || $2 || '%')
-AND ($3::text IS NULL OR i.extension = $3)
-AND ($4::smallint IS NULL OR i.permission = $4)
-AND ($5::boolean IS NULL OR i.is_unhealthy = $5)
-ORDER BY i.created_at DESC
-LIMIT $6 OFFSET $7;
+SELECT images.*, users.email as user_email FROM images
+LEFT JOIN users ON images.user_id = users.id
+ORDER BY images.created_at DESC
+LIMIT $1 OFFSET $2;
 
 -- name: CountAllImages :one
-SELECT COUNT(*) FROM images i
-LEFT JOIN users u ON i.user_id = u.id
-WHERE ($1::text IS NULL OR i.origin_name ILIKE '%' || $1 || '%')
-AND ($2::text IS NULL OR u.email ILIKE '%' || $2 || '%')
-AND ($3::text IS NULL OR i.extension = $3)
-AND ($4::smallint IS NULL OR i.permission = $4)
-AND ($5::boolean IS NULL OR i.is_unhealthy = $5);
+SELECT COUNT(*) FROM images;

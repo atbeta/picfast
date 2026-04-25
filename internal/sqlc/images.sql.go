@@ -13,58 +13,22 @@ import (
 )
 
 const countAllImages = `-- name: CountAllImages :one
-SELECT COUNT(*) FROM images i
-LEFT JOIN users u ON i.user_id = u.id
-WHERE ($1::text IS NULL OR i.origin_name ILIKE '%' || $1 || '%')
-AND ($2::text IS NULL OR u.email ILIKE '%' || $2 || '%')
-AND ($3::text IS NULL OR i.extension = $3)
-AND ($4::smallint IS NULL OR i.permission = $4)
-AND ($5::boolean IS NULL OR i.is_unhealthy = $5)
+SELECT COUNT(*) FROM images
 `
 
-type CountAllImagesParams struct {
-	Column1 string `json:"column_1"`
-	Column2 string `json:"column_2"`
-	Column3 string `json:"column_3"`
-	Column4 int16  `json:"column_4"`
-	Column5 bool   `json:"column_5"`
-}
-
-func (q *Queries) CountAllImages(ctx context.Context, arg CountAllImagesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countAllImages,
-		arg.Column1,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-		arg.Column5,
-	)
+func (q *Queries) CountAllImages(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countAllImages)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
 const countImagesByUser = `-- name: CountImagesByUser :one
-SELECT COUNT(*) FROM images
-WHERE user_id = $1
-AND ($2::bigint IS NULL OR album_id = $2)
-AND ($3::smallint IS NULL OR permission = $3)
-AND ($4::text IS NULL OR origin_name ILIKE '%' || $4 || '%')
+SELECT COUNT(*) FROM images WHERE user_id = $1
 `
 
-type CountImagesByUserParams struct {
-	UserID  pgtype.Int8 `json:"user_id"`
-	Column2 int64       `json:"column_2"`
-	Column3 int16       `json:"column_3"`
-	Column4 string      `json:"column_4"`
-}
-
-func (q *Queries) CountImagesByUser(ctx context.Context, arg CountImagesByUserParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countImagesByUser,
-		arg.UserID,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-	)
+func (q *Queries) CountImagesByUser(ctx context.Context, userID pgtype.Int8) (int64, error) {
+	row := q.db.QueryRow(ctx, countImagesByUser, userID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -72,19 +36,35 @@ func (q *Queries) CountImagesByUser(ctx context.Context, arg CountImagesByUserPa
 
 const countImagesInWindow = `-- name: CountImagesInWindow :one
 SELECT COUNT(*) FROM images
-WHERE ($1::bigint IS NULL OR user_id = $1)
-AND ($2::text IS NULL OR uploaded_ip = $2)
-AND created_at > NOW() - ($3::text || ' seconds')::interval
+WHERE user_id = $1
+AND created_at > NOW() - ($2 || ' seconds')::interval
 `
 
 type CountImagesInWindowParams struct {
-	Column1 int64  `json:"column_1"`
-	Column2 string `json:"column_2"`
-	Column3 string `json:"column_3"`
+	UserID  pgtype.Int8 `json:"user_id"`
+	Column2 pgtype.Text `json:"column_2"`
 }
 
 func (q *Queries) CountImagesInWindow(ctx context.Context, arg CountImagesInWindowParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countImagesInWindow, arg.Column1, arg.Column2, arg.Column3)
+	row := q.db.QueryRow(ctx, countImagesInWindow, arg.UserID, arg.Column2)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countImagesInWindowByIP = `-- name: CountImagesInWindowByIP :one
+SELECT COUNT(*) FROM images
+WHERE user_id IS NULL AND uploaded_ip = $1
+AND created_at > NOW() - ($2 || ' seconds')::interval
+`
+
+type CountImagesInWindowByIPParams struct {
+	UploadedIp string      `json:"uploaded_ip"`
+	Column2    pgtype.Text `json:"column_2"`
+}
+
+func (q *Queries) CountImagesInWindowByIP(ctx context.Context, arg CountImagesInWindowByIPParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countImagesInWindowByIP, arg.UploadedIp, arg.Column2)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -289,25 +269,15 @@ func (q *Queries) GetImageByKey(ctx context.Context, key string) (Image, error) 
 }
 
 const listAllImages = `-- name: ListAllImages :many
-SELECT i.id, i.user_id, i.album_id, i.group_id, i.strategy_id, i.key, i.path, i.name, i.origin_name, i.size_bytes, i.mimetype, i.extension, i.md5, i.sha1, i.width, i.height, i.permission, i.is_unhealthy, i.uploaded_ip, i.created_at, i.updated_at, u.email as user_email FROM images i
-LEFT JOIN users u ON i.user_id = u.id
-WHERE ($1::text IS NULL OR i.origin_name ILIKE '%' || $1 || '%')
-AND ($2::text IS NULL OR u.email ILIKE '%' || $2 || '%')
-AND ($3::text IS NULL OR i.extension = $3)
-AND ($4::smallint IS NULL OR i.permission = $4)
-AND ($5::boolean IS NULL OR i.is_unhealthy = $5)
-ORDER BY i.created_at DESC
-LIMIT $6 OFFSET $7
+SELECT images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, users.email as user_email FROM images
+LEFT JOIN users ON images.user_id = users.id
+ORDER BY images.created_at DESC
+LIMIT $1 OFFSET $2
 `
 
 type ListAllImagesParams struct {
-	Column1 string `json:"column_1"`
-	Column2 string `json:"column_2"`
-	Column3 string `json:"column_3"`
-	Column4 int16  `json:"column_4"`
-	Column5 bool   `json:"column_5"`
-	Limit   int32  `json:"limit"`
-	Offset  int32  `json:"offset"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 type ListAllImagesRow struct {
@@ -336,15 +306,7 @@ type ListAllImagesRow struct {
 }
 
 func (q *Queries) ListAllImages(ctx context.Context, arg ListAllImagesParams) ([]ListAllImagesRow, error) {
-	rows, err := q.db.Query(ctx, listAllImages,
-		arg.Column1,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-		arg.Column5,
-		arg.Limit,
-		arg.Offset,
-	)
+	rows, err := q.db.Query(ctx, listAllImages, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -389,31 +351,18 @@ func (q *Queries) ListAllImages(ctx context.Context, arg ListAllImagesParams) ([
 const listImagesByUser = `-- name: ListImagesByUser :many
 SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at FROM images
 WHERE user_id = $1
-AND ($2::bigint IS NULL OR album_id = $2)
-AND ($3::smallint IS NULL OR permission = $3)
-AND ($4::text IS NULL OR origin_name ILIKE '%' || $4 || '%')
 ORDER BY created_at DESC
-LIMIT $5 OFFSET $6
+LIMIT $2 OFFSET $3
 `
 
 type ListImagesByUserParams struct {
-	UserID  pgtype.Int8 `json:"user_id"`
-	Column2 int64       `json:"column_2"`
-	Column3 int16       `json:"column_3"`
-	Column4 string      `json:"column_4"`
-	Limit   int32       `json:"limit"`
-	Offset  int32       `json:"offset"`
+	UserID pgtype.Int8 `json:"user_id"`
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
 }
 
 func (q *Queries) ListImagesByUser(ctx context.Context, arg ListImagesByUserParams) ([]Image, error) {
-	rows, err := q.db.Query(ctx, listImagesByUser,
-		arg.UserID,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-		arg.Limit,
-		arg.Offset,
-	)
+	rows, err := q.db.Query(ctx, listImagesByUser, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
