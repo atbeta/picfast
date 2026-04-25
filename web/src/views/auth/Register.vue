@@ -1,6 +1,6 @@
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-50">
-    <n-card title="Register" class="w-96">
+  <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f9fafb;">
+    <n-card title="Register" style="width: 400px;">
       <n-form ref="formRef" :model="form" :rules="rules" @submit.prevent="onSubmit">
         <n-form-item label="Name" path="name">
           <n-input v-model:value="form.name" placeholder="Your name" />
@@ -13,8 +13,8 @@
         </n-form-item>
         <n-button type="primary" block :loading="loading" attr-type="submit">Register</n-button>
       </n-form>
-      <p class="mt-4 text-center text-sm text-gray-500">
-        Already have an account? <router-link to="/login" class="text-blue-500">Login</router-link>
+      <p style="margin-top: 16px; text-align: center; font-size: 14px; color: #6b7280;">
+        Already have an account? <router-link to="/login" style="color: #3b82f6;">Login</router-link>
       </p>
     </n-card>
   </div>
@@ -37,7 +37,7 @@ const form = reactive({ name: '', email: '', password: '' })
 const rules = {
   name: { required: true, message: 'Name is required', trigger: 'blur' },
   email: { required: true, message: 'Email is required', trigger: 'blur' },
-  password: { required: true, min: 6, message: 'At least 6 characters', trigger: 'blur' },
+  password: { required: true, min: 8, message: 'At least 8 characters', trigger: 'blur' },
 }
 
 async function onSubmit() {

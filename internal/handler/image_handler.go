@@ -114,7 +114,28 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	total, _ := h.db.CountImagesByUser(r.Context(), domain.PgInt8(userID))
 
-	Paginated(w, images, total, page, pageSize)
+	items := make([]map[string]interface{}, len(images))
+	for i, img := range images {
+		links := h.buildLinks(img)
+		items[i] = map[string]interface{}{
+			"id":          img.ID,
+			"key":         img.Key,
+			"origin_name": img.OriginName,
+			"size_bytes":  img.SizeBytes,
+			"mimetype":    img.Mimetype,
+			"extension":   img.Extension,
+			"width":       img.Width,
+			"height":      img.Height,
+			"permission":  img.Permission,
+			"album_id":    domain.PgInt8PtrVal(img.AlbumID),
+			"created_at":  img.CreatedAt,
+			"url":         links.URL,
+			"thumbnail_url": links.ThumbnailURL,
+			"links":       links,
+		}
+	}
+
+	Paginated(w, items, total, page, pageSize)
 }
 
 func (h *ImageHandler) Get(w http.ResponseWriter, r *http.Request) {

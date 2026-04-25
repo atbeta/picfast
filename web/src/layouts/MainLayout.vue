@@ -1,25 +1,25 @@
 <template>
   <n-layout style="min-height: 100vh">
-    <n-layout-header bordered class="flex items-center justify-between px-6 py-3">
-      <div class="flex items-center gap-4">
-        <router-link to="/" class="text-lg font-bold no-underline text-gray-800">ImageAPI</router-link>
-        <n-menu mode="horizontal" :value="currentRoute" :options="menuOptions" />
+    <n-layout-header bordered style="display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 56px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <router-link to="/" style="font-size: 18px; font-weight: bold; text-decoration: none; color: #1f2937;">ImageAPI</router-link>
+        <n-menu mode="horizontal" :value="currentRoute" :options="menuOptions" @update:value="onMenuSelect" />
       </div>
-      <div class="flex items-center gap-3">
+      <div style="display: flex; align-items: center; gap: 12px;">
         <n-tag v-if="user?.role === 'admin'" type="info" size="small">Admin</n-tag>
         <n-dropdown :options="userMenuOptions" @select="onUserMenuSelect">
           <n-button quaternary>{{ user?.name || user?.email }}</n-button>
         </n-dropdown>
       </div>
     </n-layout-header>
-    <n-layout-content class="p-6">
+    <n-layout-content style="padding: 24px;">
       <router-view />
     </n-layout-content>
   </n-layout>
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { NLayout, NLayoutHeader, NLayoutContent, NMenu, NButton, NDropdown, NTag, useMessage } from 'naive-ui'
 import { useUserStore } from '../stores/user'
@@ -30,6 +30,13 @@ const route = useRoute()
 const userStore = useUserStore()
 const message = useMessage()
 const user = computed(() => userStore.user)
+
+const routeMap: Record<string, string> = {
+  upload: '/',
+  images: '/images',
+  albums: '/albums',
+  admin: '/admin',
+}
 
 onMounted(async () => {
   if (!user.value) {
@@ -56,6 +63,11 @@ const menuOptions = computed(() => {
   }
   return opts
 })
+
+function onMenuSelect(key: string) {
+  const path = routeMap[key]
+  if (path) router.push(path)
+}
 
 const userMenuOptions = [
   { label: 'Profile', key: 'profile' },

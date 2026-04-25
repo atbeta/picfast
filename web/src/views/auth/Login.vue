@@ -1,6 +1,6 @@
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-50">
-    <n-card title="Login" class="w-96">
+  <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f9fafb;">
+    <n-card title="Login" style="width: 400px;">
       <n-form ref="formRef" :model="form" :rules="rules" @submit.prevent="onSubmit">
         <n-form-item label="Email" path="email">
           <n-input v-model:value="form.email" placeholder="your@email.com" />
@@ -10,8 +10,8 @@
         </n-form-item>
         <n-button type="primary" block :loading="loading" attr-type="submit">Login</n-button>
       </n-form>
-      <p class="mt-4 text-center text-sm text-gray-500">
-        Don't have an account? <router-link to="/register" class="text-blue-500">Register</router-link>
+      <p style="margin-top: 16px; text-align: center; font-size: 14px; color: #6b7280;">
+        Don't have an account? <router-link to="/register" style="color: #3b82f6;">Register</router-link>
       </p>
     </n-card>
   </div>

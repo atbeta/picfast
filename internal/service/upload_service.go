@@ -197,7 +197,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		imageKey = GenerateImageKey()
 	}
 
-	perm := int16(domain.PermissionPrivate)
+	perm := int16(domain.PermissionPublic)
 	if params.Permission != nil {
 		perm = *params.Permission
 	}
@@ -246,16 +246,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	}()
 
 	// Step 13: Build response
-	store, _ := s.getStorage(strategy)
-	var imageURL string
-	if store != nil {
-		if groupConfig.IsEnableOriginalProtection {
-			imageURL = s.config.Server.BaseURL + "/i/" + imageKey + "." + ext
-		} else {
-			imageURL = store.URL(pathname)
-		}
-	}
-
+	imageURL := s.config.Server.BaseURL + "/i/" + imageKey + "." + ext
 	thumbURL := s.config.Server.BaseURL + "/t/" + md5Hash + ".png"
 
 	links := domain.ImageLinks{
