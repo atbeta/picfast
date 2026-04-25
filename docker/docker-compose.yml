@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: imgapi
+      POSTGRES_PASSWORD: imgapi
+      POSTGRES_DB: imgapi
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      IMGAPI_DATABASE_URL: "postgres://imgapi:imgapi@db:5432/imgapi?sslmode=disable"
+      IMGAPI_JWT_SECRET: "change-me-in-production"
+      IMGAPI_SERVER_BASE_URL: "http://localhost:8080"
+      IMGAPI_APP_ADMIN_EMAIL: "admin@example.com"
+      IMGAPI_APP_ADMIN_PASSWORD: "changeme123"
+    depends_on:
+      - db
+    volumes:
+      - uploads:/app/data/uploads
+      - thumbnails:/app/data/thumbnails
+
+volumes:
+  pgdata:
+  uploads:
+  thumbnails:

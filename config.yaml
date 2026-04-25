@@ -1,0 +1,23 @@
+server:
+  port: 8080
+  base_url: "http://localhost:8080"
+
+database:
+  url: "postgres://imgapi:imgapi@localhost:5432/imgapi?sslmode=disable"
+
+jwt:
+  secret: "change-me-in-production"
+  access_ttl: 15m
+  refresh_ttl: 168h
+
+storage:
+  local_root: "./data/uploads"
+  thumbnail_dir: "./data/thumbnails"
+
+app:
+  name: "ImageAPI"
+  allow_guest_upload: true
+  allow_registration: true
+  user_initial_capacity: 524288000
+  admin_email: ""
+  admin_password: ""
