@@ -23,7 +23,7 @@
                 {{ img.permission === 1 ? 'Public' : 'Private' }}
               </n-tag>
             </div>
-            <n-text depth="3" class="text-xs">{{ formatSize(img.size_bytes) }} · {{ img.mime_type }}</n-text>
+            <n-text depth="3" class="text-xs">{{ formatSize(img.size_bytes) }} · {{ img.mimetype }}</n-text>
           </n-card>
         </n-gi>
       </n-grid>
@@ -85,8 +85,9 @@ async function fetchImages() {
   loading.value = true
   try {
     const res = await getImages(page.value, pageSize)
-    images.value = res.data.data
-    total.value = res.data.pagination?.total || 0
+    const d = res.data.data
+    images.value = d.items || d
+    total.value = d.total || 0
   } catch {
     message.error('Failed to load images')
   } finally {
