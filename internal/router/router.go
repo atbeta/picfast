@@ -2,6 +2,8 @@ package router
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
@@ -34,19 +36,38 @@ func New(
 
 	// Services
 	uploadSvc := service.NewUploadService(queries, pool, cfg)
+	deleteSvc := service.NewDeleteService(queries, cfg.Storage.ThumbnailDir)
 
 	// Handlers
 	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg)
 	userHandler := handler.NewUserHandler(queries)
-	imageHandler := handler.NewImageHandler(queries, uploadSvc, cfg.Server.BaseURL)
+	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL)
 	albumHandler := handler.NewAlbumHandler(queries)
+	fileHandler := handler.NewFileHandler(queries, cfg.Server.BaseURL, cfg.Storage.ThumbnailDir)
 	adminGroupHandler := handler.NewAdminGroupHandler(queries)
 	adminStrategyHandler := handler.NewAdminStrategyHandler(queries)
 	adminUserHandler := handler.NewAdminUserHandler(queries)
-	adminImageHandler := handler.NewAdminImageHandler(queries)
+	adminImageHandler := handler.NewAdminImageHandler(queries, deleteSvc)
 	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg))
 
 	loginLimiter := middleware.NewRateLimiter(3, 60*1e9)
+
+	// Image file serving: /i/{key}.{ext}
+	r.Get("/i/{key}.{ext}", fileHandler.ServeImage)
+
+	// Thumbnail serving: /t/{hash}.png
+	r.Get("/t/{hash}.png", fileHandler.ServeThumbnail)
+
+	// Static uploads directory (for local storage direct access)
+	if cfg.Storage.LocalRoot != "" {
+		workDir, _ := os.Getwd()
+		uploadsDir := filepath.Join(workDir, cfg.Storage.LocalRoot)
+		os.MkdirAll(uploadsDir, 0755)
+		r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir))))
+	}
+
+	// Ensure thumbnail directory exists
+	os.MkdirAll(cfg.Storage.ThumbnailDir, 0755)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		// Auth

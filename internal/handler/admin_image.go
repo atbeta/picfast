@@ -6,15 +6,17 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/pbeta/imgapi/internal/service"
 	"github.com/pbeta/imgapi/internal/sqlc"
 )
 
 type AdminImageHandler struct {
-	db *sqlc.Queries
+	db      *sqlc.Queries
+	deleter *service.DeleteService
 }
 
-func NewAdminImageHandler(db *sqlc.Queries) *AdminImageHandler {
-	return &AdminImageHandler{db: db}
+func NewAdminImageHandler(db *sqlc.Queries, deleter *service.DeleteService) *AdminImageHandler {
+	return &AdminImageHandler{db: db, deleter: deleter}
 }
 
 func (h *AdminImageHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +31,6 @@ func (h *AdminImageHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Apply filters in Go
 	keyword := r.URL.Query().Get("keyword")
 	email := r.URL.Query().Get("email")
 	ext := r.URL.Query().Get("extension")
@@ -63,25 +64,9 @@ func (h *AdminImageHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	img, err := h.db.GetImageByID(r.Context(), id)
-	if err != nil {
-		Fail(w, http.StatusNotFound, "image not found")
-		return
-	}
-
-	// TODO: delete physical file from storage + thumbnail (Phase 3)
-
-	if err := h.db.DeleteImage(r.Context(), id); err != nil {
+	if err := h.deleter.DeleteImage(r.Context(), id); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to delete image")
 		return
-	}
-
-	// Decrement counters
-	if img.UserID.Valid {
-		h.db.DecrementUserImageNum(r.Context(), img.UserID.Int64)
-	}
-	if img.AlbumID.Valid {
-		h.db.DecrementAlbumImageNum(r.Context(), img.AlbumID.Int64)
 	}
 
 	SuccessMessage(w, "deleted")

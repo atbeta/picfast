@@ -16,11 +16,12 @@ import (
 type ImageHandler struct {
 	db      *sqlc.Queries
 	upload  *service.UploadService
+	deleter *service.DeleteService
 	baseURL string
 }
 
-func NewImageHandler(db *sqlc.Queries, upload *service.UploadService, baseURL string) *ImageHandler {
-	return &ImageHandler{db: db, upload: upload, baseURL: baseURL}
+func NewImageHandler(db *sqlc.Queries, upload *service.UploadService, deleter *service.DeleteService, baseURL string) *ImageHandler {
+	return &ImageHandler{db: db, upload: upload, deleter: deleter, baseURL: baseURL}
 }
 
 func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
@@ -158,15 +159,9 @@ func (h *ImageHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: delete from storage (Phase 3 refinement)
-
-	h.db.DeleteImage(r.Context(), img.ID)
-
-	if img.UserID.Valid {
-		h.db.DecrementUserImageNum(r.Context(), img.UserID.Int64)
-	}
-	if img.AlbumID.Valid {
-		h.db.DecrementAlbumImageNum(r.Context(), img.AlbumID.Int64)
+	if err := h.deleter.DeleteImage(r.Context(), img.ID); err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to delete image")
+		return
 	}
 
 	SuccessMessage(w, "deleted")
