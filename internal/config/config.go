@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -67,6 +68,7 @@ func Load() (*Config, error) {
 	v.AddConfigPath("/etc/imgapi")
 
 	v.SetEnvPrefix("IMGAPI")
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
 	setDefaults(v)

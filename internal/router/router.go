@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
@@ -28,7 +29,7 @@ func New(
 	r.Use(chimw.Recoverer)
 	r.Use(chimw.RealIP)
 	r.Use(chimw.RequestID)
-	r.Use(chimw.Timeout(60))
+	r.Use(chimw.Timeout(60 * time.Second))
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -51,7 +52,7 @@ func New(
 	adminImageHandler := handler.NewAdminImageHandler(queries, deleteSvc)
 	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg))
 
-	loginLimiter := middleware.NewRateLimiter(3, 60*1e9)
+	loginLimiter := middleware.NewRateLimiter(10, 60*1e9)
 
 	// Image file serving: /i/{key}.{ext} — with OptionalAuth so private images can be accessed by owner
 	r.With(middleware.OptionalAuth(jwtSvc)).Get("/i/{key}.{ext}", fileHandler.ServeImage)
