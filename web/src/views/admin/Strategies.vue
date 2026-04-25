@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, h, onMounted } from 'vue'
 import { NH3, NDataTable, NButton, NSpace, NModal, NForm, NFormItem, NInput, NSelect, useMessage, type DataTableColumns } from 'naive-ui'
 import { adminGetStrategies, adminCreateStrategy, adminUpdateStrategy, adminDeleteStrategy } from '../../api/admin'
 

@@ -21,14 +21,13 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { NLayout, NLayoutHeader, NLayoutContent, NMenu, NButton, NDropdown, NTag, useMessage } from 'naive-ui'
+import { NLayout, NLayoutHeader, NLayoutContent, NMenu, NButton, NDropdown, NTag } from 'naive-ui'
 import { useUserStore } from '../stores/user'
 import { logout } from '../api/auth'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
-const message = useMessage()
 const user = computed(() => userStore.user)
 
 const routeMap: Record<string, string> = {

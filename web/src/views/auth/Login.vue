@@ -28,7 +28,6 @@ const router = useRouter()
 const message = useMessage()
 const userStore = useUserStore()
 const loading = ref(false)
-const formRef = ref()
 
 const form = reactive({ email: '', password: '' })
 const rules = {
