@@ -184,6 +184,9 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		if err := store.Write(ctx, pathname, fileData); err != nil {
 			return nil, fmt.Errorf("failed to write file: %w", err)
 		}
+	} else {
+		// Reuse existing file path so all dedup records point to the same file
+		pathname = existing.Path + "/" + existing.Name
 	}
 
 	// Step 11: Save DB record
