@@ -35,12 +35,12 @@ const currentRoute = computed(() => {
 })
 
 const adminMenuOptions = [
-  { label: 'Dashboard', key: 'admin-dashboard' },
-  { label: 'Users', key: 'admin-users' },
-  { label: 'Groups', key: 'admin-groups' },
-  { label: 'Strategies', key: 'admin-strategies' },
-  { label: 'Images', key: 'admin-images' },
-  { label: 'Settings', key: 'admin-settings' },
+  { label: '仪表盘', key: 'admin-dashboard' },
+  { label: '用户管理', key: 'admin-users' },
+  { label: '分组管理', key: 'admin-groups' },
+  { label: '存储策略', key: 'admin-strategies' },
+  { label: '图片管理', key: 'admin-images' },
+  { label: '系统设置', key: 'admin-settings' },
 ]
 
 function onMenuSelect(key: string) {

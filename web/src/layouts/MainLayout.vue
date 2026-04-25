@@ -6,7 +6,7 @@
         <n-menu mode="horizontal" :value="currentRoute" :options="menuOptions" @update:value="onMenuSelect" />
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
-        <n-tag v-if="user?.role === 'admin'" type="info" size="small">Admin</n-tag>
+        <n-tag v-if="user?.role === 'admin'" type="info" size="small">管理员</n-tag>
         <n-dropdown :options="userMenuOptions" @select="onUserMenuSelect">
           <n-button quaternary>{{ user?.name || user?.email }}</n-button>
         </n-dropdown>
@@ -54,12 +54,12 @@ const currentRoute = computed(() => {
 
 const menuOptions = computed(() => {
   const opts = [
-    { label: 'Upload', key: 'upload' },
-    { label: 'Images', key: 'images' },
-    { label: 'Albums', key: 'albums' },
+    { label: '上传', key: 'upload' },
+    { label: '图片', key: 'images' },
+    { label: '相册', key: 'albums' },
   ]
   if (user.value?.role === 'admin') {
-    opts.push({ label: 'Admin', key: 'admin' })
+    opts.push({ label: '管理', key: 'admin' })
   }
   return opts
 })
@@ -70,8 +70,8 @@ function onMenuSelect(key: string) {
 }
 
 const userMenuOptions = [
-  { label: 'Profile', key: 'profile' },
-  { label: 'Logout', key: 'logout' },
+  { label: '个人资料', key: 'profile' },
+  { label: '退出登录', key: 'logout' },
 ]
 
 function onUserMenuSelect(key: string) {

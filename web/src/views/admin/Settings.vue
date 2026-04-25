@@ -1,22 +1,22 @@
 <template>
   <div>
-    <n-h3 class="mb-4">Settings</n-h3>
+    <n-h3 style="margin-bottom: 16px;">系统设置</n-h3>
     <n-spin :show="loading">
-      <n-form v-if="settings" label-placement="left" label-width="200" class="max-w-2xl">
-        <n-form-item label="App Name">
+      <n-form v-if="settings" label-placement="left" label-width="120" style="max-width: 600px;">
+        <n-form-item label="站点名称">
           <n-input v-model:value="settings.app_name" />
         </n-form-item>
-        <n-form-item label="App URL">
+        <n-form-item label="站点地址">
           <n-input v-model:value="settings.app_url" placeholder="https://your-domain.com" />
         </n-form-item>
-        <n-form-item label="Allow Registration">
+        <n-form-item label="开放注册">
           <n-switch v-model:value="settings.allow_registration" />
         </n-form-item>
-        <n-form-item label="Allow Guest Upload">
+        <n-form-item label="游客上传">
           <n-switch v-model:value="settings.allow_guest_upload" />
         </n-form-item>
         <n-form-item>
-          <n-button type="primary" :loading="saving" @click="saveSettings">Save Settings</n-button>
+          <n-button type="primary" :loading="saving" @click="saveSettings">保存设置</n-button>
         </n-form-item>
       </n-form>
     </n-spin>
@@ -39,7 +39,7 @@ onMounted(async () => {
     const res = await adminGetSettings()
     settings.value = res.data.data
   } catch {
-    message.error('Failed to load settings')
+    message.error('加载设置失败')
   } finally {
     loading.value = false
   }
@@ -50,9 +50,9 @@ async function saveSettings() {
   saving.value = true
   try {
     await adminUpdateSettings(settings.value)
-    message.success('Settings saved')
+    message.success('设置已保存')
   } catch (err: any) {
-    message.error(err.response?.data?.message || 'Failed to save settings')
+    message.error(err.response?.data?.message || '保存失败')
   } finally {
     saving.value = false
   }
