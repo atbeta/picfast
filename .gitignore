@@ -1,4 +1,6 @@
 bin/
 data/
+web-dist/
 *.exe
 .env
+web/node_modules/

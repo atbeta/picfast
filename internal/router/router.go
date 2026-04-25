@@ -20,6 +20,7 @@ func New(
 	pool *pgxpool.Pool,
 	cfg *config.Config,
 	jwtSvc *handler.JWTService,
+	spaHandler *handler.SPAHandler,
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -135,6 +136,11 @@ func New(
 			r.Put("/settings", adminSettingHandler.Update)
 		})
 	})
+
+	// SPA frontend — must be last so API routes take priority
+	if spaHandler != nil {
+		r.NotFound(spaHandler.Serve)
+	}
 
 	return r
 }

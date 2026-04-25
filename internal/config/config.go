@@ -16,8 +16,9 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port    int    `mapstructure:"port"`
-	BaseURL string `mapstructure:"base_url"`
+	Port      int    `mapstructure:"port"`
+	BaseURL   string `mapstructure:"base_url"`
+	WebDir    string `mapstructure:"web_dir"`
 }
 
 type DatabaseConfig struct {
@@ -87,6 +88,7 @@ func Load() (*Config, error) {
 func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.port", 8080)
 	v.SetDefault("server.base_url", "http://localhost:8080")
+	v.SetDefault("server.web_dir", "")
 
 	v.SetDefault("database.url", "postgres://imgapi:imgapi@localhost:5432/imgapi?sslmode=disable")
 

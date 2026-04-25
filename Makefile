@@ -1,10 +1,15 @@
-.PHONY: build run generate migrate-up migrate-down docker-up docker-down tidy
+.PHONY: build run generate migrate-up migrate-down docker-up docker-down tidy frontend
 
 GOPATH := $(shell go env GOPATH)
 SQLC := $(GOPATH)/bin/sqlc
 
+frontend:
+	cd web && pnpm build
+
 build:
 	CGO_ENABLED=0 go build -o ./bin/imgapi ./cmd/imgapi
+
+build-full: frontend build
 
 run: build
 	./bin/imgapi
@@ -37,4 +42,4 @@ test:
 	go test ./...
 
 clean:
-	rm -rf bin/ data/
+	rm -rf bin/ data/ web-dist/

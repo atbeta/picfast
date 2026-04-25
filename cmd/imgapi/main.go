@@ -48,7 +48,18 @@ func main() {
 
 	queries := sqlc.New(pool)
 	jwtSvc := handler.NewJWTService(&cfg.JWT)
-	r := router.New(queries, pool, cfg, jwtSvc)
+
+	var spaHandler *handler.SPAHandler
+	webDir := cfg.Server.WebDir
+	if webDir == "" {
+		webDir = "web-dist"
+	}
+	if info, err := os.Stat(webDir); err == nil && info.IsDir() {
+		spaHandler = handler.NewSPAHandler(os.DirFS(webDir))
+		slog.Info("serving frontend", "dir", webDir)
+	}
+
+	r := router.New(queries, pool, cfg, jwtSvc, spaHandler)
 
 	seedAdmin(queries, cfg)
 
