@@ -42,7 +42,7 @@ UPDATE users SET image_num = image_num + 1, updated_at = NOW() WHERE id = $1;
 UPDATE users SET image_num = image_num - 1, updated_at = NOW() WHERE id = $1 AND image_num > 0;
 
 -- name: GetUserUsedCapacity :one
-SELECT COALESCE(SUM(size_bytes), 0) FROM images WHERE user_id = $1;
+SELECT COALESCE(SUM(size_bytes), 0)::bigint FROM images WHERE user_id = $1;
 
 -- name: CreateAdminUser :one
 INSERT INTO users (group_id, email, password, name, role, capacity_bytes, settings, status, email_verified, registered_ip)

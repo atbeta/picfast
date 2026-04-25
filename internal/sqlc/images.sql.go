@@ -37,12 +37,12 @@ func (q *Queries) CountImagesByUser(ctx context.Context, userID pgtype.Int8) (in
 const countImagesInWindow = `-- name: CountImagesInWindow :one
 SELECT COUNT(*) FROM images
 WHERE user_id = $1
-AND created_at > NOW() - ($2 || ' seconds')::interval
+AND created_at > NOW() - ($2::text || ' seconds')::interval
 `
 
 type CountImagesInWindowParams struct {
 	UserID  pgtype.Int8 `json:"user_id"`
-	Column2 pgtype.Text `json:"column_2"`
+	Column2 string      `json:"column_2"`
 }
 
 func (q *Queries) CountImagesInWindow(ctx context.Context, arg CountImagesInWindowParams) (int64, error) {
@@ -55,12 +55,12 @@ func (q *Queries) CountImagesInWindow(ctx context.Context, arg CountImagesInWind
 const countImagesInWindowByIP = `-- name: CountImagesInWindowByIP :one
 SELECT COUNT(*) FROM images
 WHERE user_id IS NULL AND uploaded_ip = $1
-AND created_at > NOW() - ($2 || ' seconds')::interval
+AND created_at > NOW() - ($2::text || ' seconds')::interval
 `
 
 type CountImagesInWindowByIPParams struct {
-	UploadedIp string      `json:"uploaded_ip"`
-	Column2    pgtype.Text `json:"column_2"`
+	UploadedIp string `json:"uploaded_ip"`
+	Column2    string `json:"column_2"`
 }
 
 func (q *Queries) CountImagesInWindowByIP(ctx context.Context, arg CountImagesInWindowByIPParams) (int64, error) {

@@ -200,14 +200,14 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserUsedCapacity = `-- name: GetUserUsedCapacity :one
-SELECT COALESCE(SUM(size_bytes), 0) FROM images WHERE user_id = $1
+SELECT COALESCE(SUM(size_bytes), 0)::bigint FROM images WHERE user_id = $1
 `
 
-func (q *Queries) GetUserUsedCapacity(ctx context.Context, userID pgtype.Int8) (interface{}, error) {
+func (q *Queries) GetUserUsedCapacity(ctx context.Context, userID pgtype.Int8) (int64, error) {
 	row := q.db.QueryRow(ctx, getUserUsedCapacity, userID)
-	var coalesce interface{}
-	err := row.Scan(&coalesce)
-	return coalesce, err
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const incrementUserImageNum = `-- name: IncrementUserImageNum :exec

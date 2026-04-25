@@ -26,3 +26,10 @@ func PgInt8PtrVal(p pgtype.Int8) *int64 {
 	}
 	return nil
 }
+
+func PgInt8PtrValI(v *int16) pgtype.Int8 {
+	if v == nil {
+		return pgtype.Int8{Valid: false}
+	}
+	return pgtype.Int8{Int64: int64(*v), Valid: true}
+}

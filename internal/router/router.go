@@ -9,6 +9,7 @@ import (
 	"github.com/pbeta/imgapi/internal/config"
 	"github.com/pbeta/imgapi/internal/handler"
 	"github.com/pbeta/imgapi/internal/handler/middleware"
+	"github.com/pbeta/imgapi/internal/service"
 	"github.com/pbeta/imgapi/internal/sqlc"
 )
 
@@ -31,8 +32,14 @@ func New(
 		w.Write([]byte("ok"))
 	})
 
+	// Services
+	uploadSvc := service.NewUploadService(queries, pool, cfg)
+
+	// Handlers
 	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg)
 	userHandler := handler.NewUserHandler(queries)
+	imageHandler := handler.NewImageHandler(queries, uploadSvc, cfg.Server.BaseURL)
+	albumHandler := handler.NewAlbumHandler(queries)
 	adminGroupHandler := handler.NewAdminGroupHandler(queries)
 	adminStrategyHandler := handler.NewAdminStrategyHandler(queries)
 	adminUserHandler := handler.NewAdminUserHandler(queries)
@@ -58,22 +65,37 @@ func New(
 			r.Get("/users/me", userHandler.GetProfile)
 			r.Put("/users/me", userHandler.UpdateProfile)
 
+			// Images
+			r.Post("/images", imageHandler.Upload)
+			r.Get("/images", imageHandler.List)
+			r.Get("/images/{key}", imageHandler.Get)
+			r.Delete("/images/{key}", imageHandler.Delete)
+			r.Patch("/images/{key}", imageHandler.Update)
+
+			// Albums
+			r.Get("/albums", albumHandler.List)
+			r.Post("/albums", albumHandler.Create)
+			r.Put("/albums/{id}", albumHandler.Update)
+			r.Delete("/albums/{id}", albumHandler.Delete)
+
 			// Strategies (available to user's group)
 			r.Get("/strategies", adminStrategyHandler.List)
 		})
+
+		// Optional auth for guest upload
+		r.With(middleware.OptionalAuth(jwtSvc)).
+			Post("/upload", imageHandler.Upload)
 
 		// Admin routes
 		r.Route("/admin", func(r chi.Router) {
 			r.Use(middleware.Auth(jwtSvc))
 			r.Use(middleware.Admin)
 
-			// Users
 			r.Get("/users", adminUserHandler.List)
 			r.Get("/users/{id}", adminUserHandler.Get)
 			r.Put("/users/{id}", adminUserHandler.Update)
 			r.Delete("/users/{id}", adminUserHandler.Delete)
 
-			// Groups
 			r.Get("/groups", adminGroupHandler.List)
 			r.Get("/groups/{id}", adminGroupHandler.Get)
 			r.Post("/groups", adminGroupHandler.Create)
@@ -81,18 +103,15 @@ func New(
 			r.Delete("/groups/{id}", adminGroupHandler.Delete)
 			r.Put("/groups/{id}/strategies", adminGroupHandler.SetStrategies)
 
-			// Strategies
 			r.Get("/strategies", adminStrategyHandler.List)
 			r.Get("/strategies/{id}", adminStrategyHandler.Get)
 			r.Post("/strategies", adminStrategyHandler.Create)
 			r.Put("/strategies/{id}", adminStrategyHandler.Update)
 			r.Delete("/strategies/{id}", adminStrategyHandler.Delete)
 
-			// Images
 			r.Get("/images", adminImageHandler.List)
 			r.Delete("/images/{id}", adminImageHandler.Delete)
 
-			// Settings
 			r.Get("/settings", adminSettingHandler.Get)
 			r.Put("/settings", adminSettingHandler.Update)
 		})

@@ -40,12 +40,12 @@ LIMIT 1;
 -- name: CountImagesInWindow :one
 SELECT COUNT(*) FROM images
 WHERE user_id = $1
-AND created_at > NOW() - ($2 || ' seconds')::interval;
+AND created_at > NOW() - ($2::text || ' seconds')::interval;
 
 -- name: CountImagesInWindowByIP :one
 SELECT COUNT(*) FROM images
 WHERE user_id IS NULL AND uploaded_ip = $1
-AND created_at > NOW() - ($2 || ' seconds')::interval;
+AND created_at > NOW() - ($2::text || ' seconds')::interval;
 
 -- name: ListAllImages :many
 SELECT images.*, users.email as user_email FROM images
