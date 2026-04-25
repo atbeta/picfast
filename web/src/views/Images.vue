@@ -6,8 +6,8 @@
     </div>
 
     <n-spin :show="loading">
-      <n-grid :cols="4" :x-gap="12" :y-gap="12" responsive="screen" item-responsive>
-        <n-gi v-for="img in images" :key="img.key" span="4 sm:2 md:1">
+      <n-grid :cols="4" :x-gap="12" :y-gap="12">
+        <n-gi v-for="img in images" :key="img.key">
           <n-card size="small" hoverable @click="showDetail(img)" style="cursor: pointer;">
             <template #cover>
               <div style="height: 160px; overflow: hidden; background: #f5f5f5; display: flex; align-items: center; justify-content: center;">
