@@ -222,8 +222,7 @@ func (h *ImageHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ImageHandler) buildLinks(img sqlc.Image) domain.ImageLinks {
-	pathname := img.Path + "/" + img.Name
-	url := h.baseURL + "/i/" + pathname
+	url := h.baseURL + "/i/" + img.Key + "." + img.Extension
 	thumbURL := h.baseURL + "/t/" + img.Md5 + ".png"
 
 	return domain.ImageLinks{

@@ -1,9 +1,9 @@
 package router
 
 import (
+	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
@@ -44,7 +44,7 @@ func New(
 	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL)
 	albumHandler := handler.NewAlbumHandler(queries)
 	fileHandler := handler.NewFileHandler(queries, cfg.Server.BaseURL, cfg.Storage.ThumbnailDir)
-	adminGroupHandler := handler.NewAdminGroupHandler(queries)
+	adminGroupHandler := handler.NewAdminGroupHandler(queries, pool)
 	adminStrategyHandler := handler.NewAdminStrategyHandler(queries)
 	adminUserHandler := handler.NewAdminUserHandler(queries)
 	adminImageHandler := handler.NewAdminImageHandler(queries, deleteSvc)
@@ -52,19 +52,11 @@ func New(
 
 	loginLimiter := middleware.NewRateLimiter(3, 60*1e9)
 
-	// Image file serving: /i/{key}.{ext}
-	r.Get("/i/{key}.{ext}", fileHandler.ServeImage)
+	// Image file serving: /i/{key}.{ext} — with OptionalAuth so private images can be accessed by owner
+	r.With(middleware.OptionalAuth(jwtSvc)).Get("/i/{key}.{ext}", fileHandler.ServeImage)
 
 	// Thumbnail serving: /t/{hash}.png
 	r.Get("/t/{hash}.png", fileHandler.ServeThumbnail)
-
-	// Static uploads directory (for local storage direct access)
-	if cfg.Storage.LocalRoot != "" {
-		workDir, _ := os.Getwd()
-		uploadsDir := filepath.Join(workDir, cfg.Storage.LocalRoot)
-		os.MkdirAll(uploadsDir, 0755)
-		r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir))))
-	}
 
 	// Ensure thumbnail directory exists
 	os.MkdirAll(cfg.Storage.ThumbnailDir, 0755)
@@ -73,7 +65,13 @@ func New(
 		// Auth
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authHandler.Register)
-			r.With(middleware.RateLimit(loginLimiter, func(r *http.Request) string { return r.RemoteAddr })).
+			r.With(middleware.RateLimit(loginLimiter, func(r *http.Request) string {
+				host, _, _ := net.SplitHostPort(r.RemoteAddr)
+				if host == "" {
+					return r.RemoteAddr
+				}
+				return host
+			})).
 				Post("/login", authHandler.Login)
 			r.Post("/refresh", authHandler.Refresh)
 			r.Post("/logout", authHandler.Logout)

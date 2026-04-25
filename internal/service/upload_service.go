@@ -250,7 +250,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	var imageURL string
 	if store != nil {
 		if groupConfig.IsEnableOriginalProtection {
-			imageURL = s.config.Server.BaseURL + "/" + imageKey + "." + ext
+			imageURL = s.config.Server.BaseURL + "/i/" + imageKey + "." + ext
 		} else {
 			imageURL = store.URL(pathname)
 		}

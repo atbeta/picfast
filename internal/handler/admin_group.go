@@ -6,15 +6,17 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pbeta/imgapi/internal/sqlc"
 )
 
 type AdminGroupHandler struct {
-	db *sqlc.Queries
+	db   *sqlc.Queries
+	pool *pgxpool.Pool
 }
 
-func NewAdminGroupHandler(db *sqlc.Queries) *AdminGroupHandler {
-	return &AdminGroupHandler{db: db}
+func NewAdminGroupHandler(db *sqlc.Queries, pool *pgxpool.Pool) *AdminGroupHandler {
+	return &AdminGroupHandler{db: db, pool: pool}
 }
 
 type createGroupRequest struct {
@@ -226,11 +228,26 @@ func (h *AdminGroupHandler) SetStrategies(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	h.db.ReplaceGroupStrategies(r.Context(), id)
+	tx, err := h.pool.Begin(r.Context())
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to begin transaction")
+		return
+	}
+	defer tx.Rollback(r.Context())
+
+	qtx := h.db.WithTx(tx)
+	qtx.ReplaceGroupStrategies(r.Context(), id)
 	for _, sid := range req.StrategyIDs {
-		h.db.AddGroupStrategy(r.Context(), sqlc.AddGroupStrategyParams{
+		if err := qtx.AddGroupStrategy(r.Context(), sqlc.AddGroupStrategyParams{
 			GroupID: id, StrategyID: sid,
-		})
+		}); err != nil {
+			Fail(w, http.StatusInternalServerError, "failed to set strategies")
+			return
+		}
+	}
+	if err := tx.Commit(r.Context()); err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to commit transaction")
+		return
 	}
 
 	SuccessMessage(w, "strategies updated")
