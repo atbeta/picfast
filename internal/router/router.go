@@ -1,6 +1,7 @@
 package router
 
 import (
+	"encoding/json"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -35,8 +36,42 @@ func New(
 	r.Use(middleware.Metrics)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		status := map[string]interface{}{
+			"status":    "ok",
+			"database":  "ok",
+			"storage":   "ok",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		}
+		code := http.StatusOK
+
+		if err := pool.Ping(r.Context()); err != nil {
+			status["status"] = "degraded"
+			status["database"] = err.Error()
+			code = http.StatusServiceUnavailable
+		}
+
+		for _, dir := range []string{cfg.Storage.LocalRoot, cfg.Storage.ThumbnailDir} {
+			if dir == "" {
+				continue
+			}
+			if _, err := os.Stat(dir); err != nil {
+				if os.IsNotExist(err) {
+					if mkErr := os.MkdirAll(dir, 0755); mkErr != nil {
+						status["status"] = "degraded"
+						status["storage"] = "cannot create " + dir + ": " + mkErr.Error()
+						code = http.StatusServiceUnavailable
+					}
+				} else {
+					status["status"] = "degraded"
+					status["storage"] = "cannot access " + dir + ": " + err.Error()
+					code = http.StatusServiceUnavailable
+				}
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(status)
 	})
 
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)

@@ -1,7 +1,22 @@
-.PHONY: build run generate migrate-up migrate-down docker-up docker-down tidy frontend test
+.PHONY: build run dev generate migrate-up migrate-down docker-up docker-down tidy frontend test format lint seed clean
 
 GOPATH := $(shell go env GOPATH)
 SQLC := $(GOPATH)/bin/sqlc
+
+## Development
+
+dev:
+	@echo "Starting development environment..."
+	@echo "1. Ensure Postgres is running (make docker-up or use local Postgres)"
+	@echo "2. Run migrations (make migrate-up)"
+	@echo "3. Seed data (make seed)"
+	@echo "4. Start backend:  go run ./cmd/imgapi"
+	@echo "5. Start frontend: cd web && pnpm dev"
+
+seed:
+	go run ./cmd/seed
+
+## Build
 
 frontend:
 	cd web && pnpm build
@@ -14,11 +29,15 @@ build-full: frontend build
 run: build
 	./bin/imgapi
 
+## Code generation
+
 generate: $(SQLC)
 	$(SQLC) generate
 
 $(SQLC):
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+## Database
 
 migrate-up:
 	migrate -path migrations -database "postgres://imgapi:imgapi@localhost:5432/imgapi?sslmode=disable" up
@@ -26,8 +45,22 @@ migrate-up:
 migrate-down:
 	migrate -path migrations -database "postgres://imgapi:imgapi@localhost:5432/imgapi?sslmode=disable" down 1
 
+## Quality
+
+format:
+	gofmt -w ./internal ./cmd
+	cd web && pnpm exec prettier --write "src/**/*.{ts,vue,css}"
+
+lint:
+	go vet ./...
+	cd web && pnpm exec vue-tsc --noEmit
+
+## Dependencies
+
 tidy:
 	go mod tidy
+
+## Docker
 
 docker-up:
 	docker compose -f docker/docker-compose.yml up --build -d
@@ -38,11 +71,15 @@ docker-down:
 docker-logs:
 	docker compose -f docker/docker-compose.yml logs -f app
 
+## Testing
+
 test:
 	go test -v -count=1 ./...
 
 docker-test-db:
 	docker run -d --name imgapi-test-db -e POSTGRES_USER=imgapi -e POSTGRES_PASSWORD=imgapi -e POSTGRES_DB=imgapi_test -p 5433:5432 postgres:16-alpine
+
+## Cleanup
 
 clean:
 	rm -rf bin/ data/ web-dist/
