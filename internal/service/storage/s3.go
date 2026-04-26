@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/pbeta/imgapi/internal/domain"
@@ -21,18 +20,11 @@ type S3Storage struct {
 func NewS3Storage(cfg domain.S3StrategyConfig) (*S3Storage, error) {
 	creds := credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.SecretAccessKey, "")
 
-	awsCfg, err := config.LoadDefaultConfig(context.Background(),
-		config.WithCredentialsProvider(creds),
-		config.WithRegion(cfg.Region),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("load aws config: %w", err)
-	}
-
-	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(cfg.Endpoint)
-		o.UsePathStyle = true
-		o.AuthSchemePreference = []string{"sigv4"}
+	client := s3.New(s3.Options{
+		Region:       cfg.Region,
+		Credentials:  creds,
+		BaseEndpoint: aws.String(cfg.Endpoint),
+		UsePathStyle: true,
 	})
 
 	return &S3Storage{

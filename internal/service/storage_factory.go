@@ -9,7 +9,6 @@ import (
 	"github.com/pbeta/imgapi/internal/sqlc"
 )
 
-// GetStorageForStrategy creates a storage.Storage from a strategy configuration.
 func GetStorageForStrategy(strategy sqlc.Strategy) (storage.Storage, error) {
 	switch strategy.StrategyType {
 	case string(domain.StrategyTypeLocal):
