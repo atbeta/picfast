@@ -28,17 +28,20 @@
 					/></n-form-item>
 				</template>
 				<template v-if="form.type === 's3'">
+					<n-alert type="info" :bordered="false" style="margin-bottom: 12px" size="small">
+						<strong>Endpoint</strong> 是 S3 API 地址（上传用），<strong>访问 URL</strong> 是图片公开访问地址（浏览用）。两者通常不同。
+					</n-alert>
 					<n-form-item label="Endpoint"
-						><n-input v-model:value="form.s3Endpoint" placeholder="https://s3.amazonaws.com"
+						><n-input v-model:value="form.s3Endpoint" placeholder="R2: https://<account-id>.r2.cloudflarestorage.com"
 					/></n-form-item>
-					<n-form-item label="Region"><n-input v-model:value="form.s3Region" placeholder="us-east-1" /></n-form-item>
-					<n-form-item label="Bucket"><n-input v-model:value="form.s3Bucket" /></n-form-item>
+					<n-form-item label="Region"><n-input v-model:value="form.s3Region" placeholder="R2 填 auto" /></n-form-item>
+					<n-form-item label="Bucket"><n-input v-model:value="form.s3Bucket" placeholder="bucket 名称" /></n-form-item>
 					<n-form-item label="Access Key"><n-input v-model:value="form.s3AccessKey" /></n-form-item>
 					<n-form-item label="Secret Key"
 						><n-input v-model:value="form.s3SecretKey" type="password" show-password-on="click"
 					/></n-form-item>
 					<n-form-item label="访问 URL"
-						><n-input v-model:value="form.s3URL" placeholder="https://pub-xxx.r2.dev 或自定义域名"
+						><n-input v-model:value="form.s3URL" placeholder="https://pub-xxx.r2.dev（需在 R2 控制台开启）"
 					/></n-form-item>
 				</template>
 			</n-form>
@@ -58,6 +61,7 @@ import {
 	NFormItem,
 	NInput,
 	NSelect,
+	NAlert,
 	useMessage,
 	type DataTableColumns,
 } from 'naive-ui'
@@ -175,10 +179,11 @@ async function saveStrategy() {
 			message.success('策略创建成功')
 		}
 		fetchStrategies()
+		return true
 	} catch (err: any) {
 		message.error(err.response?.data?.message || '操作失败')
+		return false
 	}
-	return true
 }
 
 async function deleteStrategy(s: any) {
