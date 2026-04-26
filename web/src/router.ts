@@ -19,8 +19,9 @@ export const routes: RouteRecordRaw[] = [
 		meta: { requiresAuth: true },
 		children: [
 			{ path: '', name: 'upload', component: () => import('./views/Upload.vue') },
-			{ path: 'images', name: 'images', component: () => import('./views/Images.vue') },
-			{ path: 'albums', name: 'albums', component: () => import('./views/Albums.vue') },
+		{ path: 'images', name: 'images', component: () => import('./views/Images.vue') },
+		{ path: 'albums', name: 'albums', component: () => import('./views/Albums.vue') },
+		{ path: 'api-tokens', name: 'api-tokens', component: () => import('./views/ApiTokens.vue') },
 			{
 				path: 'admin',
 				component: () => import('./layouts/AdminLayout.vue'),

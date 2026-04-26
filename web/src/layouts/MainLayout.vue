@@ -39,6 +39,7 @@ const routeMap: Record<string, string> = {
 	upload: '/',
 	images: '/images',
 	albums: '/albums',
+	'api-tokens': '/api-tokens',
 	admin: '/admin',
 }
 
@@ -56,6 +57,7 @@ const currentRoute = computed(() => {
 	const path = route.path
 	if (path.startsWith('/images')) return 'images'
 	if (path.startsWith('/albums')) return 'albums'
+	if (path.startsWith('/api-tokens')) return 'api-tokens'
 	if (path.startsWith('/admin')) return 'admin'
 	return 'upload'
 })
@@ -65,6 +67,7 @@ const menuOptions = computed(() => {
 		{ label: '上传', key: 'upload' },
 		{ label: '图片', key: 'images' },
 		{ label: '相册', key: 'albums' },
+		{ label: '令牌', key: 'api-tokens' },
 	]
 	if (user.value?.role === 'admin') {
 		opts.push({ label: '管理', key: 'admin' })
