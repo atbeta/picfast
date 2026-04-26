@@ -93,8 +93,10 @@ import {
 } from 'naive-ui'
 import { uploadImage } from '../api/image'
 import { getStrategies, type Strategy } from '../api/strategies'
+import { useUserStore } from '../stores/user'
 
 const message = useMessage()
+const userStore = useUserStore()
 const results = ref<any[]>([])
 const strategies = ref<Strategy[]>([])
 const selectedStrategyId = ref<number | null>(null)
@@ -112,12 +114,18 @@ onMounted(async () => {
 	try {
 		const res = await getStrategies()
 		strategies.value = res.data.data || []
+		let initialId: number | null = null
+		const userSettings = (userStore.user as any)?.settings
+		const userDefault = userSettings?.default_strategy ? Number(userSettings.default_strategy) : null
 		const saved = localStorage.getItem('default_strategy_id')
-		if (saved && strategies.value.some((s) => s.id === Number(saved))) {
-			selectedStrategyId.value = Number(saved)
+		if (userDefault && strategies.value.some((s) => s.id === userDefault)) {
+			initialId = userDefault
+		} else if (saved && strategies.value.some((s) => s.id === Number(saved))) {
+			initialId = Number(saved)
 		} else if (strategies.value.length > 0) {
-			selectedStrategyId.value = strategies.value[0].id
+			initialId = strategies.value[0].id
 		}
+		selectedStrategyId.value = initialId
 	} catch {
 		/* ignore */
 	}

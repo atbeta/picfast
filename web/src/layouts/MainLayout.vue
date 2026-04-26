@@ -40,6 +40,7 @@ const routeMap: Record<string, string> = {
 	images: '/images',
 	albums: '/albums',
 	'api-tokens': '/api-tokens',
+	settings: '/settings',
 	admin: '/admin',
 }
 
@@ -58,6 +59,7 @@ const currentRoute = computed(() => {
 	if (path.startsWith('/images')) return 'images'
 	if (path.startsWith('/albums')) return 'albums'
 	if (path.startsWith('/api-tokens')) return 'api-tokens'
+	if (path.startsWith('/settings')) return 'settings'
 	if (path.startsWith('/admin')) return 'admin'
 	return 'upload'
 })
@@ -81,7 +83,7 @@ function onMenuSelect(key: string) {
 }
 
 const userMenuOptions = [
-	{ label: '个人资料', key: 'profile' },
+	{ label: '个人设置', key: 'settings' },
 	{ label: '退出登录', key: 'logout' },
 ]
 
@@ -90,6 +92,8 @@ function onUserMenuSelect(key: string) {
 		logout().catch(() => {})
 		userStore.clearTokens()
 		router.push('/login')
+	} else if (key === 'settings') {
+		router.push('/settings')
 	}
 }
 </script>

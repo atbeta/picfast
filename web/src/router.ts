@@ -22,6 +22,7 @@ export const routes: RouteRecordRaw[] = [
 		{ path: 'images', name: 'images', component: () => import('./views/Images.vue') },
 		{ path: 'albums', name: 'albums', component: () => import('./views/Albums.vue') },
 		{ path: 'api-tokens', name: 'api-tokens', component: () => import('./views/ApiTokens.vue') },
+		{ path: 'settings', name: 'settings', component: () => import('./views/Profile.vue') },
 			{
 				path: 'admin',
 				component: () => import('./layouts/AdminLayout.vue'),
