@@ -2,7 +2,13 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { createAlbum, deleteAlbum, listAlbums, updateAlbum } from '../../lib/console-api'
+import { createAlbum, deleteAlbum, listAlbums, listImages, updateAlbum } from '../../lib/console-api'
+import type { ImageItem } from '../../lib/console-api'
+
+function toRelative(url: string): string {
+  try { return new URL(url).pathname }
+  catch { return url }
+}
 
 export function AlbumsPage() {
   const { t } = useTranslation()
@@ -90,6 +96,25 @@ export function AlbumsPage() {
     [qc, t],
   )
 
+  // Album image viewer
+  const [viewingAlbum, setViewingAlbum] = useState<{ id: number; name: string } | null>(null)
+  const [albumImages, setAlbumImages] = useState<ImageItem[]>([])
+  const [albumImagesLoading, setAlbumImagesLoading] = useState(false)
+
+  const viewAlbumImages = async (album: { id: number; name: string }) => {
+    setViewingAlbum(album)
+    setAlbumImagesLoading(true)
+    try {
+      const res = await listImages(1, 50)
+      const all = res.items || []
+      setAlbumImages(all.filter((img) => img.album_id === album.id))
+    } catch {
+      setAlbumImages([])
+    } finally {
+      setAlbumImagesLoading(false)
+    }
+  }
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
@@ -151,11 +176,12 @@ export function AlbumsPage() {
         <p className="py-12 text-center text-sm text-zinc-400">{t('albums.empty')}</p>
       )}
 
+      {/* Card grid */}
       {data && data.items.length > 0 && (
-        <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.items.map((album) =>
             editingId === album.id ? (
-              <div key={album.id} className="space-y-3 py-4">
+              <div key={album.id} className="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
@@ -185,31 +211,24 @@ export function AlbumsPage() {
                 </div>
               </div>
             ) : (
-              <div key={album.id} className="flex items-center justify-between py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium">{album.name}</p>
-                  {album.intro && <p className="mt-0.5 text-xs text-zinc-500">{album.intro}</p>}
-                  <p className="mt-0.5 text-xs text-zinc-400">
-                    {t('albums.imageCount', { count: album.image_num })} · {new Date(album.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex gap-1">
+              <div key={album.id} className="rounded-lg border border-zinc-200 p-4 transition-shadow hover:shadow-md dark:border-zinc-700">
+                <div className="mb-2 flex items-center justify-between">
                   <button
                     type="button"
-                    onClick={() => startEdit(album)}
-                    className="rounded px-2 py-1 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    onClick={() => viewAlbumImages(album)}
+                    className="text-left text-sm font-medium text-zinc-800 hover:text-blue-600 dark:text-zinc-200 dark:hover:text-blue-400"
                   >
-                    {t('albums.edit')}
+                    {album.name}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(album.id)}
-                    disabled={deleting === album.id}
-                    className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20"
-                  >
-                    {t('albums.delete')}
-                  </button>
+                  <div className="flex gap-1">
+                    <button type="button" onClick={() => startEdit(album)} className="rounded px-2 py-1 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800">{t('albums.edit')}</button>
+                    <button type="button" onClick={() => handleDelete(album.id)} disabled={deleting === album.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('albums.delete')}</button>
+                  </div>
                 </div>
+                <p className="text-xs text-zinc-400">{album.intro || t('albums.noDesc', { defaultValue: '暂无描述' })}</p>
+                <p className="mt-2 border-t border-zinc-100 pt-2 text-xs text-zinc-400 dark:border-zinc-800">
+                  {t('albums.imageCount', { count: album.image_num })} · {new Date(album.created_at).toLocaleDateString()}
+                </p>
               </div>
             ),
           )}
@@ -222,6 +241,37 @@ export function AlbumsPage() {
           <div className="flex gap-2">
             <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded border border-zinc-300 px-3 py-1 text-xs disabled:opacity-40 dark:border-zinc-700">{t('albums.prev')}</button>
             <button type="button" disabled={page * 20 >= data.total} onClick={() => setPage((p) => p + 1)} className="rounded border border-zinc-300 px-3 py-1 text-xs disabled:opacity-40 dark:border-zinc-700">{t('albums.next')}</button>
+          </div>
+        </div>
+      )}
+
+      {/* Album image viewer modal */}
+      {viewingAlbum && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setViewingAlbum(null)}>
+          <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-800 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-4 text-lg font-semibold">{viewingAlbum.name} - {t('albums.imageList', { defaultValue: '图片列表' })}</h2>
+
+            {albumImagesLoading && <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" /></div>}
+
+            {!albumImagesLoading && albumImages.length === 0 && (
+              <p className="py-8 text-center text-sm text-zinc-400">{t('albums.noImages', { defaultValue: '相册内暂无图片' })}</p>
+            )}
+
+            {!albumImagesLoading && albumImages.length > 0 && (
+              <div className="grid grid-cols-4 gap-2">
+                {albumImages.map((img) => (
+                  <div key={img.key} className="aspect-square overflow-hidden rounded">
+                    {img.thumbnail_url ? (
+                      <img src={toRelative(img.thumbnail_url)} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    ) : img.url ? (
+                      <img src={toRelative(img.url)} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-900">{img.extension}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

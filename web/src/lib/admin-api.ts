@@ -26,6 +26,7 @@ export interface AdminUser {
   role: string
   group_id: number | null
   capacity_bytes: number
+  used_capacity: number
   image_num: number
   album_num: number
   status: number
@@ -104,6 +105,10 @@ export async function deleteAdminGroup(id: number): Promise<void> {
   await api.delete(`/admin/groups/${id}`)
 }
 
+export async function setAdminGroupStrategies(id: number, strategyIds: number[]): Promise<void> {
+  await api.put(`/admin/groups/${id}/strategies`, { strategy_ids: strategyIds })
+}
+
 // ============================================================
 // Strategies
 // ============================================================
@@ -149,6 +154,7 @@ export async function deleteAdminStrategy(id: number): Promise<void> {
 
 export interface AdminImage {
   id: number
+  key: string
   user_id: number | null
   origin_name: string
   size_bytes: number
@@ -183,6 +189,7 @@ export async function deleteAdminImage(id: number): Promise<void> {
 
 export interface AdminSettings {
   app_name: string
+  app_url: string
   allow_guest_upload: boolean
   allow_registration: boolean
   user_initial_capacity: number

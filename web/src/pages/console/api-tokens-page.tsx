@@ -4,6 +4,17 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { createApiToken, deleteApiToken, listApiTokens } from '../../lib/console-api'
 
+function isRealDate(s?: string): boolean {
+  if (!s) return false
+  const d = new Date(s)
+  return !isNaN(d.getTime()) && d.getFullYear() > 1
+}
+
+function formatDate(s?: string): string {
+  if (!s) return '-'
+  return new Date(s).toLocaleString()
+}
+
 export function ApiTokensPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -17,6 +28,7 @@ export function ApiTokensPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const [newExpires, setNewExpires] = useState('')
+  const [newScopes, setNewScopes] = useState<string[]>(['read', 'write'])
   const [creating, setCreating] = useState(false)
   const [createdToken, setCreatedToken] = useState<{ name: string; token: string } | null>(null)
 
@@ -27,7 +39,7 @@ export function ApiTokensPage() {
       const result = await createApiToken(
         newName.trim(),
         newExpires || undefined,
-        ['read', 'write'],
+        newScopes,
       )
       if (result.token) {
         setCreatedToken({ name: result.name, token: result.token })
@@ -35,6 +47,7 @@ export function ApiTokensPage() {
       setShowCreate(false)
       setNewName('')
       setNewExpires('')
+      setNewScopes(['read', 'write'])
       await qc.invalidateQueries({ queryKey: ['api-tokens'] })
     } catch (err: unknown) {
       alert(
@@ -44,7 +57,7 @@ export function ApiTokensPage() {
     } finally {
       setCreating(false)
     }
-  }, [newName, newExpires, qc, t])
+  }, [newName, newExpires, newScopes, qc, t])
 
   // Delete
   const [deleting, setDeleting] = useState<number | null>(null)
@@ -70,6 +83,12 @@ export function ApiTokensPage() {
 
   const onCopy = async (text: string) => {
     await navigator.clipboard.writeText(text)
+  }
+
+  const toggleScope = (scope: string) => {
+    setNewScopes((prev) =>
+      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope],
+    )
   }
 
   return (
@@ -130,18 +149,34 @@ export function ApiTokensPage() {
             <option value="90d">90 {t('tokens.days')}</option>
             <option value="1y">1 {t('tokens.year')}</option>
           </select>
+
+          {/* Scope selection */}
+          <div>
+            <label className="mb-1 block text-sm font-medium">{t('tokens.scopes', { defaultValue: '权限' })}</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-1.5 text-sm">
+                <input type="checkbox" checked={newScopes.includes('read')} onChange={() => toggleScope('read')} className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600" />
+                read
+              </label>
+              <label className="flex items-center gap-1.5 text-sm">
+                <input type="checkbox" checked={newScopes.includes('write')} onChange={() => toggleScope('write')} className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600" />
+                write
+              </label>
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <button
               type="button"
               onClick={handleCreate}
-              disabled={creating || !newName.trim()}
+              disabled={creating || !newName.trim() || newScopes.length === 0}
               className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
             >
               {creating ? t('tokens.creating') : t('tokens.confirmCreate')}
             </button>
             <button
               type="button"
-              onClick={() => { setShowCreate(false); setNewName(''); setNewExpires('') }}
+              onClick={() => { setShowCreate(false); setNewName(''); setNewExpires(''); setNewScopes(['read', 'write']) }}
               className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600"
             >
               {t('tokens.cancel')}
@@ -170,10 +205,24 @@ export function ApiTokensPage() {
             <div key={tk.id} className="flex items-center justify-between py-3">
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{tk.name}</p>
-                <div className="mt-0.5 flex flex-wrap gap-2 text-xs text-zinc-400">
-                  <span>{tk.scopes.join(', ')}</span>
-                  {tk.expires_at && <span>{t('tokens.expires', { date: new Date(tk.expires_at).toLocaleDateString() })}</span>}
-                  <span>{t('tokens.createdAt', { date: new Date(tk.created_at).toLocaleDateString() })}</span>
+                <div className="mt-0.5 text-xs text-zinc-400">
+                  {t('tokens.createdAt', { date: formatDate(tk.created_at) })}
+                  {isRealDate(tk.expires_at) && (
+                    <span className="ml-2">{t('tokens.expires', { date: formatDate(tk.expires_at) })}</span>
+                  )}
+                  {!isRealDate(tk.expires_at) && (
+                    <span className="ml-2">{t('tokens.noExpiry')}</span>
+                  )}
+                  {isRealDate(tk.last_used_at) && (
+                    <span className="ml-2">{t('tokens.lastUsedAt', { defaultValue: '上次使用' })} {formatDate(tk.last_used_at)}</span>
+                  )}
+                </div>
+                <div className="mt-1.5 flex gap-1.5">
+                  {tk.scopes.map((scope) => (
+                    <span key={scope} className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                      {scope}
+                    </span>
+                  ))}
                 </div>
               </div>
               <button

@@ -51,6 +51,16 @@ export async function deleteImage(key: string): Promise<void> {
   await api.delete(`/images/${encodeURIComponent(key)}`)
 }
 
+export async function getImage(key: string): Promise<ImageItem> {
+  const res = await api.get<ApiResponse<ImageItem>>(`/images/${encodeURIComponent(key)}`)
+  return res.data.data
+}
+
+export async function updateImage(key: string, data: { album_id?: number; permission?: number }): Promise<ImageItem> {
+  const res = await api.patch<ApiResponse<ImageItem>>(`/images/${encodeURIComponent(key)}`, data)
+  return res.data.data
+}
+
 export async function uploadImageAuth(
   file: File,
   options?: { album_id?: number; strategy_id?: number; permission?: number; onProgress?: (pct: number) => void },
@@ -134,4 +144,22 @@ export async function createApiToken(name: string, expiresIn?: string, scopes?: 
 
 export async function deleteApiToken(id: number): Promise<void> {
   await api.delete(`/api-tokens/${id}`)
+}
+
+// ============================================================
+// Strategies (user-facing)
+// ============================================================
+
+export interface Strategy {
+  id: number
+  name: string
+  strategy_type: string
+  configs: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export async function getStrategies(): Promise<Strategy[]> {
+  const res = await api.get<ApiResponse<Strategy[]>>('/strategies')
+  return res.data.data
 }

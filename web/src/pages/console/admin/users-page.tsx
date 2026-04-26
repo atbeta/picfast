@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { deleteAdminUser, listAdminUsers, updateAdminUser } from '../../../lib/admin-api'
+import { formatFileSize } from '../../../lib/upload'
 
 export function AdminUsersPage() {
   const { t } = useTranslation()
@@ -78,6 +79,7 @@ export function AdminUsersPage() {
                   <th className="pb-2 pr-3 font-medium">{t('admin.colRole')}</th>
                   <th className="pb-2 pr-3 font-medium">{t('admin.colStatus')}</th>
                   <th className="pb-2 pr-3 font-medium">{t('admin.colImages')}</th>
+                  <th className="pb-2 pr-3 font-medium">{t('admin.usedCapacity', { defaultValue: '已用容量' })}</th>
                   <th className="pb-2 font-medium">{t('admin.colActions')}</th>
                 </tr>
               </thead>
@@ -98,6 +100,7 @@ export function AdminUsersPage() {
                       </span>
                     </td>
                     <td className="py-2 pr-3 text-zinc-500">{u.image_num}</td>
+                    <td className="py-2 pr-3 text-zinc-500">{formatFileSize(u.used_capacity || 0)} / {formatFileSize(u.capacity_bytes)}</td>
                     <td className="py-2">
                       <div className="flex gap-1">
                         {u.role !== 'admin' && (

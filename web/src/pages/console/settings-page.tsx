@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod/v4'
@@ -7,10 +7,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../../lib/auth-context'
 import { useTheme } from '../../lib/theme'
 import { formatFileSize } from '../../lib/upload'
+import { getStrategies, type Strategy } from '../../lib/console-api'
 
 const profileSchema = z.object({
   name: z.string().min(1),
   password: z.string().optional(),
+  defaultStrategy: z.number().optional(),
 })
 type ProfileForm = z.infer<typeof profileSchema>
 
@@ -21,6 +23,20 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [strategies, setStrategies] = useState<Strategy[]>([])
+  const [defaultStrategy, setDefaultStrategy] = useState(0)
+
+  useEffect(() => {
+    getStrategies()
+      .then((list) => {
+        setStrategies(list)
+        const settings = (user?.settings as Record<string, unknown>) || {}
+        if (settings.default_strategy) {
+          setDefaultStrategy(Number(settings.default_strategy))
+        }
+      })
+      .catch(() => {})
+  }, [user])
 
   const {
     register,
@@ -36,10 +52,13 @@ export function SettingsPage() {
     setSuccess(false)
     setErrorMsg('')
     try {
-      const payload: { name?: string; password?: string } = { name: data.name }
+      const payload: { name?: string; password?: string; settings?: Record<string, unknown> } = { name: data.name }
       if (data.password && data.password.length >= 8) {
         payload.password = data.password
       }
+      payload.settings = defaultStrategy && defaultStrategy !== 0
+        ? { default_strategy: defaultStrategy }
+        : { default_strategy: null }
       await updateProfile(payload)
       setSuccess(true)
     } catch (err: unknown) {
@@ -114,6 +133,24 @@ export function SettingsPage() {
             {...register('password')}
           />
           {errors.password && <p className="mt-1 text-xs text-red-500">{t('auth.passwordMin')}</p>}
+        </div>
+
+        {/* Default strategy */}
+        <div>
+          <label htmlFor="strategy" className="mb-1 block text-sm font-medium">{t('settings.defaultStrategy', { defaultValue: '默认策略' })}</label>
+          <select
+            id="strategy"
+            value={defaultStrategy}
+            onChange={(e) => setDefaultStrategy(Number(e.target.value))}
+            className="w-full max-w-xs rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+          >
+            <option value={0}>{t('settings.followGroupDefault', { defaultValue: '跟随分组默认' })}</option>
+            {strategies.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: '本地' })) : 'S3'})
+              </option>
+            ))}
+          </select>
         </div>
 
         {success && (

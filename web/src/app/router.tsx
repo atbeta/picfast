@@ -13,6 +13,7 @@ import { AdminGroupsPage } from '../pages/console/admin/groups-page'
 import { AdminStrategiesPage } from '../pages/console/admin/strategies-page'
 import { AdminImagesPage } from '../pages/console/admin/images-page'
 import { AdminSettingsPage } from '../pages/console/admin/settings-page'
+import { AdminDashboardPage } from '../pages/console/admin/dashboard-page'
 import { GuestUploadPage } from '../pages/public/guest-upload-page'
 import { LoginPage } from '../pages/public/login-page'
 import { RegisterPage } from '../pages/public/register-page'
@@ -64,6 +65,7 @@ export function AppRouter() {
           <Route path="api-tokens" element={<ApiTokensPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="admin" element={<RequireAdmin />}>
+            <Route index element={<AdminDashboardPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="groups" element={<AdminGroupsPage />} />
             <Route path="strategies" element={<AdminStrategiesPage />} />

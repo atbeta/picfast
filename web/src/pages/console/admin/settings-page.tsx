@@ -7,6 +7,7 @@ import { useState } from 'react'
 
 interface SettingsForm {
   app_name: string
+  app_url: string
   allow_guest_upload: boolean
   allow_registration: boolean
   user_initial_capacity_mb: number
@@ -28,6 +29,7 @@ export function AdminSettingsPage() {
     values: data
       ? {
           app_name: data.app_name,
+          app_url: data.app_url || '',
           allow_guest_upload: data.allow_guest_upload,
           allow_registration: data.allow_registration,
           user_initial_capacity_mb: Math.round(data.user_initial_capacity / 1024 / 1024),
@@ -42,6 +44,7 @@ export function AdminSettingsPage() {
     try {
       await updateAdminSettings({
         app_name: form.app_name,
+        app_url: form.app_url,
         allow_guest_upload: form.allow_guest_upload,
         allow_registration: form.allow_registration,
         user_initial_capacity: form.user_initial_capacity_mb * 1024 * 1024,
@@ -69,6 +72,11 @@ export function AdminSettingsPage() {
           <div>
             <label className="mb-1 block text-sm font-medium">{t('admin.appName')}</label>
             <input {...register('app_name')} className="w-full max-w-sm rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800" />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">{t('admin.appUrl', { defaultValue: '站点地址' })}</label>
+            <input {...register('app_url')} placeholder="https://your-domain.com" className="w-full max-w-sm rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800" />
           </div>
 
           <div className="flex items-center gap-2">

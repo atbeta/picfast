@@ -52,9 +52,11 @@ export function AdminImagesPage() {
               <thead>
                 <tr className="border-b border-zinc-200 text-left text-xs text-zinc-500 dark:border-zinc-700">
                   <th className="pb-2 pr-3 font-medium">{t('admin.colPreview')}</th>
+                  <th className="pb-2 pr-3 font-medium">Key</th>
                   <th className="pb-2 pr-3 font-medium">{t('admin.colName')}</th>
                   <th className="pb-2 pr-3 font-medium">{t('admin.colUploader')}</th>
                   <th className="pb-2 pr-3 font-medium">{t('admin.colSize')}</th>
+                  <th className="pb-2 pr-3 font-medium">{t('images.permission', { defaultValue: '权限' })}</th>
                   <th className="pb-2 pr-3 font-medium">{t('admin.colDate')}</th>
                   <th className="pb-2 font-medium">{t('admin.colActions')}</th>
                 </tr>
@@ -69,9 +71,15 @@ export function AdminImagesPage() {
                         <div className="flex h-10 w-10 items-center justify-center rounded border border-zinc-200 text-xs text-zinc-400 dark:border-zinc-700">{img.extension.toUpperCase()}</div>
                       )}
                     </td>
-                    <td className="max-w-[180px] truncate py-2 pr-3">{img.origin_name}</td>
+                    <td className="max-w-[120px] truncate py-2 pr-3 font-mono text-xs text-zinc-500">{img.key}</td>
+                    <td className="max-w-[140px] truncate py-2 pr-3">{img.origin_name}</td>
                     <td className="py-2 pr-3 text-zinc-500">{img.user_email ?? '—'}</td>
                     <td className="whitespace-nowrap py-2 pr-3 text-zinc-500">{formatFileSize(img.size_bytes)}</td>
+                    <td className="py-2 pr-3">
+                      <span className={['rounded px-1.5 py-0.5 text-xs', img.permission === 1 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'].join(' ')}>
+                        {img.permission === 1 ? (t('images.public', { defaultValue: '公开' })) : (t('images.private', { defaultValue: '私有' }))}
+                      </span>
+                    </td>
                     <td className="whitespace-nowrap py-2 pr-3 text-zinc-500">{new Date(img.created_at).toLocaleDateString()}</td>
                     <td className="py-2">
                       <button type="button" onClick={() => onDelete(img.id)} disabled={deleting === img.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('admin.delete')}</button>

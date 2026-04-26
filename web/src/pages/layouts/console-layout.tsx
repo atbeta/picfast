@@ -50,6 +50,7 @@ export function ConsoleLayout() {
             <>
               <div className="my-2 border-t border-zinc-200 dark:border-zinc-800" />
               <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-zinc-400">{t('nav.admin')}</p>
+              <ConsoleNavItem to="/console/admin" label={t('admin.navDashboard', { defaultValue: '概览' })} />
               <ConsoleNavItem to="/console/admin/users" label={t('admin.navUsers')} />
               <ConsoleNavItem to="/console/admin/groups" label={t('admin.navGroups')} />
               <ConsoleNavItem to="/console/admin/strategies" label={t('admin.navStrategies')} />
@@ -70,6 +71,7 @@ function ConsoleNavItem({ to, label }: { to: string; label: string }) {
   return (
     <NavLink
       to={to}
+      end={to === '/console/admin'}
       className={({ isActive }) =>
         [
           'block rounded-md px-3 py-2 text-sm transition',
