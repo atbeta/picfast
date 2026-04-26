@@ -14,15 +14,15 @@ export type Settings = components['schemas']['SettingsResponse']
 
 // API response wrapper
 export interface ApiResult<T> {
-  status: boolean
-  message: string
-  data: T
+	status: boolean
+	message: string
+	data: T
 }
 
 // Paginated data
 export interface PaginatedData<T> {
-  items: T[]
-  total: number
-  page: number
-  size: number
+	items: T[]
+	total: number
+	page: number
+	size: number
 }

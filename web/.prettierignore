@@ -1,0 +1,6 @@
+# Dependencies
+node_modules/
+dist/
+
+# Generated
+types.gen.ts
