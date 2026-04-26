@@ -99,7 +99,7 @@ const columns: DataTableColumns = [
 			h(NTag, { type: row.is_default ? 'success' : 'default', size: 'small' }, () => (row.is_default ? '是' : '否')),
 	},
 	{ title: '用户数', key: 'user_count', width: 70 },
-	{ title: '最大文件', key: 'max_size', width: 80, render: (row: any) => formatSize(row.configs?.max_size || 0) },
+	{ title: '最大文件', key: 'max_size', width: 80, render: (row: any) => formatSize(row.configs?.maximum_file_size || 0) },
 	{ title: '每日上限', key: 'limit', width: 80, render: (row: any) => `${row.configs?.limit_per_day || '-'} 张` },
 	{
 		title: '策略',
@@ -172,8 +172,8 @@ function openEdit(group: any) {
 	form.name = group.name
 	form.is_default = group.is_default
 	const c = group.configs || {}
-	form.max_size = Math.round((c.max_size || 5242880) / 1048576)
-	form.extensions = (c.extensions || []).join(',')
+	form.max_size = Math.round((c.maximum_file_size || 5242880) / 1048576)
+	form.extensions = (c.accepted_extensions || []).join(',')
 	form.limit_per_day = c.limit_per_day || 300
 	form.limit_per_month = c.limit_per_month || 9999
 	form.strategy_ids = (group.strategy_ids || []).map(Number)
@@ -186,8 +186,8 @@ async function saveGroup() {
 		return false
 	}
 	const configs = {
-		max_size: form.max_size * 1048576,
-		extensions: form.extensions
+		maximum_file_size: form.max_size * 1048576,
+		accepted_extensions: form.extensions
 			.split(',')
 			.map((s) => s.trim())
 			.filter(Boolean),
