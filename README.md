@@ -227,6 +227,14 @@ make build-full
 3. 设置强密码的 Admin 账户
 4. 配置 S3 存储或使用持久化的本地卷
 
+## 致谢
+
+PicFast 在功能设计和交互理念上受到了 [lsky-pro](https://github.com/lsky-org/lsky-pro) 的启发。
+本项目使用全新的技术栈（Go + Vue3）独立实现，谨向 lsky-pro 团队对开源图床领域的贡献致以敬意。
+
 ## License
 
-MIT
+本项目采用 [GNU General Public License v3.0](LICENSE) 协议开源。
+
+> **非商业声明**：PicFast 为社区驱动项目，不计划商业化运营，仅接受捐赠以维持服务器和开发成本。
+> 你可以自由使用、修改和分发，但请遵守 GPL v3 的 copyleft 要求。
