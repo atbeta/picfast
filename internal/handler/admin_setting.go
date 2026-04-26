@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/pbeta/imgapi/internal/config"
+	"github.com/atbeta/picfast/internal/config"
 )
 
 type AdminSettingHandler struct {

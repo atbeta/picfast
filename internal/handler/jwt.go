@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/pbeta/imgapi/internal/config"
-	"github.com/pbeta/imgapi/internal/domain"
+	"github.com/atbeta/picfast/internal/config"
+	"github.com/atbeta/picfast/internal/domain"
 )
 
 type JWTService struct {

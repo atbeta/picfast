@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pbeta/imgapi/internal/handler"
+	"github.com/atbeta/picfast/internal/handler"
 )
 
 type RateLimiter struct {

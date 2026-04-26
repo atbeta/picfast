@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/pbeta/imgapi/internal/domain"
+	"github.com/atbeta/picfast/internal/domain"
 )
 
 // Auth

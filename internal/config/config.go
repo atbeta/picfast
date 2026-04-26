@@ -67,9 +67,9 @@ func Load() (*Config, error) {
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
 	v.AddConfigPath(".")
-	v.AddConfigPath("/etc/imgapi")
+	v.AddConfigPath("/etc/picfast")
 
-	v.SetEnvPrefix("IMGAPI")
+	v.SetEnvPrefix("PICFAST")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
@@ -94,7 +94,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.base_url", "http://localhost:8080")
 	v.SetDefault("server.web_dir", "")
 
-	v.SetDefault("database.url", "postgres://imgapi:imgapi@localhost:5432/imgapi?sslmode=disable")
+	v.SetDefault("database.url", "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable")
 
 	v.SetDefault("jwt.secret", "change-me-in-production")
 	v.SetDefault("jwt.access_ttl", 15*time.Minute)
@@ -103,7 +103,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("storage.local_root", "./data/uploads")
 	v.SetDefault("storage.thumbnail_dir", "./data/thumbnails")
 
-	v.SetDefault("app.name", "ImageAPI")
+	v.SetDefault("app.name", "PicFast")
 	v.SetDefault("app.allow_guest_upload", true)
 	v.SetDefault("app.allow_registration", true)
 	v.SetDefault("app.user_initial_capacity", int64(524288000))

@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/pbeta/imgapi/internal/service"
-	"github.com/pbeta/imgapi/internal/sqlc"
+	"github.com/atbeta/picfast/internal/service"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 type AdminImageHandler struct {

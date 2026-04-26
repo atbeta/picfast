@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/pbeta/imgapi/internal/domain"
-	"github.com/pbeta/imgapi/internal/sqlc"
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/sqlc"
 	"golang.org/x/crypto/bcrypt"
 )
 

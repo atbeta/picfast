@@ -10,9 +10,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/pbeta/imgapi/internal/config"
-	"github.com/pbeta/imgapi/internal/domain"
-	"github.com/pbeta/imgapi/internal/sqlc"
+	"github.com/atbeta/picfast/internal/config"
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 func main() {

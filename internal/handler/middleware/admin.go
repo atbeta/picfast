@@ -3,8 +3,8 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/pbeta/imgapi/internal/domain"
-	"github.com/pbeta/imgapi/internal/handler"
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/handler"
 )
 
 func Admin(next http.Handler) http.Handler {

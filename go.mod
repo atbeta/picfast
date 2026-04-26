@@ -1,4 +1,4 @@
-module github.com/pbeta/imgapi
+module github.com/atbeta/picfast
 
 go 1.26.2
 

@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/pbeta/imgapi/internal/domain"
-	"github.com/pbeta/imgapi/internal/sqlc"
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 type AdminStrategyHandler struct {

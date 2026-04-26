@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/pbeta/imgapi/internal/domain"
-	"github.com/pbeta/imgapi/internal/service/storage"
-	"github.com/pbeta/imgapi/internal/sqlc"
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/service/storage"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 func GetStorageForStrategy(strategy sqlc.Strategy) (storage.Storage, error) {

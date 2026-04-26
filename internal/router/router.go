@@ -15,12 +15,12 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/pbeta/imgapi/internal/config"
-	"github.com/pbeta/imgapi/internal/handler"
-	"github.com/pbeta/imgapi/internal/handler/middleware"
-	"github.com/pbeta/imgapi/internal/service"
-	"github.com/pbeta/imgapi/internal/service/moderation"
-	"github.com/pbeta/imgapi/internal/sqlc"
+	"github.com/atbeta/picfast/internal/config"
+	"github.com/atbeta/picfast/internal/handler"
+	"github.com/atbeta/picfast/internal/handler/middleware"
+	"github.com/atbeta/picfast/internal/service"
+	"github.com/atbeta/picfast/internal/service/moderation"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 func New(

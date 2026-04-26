@@ -3,7 +3,7 @@ server:
   base_url: "http://localhost:8080"
 
 database:
-  url: "postgres://imgapi:imgapi@localhost:5432/imgapi?sslmode=disable"
+  url: "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable"
 
 jwt:
   secret: "change-me-in-production"
@@ -15,7 +15,7 @@ storage:
   thumbnail_dir: "./data/thumbnails"
 
 app:
-  name: "ImageAPI"
+  name: "PicFast"
   allow_guest_upload: true
   allow_registration: true
   user_initial_capacity: 524288000

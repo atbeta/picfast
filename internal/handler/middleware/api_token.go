@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pbeta/imgapi/internal/domain"
-	"github.com/pbeta/imgapi/internal/handler"
-	"github.com/pbeta/imgapi/internal/sqlc"
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/handler"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 func APITokenAuth(db *sqlc.Queries) func(http.Handler) http.Handler {

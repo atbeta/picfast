@@ -2,13 +2,18 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: imgapi
-      POSTGRES_PASSWORD: imgapi
-      POSTGRES_DB: imgapi
+      POSTGRES_USER: picfast
+      POSTGRES_PASSWORD: picfast
+      POSTGRES_DB: picfast
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U picfast"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
 
   app:
     build:
@@ -17,13 +22,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      IMGAPI_DATABASE_URL: "postgres://imgapi:imgapi@db:5432/imgapi?sslmode=disable"
-      IMGAPI_JWT_SECRET: "change-me-in-production"
-      IMGAPI_SERVER_BASE_URL: "http://localhost:8080"
-      IMGAPI_APP_ADMIN_EMAIL: "admin@example.com"
-      IMGAPI_APP_ADMIN_PASSWORD: "changeme123"
+      PICFAST_DATABASE_URL: "postgres://picfast:picfast@db:5432/picfast?sslmode=disable"
+      PICFAST_JWT_SECRET: "change-me-in-production"
+      PICFAST_SERVER_BASE_URL: "http://localhost:8080"
+      PICFAST_APP_ADMIN_EMAIL: "admin@example.com"
+      PICFAST_APP_ADMIN_PASSWORD: "changeme123"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - uploads:/app/data/uploads
       - thumbnails:/app/data/thumbnails

@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pbeta/imgapi/internal/config"
-	"github.com/pbeta/imgapi/internal/domain"
-	"github.com/pbeta/imgapi/internal/handler"
-	"github.com/pbeta/imgapi/internal/router"
-	"github.com/pbeta/imgapi/internal/sqlc"
-	"github.com/pbeta/imgapi/internal/testutil"
+	"github.com/atbeta/picfast/internal/config"
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/handler"
+	"github.com/atbeta/picfast/internal/router"
+	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/atbeta/picfast/internal/testutil"
 )
 
 type testEnv struct {

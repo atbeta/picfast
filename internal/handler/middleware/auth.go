@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pbeta/imgapi/internal/domain"
-	"github.com/pbeta/imgapi/internal/handler"
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/handler"
 )
 
 func Auth(jwtSvc *handler.JWTService) func(http.Handler) http.Handler {

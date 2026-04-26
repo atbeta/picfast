@@ -1,6 +1,6 @@
-# ImageAPI
+# PicFast
 
-ImageAPI 是一个现代化的图床/图片托管服务，支持多用户、多存储策略、分组权限管理和 SAAS 化部署。
+PicFast 是一个现代化的图床/图片托管服务，支持多用户、多存储策略、分组权限管理和 SAAS 化部署。
 
 ## 技术栈
 
@@ -28,7 +28,7 @@ ImageAPI 是一个现代化的图床/图片托管服务，支持多用户、多�
 make docker-up
 
 # 或使用本地 PostgreSQL
-createdb imgapi
+createdb picfast
 ```
 
 ### 2. 配置环境
@@ -61,7 +61,7 @@ make seed
 ```bash
 make run
 # 或开发模式（热重载需自行配置 air）
-go run ./cmd/imgapi
+go run ./cmd/picfast
 ```
 
 ### 6. 启动前端
@@ -79,7 +79,7 @@ cd web && pnpm install && pnpm dev
 ```
 .
 ├── cmd/
-│   ├── imgapi/          # 主服务入口
+│   ├── picfast/          # 主服务入口
 │   └── seed/            # 开发数据填充脚本
 ├── internal/
 │   ├── config/          # 配置管理 (Viper)
@@ -165,7 +165,7 @@ pprof 调试端点：`/api/v1/admin/debug/pprof/*`
 
 ## 配置
 
-应用支持通过 `config.yaml` 或环境变量配置。环境变量前缀为 `IMGAPI_`，层级用 `_` 分隔。
+应用支持通过 `config.yaml` 或环境变量配置。环境变量前缀为 `PICFAST_`，层级用 `_` 分隔。
 
 示例：
 ```yaml
@@ -174,7 +174,7 @@ server:
   base_url: "http://localhost:8080"
 
 database:
-  url: "postgres://imgapi:imgapi@localhost:5432/imgapi?sslmode=disable"
+  url: "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable"
 
 jwt:
   secret: "change-me-in-production"
@@ -186,7 +186,7 @@ storage:
   thumbnail_dir: "./data/thumbnails"
 
 app:
-  name: "ImageAPI"
+  name: "PicFast"
   allow_guest_upload: true
   allow_registration: true
   user_initial_capacity: 524288000
@@ -218,7 +218,7 @@ make docker-up
 
 # 手动构建
 make build-full
-./bin/imgapi
+./bin/picfast
 ```
 
 生产环境部署前请务必：

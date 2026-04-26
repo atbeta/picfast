@@ -5,13 +5,13 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 go build -o /imgapi ./cmd/imgapi
+RUN CGO_ENABLED=0 go build -o /picfast ./cmd/picfast
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata
 
-COPY --from=builder /imgapi /usr/local/bin/imgapi
+COPY --from=builder /picfast /usr/local/bin/picfast
 COPY migrations /migrations
 
 EXPOSE 8080
-ENTRYPOINT ["imgapi"]
+ENTRYPOINT ["picfast"]

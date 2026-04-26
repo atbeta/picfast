@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/pbeta/imgapi/internal/domain"
+	"github.com/atbeta/picfast/internal/domain"
 )
 
 type S3Storage struct {

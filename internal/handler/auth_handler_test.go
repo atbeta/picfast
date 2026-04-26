@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/pbeta/imgapi/internal/router"
+	"github.com/atbeta/picfast/internal/router"
 )
 
 func TestRegister(t *testing.T) {

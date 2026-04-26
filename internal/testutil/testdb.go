@@ -13,14 +13,14 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pbeta/imgapi/internal/sqlc"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 func testDBURL() string {
-	if u := os.Getenv("IMGAPI_TEST_DB_URL"); u != "" {
+	if u := os.Getenv("PICFAST_TEST_DB_URL"); u != "" {
 		return u
 	}
-	return "postgres://imgapi:imgapi@localhost:5432/imgapi_test?sslmode=disable"
+	return "postgres://picfast:picfast@localhost:5432/picfast_test?sslmode=disable"
 }
 
 // SetupDB connects to the test database, runs migrations, and returns a pool + queries.

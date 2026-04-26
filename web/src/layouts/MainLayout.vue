@@ -6,7 +6,7 @@
 		>
 			<div style="display: flex; align-items: center; gap: 16px">
 				<router-link to="/" style="font-size: 18px; font-weight: bold; text-decoration: none; color: #1f2937"
-					>ImageAPI</router-link
+					>PicFast</router-link
 				>
 				<n-menu mode="horizontal" :value="currentRoute" :options="menuOptions" @update:value="onMenuSelect" />
 			</div>

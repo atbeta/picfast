@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/pbeta/imgapi/internal/domain"
-	"github.com/pbeta/imgapi/internal/testutil"
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/testutil"
 )
 
 func makeAdmin(t *testing.T, env *testEnv, userID int64) {

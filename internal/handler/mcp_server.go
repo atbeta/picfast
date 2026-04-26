@@ -10,13 +10,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/pbeta/imgapi/internal/config"
-	"github.com/pbeta/imgapi/internal/domain"
-	"github.com/pbeta/imgapi/internal/service"
-	"github.com/pbeta/imgapi/internal/sqlc"
+	"github.com/atbeta/picfast/internal/config"
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/service"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
-// MCPServerFactory creates and configures an MCP server for imgapi.
+// MCPServerFactory creates and configures an MCP server for picfast.
 type MCPServerFactory struct {
 	DB     *sqlc.Queries
 	Pool   *pgxpool.Pool
@@ -29,10 +29,10 @@ func NewMCPServerFactory(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Confi
 
 func (f *MCPServerFactory) CreateServer() *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{
-		Name:    "imgapi",
+		Name:    "picfast",
 		Version: "1.0.0",
 	}, &mcp.ServerOptions{
-		Instructions: `ImageAPI MCP Server — manage image hosting via AI.
+		Instructions: `PicFast MCP Server — manage image hosting via AI.
 
 Available tools:
 - upload_image: Upload an image and get shareable links (URL, Markdown, HTML, BBCode).
@@ -42,14 +42,14 @@ Available tools:
 - get_usage_stats: Get your storage usage and quota.
 
 You can also read resources:
-- imgapi://user/profile — current user info and capacity.
-- imgapi://images — list of images (as resource).`,
+- picfast://user/profile — current user info and capacity.
+- picfast://images — list of images (as resource).`,
 	})
 
 	// Register tools
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "upload_image",
-		Description: "Upload an image to ImageAPI. Provide base64-encoded image data and a filename. Returns the image key, URL, and formatted links (Markdown, HTML, BBCode).",
+		Description: "Upload an image to PicFast. Provide base64-encoded image data and a filename. Returns the image key, URL, and formatted links (Markdown, HTML, BBCode).",
 	}, f.uploadImageTool)
 
 	mcp.AddTool(server, &mcp.Tool{
@@ -75,13 +75,13 @@ You can also read resources:
 	// Register resources
 	server.AddResource(&mcp.Resource{
 		Name:     "user_profile",
-		URI:      "imgapi://user/profile",
+		URI:      "picfast://user/profile",
 		MIMEType: "application/json",
 	}, f.userProfileResource)
 
 	server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "image_detail",
-		URITemplate: "imgapi://images/{key}",
+		URITemplate: "picfast://images/{key}",
 		MIMEType:    "application/json",
 	}, f.imageDetailResource)
 
@@ -320,14 +320,14 @@ func (f *MCPServerFactory) userProfileResource(ctx context.Context, req *mcp.Rea
 
 	return &mcp.ReadResourceResult{
 		Contents: []*mcp.ResourceContents{
-			{URI: "imgapi://user/profile", MIMEType: "application/json", Text: string(data)},
+			{URI: "picfast://user/profile", MIMEType: "application/json", Text: string(data)},
 		},
 	}, nil
 }
 
 func (f *MCPServerFactory) imageDetailResource(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-	// Extract key from URI imgapi://images/{key}
-	key := req.Params.URI[len("imgapi://images/"):]
+	// Extract key from URI picfast://images/{key}
+	key := req.Params.URI[len("picfast://images/"):]
 	if key == "" {
 		return nil, fmt.Errorf("missing image key")
 	}
@@ -364,7 +364,7 @@ func (f *MCPServerFactory) uploadAndSharePrompt(ctx context.Context, req *mcp.Ge
 			{
 				Role: "user",
 				Content: &mcp.TextContent{
-					Text: "Please upload the image I provided to ImageAPI and give me the URL, Markdown, HTML, and BBCode formats.",
+					Text: "Please upload the image I provided to PicFast and give me the URL, Markdown, HTML, and BBCode formats.",
 				},
 			},
 		},

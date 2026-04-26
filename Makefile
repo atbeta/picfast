@@ -10,7 +10,7 @@ dev:
 	@echo "1. Ensure Postgres is running (make docker-up or use local Postgres)"
 	@echo "2. Run migrations (make migrate-up)"
 	@echo "3. Seed data (make seed)"
-	@echo "4. Start backend:  go run ./cmd/imgapi"
+	@echo "4. Start backend:  go run ./cmd/picfast"
 	@echo "5. Start frontend: cd web && pnpm dev"
 
 seed:
@@ -22,12 +22,12 @@ frontend:
 	cd web && pnpm build
 
 build:
-	CGO_ENABLED=0 go build -o ./bin/imgapi ./cmd/imgapi
+	CGO_ENABLED=0 go build -o ./bin/picfast ./cmd/picfast
 
 build-full: frontend build
 
 run: build
-	./bin/imgapi
+	./bin/picfast
 
 ## Code generation
 
@@ -40,10 +40,10 @@ $(SQLC):
 ## Database
 
 migrate-up:
-	migrate -path migrations -database "postgres://imgapi:imgapi@localhost:5432/imgapi?sslmode=disable" up
+	migrate -path migrations -database "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable" up
 
 migrate-down:
-	migrate -path migrations -database "postgres://imgapi:imgapi@localhost:5432/imgapi?sslmode=disable" down 1
+	migrate -path migrations -database "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable" down 1
 
 ## Quality
 
@@ -77,7 +77,7 @@ test:
 	go test -v -count=1 ./...
 
 docker-test-db:
-	docker run -d --name imgapi-test-db -e POSTGRES_USER=imgapi -e POSTGRES_PASSWORD=imgapi -e POSTGRES_DB=imgapi_test -p 5433:5432 postgres:16-alpine
+	docker run -d --name picfast-test-db -e POSTGRES_USER=picfast -e POSTGRES_PASSWORD=picfast -e POSTGRES_DB=picfast_test -p 5433:5432 postgres:16-alpine
 
 ## Cleanup
 
