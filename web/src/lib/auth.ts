@@ -59,6 +59,15 @@ export async function getProfile(): Promise<UserProfile> {
   return res.data.data
 }
 
+export async function updateProfile(data: {
+  name?: string
+  password?: string
+  settings?: Record<string, unknown>
+}): Promise<UserProfile> {
+  const res = await api.put<ApiResponse<UserProfile>>('/users/me', data)
+  return res.data.data
+}
+
 // --- Token helpers ---
 
 export function saveTokens(tokens: AuthTokens) {
