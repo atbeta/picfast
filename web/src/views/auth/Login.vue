@@ -1,21 +1,25 @@
 <template>
-	<div
-		style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f9fafb"
-	>
-		<n-card title="登录" style="width: 400px">
-			<n-form ref="formRef" :model="form" :rules="rules" @submit.prevent="onSubmit">
-				<n-form-item label="邮箱" path="email">
-					<n-input v-model:value="form.email" placeholder="your@email.com" />
-				</n-form-item>
-				<n-form-item label="密码" path="password">
-					<n-input v-model:value="form.password" type="password" placeholder="请输入密码" />
-				</n-form-item>
-				<n-button type="primary" block :loading="loading" attr-type="submit">登录</n-button>
-			</n-form>
-			<p style="margin-top: 16px; text-align: center; font-size: 14px; color: #6b7280">
-				还没有账号？<router-link to="/register" style="color: #3b82f6">注册</router-link>
-			</p>
-		</n-card>
+	<div class="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+		<div class="w-full max-w-sm">
+			<div class="text-center mb-8">
+				<h1 class="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">PicFast</h1>
+				<p class="mt-1 text-sm text-[var(--color-text-secondary)]">登录到你的图床</p>
+			</div>
+			<n-card :bordered="true" class="shadow-sm">
+				<n-form ref="formRef" :model="form" :rules="rules" @submit.prevent="onSubmit">
+					<n-form-item label="邮箱" path="email">
+						<n-input v-model:value="form.email" placeholder="your@email.com" />
+					</n-form-item>
+					<n-form-item label="密码" path="password">
+						<n-input v-model:value="form.password" type="password" placeholder="请输入密码" />
+					</n-form-item>
+					<n-button type="primary" block :loading="loading" attr-type="submit">登录</n-button>
+				</n-form>
+				<p class="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
+					还没有账号？<router-link to="/register" class="text-[var(--color-primary)] hover:underline">注册</router-link>
+				</p>
+			</n-card>
+		</div>
 	</div>
 </template>
 

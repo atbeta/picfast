@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -41,12 +42,20 @@ func NewS3Storage(cfg domain.S3StrategyConfig) (*S3Storage, error) {
 }
 
 func (s *S3Storage) Write(ctx context.Context, path string, data []byte) error {
+	slog.Info("s3 write starting", "bucket", s.bucket, "key", path, "size", len(data))
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(path),
-		Body:   bytes.NewReader(data),
+		Bucket:        aws.String(s.bucket),
+		Key:           aws.String(path),
+		Body:          bytes.NewReader(data),
+		ContentLength: aws.Int64(int64(len(data))),
+		ContentType:   aws.String("application/octet-stream"),
 	})
-	return err
+	if err != nil {
+		slog.Error("s3 write failed", "bucket", s.bucket, "key", path, "error", err)
+		return err
+	}
+	slog.Info("s3 write completed", "bucket", s.bucket, "key", path)
+	return nil
 }
 
 func (s *S3Storage) Read(ctx context.Context, path string) ([]byte, error) {
@@ -55,12 +64,18 @@ func (s *S3Storage) Read(ctx context.Context, path string) ([]byte, error) {
 		Key:    aws.String(path),
 	})
 	if err != nil {
+		slog.Error("s3 read failed", "bucket", s.bucket, "key", path, "error", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
+	n, readErr := buf.ReadFrom(resp.Body)
+	if readErr != nil {
+		slog.Error("s3 read body failed", "bucket", s.bucket, "key", path, "error", readErr)
+		return nil, readErr
+	}
+	slog.Info("s3 read completed", "bucket", s.bucket, "key", path, "bytes", n)
 	return buf.Bytes(), nil
 }
 

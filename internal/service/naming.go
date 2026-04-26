@@ -10,6 +10,12 @@ import (
 )
 
 func GeneratePathname(pathRule, fileRule, extension string, fileMD5 string, userID int64) string {
+	if pathRule == "" {
+		pathRule = "{Y}/{m}/{d}"
+	}
+	if fileRule == "" {
+		fileRule = "{uniqid}"
+	}
 	path := expandRule(pathRule, fileMD5, userID)
 	name := expandRule(fileRule, fileMD5, userID)
 	if path == "" || path == "." {

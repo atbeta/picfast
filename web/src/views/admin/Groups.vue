@@ -1,7 +1,7 @@
 <template>
 	<div>
-		<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px">
-			<n-h3 style="margin: 0">分组管理</n-h3>
+		<div class="flex items-center justify-between mb-4">
+			<h3 class="text-lg font-semibold text-[var(--color-text-primary)]">分组管理</h3>
 			<n-button type="primary" @click="openCreate">新建分组</n-button>
 		</div>
 		<n-data-table :columns="columns" :data="groups" :loading="loading" />
@@ -13,7 +13,7 @@
 			positive-text="保存"
 			negative-text="取消"
 			@positive-click="saveGroup"
-			style="width: 500px"
+	 class="max-w-[500px]"
 		>
 			<n-form label-placement="left" label-width="100">
 				<n-form-item label="名称">
@@ -23,7 +23,7 @@
 					<n-switch v-model:value="form.is_default" />
 				</n-form-item>
 				<n-form-item label="最大文件">
-					<n-input-number v-model:value="form.max_size" :min="1" style="width: 100%">
+					<n-input-number v-model:value="form.max_size" :min="1" class="w-full">
 						<template #suffix>MB</template>
 					</n-input-number>
 				</n-form-item>
@@ -31,12 +31,12 @@
 					<n-input v-model:value="form.extensions" placeholder="jpg,png,gif,webp" />
 				</n-form-item>
 				<n-form-item label="每日上限">
-					<n-input-number v-model:value="form.limit_per_day" :min="0" style="width: 100%" />
+					<n-input-number v-model:value="form.limit_per_day" :min="0" class="w-full" />
 				</n-form-item>
 				<n-form-item label="每月上限">
-					<n-input-number v-model:value="form.limit_per_month" :min="0" style="width: 100%" />
+					<n-input-number v-model:value="form.limit_per_month" :min="0" class="w-full" />
 				</n-form-item>
-				<n-divider style="margin: 8px 0">存储策略</n-divider>
+				<n-divider class="!my-2">存储策略</n-divider>
 				<n-form-item label="可用策略">
 					<n-checkbox-group v-model:value="form.strategy_ids">
 						<n-space item-style="display: flex; align-items: center">

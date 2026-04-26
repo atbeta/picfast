@@ -1,14 +1,13 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/atbeta/picfast/internal/domain"
-	"github.com/atbeta/picfast/internal/service/storage"
+	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
 )
 
@@ -64,13 +63,16 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	store, err := getStorageForStrategy(strategy)
+	store, err := service.GetStorageForStrategy(strategy)
 	if err != nil {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
 
-	pathname := img.Path + "/" + img.Name
+	pathname := img.Name
+	if img.Path != "" && img.Path != "." {
+		pathname = img.Path + "/" + img.Name
+	}
 	data, err := store.Read(r.Context(), pathname)
 	if err != nil {
 		http.NotFound(w, r)
@@ -104,20 +106,4 @@ func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filePath)
 }
 
-func getStorageForStrategy(strategy sqlc.Strategy) (storage.Storage, error) {
-	switch strategy.StrategyType {
-	case string(domain.StrategyTypeLocal):
-		var cfg domain.LocalStrategyConfig
-		if err := json.Unmarshal(strategy.Configs, &cfg); err != nil {
-			return nil, err
-		}
-		return storage.NewLocalStorage(cfg.Root, cfg.URL), nil
-	case string(domain.StrategyTypeS3):
-		var cfg domain.S3StrategyConfig
-		if err := json.Unmarshal(strategy.Configs, &cfg); err != nil {
-			return nil, err
-		}
-		return storage.NewS3Storage(cfg)
-	}
-	return nil, nil
-}
+

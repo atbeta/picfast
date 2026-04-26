@@ -1,8 +1,8 @@
 <template>
 	<div>
-		<n-h3 style="margin-bottom: 16px">系统设置</n-h3>
+		<h3 class="text-lg font-semibold text-[var(--color-text-primary)] mb-4">系统设置</h3>
 		<n-spin :show="loading">
-			<n-form v-if="settings" label-placement="left" label-width="120" style="max-width: 600px">
+			<n-form v-if="settings" label-placement="left" label-width="120" class="max-w-lg">
 				<n-form-item label="站点名称">
 					<n-input v-model:value="settings.app_name" />
 				</n-form-item>

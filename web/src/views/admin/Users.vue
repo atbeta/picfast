@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<n-h3>用户管理</n-h3>
+		<h3 class="text-lg font-semibold text-[var(--color-text-primary)] mb-4">用户管理</h3>
 		<n-data-table
 			:columns="columns"
 			:data="users"

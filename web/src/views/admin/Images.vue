@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<n-h3 style="margin-bottom: 16px">图片管理</n-h3>
+		<h3 class="text-lg font-semibold text-[var(--color-text-primary)] mb-4">图片管理</h3>
 		<n-data-table
 			:columns="columns"
 			:data="images"

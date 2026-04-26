@@ -5,3 +5,4 @@ web-dist/
 .env
 web/node_modules/
 picfast
+imgapi

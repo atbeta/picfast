@@ -1,95 +1,90 @@
 <template>
 	<div>
-		<n-h2>上传图片</n-h2>
-		<n-space vertical :size="12" style="margin-bottom: 16px">
-			<n-alert v-if="strategies.length > 1" type="info" :bordered="false" size="small">
-				<n-space align="center">
-					<span>存储策略：</span>
-					<n-select
-						v-model:value="selectedStrategyId"
-						:options="strategyOptions"
-						style="width: 200px"
-						size="small"
-						@update:value="onStrategyChange"
-					/>
-				</n-space>
-			</n-alert>
-			<n-alert v-else-if="strategies.length === 1" type="default" :bordered="false" size="small">
-				当前使用存储策略：<strong>{{ strategies[0].name }}</strong>（{{ strategies[0].strategy_type === 'local' ? '本地' : 'S3' }}）
-			</n-alert>
-		</n-space>
+		<div class="mb-4">
+			<h2 class="text-lg font-semibold text-[var(--color-text-primary)]">上传图片</h2>
+		</div>
+
+		<div class="mb-4 space-y-3">
+			<div v-if="strategies.length > 1" class="flex items-center gap-3 text-sm text-[var(--color-text-secondary)]">
+				<span>存储策略：</span>
+				<n-select
+					v-model:value="selectedStrategyId"
+					:options="strategyOptions"
+					class="w-48"
+					size="small"
+					@update:value="onStrategyChange"
+				/>
+			</div>
+			<div v-else-if="strategies.length === 1" class="text-sm text-[var(--color-text-secondary)]">
+				当前使用存储策略：<span class="font-medium text-[var(--color-text-primary)]">{{ strategies[0].name }}</span>（{{ strategies[0].strategy_type === 'local' ? '本地' : 'S3' }}）
+			</div>
+		</div>
+
 		<n-upload multiple directory-dnd :custom-request="handleUpload" :show-file-list="false" accept="image/*">
 			<n-upload-dragger>
-				<div style="padding: 40px 0; text-align: center">
-					<n-text style="display: block; font-size: 16px">点击或拖拽文件到此区域上传</n-text>
-					<n-text depth="3" style="display: block; margin-top: 4px">支持 JPG、PNG、GIF、WebP、BMP、SVG 格式</n-text>
+				<div class="py-10 text-center">
+					<n-icon size="40" class="text-[var(--color-text-tertiary)] mb-3"><CloudUploadOutline /></n-icon>
+					<div class="text-sm text-[var(--color-text-primary)]">点击或拖拽文件到此区域上传</div>
+					<div class="text-xs text-[var(--color-text-tertiary)] mt-1">支持 JPG、PNG、GIF、WebP、BMP、SVG 格式</div>
 				</div>
 			</n-upload-dragger>
 		</n-upload>
 
-		<div v-if="results.length" style="margin-top: 24px">
-			<n-h3>上传结果</n-h3>
-			<n-grid :cols="1" :x-gap="12" :y-gap="12">
-				<n-gi v-for="(item, i) in results" :key="i">
-					<n-card size="small">
-						<div style="display: flex; align-items: center; gap: 16px">
-							<n-image
+		<div v-if="results.length" class="mt-6">
+			<div class="flex items-center justify-between mb-3">
+				<h3 class="text-sm font-medium text-[var(--color-text-primary)]">上传结果</h3>
+				<n-button size="tiny" quaternary @click="results = []">清除</n-button>
+			</div>
+			<div class="space-y-3">
+				<n-card v-for="(item, i) in results" :key="i" size="small">
+					<div class="flex items-center gap-4">
+						<template v-if="item.status === 'uploading'">
+							<div class="flex-1 min-w-0 flex items-center gap-2">
+								<span class="text-sm font-medium truncate">{{ item.origin_name || item.key }}</span>
+								<span class="text-xs text-[var(--color-text-tertiary)]">{{ formatSize(item.size_bytes) }}</span>
+								<span class="text-xs text-[var(--color-text-tertiary)] ml-auto">{{ item.progress }}%</span>
+							</div>
+							<div class="shrink-0 w-6 h-6 rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)] animate-spin"></div>
+						</template>
+						<template v-else>
+							<img
 								v-if="item.thumbnail_url"
-								:src="item.thumbnail_url"
-								width="80"
-								height="80"
-								object-fit="cover"
-								preview-disabled
+								:src="toRelative(item.thumbnail_url)"
+								class="w-16 h-16 object-cover rounded-lg shrink-0"
 							/>
-							<div style="flex: 1; min-width: 0">
-								<n-text strong>{{ item.origin_name || item.key }}</n-text>
-								<n-text depth="3" style="margin-left: 8px; font-size: 12px">{{ formatSize(item.size_bytes) }}</n-text>
-								<n-input-group style="margin-top: 4px">
+							<div class="flex-1 min-w-0">
+								<div class="flex items-center gap-2">
+									<span class="text-sm font-medium truncate">{{ item.origin_name || item.key }}</span>
+									<span class="text-xs text-[var(--color-text-tertiary)]">{{ formatSize(item.size_bytes) }}</span>
+								</div>
+								<n-input-group class="mt-1.5">
 									<n-input :value="item.links?.url" size="small" readonly />
-									<n-button size="small" @click="copyText(item.links?.url)">复制链接</n-button>
+									<n-button size="small" @click="copyText(item.links?.url)">复制</n-button>
 								</n-input-group>
-								<div style="display: flex; gap: 8px; margin-top: 4px">
-									<n-button size="tiny" @click="copyText(item.links?.markdown)">Markdown</n-button>
-									<n-button size="tiny" @click="copyText(item.links?.bbcode)">BBCode</n-button>
-									<n-button size="tiny" @click="copyText(item.links?.html)">HTML</n-button>
+								<div class="flex gap-1.5 mt-1.5">
+									<n-button size="tiny" quaternary @click="copyText(item.links?.markdown)">Markdown</n-button>
+									<n-button size="tiny" quaternary @click="copyText(item.links?.bbcode)">BBCode</n-button>
+									<n-button size="tiny" quaternary @click="copyText(item.links?.html)">HTML</n-button>
 								</div>
 							</div>
-							<n-tag v-if="item.status !== 'uploading'" size="small" :type="item.status === 'ok' ? 'success' : 'error'">
-								{{ item.status === 'ok' ? '上传成功' : item.message || '上传失败' }}
+							<n-tag size="small" :type="item.status === 'ok' ? 'success' : 'error'" :bordered="false">
+								{{ item.status === 'ok' ? '成功' : item.message || '失败' }}
 							</n-tag>
-							<div v-else style="width: 60px">
-								<n-progress type="circle" :percentage="item.progress" :show-indicator="false" :stroke-width="6" :width="40" />
-							</div>
-						</div>
-					</n-card>
-				</n-gi>
-			</n-grid>
-			<n-button style="margin-top: 16px" @click="results = []">清除结果</n-button>
+						</template>
+					</div>
+				</n-card>
+			</div>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { NIcon } from 'naive-ui'
+import { CloudUploadOutline } from '@vicons/ionicons5'
 import {
-	NH2,
-	NH3,
-	NUpload,
-	NUploadDragger,
-	NText,
-	NGrid,
-	NGi,
-	NCard,
-	NImage,
-	NInputGroup,
-	NInput,
-	NButton,
-	NTag,
-	NProgress,
-	NSpace,
-	NSelect,
-	NAlert,
-	useMessage,
+	NUpload, NUploadDragger, NCard, NInputGroup, NInput, NButton,
+	NTag, NSelect, useMessage,
 } from 'naive-ui'
 import { uploadImage } from '../api/image'
 import { getStrategies, type Strategy } from '../api/strategies'
@@ -126,9 +121,7 @@ onMounted(async () => {
 			initialId = strategies.value[0].id
 		}
 		selectedStrategyId.value = initialId
-	} catch {
-		/* ignore */
-	}
+	} catch { /* */ }
 })
 
 function formatSize(bytes: number) {
@@ -141,29 +134,23 @@ function formatSize(bytes: number) {
 
 function copyText(text?: string) {
 	if (!text) return
-	navigator.clipboard
-		.writeText(text)
-		.then(() => message.success('已复制'))
-		.catch(() => {})
+	navigator.clipboard.writeText(text).then(() => message.success('已复制')).catch(() => {})
+}
+
+function toRelative(url: string) {
+	try { return new URL(url).pathname }
+	catch { return url }
 }
 
 async function handleUpload({ file, onFinish, onError }: any) {
 	const raw = file.file || file
-	const resultItem = {
-		key: file.name || 'unknown',
-		origin_name: file.name,
-		status: 'uploading',
-		progress: 0,
-		size_bytes: raw.size || 0,
-	}
+	const resultItem = { key: file.name || 'unknown', origin_name: file.name, status: 'uploading', progress: 0, size_bytes: raw.size || 0 }
 	results.value.unshift(resultItem)
 	const index = results.value.indexOf(resultItem)
 
 	try {
 		const params: Record<string, string> = {}
-		if (selectedStrategyId.value != null) {
-			params.strategy_id = String(selectedStrategyId.value)
-		}
+		if (selectedStrategyId.value != null) params.strategy_id = String(selectedStrategyId.value)
 		const res = await uploadImage(raw, params, (percent: number) => {
 			resultItem.progress = percent
 			results.value[index] = { ...resultItem }

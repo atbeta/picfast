@@ -93,7 +93,7 @@ func New(
 	adminGroupHandler := handler.NewAdminGroupHandler(queries, pool)
 	adminStrategyHandler := handler.NewAdminStrategyHandler(queries)
 	adminUserHandler := handler.NewAdminUserHandler(queries)
-	adminImageHandler := handler.NewAdminImageHandler(queries, deleteSvc)
+	adminImageHandler := handler.NewAdminImageHandler(queries, deleteSvc, cfg.Server.BaseURL)
 	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg))
 
 	// MCP Server

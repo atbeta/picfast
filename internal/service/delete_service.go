@@ -2,14 +2,11 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"os"
 	"path/filepath"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/atbeta/picfast/internal/domain"
-	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/atbeta/picfast/internal/sqlc"
 )
 
@@ -45,9 +42,12 @@ func (s *DeleteService) DeleteImage(ctx context.Context, imgID int64) error {
 	if shouldDeleteFile && img.StrategyID.Valid {
 		strategy, err := s.db.GetStrategyByID(ctx, img.StrategyID.Int64)
 		if err == nil {
-			store, err := getStorage(strategy)
+		store, err := GetStorageForStrategy(strategy)
 			if err == nil {
-				pathname := img.Path + "/" + img.Name
+				pathname := img.Name
+				if img.Path != "" && img.Path != "." {
+					pathname = img.Path + "/" + img.Name
+				}
 				if err := store.Delete(ctx, pathname); err != nil {
 					slog.Warn("failed to delete file from storage", "error", err)
 				}
@@ -78,20 +78,4 @@ func (s *DeleteService) DeleteImage(ctx context.Context, imgID int64) error {
 	return err
 }
 
-func getStorage(strategy sqlc.Strategy) (storage.Storage, error) {
-	switch strategy.StrategyType {
-	case string(domain.StrategyTypeLocal):
-		var cfg domain.LocalStrategyConfig
-		if err := json.Unmarshal(strategy.Configs, &cfg); err != nil {
-			return nil, err
-		}
-		return storage.NewLocalStorage(cfg.Root, cfg.URL), nil
-	case string(domain.StrategyTypeS3):
-		var cfg domain.S3StrategyConfig
-		if err := json.Unmarshal(strategy.Configs, &cfg); err != nil {
-			return nil, err
-		}
-		return storage.NewS3Storage(cfg)
-	}
-	return nil, nil
-}
+

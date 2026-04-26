@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
 )
@@ -13,10 +15,11 @@ import (
 type AdminImageHandler struct {
 	db      *sqlc.Queries
 	deleter *service.DeleteService
+	baseURL string
 }
 
-func NewAdminImageHandler(db *sqlc.Queries, deleter *service.DeleteService) *AdminImageHandler {
-	return &AdminImageHandler{db: db, deleter: deleter}
+func NewAdminImageHandler(db *sqlc.Queries, deleter *service.DeleteService, baseURL string) *AdminImageHandler {
+	return &AdminImageHandler{db: db, deleter: deleter, baseURL: baseURL}
 }
 
 func (h *AdminImageHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +57,32 @@ func (h *AdminImageHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	total, _ := h.db.CountAllImages(r.Context())
 
-	Paginated(w, rows, total, page, pageSize)
+	type imageItem struct {
+		sqlc.ListAllImagesRow
+		URL          string            `json:"url"`
+		ThumbnailURL string            `json:"thumbnail_url"`
+		Links        domain.ImageLinks `json:"links"`
+	}
+
+	items := make([]imageItem, len(rows))
+	for i, img := range rows {
+		url := fmt.Sprintf("%s/i/%s.%s", h.baseURL, img.Key, img.Extension)
+		thumbURL := fmt.Sprintf("%s/t/%s.png", h.baseURL, img.Md5)
+		items[i] = imageItem{
+			ListAllImagesRow: img,
+			URL:              url,
+			ThumbnailURL:     thumbURL,
+			Links: domain.ImageLinks{
+				URL:          url,
+				HTML:         fmt.Sprintf(`<img src="%s" alt="%s" />`, url, img.OriginName),
+				BBCode:       fmt.Sprintf("[img]%s[/img]", url),
+				Markdown:     fmt.Sprintf("![%s](%s)", img.OriginName, url),
+				ThumbnailURL: thumbURL,
+			},
+		}
+	}
+
+	Paginated(w, items, total, page, pageSize)
 }
 
 func (h *AdminImageHandler) Delete(w http.ResponseWriter, r *http.Request) {
