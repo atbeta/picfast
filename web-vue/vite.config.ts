@@ -1,15 +1,18 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [vue(), tailwindcss()],
   server: {
     proxy: {
       '/api': 'http://localhost:8080',
       '/i': 'http://localhost:8080',
       '/t': 'http://localhost:8080',
     },
+  },
+  build: {
+    outDir: '../web-dist',
+    emptyOutDir: true,
   },
 })
