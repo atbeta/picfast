@@ -40,14 +40,15 @@ func (h *AdminGroupHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type groupRow struct {
-		ID        int64           `json:"id"`
-		Name      string          `json:"name"`
-		IsDefault bool            `json:"is_default"`
-		IsGuest   bool            `json:"is_guest"`
-		Configs   json.RawMessage `json:"configs"`
-		CreatedAt string          `json:"created_at"`
-		UpdatedAt string          `json:"updated_at"`
+type groupRow struct {
+		ID          int64           `json:"id"`
+		Name        string          `json:"name"`
+		IsDefault   bool            `json:"is_default"`
+		IsGuest     bool            `json:"is_guest"`
+		Configs     json.RawMessage `json:"configs"`
+		StrategyIDs []int64         `json:"strategy_ids"`
+		CreatedAt   string          `json:"created_at"`
+		UpdatedAt   string          `json:"updated_at"`
 	}
 
 	items := make([]groupRow, 0, len(groups))
@@ -59,7 +60,7 @@ func (h *AdminGroupHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 		items = append(items, groupRow{
 			ID: g.ID, Name: g.Name, IsDefault: g.IsDefault,
-			IsGuest: g.IsGuest, Configs: g.Configs,
+			IsGuest: g.IsGuest, Configs: g.Configs, StrategyIDs: stratIDs,
 			CreatedAt: g.CreatedAt.Format("2006-01-02T15:04:05Z"),
 			UpdatedAt: g.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 		})

@@ -36,6 +36,14 @@
 				<n-form-item label="每月上限">
 					<n-input-number v-model:value="form.limit_per_month" :min="0" style="width: 100%" />
 				</n-form-item>
+				<n-divider style="margin: 8px 0">存储策略</n-divider>
+				<n-form-item label="可用策略">
+					<n-checkbox-group v-model:value="form.strategy_ids">
+						<n-space item-style="display: flex; align-items: center">
+							<n-checkbox v-for="s in allStrategies" :key="s.id" :value="s.id" :label="s.name" />
+						</n-space>
+					</n-checkbox-group>
+				</n-form-item>
 			</n-form>
 		</n-modal>
 	</div>
@@ -55,10 +63,13 @@ import {
 	NInput,
 	NInputNumber,
 	NSwitch,
+	NDivider,
+	NCheckboxGroup,
+	NCheckbox,
 	useMessage,
 	type DataTableColumns,
 } from 'naive-ui'
-import { adminGetGroups, adminCreateGroup, adminUpdateGroup, adminDeleteGroup } from '../../api/admin'
+import { adminGetGroups, adminCreateGroup, adminUpdateGroup, adminDeleteGroup, adminSetGroupStrategies, adminGetStrategies } from '../../api/admin'
 
 const message = useMessage()
 const groups = ref<any[]>([])
@@ -72,7 +83,10 @@ const form = reactive({
 	extensions: 'jpg,jpeg,png,gif,webp,bmp,svg',
 	limit_per_day: 300,
 	limit_per_month: 9999,
+	strategy_ids: [] as number[],
 })
+
+const allStrategies = ref<any[]>([])
 
 const columns: DataTableColumns = [
 	{ title: 'ID', key: 'id', width: 60 },
@@ -87,6 +101,20 @@ const columns: DataTableColumns = [
 	{ title: '用户数', key: 'user_count', width: 70 },
 	{ title: '最大文件', key: 'max_size', width: 80, render: (row: any) => formatSize(row.configs?.max_size || 0) },
 	{ title: '每日上限', key: 'limit', width: 80, render: (row: any) => `${row.configs?.limit_per_day || '-'} 张` },
+	{
+		title: '策略',
+		key: 'strategy_ids',
+		width: 150,
+		render: (row: any) =>
+			h(NSpace, { size: 'small' }, () =>
+				(row.strategy_ids || []).length > 0
+					? row.strategy_ids.map((id: number) => {
+							const s = allStrategies.value.find((s) => s.id === id)
+							return h(NTag, { size: 'small', type: 'info' }, () => s ? s.name : id)
+						})
+					: [h(NTag, { size: 'small' }, () => '无')],
+			),
+	},
 	{
 		title: '操作',
 		key: 'actions',
@@ -103,7 +131,16 @@ const columns: DataTableColumns = [
 	},
 ]
 
-onMounted(() => fetchGroups())
+onMounted(() => { fetchGroups(); fetchStrategies() })
+
+async function fetchStrategies() {
+	try {
+		const res = await adminGetStrategies()
+		allStrategies.value = res.data.data || []
+	} catch {
+		/* ignore */
+	}
+}
 
 async function fetchGroups() {
 	loading.value = true
@@ -126,6 +163,7 @@ function openCreate() {
 	form.extensions = 'jpg,jpeg,png,gif,webp,bmp,svg'
 	form.limit_per_day = 300
 	form.limit_per_month = 9999
+	form.strategy_ids = []
 	showModal.value = true
 }
 
@@ -138,6 +176,7 @@ function openEdit(group: any) {
 	form.extensions = (c.extensions || []).join(',')
 	form.limit_per_day = c.limit_per_day || 300
 	form.limit_per_month = c.limit_per_month || 9999
+	form.strategy_ids = (group.strategy_ids || []).map(Number)
 	showModal.value = true
 }
 
@@ -158,6 +197,7 @@ async function saveGroup() {
 	try {
 		if (editing.value) {
 			await adminUpdateGroup(editing.value.id, { name: form.name, is_default: form.is_default, configs })
+			await adminSetGroupStrategies(editing.value.id, form.strategy_ids)
 			message.success('分组已更新')
 		} else {
 			await adminCreateGroup({ name: form.name, is_default: form.is_default, configs })
