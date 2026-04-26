@@ -20,11 +20,17 @@ type S3Storage struct {
 func NewS3Storage(cfg domain.S3StrategyConfig) (*S3Storage, error) {
 	creds := credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.SecretAccessKey, "")
 
+	region := cfg.Region
+	if region == "" {
+		region = "auto"
+	}
+
 	client := s3.New(s3.Options{
-		Region:       cfg.Region,
-		Credentials:  creds,
-		BaseEndpoint: aws.String(cfg.Endpoint),
-		UsePathStyle: true,
+		Region:               region,
+		Credentials:          creds,
+		BaseEndpoint:         aws.String(cfg.Endpoint),
+		UsePathStyle:         true,
+		AuthSchemePreference: []string{"sigv4"},
 	})
 
 	return &S3Storage{

@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -13,6 +12,9 @@ import (
 func GeneratePathname(pathRule, fileRule, extension string, fileMD5 string, userID int64) string {
 	path := expandRule(pathRule, fileMD5, userID)
 	name := expandRule(fileRule, fileMD5, userID)
+	if path == "" || path == "." {
+		return name + "." + extension
+	}
 	return path + "/" + name + "." + extension
 }
 
@@ -38,7 +40,9 @@ func expandRule(rule, fileMD5 string, userID int64) string {
 		result = strings.ReplaceAll(result, key, val)
 	}
 
-	return filepath.Clean(result)
+	result = strings.TrimLeft(result, "./")
+
+	return result
 }
 
 func generateRandomString(length int) string {
