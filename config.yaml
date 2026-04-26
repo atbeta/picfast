@@ -21,3 +21,4 @@ app:
   user_initial_capacity: 524288000
   admin_email: ""
   admin_password: ""
+  moderation_mode: "disabled"  # disabled | manual | auto (future)

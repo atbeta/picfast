@@ -32,37 +32,39 @@ type AlbumUpdateResponse struct {
 // Images
 
 type ImageResponse struct {
-	ID          int64              `json:"id"`
-	Key         string             `json:"key"`
-	OriginName  string             `json:"origin_name"`
-	SizeBytes   int64              `json:"size_bytes"`
-	Mimetype    string             `json:"mimetype"`
-	Extension   string             `json:"extension"`
-	Width       int32              `json:"width"`
-	Height      int32              `json:"height"`
-	Md5         string             `json:"md5"`
-	Sha1        string             `json:"sha1"`
-	Permission  int16              `json:"permission"`
-	AlbumID     *int64             `json:"album_id"`
-	Links       domain.ImageLinks  `json:"links"`
-	CreatedAt   time.Time          `json:"created_at"`
+	ID               int64             `json:"id"`
+	Key              string            `json:"key"`
+	OriginName       string            `json:"origin_name"`
+	SizeBytes        int64             `json:"size_bytes"`
+	Mimetype         string            `json:"mimetype"`
+	Extension        string            `json:"extension"`
+	Width            int32             `json:"width"`
+	Height           int32             `json:"height"`
+	Md5              string            `json:"md5"`
+	Sha1             string            `json:"sha1"`
+	Permission       int16             `json:"permission"`
+	AlbumID          *int64            `json:"album_id"`
+	ModerationStatus string            `json:"moderation_status"`
+	Links            domain.ImageLinks `json:"links"`
+	CreatedAt        time.Time         `json:"created_at"`
 }
 
 type ImageListItem struct {
-	ID           int64             `json:"id"`
-	Key          string            `json:"key"`
-	OriginName   string            `json:"origin_name"`
-	SizeBytes    int64             `json:"size_bytes"`
-	Mimetype     string            `json:"mimetype"`
-	Extension    string            `json:"extension"`
-	Width        int32             `json:"width"`
-	Height       int32             `json:"height"`
-	Permission   int16             `json:"permission"`
-	AlbumID      *int64            `json:"album_id"`
-	URL          string            `json:"url"`
-	ThumbnailURL string            `json:"thumbnail_url"`
-	Links        domain.ImageLinks `json:"links"`
-	CreatedAt    time.Time         `json:"created_at"`
+	ID               int64             `json:"id"`
+	Key              string            `json:"key"`
+	OriginName       string            `json:"origin_name"`
+	SizeBytes        int64             `json:"size_bytes"`
+	Mimetype         string            `json:"mimetype"`
+	Extension        string            `json:"extension"`
+	Width            int32             `json:"width"`
+	Height           int32             `json:"height"`
+	Permission       int16             `json:"permission"`
+	AlbumID          *int64            `json:"album_id"`
+	URL              string            `json:"url"`
+	ThumbnailURL     string            `json:"thumbnail_url"`
+	ModerationStatus string            `json:"moderation_status"`
+	Links            domain.ImageLinks `json:"links"`
+	CreatedAt        time.Time         `json:"created_at"`
 }
 
 // Users

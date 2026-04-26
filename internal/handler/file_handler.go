@@ -38,6 +38,16 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Moderation check: pending/rejected images are only visible to owner or admin
+	if img.ModerationStatus != "approved" && img.ModerationStatus != "" {
+		userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)
+		role, _ := r.Context().Value(domain.ContextKeyRole).(domain.UserRole)
+		if !ok || (img.UserID.Int64 != userID && role != domain.RoleAdmin) {
+			http.NotFound(w, r)
+			return
+		}
+	}
+
 	// Permission check
 	if img.Permission == int16(domain.PermissionPrivate) {
 		userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)

@@ -2,6 +2,7 @@ package router
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -18,6 +19,7 @@ import (
 	"github.com/pbeta/imgapi/internal/handler"
 	"github.com/pbeta/imgapi/internal/handler/middleware"
 	"github.com/pbeta/imgapi/internal/service"
+	"github.com/pbeta/imgapi/internal/service/moderation"
 	"github.com/pbeta/imgapi/internal/sqlc"
 )
 
@@ -102,6 +104,22 @@ func New(
 		return mcpServer
 	}, nil)
 
+	// Content Moderation
+	modMode, _ := moderation.ParseMode(cfg.App.ModerationMode)
+	if modMode == "" {
+		modMode = moderation.ModeDisabled
+	}
+	moderator, err := moderation.New(modMode, queries)
+	if err != nil {
+		slog.Warn("failed to create moderator", "mode", modMode, "error", err)
+		moderator = moderation.NewNoopModerator()
+	}
+	modMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next.ServeHTTP(w, r.WithContext(moderation.WithModerator(r.Context(), moderator)))
+		})
+	}
+
 	loginLimiter := middleware.NewRateLimiter(10, 60*1e9)
 
 	// Image file serving: /i/{key}.{ext} — with OptionalAuth so private images can be accessed by owner
@@ -137,8 +155,8 @@ func New(
 			r.Get("/users/me", userHandler.GetProfile)
 			r.Put("/users/me", userHandler.UpdateProfile)
 
-			// Images
-			r.Post("/images", imageHandler.Upload)
+			// Images — upload injects moderator into context
+			r.With(modMiddleware).Post("/images", imageHandler.Upload)
 			r.Get("/images", imageHandler.List)
 			r.Get("/images/{key}", imageHandler.Get)
 			r.Delete("/images/{key}", imageHandler.Delete)
@@ -190,6 +208,12 @@ func New(
 
 			r.Get("/images", adminImageHandler.List)
 			r.Delete("/images/{id}", adminImageHandler.Delete)
+
+			// Content moderation (admin only)
+			modHandler := handler.NewModerationHandler(queries)
+			r.Get("/moderation/pending", modHandler.ListPending)
+			r.Post("/moderation/{id}/approve", modHandler.Approve)
+			r.Post("/moderation/{id}/reject", modHandler.Reject)
 
 			r.Get("/settings", adminSettingHandler.Get)
 			r.Put("/settings", adminSettingHandler.Update)

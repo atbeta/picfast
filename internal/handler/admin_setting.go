@@ -22,6 +22,7 @@ func (h *AdminSettingHandler) Get(w http.ResponseWriter, r *http.Request) {
 		"allow_guest_upload":      h.config.App.AllowGuestUpload,
 		"allow_registration":      h.config.App.AllowRegistration,
 		"user_initial_capacity":   h.config.App.UserInitialCapacity,
+		"moderation_mode":         h.config.App.ModerationMode,
 	})
 }
 
@@ -30,6 +31,7 @@ type updateSettingsRequest struct {
 	AllowGuestUpload     *bool   `json:"allow_guest_upload"`
 	AllowRegistration    *bool   `json:"allow_registration"`
 	UserInitialCapacity  *int64  `json:"user_initial_capacity"`
+	ModerationMode       *string `json:"moderation_mode"`
 }
 
 func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -51,11 +53,15 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if req.UserInitialCapacity != nil {
 		h.setter.SetUserInitialCapacity(*req.UserInitialCapacity)
 	}
+	if req.ModerationMode != nil {
+		h.setter.SetModerationMode(*req.ModerationMode)
+	}
 
 	Success(w, map[string]interface{}{
 		"app_name":                h.config.App.Name,
 		"allow_guest_upload":      h.config.App.AllowGuestUpload,
 		"allow_registration":      h.config.App.AllowRegistration,
 		"user_initial_capacity":   h.config.App.UserInitialCapacity,
+		"moderation_mode":         h.config.App.ModerationMode,
 	})
 }

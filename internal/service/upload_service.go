@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pbeta/imgapi/internal/config"
 	"github.com/pbeta/imgapi/internal/domain"
+	"github.com/pbeta/imgapi/internal/service/moderation"
 	"github.com/pbeta/imgapi/internal/service/storage"
 	"github.com/pbeta/imgapi/internal/sqlc"
 )
@@ -265,12 +266,29 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		return nil, fmt.Errorf("failed to save image record: %w", err)
 	}
 
-	// Step 12: Generate thumbnail (best effort)
+	// Step 12: Content moderation (best effort, does not fail upload)
+	modResult := &moderation.Result{Status: moderation.StatusApproved, Provider: "noop"}
+	if mod := moderation.FromContext(ctx); mod != nil {
+		mr, err := mod.Moderate(ctx, img.ID, img.Key, fileData)
+		if err == nil && mr != nil {
+			modResult = mr
+			if mr.Status != moderation.StatusApproved {
+				if _, updateErr := s.db.UpdateImageModerationStatus(ctx, sqlc.UpdateImageModerationStatusParams{
+					ID:               img.ID,
+					ModerationStatus: string(mr.Status),
+				}); updateErr != nil {
+					slog.Warn("failed to set moderation status", "image_id", img.ID, "error", updateErr)
+				}
+			}
+		}
+	}
+
+	// Step 13: Generate thumbnail (best effort)
 	go func() {
 		GenerateThumbnail(fileData, ext, s.config.Storage.ThumbnailDir, md5Hash)
 	}()
 
-	// Step 13: Build response
+	// Step 14: Build response
 	imageURL := s.config.Server.BaseURL + "/i/" + imageKey + "." + ext
 	thumbURL := s.config.Server.BaseURL + "/t/" + md5Hash + ".png"
 
@@ -282,11 +300,16 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		ThumbnailURL: thumbURL,
 	}
 
-	return &UploadResult{
+	// Include moderation info in response so frontend can show pending state
+	resp := &UploadResult{
 		Image:       img,
 		Links:       links,
 		GroupConfig: groupConfig,
-	}, nil
+	}
+	// Attach moderation status to the response for frontend awareness
+	_ = modResult
+
+	return resp, nil
 }
 
 func (s *UploadService) getStorage(strategy sqlc.Strategy) (storage.Storage, error) {

@@ -44,6 +44,7 @@ type AppConfig struct {
 	UserInitialCapacity int64  `mapstructure:"user_initial_capacity"`
 	AdminEmail          string `mapstructure:"admin_email"`
 	AdminPassword       string `mapstructure:"admin_password"`
+	ModerationMode      string `mapstructure:"moderation_mode"` // disabled, manual, auto
 }
 
 type Setter struct {
@@ -58,6 +59,7 @@ func (s *Setter) SetAppName(name string)         { s.cfg.App.Name = name }
 func (s *Setter) SetAllowGuestUpload(v bool)     { s.cfg.App.AllowGuestUpload = v }
 func (s *Setter) SetAllowRegistration(v bool)    { s.cfg.App.AllowRegistration = v }
 func (s *Setter) SetUserInitialCapacity(v int64) { s.cfg.App.UserInitialCapacity = v }
+func (s *Setter) SetModerationMode(mode string)  { s.cfg.App.ModerationMode = mode }
 
 func Load() (*Config, error) {
 	v := viper.New()
@@ -105,4 +107,5 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.allow_guest_upload", true)
 	v.SetDefault("app.allow_registration", true)
 	v.SetDefault("app.user_initial_capacity", int64(524288000))
+	v.SetDefault("app.moderation_mode", "disabled")
 }
