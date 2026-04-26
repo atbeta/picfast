@@ -35,6 +35,14 @@ export const resources = {
         noAccount: '还没有账户？',
         hasAccount: '已有账户？',
       },
+      upload: {
+        dropHint: '拖拽图片到此处，或点击选择',
+        dropFormats: '支持 JPG、PNG、GIF、WebP 等格式',
+        uploadFailed: '{{name}} 上传失败',
+        results: '上传结果',
+        copy: '复制',
+        copied: '已复制',
+      },
       page: {
         guestUpload: {
           title: '游客上传',
@@ -85,6 +93,14 @@ export const resources = {
         passwordMin: 'Password must be at least 8 characters',
         noAccount: "Don't have an account?",
         hasAccount: 'Already have an account?',
+      },
+      upload: {
+        dropHint: 'Drop images here, or click to select',
+        dropFormats: 'Supports JPG, PNG, GIF, WebP, etc.',
+        uploadFailed: '{{name}} upload failed',
+        results: 'Upload Results',
+        copy: 'Copy',
+        copied: 'Copied',
       },
       page: {
         guestUpload: {

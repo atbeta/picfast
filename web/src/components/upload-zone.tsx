@@ -1,0 +1,84 @@
+import { useCallback, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+
+interface UploadZoneProps {
+  onFiles: (files: File[]) => void
+  disabled?: boolean
+}
+
+const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'tif', 'tiff'])
+
+function isImageFile(file: File): boolean {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+  return IMAGE_EXTENSIONS.has(ext) || file.type.startsWith('image/')
+}
+
+export function UploadZone({ onFiles, disabled }: UploadZoneProps) {
+  const { t } = useTranslation()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [dragging, setDragging] = useState(false)
+
+  const handleFiles = useCallback(
+    (fileList: FileList | null) => {
+      if (!fileList?.length) return
+      const images = Array.from(fileList).filter(isImageFile)
+      if (images.length) onFiles(images)
+    },
+    [onFiles],
+  )
+
+  const onDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setDragging(false)
+      if (!disabled) handleFiles(e.dataTransfer.files)
+    },
+    [disabled, handleFiles],
+  )
+
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragging(true)
+  }, [])
+
+  const onDragLeave = useCallback(() => setDragging(false), [])
+
+  const onClick = () => {
+    if (!disabled) inputRef.current?.click()
+  }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onDrop={onDrop}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      className={[
+        'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-colors',
+        dragging
+          ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20'
+          : 'border-zinc-300 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500',
+        disabled && 'pointer-events-none opacity-50',
+      ].join(' ')}
+    >
+      <svg className="mb-3 h-10 w-10 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+      </svg>
+      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{t('upload.dropHint')}</p>
+      <p className="mt-1 text-xs text-zinc-400">{t('upload.dropFormats')}</p>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          handleFiles(e.target.files)
+          e.target.value = ''
+        }}
+      />
+    </div>
+  )
+}
