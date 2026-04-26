@@ -46,6 +46,17 @@ export function ConsoleLayout() {
           <ConsoleNavItem to="/console/albums" label={t('nav.albums')} />
           <ConsoleNavItem to="/console/api-tokens" label={t('nav.apiTokens')} />
           <ConsoleNavItem to="/console/settings" label={t('nav.settings')} />
+          {user?.role === 'admin' && (
+            <>
+              <div className="my-2 border-t border-zinc-200 dark:border-zinc-800" />
+              <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-zinc-400">{t('nav.admin')}</p>
+              <ConsoleNavItem to="/console/admin/users" label={t('admin.navUsers')} />
+              <ConsoleNavItem to="/console/admin/groups" label={t('admin.navGroups')} />
+              <ConsoleNavItem to="/console/admin/strategies" label={t('admin.navStrategies')} />
+              <ConsoleNavItem to="/console/admin/images" label={t('admin.navImages')} />
+              <ConsoleNavItem to="/console/admin/settings" label={t('admin.navSettings')} />
+            </>
+          )}
         </aside>
         <main className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
           <Outlet />
