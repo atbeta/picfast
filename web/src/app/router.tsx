@@ -1,6 +1,6 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 
-import { ACCESS_TOKEN_KEY } from '../lib/api'
+import { useAuth } from '../lib/auth-context'
 import { ConsoleLayout } from '../pages/layouts/console-layout'
 import { PublicLayout } from '../pages/layouts/public-layout'
 import { AlbumsPage } from '../pages/console/albums-page'
@@ -13,8 +13,15 @@ import { LoginPage } from '../pages/public/login-page'
 import { RegisterPage } from '../pages/public/register-page'
 
 function RequireAuth() {
-  const token = localStorage.getItem(ACCESS_TOKEN_KEY)
-  if (!token) {
+  const { isAuthenticated, isLoading } = useAuth()
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" />
+      </div>
+    )
+  }
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
   return <Outlet />

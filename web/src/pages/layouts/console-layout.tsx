@@ -3,16 +3,16 @@ import { useTranslation } from 'react-i18next'
 
 import { LanguageSwitcher } from '../../components/language-switcher'
 import { ThemeSwitcher } from '../../components/theme-switcher'
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../../lib/api'
+import { useAuth } from '../../lib/auth-context'
 
 export function ConsoleLayout() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
 
-  const onLogout = () => {
-    localStorage.removeItem(ACCESS_TOKEN_KEY)
-    localStorage.removeItem(REFRESH_TOKEN_KEY)
-    navigate('/login')
+  const onLogout = async () => {
+    await logout()
+    navigate('/login', { replace: true })
   }
 
   return (
@@ -25,6 +25,9 @@ export function ConsoleLayout() {
           <div className="flex items-center gap-3">
             <LanguageSwitcher />
             <ThemeSwitcher />
+            {user && (
+              <span className="text-sm text-zinc-500">{user.name || user.email}</span>
+            )}
             <button
               type="button"
               onClick={onLogout}

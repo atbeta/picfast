@@ -2,6 +2,7 @@ package router
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -9,18 +10,18 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	chimw "github.com/go-chi/chi/v5/middleware"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/modelcontextprotocol/go-sdk/auth"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/handler"
 	"github.com/atbeta/picfast/internal/handler/middleware"
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/go-chi/chi/v5"
+	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/modelcontextprotocol/go-sdk/auth"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func New(
@@ -79,6 +80,30 @@ func New(
 	})
 
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
+	r.Get("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		spec, err := os.ReadFile("api/openapi.yaml")
+		if err != nil {
+			http.Error(w, "openapi spec not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
+		_, _ = w.Write(spec)
+	})
+	r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(fmt.Sprintf(`<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PicFast API Docs</title>
+  </head>
+  <body>
+    <script id="api-reference" data-url="%s"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>`, cfg.Server.BaseURL+"/openapi.yaml")))
+	})
 
 	// Services
 	uploadSvc := service.NewUploadService(queries, pool, cfg)
@@ -213,10 +238,10 @@ func New(
 				for _, st := range strategies {
 					store, err := service.GetStorageForStrategy(st)
 					item := map[string]interface{}{
-						"id":       st.ID,
-						"name":     st.Name,
-						"type":     st.StrategyType,
-						"healthy":  false,
+						"id":      st.ID,
+						"name":    st.Name,
+						"type":    st.StrategyType,
+						"healthy": false,
 					}
 					if err != nil {
 						item["error"] = "failed to init: " + err.Error()

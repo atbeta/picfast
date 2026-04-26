@@ -1,4 +1,4 @@
-.PHONY: build run dev generate migrate-up migrate-down docker-up docker-down tidy frontend test format lint seed clean
+.PHONY: build run dev generate migrate-up migrate-down docker-up docker-down tidy frontend test format lint openapi-lint seed clean
 
 GOPATH := $(shell go env GOPATH)
 SQLC := $(GOPATH)/bin/sqlc
@@ -54,6 +54,9 @@ format:
 lint:
 	go vet ./...
 	cd web && pnpm exec vue-tsc --noEmit
+
+openapi-lint:
+	pnpm --package=@redocly/cli dlx redocly lint --config .redocly.yaml api/openapi.yaml
 
 ## Dependencies
 

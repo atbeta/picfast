@@ -3,6 +3,9 @@ info:
   title: PicFast
   version: "1.0"
   description: Image hosting service API
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html
 
 servers:
   - url: http://localhost:8080/api/v1
@@ -617,6 +620,27 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
 
+  /admin/strategies/health:
+    get:
+      tags: [admin]
+      summary: Check strategy health status
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/StrategyHealthItem"
+
   /admin/images:
     get:
       tags: [admin]
@@ -634,6 +658,61 @@ paths:
     delete:
       tags: [admin]
       summary: Delete image
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /admin/moderation/pending:
+    get:
+      tags: [admin]
+      summary: List pending moderation items
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ModerationItem"
+
+  /admin/moderation/{id}/approve:
+    post:
+      tags: [admin]
+      summary: Approve a moderation item
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /admin/moderation/{id}/reject:
+    post:
+      tags: [admin]
+      summary: Reject a moderation item
       security:
         - BearerAuth: []
       parameters:
@@ -1223,6 +1302,41 @@ components:
         user_initial_capacity:
           type: integer
           format: int64
+
+    StrategyHealthItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        type:
+          type: string
+        healthy:
+          type: boolean
+        error:
+          type: string
+
+    ModerationItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        user_id:
+          type: integer
+          format: int64
+        image_id:
+          type: integer
+          format: int64
+        status:
+          type: integer
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
 
     UpdateSettingsRequest:
       type: object
