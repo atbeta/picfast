@@ -1,4 +1,4 @@
-.PHONY: build run generate migrate-up migrate-down docker-up docker-down tidy frontend
+.PHONY: build run generate migrate-up migrate-down docker-up docker-down tidy frontend test
 
 GOPATH := $(shell go env GOPATH)
 SQLC := $(GOPATH)/bin/sqlc
@@ -39,7 +39,10 @@ docker-logs:
 	docker compose -f docker/docker-compose.yml logs -f app
 
 test:
-	go test ./...
+	go test -v -count=1 ./...
+
+docker-test-db:
+	docker run -d --name imgapi-test-db -e POSTGRES_USER=imgapi -e POSTGRES_PASSWORD=imgapi -e POSTGRES_DB=imgapi_test -p 5433:5432 postgres:16-alpine
 
 clean:
 	rm -rf bin/ data/ web-dist/

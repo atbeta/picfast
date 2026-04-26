@@ -76,12 +76,13 @@ func New(
 			})).
 				Post("/login", authHandler.Login)
 			r.Post("/refresh", authHandler.Refresh)
-			r.Post("/logout", authHandler.Logout)
 		})
 
 		// Authenticated user routes
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(jwtSvc))
+
+			r.Post("/auth/logout", authHandler.Logout)
 
 			r.Get("/users/me", userHandler.GetProfile)
 			r.Put("/users/me", userHandler.UpdateProfile)
@@ -110,6 +111,7 @@ func New(
 		// Admin routes
 		r.Route("/admin", func(r chi.Router) {
 			r.Use(middleware.Auth(jwtSvc))
+
 			r.Use(middleware.Admin)
 
 			r.Get("/users", adminUserHandler.List)
