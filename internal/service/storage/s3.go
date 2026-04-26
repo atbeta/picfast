@@ -79,3 +79,13 @@ func (s *S3Storage) URL(pathname string) string {
 	}
 	return fmt.Sprintf("https://%s.s3.%s/%s", s.bucket, "endpoint", pathname)
 }
+
+func (s *S3Storage) HealthCheck(ctx context.Context) HealthResult {
+	_, err := s.client.HeadBucket(ctx, &s3.HeadBucketInput{
+		Bucket: aws.String(s.bucket),
+	})
+	if err != nil {
+		return HealthResult{Healthy: false, Error: "bucket unreachable: " + err.Error()}
+	}
+	return HealthResult{Healthy: true}
+}

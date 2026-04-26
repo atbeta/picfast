@@ -39,3 +39,13 @@ func (s *LocalStorage) Delete(ctx context.Context, path string) error {
 func (s *LocalStorage) URL(pathname string) string {
 	return strings.TrimRight(s.url, "/") + "/" + strings.TrimLeft(pathname, "/")
 }
+
+func (s *LocalStorage) HealthCheck(ctx context.Context) HealthResult {
+	// Try to create and remove a temporary file
+	testPath := filepath.Join(s.root, ".healthcheck")
+	if err := os.WriteFile(testPath, []byte("ok"), 0644); err != nil {
+		return HealthResult{Healthy: false, Error: "not writable: " + err.Error()}
+	}
+	os.Remove(testPath)
+	return HealthResult{Healthy: true}
+}

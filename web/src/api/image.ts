@@ -1,7 +1,7 @@
 import api from './index'
 import type { ImageData, ImageListItem, ApiResult, PaginatedData } from './types'
 
-export function uploadImage(file: File, params?: Record<string, string>) {
+export function uploadImage(file: File, params?: Record<string, string>, onProgress?: (percent: number) => void) {
 	const form = new FormData()
 	form.append('file', file)
 	if (params) {
@@ -11,6 +11,12 @@ export function uploadImage(file: File, params?: Record<string, string>) {
 	}
 	return api.post<ApiResult<ImageData>>('/images', form, {
 		headers: { 'Content-Type': 'multipart/form-data' },
+		onUploadProgress: onProgress
+			? (e) => {
+				const total = e.total || e.loaded || 1
+				onProgress(Math.round((e.loaded / total) * 100))
+			}
+			: undefined,
 	})
 }
 

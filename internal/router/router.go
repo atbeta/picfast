@@ -206,6 +206,32 @@ func New(
 			r.Put("/strategies/{id}", adminStrategyHandler.Update)
 			r.Delete("/strategies/{id}", adminStrategyHandler.Delete)
 
+			// Strategy health check
+			r.Get("/strategies/health", func(w http.ResponseWriter, r *http.Request) {
+				strategies, _ := queries.ListStrategies(r.Context())
+				results := make([]map[string]interface{}, 0, len(strategies))
+				for _, st := range strategies {
+					store, err := service.GetStorageForStrategy(st)
+					item := map[string]interface{}{
+						"id":       st.ID,
+						"name":     st.Name,
+						"type":     st.StrategyType,
+						"healthy":  false,
+					}
+					if err != nil {
+						item["error"] = "failed to init: " + err.Error()
+					} else {
+						health := store.HealthCheck(r.Context())
+						item["healthy"] = health.Healthy
+						if health.Error != "" {
+							item["error"] = health.Error
+						}
+					}
+					results = append(results, item)
+				}
+				handler.Success(w, results)
+			})
+
 			r.Get("/images", adminImageHandler.List)
 			r.Delete("/images/{id}", adminImageHandler.Delete)
 

@@ -313,21 +313,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 }
 
 func (s *UploadService) getStorage(strategy sqlc.Strategy) (storage.Storage, error) {
-	switch strategy.StrategyType {
-	case string(domain.StrategyTypeLocal):
-		var cfg domain.LocalStrategyConfig
-		if err := json.Unmarshal(strategy.Configs, &cfg); err != nil {
-			return nil, err
-		}
-		return storage.NewLocalStorage(cfg.Root, cfg.URL), nil
-	case string(domain.StrategyTypeS3):
-		var cfg domain.S3StrategyConfig
-		if err := json.Unmarshal(strategy.Configs, &cfg); err != nil {
-			return nil, err
-		}
-		return storage.NewS3Storage(cfg)
-	}
-	return nil, fmt.Errorf("unknown strategy type: %s", strategy.StrategyType)
+	return GetStorageForStrategy(strategy)
 }
 
 func (s *UploadService) checkRateLimit(ctx context.Context, userID int64, clientIP string, cfg *domain.GroupConfig) error {

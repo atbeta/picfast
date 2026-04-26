@@ -37,9 +37,12 @@
 									<n-button size="tiny" @click="copyText(item.links?.html)">HTML</n-button>
 								</div>
 							</div>
-							<n-tag size="small" :type="item.status === 'ok' ? 'success' : 'error'">
+							<n-tag v-if="item.status !== 'uploading'" size="small" :type="item.status === 'ok' ? 'success' : 'error'">
 								{{ item.status === 'ok' ? '上传成功' : item.message || '上传失败' }}
 							</n-tag>
+							<div v-else style="width: 60px">
+								<n-progress type="circle" :percentage="item.progress" :show-indicator="false" :stroke-width="6" :width="40" />
+							</div>
 						</div>
 					</n-card>
 				</n-gi>
@@ -65,6 +68,7 @@ import {
 	NInput,
 	NButton,
 	NTag,
+	NProgress,
 	useMessage,
 } from 'naive-ui'
 import { uploadImage } from '../api/image'
@@ -88,17 +92,32 @@ function copyText(text?: string) {
 		.catch(() => {})
 }
 
-async function handleUpload({ file }: any) {
+async function handleUpload({ file, onFinish, onError }: any) {
+	const raw = file.file || file
+	const resultItem = {
+		key: file.name || 'unknown',
+		origin_name: file.name,
+		status: 'uploading',
+		progress: 0,
+		size_bytes: raw.size || 0,
+	}
+	results.value.unshift(resultItem)
+	const index = results.value.indexOf(resultItem)
+
 	try {
-		const raw = file.file || file
-		const res = await uploadImage(raw)
+		const res = await uploadImage(raw, undefined, (percent: number) => {
+			resultItem.progress = percent
+			results.value[index] = { ...resultItem }
+		})
 		const data = res.data.data
-		results.value.unshift({ ...data, status: 'ok' })
+		results.value[index] = { ...data, status: 'ok', progress: 100 }
 		message.success(`上传成功: ${data.key}`)
+		onFinish()
 	} catch (err: any) {
 		const msg = err.response?.data?.message || '上传失败'
-		results.value.unshift({ key: file.name || 'unknown', origin_name: file.name, status: 'error', message: msg })
+		results.value[index] = { ...resultItem, status: 'error', message: msg, progress: 0 }
 		message.error(`上传失败: ${file.name || '文件'}`)
+		onError()
 	}
 }
 </script>
