@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -18,15 +19,23 @@ func GenerateThumbnail(data []byte, extension, thumbnailDir, md5Hash string) err
 
 	img, err := imaging.Decode(bytes.NewReader(data), imaging.AutoOrientation(true))
 	if err != nil {
+		slog.Warn("thumbnail decode failed", "md5", md5Hash, "ext", extension, "error", err)
 		return nil // best effort, don't fail upload
 	}
 
 	thumb := imaging.Fit(img, ThumbnailMaxSize, ThumbnailMaxSize, imaging.Lanczos)
 
 	if err := os.MkdirAll(thumbnailDir, 0755); err != nil {
+		slog.Error("thumbnail mkdir failed", "dir", thumbnailDir, "error", err)
 		return err
 	}
 
 	outPath := filepath.Join(thumbnailDir, md5Hash+".png")
-	return imaging.Save(thumb, outPath)
+	if err := imaging.Save(thumb, outPath); err != nil {
+		slog.Error("thumbnail save failed", "path", outPath, "error", err)
+		return err
+	}
+
+	slog.Info("thumbnail generated", "path", outPath, "md5", md5Hash)
+	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/pbeta/imgapi/internal/config"
 	"github.com/pbeta/imgapi/internal/handler"
 	"github.com/pbeta/imgapi/internal/handler/middleware"
@@ -30,11 +31,14 @@ func New(
 	r.Use(chimw.RealIP)
 	r.Use(chimw.RequestID)
 	r.Use(chimw.Timeout(60 * time.Second))
+	r.Use(middleware.Metrics)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
+
+	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 	// Services
 	uploadSvc := service.NewUploadService(queries, pool, cfg)
