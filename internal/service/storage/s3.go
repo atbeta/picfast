@@ -32,6 +32,7 @@ func NewS3Storage(cfg domain.S3StrategyConfig) (*S3Storage, error) {
 	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String(cfg.Endpoint)
 		o.UsePathStyle = true
+		o.AuthSchemePreference = []string{"sigv4"}
 	})
 
 	return &S3Storage{
