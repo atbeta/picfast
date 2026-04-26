@@ -80,26 +80,29 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	settings, _ := json.Marshal(domain.UserSettings{})
-	user, err := h.db.CreateUser(r.Context(), sqlc.CreateUserParams{
-		GroupID:       domain.PgInt8(group.ID),
-		Email:         req.Email,
-		Password:      string(hash),
-		Name:          req.Name,
-		Role:          string(domain.RoleUser),
-		CapacityBytes: h.config.App.UserInitialCapacity,
-		Settings:      settings,
-		Status:        int16(domain.UserStatusActive),
-		EmailVerified: false,
-		RegisteredIp:  r.RemoteAddr,
+
+	var tokens *domain.AuthTokens
+	err = sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
+		user, err := qtx.CreateUser(r.Context(), sqlc.CreateUserParams{
+			GroupID:       domain.PgInt8(group.ID),
+			Email:         req.Email,
+			Password:      string(hash),
+			Name:          req.Name,
+			Role:          string(domain.RoleUser),
+			CapacityBytes: h.config.App.UserInitialCapacity,
+			Settings:      settings,
+			Status:        int16(domain.UserStatusActive),
+			EmailVerified: false,
+			RegisteredIp:  r.RemoteAddr,
+		})
+		if err != nil {
+			return err
+		}
+		tokens, err = h.generateTokens(r.Context(), qtx, user.ID, domain.RoleUser, group.ID)
+		return err
 	})
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to create user")
-		return
-	}
-
-	tokens, err := h.generateTokens(r.Context(), user.ID, domain.RoleUser, group.ID)
-	if err != nil {
-		Fail(w, http.StatusInternalServerError, "failed to generate tokens")
 		return
 	}
 
@@ -131,7 +134,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	groupID := domain.PgInt8Val(user.GroupID)
 
-	tokens, err := h.generateTokens(r.Context(), user.ID, domain.UserRole(user.Role), groupID)
+	tokens, err := h.generateTokens(r.Context(), h.db, user.ID, domain.UserRole(user.Role), groupID)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to generate tokens")
 		return
@@ -166,13 +169,18 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.db.DeleteRefreshToken(r.Context(), tokenHash)
-
 	groupID := domain.PgInt8Val(user.GroupID)
 
-	tokens, err := h.generateTokens(r.Context(), user.ID, domain.UserRole(user.Role), groupID)
+	var tokens *domain.AuthTokens
+	err = sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
+		if err := qtx.DeleteRefreshToken(r.Context(), tokenHash); err != nil {
+			return err
+		}
+		tokens, err = h.generateTokens(r.Context(), qtx, user.ID, domain.UserRole(user.Role), groupID)
+		return err
+	})
 	if err != nil {
-		Fail(w, http.StatusInternalServerError, "failed to generate tokens")
+		Fail(w, http.StatusInternalServerError, "failed to refresh token")
 		return
 	}
 
@@ -190,7 +198,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	SuccessMessage(w, "logged out")
 }
 
-func (h *AuthHandler) generateTokens(ctx context.Context, userID int64, role domain.UserRole, groupID int64) (*domain.AuthTokens, error) {
+func (h *AuthHandler) generateTokens(ctx context.Context, qtx *sqlc.Queries, userID int64, role domain.UserRole, groupID int64) (*domain.AuthTokens, error) {
 	accessToken, expiresIn, err := h.jwt.GenerateAccessToken(userID, role, groupID)
 	if err != nil {
 		return nil, err
@@ -201,7 +209,7 @@ func (h *AuthHandler) generateTokens(ctx context.Context, userID int64, role dom
 		return nil, err
 	}
 
-	_, err = h.db.CreateRefreshToken(ctx, sqlc.CreateRefreshTokenParams{
+	_, err = qtx.CreateRefreshToken(ctx, sqlc.CreateRefreshTokenParams{
 		UserID:    userID,
 		TokenHash: hash,
 		ExpiresAt: time.Now().Add(h.config.JWT.RefreshTTL),

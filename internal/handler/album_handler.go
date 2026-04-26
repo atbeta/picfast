@@ -6,16 +6,18 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pbeta/imgapi/internal/domain"
 	"github.com/pbeta/imgapi/internal/sqlc"
 )
 
 type AlbumHandler struct {
-	db *sqlc.Queries
+	db   *sqlc.Queries
+	pool *pgxpool.Pool
 }
 
-func NewAlbumHandler(db *sqlc.Queries) *AlbumHandler {
-	return &AlbumHandler{db: db}
+func NewAlbumHandler(db *sqlc.Queries, pool *pgxpool.Pool) *AlbumHandler {
+	return &AlbumHandler{db: db, pool: pool}
 }
 
 func (h *AlbumHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -67,17 +69,23 @@ func (h *AlbumHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	album, err := h.db.CreateAlbum(r.Context(), sqlc.CreateAlbumParams{
-		UserID: userID,
-		Name:   req.Name,
-		Intro:  req.Intro,
+	var album sqlc.Album
+	err := sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
+		var err error
+		album, err = qtx.CreateAlbum(r.Context(), sqlc.CreateAlbumParams{
+			UserID: userID,
+			Name:   req.Name,
+			Intro:  req.Intro,
+		})
+		if err != nil {
+			return err
+		}
+		return qtx.IncrementUserAlbumNum(r.Context(), userID)
 	})
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to create album")
 		return
 	}
-
-	h.db.IncrementUserAlbumNum(r.Context(), userID)
 
 	Created(w, map[string]interface{}{
 		"id":         album.ID,
@@ -175,12 +183,16 @@ func (h *AlbumHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.db.DeleteAlbum(r.Context(), id); err != nil {
+	err = sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
+		if err := qtx.DeleteAlbum(r.Context(), id); err != nil {
+			return err
+		}
+		return qtx.DecrementUserAlbumNum(r.Context(), userID)
+	})
+	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to delete album")
 		return
 	}
-
-	h.db.DecrementUserAlbumNum(r.Context(), userID)
 
 	SuccessMessage(w, "deleted")
 }

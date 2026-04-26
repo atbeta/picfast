@@ -205,27 +205,40 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		perm = *params.Permission
 	}
 
-	img, err := s.db.CreateImage(ctx, sqlc.CreateImageParams{
-		UserID:      domain.PgInt8Ptr(params.UserID),
-		AlbumID:     domain.PgInt8Ptr(params.AlbumID),
-		GroupID:     domain.PgInt8(groupID),
-		StrategyID:  domain.PgInt8(strategy.ID),
-		Key:         imageKey,
-		Path:        filepath.Dir(pathname),
-		Name:        filepath.Base(pathname),
-		OriginName:  params.FileName,
-		SizeBytes:   int64(len(fileData)),
-		Mimetype:    mimetypeFromExt(ext),
-		Extension:   ext,
-		Md5:         md5Hash,
-		Sha1:        sha1Hash,
-		Width:       int32(width),
-		Height:      int32(height),
-		Permission:  perm,
-		UploadedIp:  params.ClientIP,
+	var img sqlc.Image
+	err = sqlc.RunInTx(ctx, s.pool, func(qtx *sqlc.Queries) error {
+		var err error
+		img, err = qtx.CreateImage(ctx, sqlc.CreateImageParams{
+			UserID:      domain.PgInt8Ptr(params.UserID),
+			AlbumID:     domain.PgInt8Ptr(params.AlbumID),
+			GroupID:     domain.PgInt8(groupID),
+			StrategyID:  domain.PgInt8(strategy.ID),
+			Key:         imageKey,
+			Path:        filepath.Dir(pathname),
+			Name:        filepath.Base(pathname),
+			OriginName:  params.FileName,
+			SizeBytes:   int64(len(fileData)),
+			Mimetype:    mimetypeFromExt(ext),
+			Extension:   ext,
+			Md5:         md5Hash,
+			Sha1:        sha1Hash,
+			Width:       int32(width),
+			Height:      int32(height),
+			Permission:  perm,
+			UploadedIp:  params.ClientIP,
+		})
+		if err != nil {
+			return err
+		}
+		if params.UserID != nil {
+			qtx.IncrementUserImageNum(ctx, userID)
+		}
+		if params.AlbumID != nil {
+			qtx.IncrementAlbumImageNum(ctx, *params.AlbumID)
+		}
+		return nil
 	})
 	if err != nil {
-		// Cleanup file on DB error (only if we wrote it)
 		if !dedup {
 			store, _ := s.getStorage(strategy)
 			if store != nil {
@@ -233,14 +246,6 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 			}
 		}
 		return nil, fmt.Errorf("failed to save image record: %w", err)
-	}
-
-	// Update counters
-	if params.UserID != nil {
-		s.db.IncrementUserImageNum(ctx, userID)
-	}
-	if params.AlbumID != nil {
-		s.db.IncrementAlbumImageNum(ctx, *params.AlbumID)
 	}
 
 	// Step 12: Generate thumbnail (best effort)

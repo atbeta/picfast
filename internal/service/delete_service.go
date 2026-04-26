@@ -7,18 +7,20 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pbeta/imgapi/internal/domain"
 	"github.com/pbeta/imgapi/internal/service/storage"
 	"github.com/pbeta/imgapi/internal/sqlc"
 )
 
 type DeleteService struct {
-	db        *sqlc.Queries
-	thumbDir  string
+	db       *sqlc.Queries
+	pool     *pgxpool.Pool
+	thumbDir string
 }
 
-func NewDeleteService(db *sqlc.Queries, thumbDir string) *DeleteService {
-	return &DeleteService{db: db, thumbDir: thumbDir}
+func NewDeleteService(db *sqlc.Queries, pool *pgxpool.Pool, thumbDir string) *DeleteService {
+	return &DeleteService{db: db, pool: pool, thumbDir: thumbDir}
 }
 
 func (s *DeleteService) DeleteImage(ctx context.Context, imgID int64) error {
@@ -57,20 +59,23 @@ func (s *DeleteService) DeleteImage(ctx context.Context, imgID int64) error {
 	thumbPath := filepath.Join(s.thumbDir, img.Md5+".png")
 	os.Remove(thumbPath)
 
-	// Delete DB record
-	if err := s.db.DeleteImage(ctx, imgID); err != nil {
-		return err
-	}
+	// DB: delete record + decrement counters in one transaction
+	userID := img.UserID
+	albumID := img.AlbumID
 
-	// Decrement counters
-	if img.UserID.Valid {
-		s.db.DecrementUserImageNum(ctx, img.UserID.Int64)
-	}
-	if img.AlbumID.Valid {
-		s.db.DecrementAlbumImageNum(ctx, img.AlbumID.Int64)
-	}
-
-	return nil
+	err = sqlc.RunInTx(ctx, s.pool, func(qtx *sqlc.Queries) error {
+		if err := qtx.DeleteImage(ctx, imgID); err != nil {
+			return err
+		}
+		if userID.Valid {
+			qtx.DecrementUserImageNum(ctx, userID.Int64)
+		}
+		if albumID.Valid {
+			qtx.DecrementAlbumImageNum(ctx, albumID.Int64)
+		}
+		return nil
+	})
+	return err
 }
 
 func getStorage(strategy sqlc.Strategy) (storage.Storage, error) {

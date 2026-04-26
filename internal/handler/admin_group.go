@@ -115,22 +115,28 @@ func (h *AdminGroupHandler) Create(w http.ResponseWriter, r *http.Request) {
 		req.Configs = json.RawMessage(`{}`)
 	}
 
-	group, err := h.db.CreateGroup(r.Context(), sqlc.CreateGroupParams{
-		Name:      req.Name,
-		IsDefault: req.IsDefault,
-		IsGuest:   req.IsGuest,
-		Configs:   req.Configs,
-	})
-	if err != nil {
+	var group sqlc.Group
+	if err := sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
+		var err error
+		group, err = qtx.CreateGroup(r.Context(), sqlc.CreateGroupParams{
+			Name:      req.Name,
+			IsDefault: req.IsDefault,
+			IsGuest:   req.IsGuest,
+			Configs:   req.Configs,
+		})
+		if err != nil {
+			return err
+		}
+		if group.IsDefault {
+			qtx.UnsetOtherDefault(r.Context(), group.ID)
+		}
+		if group.IsGuest {
+			qtx.UnsetOtherGuest(r.Context(), group.ID)
+		}
+		return nil
+	}); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to create group")
 		return
-	}
-
-	if group.IsDefault {
-		h.db.UnsetOtherDefault(r.Context(), group.ID)
-	}
-	if group.IsGuest {
-		h.db.UnsetOtherGuest(r.Context(), group.ID)
 	}
 
 	Created(w, groupJSON(group))
@@ -163,23 +169,29 @@ func (h *AdminGroupHandler) Update(w http.ResponseWriter, r *http.Request) {
 		req.Configs = existing.Configs
 	}
 
-	group, err := h.db.UpdateGroup(r.Context(), sqlc.UpdateGroupParams{
-		ID:        id,
-		Name:      req.Name,
-		IsDefault: req.IsDefault,
-		IsGuest:   req.IsGuest,
-		Configs:   req.Configs,
-	})
-	if err != nil {
+	var group sqlc.Group
+	if err := sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
+		var err error
+		group, err = qtx.UpdateGroup(r.Context(), sqlc.UpdateGroupParams{
+			ID:        id,
+			Name:      req.Name,
+			IsDefault: req.IsDefault,
+			IsGuest:   req.IsGuest,
+			Configs:   req.Configs,
+		})
+		if err != nil {
+			return err
+		}
+		if group.IsDefault {
+			qtx.UnsetOtherDefault(r.Context(), group.ID)
+		}
+		if group.IsGuest {
+			qtx.UnsetOtherGuest(r.Context(), group.ID)
+		}
+		return nil
+	}); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to update group")
 		return
-	}
-
-	if group.IsDefault {
-		h.db.UnsetOtherDefault(r.Context(), group.ID)
-	}
-	if group.IsGuest {
-		h.db.UnsetOtherGuest(r.Context(), group.ID)
 	}
 
 	Success(w, groupJSON(group))
@@ -228,25 +240,19 @@ func (h *AdminGroupHandler) SetStrategies(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	tx, err := h.pool.Begin(r.Context())
-	if err != nil {
-		Fail(w, http.StatusInternalServerError, "failed to begin transaction")
-		return
-	}
-	defer tx.Rollback(r.Context())
-
-	qtx := h.db.WithTx(tx)
-	qtx.ReplaceGroupStrategies(r.Context(), id)
-	for _, sid := range req.StrategyIDs {
-		if err := qtx.AddGroupStrategy(r.Context(), sqlc.AddGroupStrategyParams{
-			GroupID: id, StrategyID: sid,
-		}); err != nil {
-			Fail(w, http.StatusInternalServerError, "failed to set strategies")
-			return
+	err = sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
+		qtx.ReplaceGroupStrategies(r.Context(), id)
+		for _, sid := range req.StrategyIDs {
+			if err := qtx.AddGroupStrategy(r.Context(), sqlc.AddGroupStrategyParams{
+				GroupID: id, StrategyID: sid,
+			}); err != nil {
+				return err
+			}
 		}
-	}
-	if err := tx.Commit(r.Context()); err != nil {
-		Fail(w, http.StatusInternalServerError, "failed to commit transaction")
+		return nil
+	})
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to set strategies")
 		return
 	}
 
