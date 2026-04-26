@@ -89,9 +89,14 @@
 								{{ img.permission === 1 ? '公开' : '私有' }}
 							</n-tag>
 						</div>
-						<n-text depth="3" style="font-size: 12px"
-							>{{ formatSize(img.size_bytes) }} · {{ img.width || 0 }}x{{ img.height || 0 }}</n-text
-						>
+						<div style="display: flex; align-items: center; justify-content: space-between">
+							<n-text depth="3" style="font-size: 12px"
+								>{{ formatSize(img.size_bytes) }} · {{ img.width || 0 }}x{{ img.height || 0 }}</n-text
+							>
+							<n-tag v-if="img.strategy_name" size="tiny" type="info">
+								{{ img.strategy_name }}
+							</n-tag>
+						</div>
 					</n-card>
 				</n-gi>
 			</n-grid>
@@ -127,6 +132,12 @@
 							<template #checked>公开</template>
 							<template #unchecked>私有</template>
 						</n-switch>
+					</n-descriptions-item>
+					<n-descriptions-item label="存储策略">
+						<n-tag v-if="detail.strategy_name" size="small" type="info">
+							{{ detail.strategy_name }} ({{ detail.strategy_type === 'local' ? '本地' : 'S3' }})
+						</n-tag>
+						<n-text v-else depth="3">未知</n-text>
 					</n-descriptions-item>
 				</n-descriptions>
 				<div style="margin-top: 16px" v-if="detail.links">

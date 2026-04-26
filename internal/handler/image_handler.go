@@ -116,7 +116,7 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	items := make([]ImageListItem, len(images))
 	for i, img := range images {
-		links := h.buildLinks(img)
+		links := h.buildLinks(img.Key, img.Extension, img.Md5, img.OriginName)
 		items[i] = ImageListItem{
 			ID:               img.ID,
 			Key:              img.Key,
@@ -131,6 +131,9 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 			URL:              links.URL,
 			ThumbnailURL:     links.ThumbnailURL,
 			ModerationStatus: img.ModerationStatus,
+			StrategyID:       domain.PgInt8PtrVal(img.StrategyID),
+			StrategyName:     img.StrategyName.String,
+			StrategyType:     img.StrategyType.String,
 			Links:            links,
 			CreatedAt:        img.CreatedAt,
 		}
@@ -157,7 +160,7 @@ func (h *ImageHandler) Get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	links := h.buildLinks(img)
+	links := h.buildLinks(img.Key, img.Extension, img.Md5, img.OriginName)
 	Success(w, imageResponse(img, links))
 }
 
@@ -239,19 +242,19 @@ func (h *ImageHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	links := h.buildLinks(updated)
+	links := h.buildLinks(updated.Key, updated.Extension, updated.Md5, updated.OriginName)
 	Success(w, imageResponse(updated, links))
 }
 
-func (h *ImageHandler) buildLinks(img sqlc.Image) domain.ImageLinks {
-	url := h.baseURL + "/i/" + img.Key + "." + img.Extension
-	thumbURL := h.baseURL + "/t/" + img.Md5 + ".png"
+func (h *ImageHandler) buildLinks(key, extension, md5, originName string) domain.ImageLinks {
+	url := h.baseURL + "/i/" + key + "." + extension
+	thumbURL := h.baseURL + "/t/" + md5 + ".png"
 
 	return domain.ImageLinks{
 		URL:          url,
-		HTML:         fmt.Sprintf(`<img src="%s" alt="%s" />`, url, img.OriginName),
+		HTML:         fmt.Sprintf(`<img src="%s" alt="%s" />`, url, originName),
 		BBCode:       fmt.Sprintf("[img]%s[/img]", url),
-		Markdown:     fmt.Sprintf("![%s](%s)", img.OriginName, url),
+		Markdown:     fmt.Sprintf("![%s](%s)", originName, url),
 		ThumbnailURL: thumbURL,
 	}
 }

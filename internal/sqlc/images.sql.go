@@ -355,9 +355,14 @@ func (q *Queries) ListAllImages(ctx context.Context, arg ListAllImagesParams) ([
 }
 
 const listImagesByUser = `-- name: ListImagesByUser :many
-SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status FROM images
-WHERE user_id = $1
-ORDER BY created_at DESC
+SELECT
+    images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status,
+    strategies.name as strategy_name,
+    strategies.strategy_type as strategy_type
+FROM images
+LEFT JOIN strategies ON images.strategy_id = strategies.id
+WHERE images.user_id = $1
+ORDER BY images.created_at DESC
 LIMIT $2 OFFSET $3
 `
 
@@ -367,15 +372,42 @@ type ListImagesByUserParams struct {
 	Offset int32       `json:"offset"`
 }
 
-func (q *Queries) ListImagesByUser(ctx context.Context, arg ListImagesByUserParams) ([]Image, error) {
+type ListImagesByUserRow struct {
+	ID               int64       `json:"id"`
+	UserID           pgtype.Int8 `json:"user_id"`
+	AlbumID          pgtype.Int8 `json:"album_id"`
+	GroupID          pgtype.Int8 `json:"group_id"`
+	StrategyID       pgtype.Int8 `json:"strategy_id"`
+	Key              string      `json:"key"`
+	Path             string      `json:"path"`
+	Name             string      `json:"name"`
+	OriginName       string      `json:"origin_name"`
+	SizeBytes        int64       `json:"size_bytes"`
+	Mimetype         string      `json:"mimetype"`
+	Extension        string      `json:"extension"`
+	Md5              string      `json:"md5"`
+	Sha1             string      `json:"sha1"`
+	Width            int32       `json:"width"`
+	Height           int32       `json:"height"`
+	Permission       int16       `json:"permission"`
+	IsUnhealthy      bool        `json:"is_unhealthy"`
+	UploadedIp       string      `json:"uploaded_ip"`
+	CreatedAt        time.Time   `json:"created_at"`
+	UpdatedAt        time.Time   `json:"updated_at"`
+	ModerationStatus string      `json:"moderation_status"`
+	StrategyName     pgtype.Text `json:"strategy_name"`
+	StrategyType     pgtype.Text `json:"strategy_type"`
+}
+
+func (q *Queries) ListImagesByUser(ctx context.Context, arg ListImagesByUserParams) ([]ListImagesByUserRow, error) {
 	rows, err := q.db.Query(ctx, listImagesByUser, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Image{}
+	items := []ListImagesByUserRow{}
 	for rows.Next() {
-		var i Image
+		var i ListImagesByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -399,6 +431,8 @@ func (q *Queries) ListImagesByUser(ctx context.Context, arg ListImagesByUserPara
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ModerationStatus,
+			&i.StrategyName,
+			&i.StrategyType,
 		); err != nil {
 			return nil, err
 		}

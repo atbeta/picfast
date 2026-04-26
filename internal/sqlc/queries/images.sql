@@ -24,9 +24,14 @@ WHERE id = $1
 RETURNING *;
 
 -- name: ListImagesByUser :many
-SELECT * FROM images
-WHERE user_id = $1
-ORDER BY created_at DESC
+SELECT
+    images.*,
+    strategies.name as strategy_name,
+    strategies.strategy_type as strategy_type
+FROM images
+LEFT JOIN strategies ON images.strategy_id = strategies.id
+WHERE images.user_id = $1
+ORDER BY images.created_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: CountImagesByUser :one

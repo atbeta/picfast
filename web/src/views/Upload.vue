@@ -1,6 +1,23 @@
 <template>
 	<div>
 		<n-h2>上传图片</n-h2>
+		<n-space vertical :size="12" style="margin-bottom: 16px">
+			<n-alert v-if="strategies.length > 1" type="info" :bordered="false" size="small">
+				<n-space align="center">
+					<span>存储策略：</span>
+					<n-select
+						v-model:value="selectedStrategyId"
+						:options="strategyOptions"
+						style="width: 200px"
+						size="small"
+						@update:value="onStrategyChange"
+					/>
+				</n-space>
+			</n-alert>
+			<n-alert v-else-if="strategies.length === 1" type="default" :bordered="false" size="small">
+				当前使用存储策略：<strong>{{ strategies[0].name }}</strong>（{{ strategies[0].strategy_type === 'local' ? '本地' : 'S3' }}）
+			</n-alert>
+		</n-space>
 		<n-upload multiple directory-dnd :custom-request="handleUpload" :show-file-list="false" accept="image/*">
 			<n-upload-dragger>
 				<div style="padding: 40px 0; text-align: center">
@@ -53,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import {
 	NH2,
 	NH3,
@@ -69,12 +86,42 @@ import {
 	NButton,
 	NTag,
 	NProgress,
+	NSpace,
+	NSelect,
+	NAlert,
 	useMessage,
 } from 'naive-ui'
 import { uploadImage } from '../api/image'
+import { getStrategies, type Strategy } from '../api/strategies'
 
 const message = useMessage()
 const results = ref<any[]>([])
+const strategies = ref<Strategy[]>([])
+const selectedStrategyId = ref<number | null>(null)
+
+const strategyOptions = computed(() =>
+	strategies.value.map((s) => ({ label: `${s.name} (${s.strategy_type === 'local' ? '本地' : 'S3'})`, value: s.id })),
+)
+
+function onStrategyChange(val: number) {
+	selectedStrategyId.value = val
+	localStorage.setItem('default_strategy_id', String(val))
+}
+
+onMounted(async () => {
+	try {
+		const res = await getStrategies()
+		strategies.value = res.data.data || []
+		const saved = localStorage.getItem('default_strategy_id')
+		if (saved && strategies.value.some((s) => s.id === Number(saved))) {
+			selectedStrategyId.value = Number(saved)
+		} else if (strategies.value.length > 0) {
+			selectedStrategyId.value = strategies.value[0].id
+		}
+	} catch {
+		/* ignore */
+	}
+})
 
 function formatSize(bytes: number) {
 	if (!bytes) return '0 B'
@@ -105,7 +152,11 @@ async function handleUpload({ file, onFinish, onError }: any) {
 	const index = results.value.indexOf(resultItem)
 
 	try {
-		const res = await uploadImage(raw, undefined, (percent: number) => {
+		const params: Record<string, string> = {}
+		if (selectedStrategyId.value != null) {
+			params.strategy_id = String(selectedStrategyId.value)
+		}
+		const res = await uploadImage(raw, params, (percent: number) => {
 			resultItem.progress = percent
 			results.value[index] = { ...resultItem }
 		})

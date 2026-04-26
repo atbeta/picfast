@@ -63,6 +63,9 @@ type ImageListItem struct {
 	URL              string            `json:"url"`
 	ThumbnailURL     string            `json:"thumbnail_url"`
 	ModerationStatus string            `json:"moderation_status"`
+	StrategyID       *int64            `json:"strategy_id"`
+	StrategyName     string            `json:"strategy_name"`
+	StrategyType     string            `json:"strategy_type"`
 	Links            domain.ImageLinks `json:"links"`
 	CreatedAt        time.Time         `json:"created_at"`
 }
