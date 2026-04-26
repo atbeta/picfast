@@ -259,14 +259,14 @@ func (h *AdminGroupHandler) SetStrategies(w http.ResponseWriter, r *http.Request
 	SuccessMessage(w, "strategies updated")
 }
 
-func groupJSON(g sqlc.Group) map[string]interface{} {
-	return map[string]interface{}{
-		"id":         g.ID,
-		"name":       g.Name,
-		"is_default": g.IsDefault,
-		"is_guest":   g.IsGuest,
-		"configs":    json.RawMessage(g.Configs),
-		"created_at": g.CreatedAt,
-		"updated_at": g.UpdatedAt,
+func groupJSON(g sqlc.Group) AdminGroupResponse {
+	return AdminGroupResponse{
+		ID:        g.ID,
+		Name:      g.Name,
+		IsDefault: g.IsDefault,
+		IsGuest:   g.IsGuest,
+		Configs:   json.RawMessage(g.Configs),
+		CreatedAt: g.CreatedAt,
+		UpdatedAt: g.UpdatedAt,
 	}
 }

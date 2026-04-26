@@ -191,13 +191,13 @@ func (e *invalidConfigsError) Error() string {
 	return "invalid configs for this strategy type"
 }
 
-func strategyJSON(s sqlc.Strategy) map[string]interface{} {
-	return map[string]interface{}{
-		"id":            s.ID,
-		"name":          s.Name,
-		"strategy_type": s.StrategyType,
-		"configs":       json.RawMessage(s.Configs),
-		"created_at":    s.CreatedAt,
-		"updated_at":    s.UpdatedAt,
+func strategyJSON(s sqlc.Strategy) AdminStrategyResponse {
+	return AdminStrategyResponse{
+		ID:           s.ID,
+		Name:         s.Name,
+		StrategyType: s.StrategyType,
+		Configs:      json.RawMessage(s.Configs),
+		CreatedAt:    s.CreatedAt,
+		UpdatedAt:    s.UpdatedAt,
 	}
 }

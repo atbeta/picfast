@@ -114,24 +114,24 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	total, _ := h.db.CountImagesByUser(r.Context(), domain.PgInt8(userID))
 
-	items := make([]map[string]interface{}, len(images))
+	items := make([]ImageListItem, len(images))
 	for i, img := range images {
 		links := h.buildLinks(img)
-		items[i] = map[string]interface{}{
-			"id":          img.ID,
-			"key":         img.Key,
-			"origin_name": img.OriginName,
-			"size_bytes":  img.SizeBytes,
-			"mimetype":    img.Mimetype,
-			"extension":   img.Extension,
-			"width":       img.Width,
-			"height":      img.Height,
-			"permission":  img.Permission,
-			"album_id":    domain.PgInt8PtrVal(img.AlbumID),
-			"created_at":  img.CreatedAt,
-			"url":         links.URL,
-			"thumbnail_url": links.ThumbnailURL,
-			"links":       links,
+		items[i] = ImageListItem{
+			ID:           img.ID,
+			Key:          img.Key,
+			OriginName:   img.OriginName,
+			SizeBytes:    img.SizeBytes,
+			Mimetype:     img.Mimetype,
+			Extension:    img.Extension,
+			Width:        img.Width,
+			Height:       img.Height,
+			Permission:   img.Permission,
+			AlbumID:      domain.PgInt8PtrVal(img.AlbumID),
+			URL:          links.URL,
+			ThumbnailURL: links.ThumbnailURL,
+			Links:        links,
+			CreatedAt:    img.CreatedAt,
 		}
 	}
 
@@ -255,21 +255,21 @@ func (h *ImageHandler) buildLinks(img sqlc.Image) domain.ImageLinks {
 	}
 }
 
-func imageResponse(img sqlc.Image, links domain.ImageLinks) map[string]interface{} {
-	return map[string]interface{}{
-		"id":           img.ID,
-		"key":          img.Key,
-		"origin_name":  img.OriginName,
-		"size_bytes":   img.SizeBytes,
-		"mimetype":     img.Mimetype,
-		"extension":    img.Extension,
-		"width":        img.Width,
-		"height":       img.Height,
-		"md5":          img.Md5,
-		"sha1":         img.Sha1,
-		"permission":   img.Permission,
-		"album_id":     domain.PgInt8PtrVal(img.AlbumID),
-		"links":        links,
-		"created_at":   img.CreatedAt,
+func imageResponse(img sqlc.Image, links domain.ImageLinks) ImageResponse {
+	return ImageResponse{
+		ID:         img.ID,
+		Key:        img.Key,
+		OriginName: img.OriginName,
+		SizeBytes:  img.SizeBytes,
+		Mimetype:   img.Mimetype,
+		Extension:  img.Extension,
+		Width:      img.Width,
+		Height:     img.Height,
+		Md5:        img.Md5,
+		Sha1:       img.Sha1,
+		Permission: img.Permission,
+		AlbumID:    domain.PgInt8PtrVal(img.AlbumID),
+		Links:      links,
+		CreatedAt:  img.CreatedAt,
 	}
 }

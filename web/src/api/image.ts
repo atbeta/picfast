@@ -1,4 +1,5 @@
 import api from './index'
+import type { ImageData, ImageListItem, ApiResult, PaginatedData } from './types'
 
 export function uploadImage(file: File, params?: Record<string, string>) {
   const form = new FormData()
@@ -8,17 +9,17 @@ export function uploadImage(file: File, params?: Record<string, string>) {
       form.append(k, v)
     }
   }
-  return api.post('/images', form, {
+  return api.post<ApiResult<ImageData>>('/images', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }
 
 export function getImages(page = 1, pageSize = 20) {
-  return api.get('/images', { params: { page, page_size: pageSize } })
+  return api.get<ApiResult<PaginatedData<ImageListItem>>>('/images', { params: { page, page_size: pageSize } })
 }
 
 export function getImage(key: string) {
-  return api.get(`/images/${key}`)
+  return api.get<ApiResult<ImageData>>(`/images/${key}`)
 }
 
 export function deleteImage(key: string) {
@@ -26,5 +27,5 @@ export function deleteImage(key: string) {
 }
 
 export function updateImage(key: string, data: { album_id?: number; permission?: number }) {
-  return api.patch(`/images/${key}`, data)
+  return api.patch<ApiResult<ImageData>>(`/images/${key}`, data)
 }

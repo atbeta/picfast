@@ -87,12 +87,12 @@ func (h *AlbumHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Created(w, map[string]interface{}{
-		"id":         album.ID,
-		"name":       album.Name,
-		"intro":      album.Intro,
-		"image_num":  album.ImageNum,
-		"created_at": album.CreatedAt,
+	Created(w, AlbumResponse{
+		ID:        album.ID,
+		Name:      album.Name,
+		Intro:     album.Intro,
+		ImageNum:  album.ImageNum,
+		CreatedAt: album.CreatedAt,
 	})
 }
 
@@ -150,12 +150,12 @@ func (h *AlbumHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Success(w, map[string]interface{}{
-		"id":         updated.ID,
-		"name":       updated.Name,
-		"intro":      updated.Intro,
-		"image_num":  updated.ImageNum,
-		"updated_at": updated.UpdatedAt,
+	Success(w, AlbumUpdateResponse{
+		ID:        updated.ID,
+		Name:      updated.Name,
+		Intro:     updated.Intro,
+		ImageNum:  updated.ImageNum,
+		UpdatedAt: updated.UpdatedAt,
 	})
 }
 
