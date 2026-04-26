@@ -11,6 +11,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/modelcontextprotocol/go-sdk/auth"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/pbeta/imgapi/internal/config"
 	"github.com/pbeta/imgapi/internal/handler"
@@ -92,6 +94,14 @@ func New(
 	adminImageHandler := handler.NewAdminImageHandler(queries, deleteSvc)
 	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg))
 
+	// MCP Server
+	mcpFactory := handler.NewMCPServerFactory(queries, pool, cfg)
+	mcpServer := mcpFactory.CreateServer()
+	mcpAuth := handler.NewMCPAuth(queries)
+	mcpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+		return mcpServer
+	}, nil)
+
 	loginLimiter := middleware.NewRateLimiter(10, 60*1e9)
 
 	// Image file serving: /i/{key}.{ext} — with OptionalAuth so private images can be accessed by owner
@@ -142,6 +152,12 @@ func New(
 
 			// Strategies (available to user's group)
 			r.Get("/strategies", adminStrategyHandler.List)
+
+			// API Tokens (for MCP / AI integration)
+			apiTokenHandler := handler.NewAPITokenHandler(queries)
+			r.Post("/api-tokens", apiTokenHandler.Create)
+			r.Get("/api-tokens", apiTokenHandler.List)
+			r.Delete("/api-tokens/{id}", apiTokenHandler.Delete)
 		})
 
 		// Optional auth for guest upload
@@ -204,6 +220,10 @@ func New(
 			})
 		})
 	})
+
+	// MCP endpoint (AI integration) — protected by API token auth
+	mcpVerifier := auth.TokenVerifier(mcpAuth.VerifyToken)
+	r.Mount("/mcp", auth.RequireBearerToken(mcpVerifier, nil)(mcpHandler))
 
 	// SPA frontend — must be last so API routes take priority
 	if spaHandler != nil {

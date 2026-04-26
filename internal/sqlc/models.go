@@ -21,6 +21,17 @@ type Album struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type ApiToken struct {
+	ID         int64              `json:"id"`
+	UserID     int64              `json:"user_id"`
+	Name       string             `json:"name"`
+	TokenHash  string             `json:"token_hash"`
+	Scopes     json.RawMessage    `json:"scopes"`
+	LastUsedAt pgtype.Timestamptz `json:"last_used_at"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt  time.Time          `json:"created_at"`
+}
+
 type Group struct {
 	ID        int64           `json:"id"`
 	Name      string          `json:"name"`
