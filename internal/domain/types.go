@@ -75,6 +75,14 @@ type S3StrategyConfig struct {
 	URL             string `json:"url"`
 }
 
+type WatermarkConfig struct {
+	Text     string  `json:"text"`
+	Position string  `json:"position"` // bottom-right, bottom-left, top-right, top-left, center
+	FontSize float64 `json:"font_size"`
+	Color    string  `json:"color"`    // #RRGGBB or #RRGGBBAA
+	Opacity  float64 `json:"opacity"`  // 0.0 - 1.0
+}
+
 type ImageLinks struct {
 	URL          string `json:"url"`
 	HTML         string `json:"html"`

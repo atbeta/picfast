@@ -153,6 +153,23 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		}
 	}
 
+	// Step 6b: Apply watermark if enabled
+	if groupConfig.IsEnableWatermark && !skipExts[ext] {
+		var wmCfg WatermarkConfig
+		if err := json.Unmarshal(groupConfig.WatermarkConfigs, &wmCfg); err == nil && wmCfg.Text != "" {
+			targetFormat := groupConfig.ImageSaveFormat
+			if targetFormat == "" {
+				targetFormat = ext
+			}
+			watermarked, err := ApplyWatermark(fileData, wmCfg, targetFormat, groupConfig.ImageSaveQuality)
+			if err != nil {
+				slog.Warn("watermark failed, using original", "error", err)
+			} else {
+				fileData = watermarked
+			}
+		}
+	}
+
 	// Step 7: Generate path and filename
 	pathname := GeneratePathname(
 		groupConfig.PathNamingRule,
