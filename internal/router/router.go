@@ -3,6 +3,7 @@ package router
 import (
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"time"
 
@@ -141,6 +142,31 @@ func New(
 
 			r.Get("/settings", adminSettingHandler.Get)
 			r.Put("/settings", adminSettingHandler.Update)
+
+			// Debug / pprof (admin only)
+			r.Route("/debug", func(r chi.Router) {
+				r.Get("/pprof/", func(w http.ResponseWriter, req *http.Request) {
+					pprof.Index(w, req)
+				})
+				r.Get("/pprof/cmdline", func(w http.ResponseWriter, req *http.Request) {
+					pprof.Cmdline(w, req)
+				})
+				r.Get("/pprof/profile", func(w http.ResponseWriter, req *http.Request) {
+					pprof.Profile(w, req)
+				})
+				r.Get("/pprof/symbol", func(w http.ResponseWriter, req *http.Request) {
+					pprof.Symbol(w, req)
+				})
+				r.Get("/pprof/trace", func(w http.ResponseWriter, req *http.Request) {
+					pprof.Trace(w, req)
+				})
+				r.Get("/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
+				r.Get("/pprof/heap", pprof.Handler("heap").ServeHTTP)
+				r.Get("/pprof/allocs", pprof.Handler("allocs").ServeHTTP)
+				r.Get("/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
+				r.Get("/pprof/block", pprof.Handler("block").ServeHTTP)
+				r.Get("/pprof/mutex", pprof.Handler("mutex").ServeHTTP)
+			})
 		})
 	})
 

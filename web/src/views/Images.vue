@@ -2,15 +2,30 @@
   <div>
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
       <n-h2 style="margin: 0;">我的图片</n-h2>
-      <n-text depth="3">共 {{ total }} 张</n-text>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <n-text depth="3">共 {{ total }} 张</n-text>
+        <n-button v-if="!batchMode" size="small" @click="batchMode = true">批量管理</n-button>
+        <n-button v-else size="small" @click="exitBatch">退出管理</n-button>
+      </div>
+    </div>
+
+    <!-- Batch toolbar -->
+    <div v-if="batchMode" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 12px; background: #f0f9ff; border-radius: 8px;">
+      <n-checkbox v-model:checked="allSelected" @update:checked="toggleSelectAll">
+        全选 ({{ selectedKeys.length }} / {{ images.length }})
+      </n-checkbox>
+      <n-button type="error" size="small" :disabled="selectedKeys.length === 0" :loading="batchDeleting" @click="batchDelete">
+        批量删除
+      </n-button>
     </div>
 
     <n-spin :show="loading">
       <n-grid :cols="4" :x-gap="12" :y-gap="12">
         <n-gi v-for="img in images" :key="img.key">
-          <n-card size="small" hoverable @click="showDetail(img)" style="cursor: pointer;">
+          <n-card size="small" hoverable :style="{ cursor: batchMode ? 'default' : 'pointer', position: 'relative' }">
             <template #cover>
-              <div style="height: 160px; overflow: hidden; background: #f5f5f5; display: flex; align-items: center; justify-content: center;">
+              <div style="height: 160px; overflow: hidden; background: #f5f5f5; display: flex; align-items: center; justify-content: center;"
+                   @click="batchMode ? toggleSelect(img.key) : showDetail(img)">
                 <n-image
                   :src="imgSrc(img)"
                   width="100%"
@@ -23,9 +38,13 @@
                     <n-text depth="3" style="font-size: 12px;">无预览</n-text>
                   </template>
                 </n-image>
+                <!-- Batch checkbox overlay -->
+                <div v-if="batchMode" style="position: absolute; top: 8px; left: 8px; z-index: 1;">
+                  <n-checkbox :checked="selectedKeys.includes(img.key)" @update:checked="() => toggleSelect(img.key)" />
+                </div>
               </div>
             </template>
-            <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; justify-content: space-between;" @click="batchMode ? toggleSelect(img.key) : showDetail(img)">
               <n-text depth="3" style="font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px;">{{ img.origin_name }}</n-text>
               <n-tag :type="img.permission === 1 ? 'success' : 'warning'" size="tiny">
                 {{ img.permission === 1 ? '公开' : '私有' }}
@@ -78,7 +97,8 @@
 import { ref, onMounted } from 'vue'
 import {
   NH2, NGrid, NGi, NCard, NImage, NText, NTag, NEmpty, NPagination, NSpin,
-  NModal, NDescriptions, NDescriptionsItem, NSwitch, NInputGroup, NInput, NButton, useMessage, useDialog,
+  NModal, NDescriptions, NDescriptionsItem, NSwitch, NInputGroup, NInput, NButton,
+  NCheckbox, useMessage, useDialog,
 } from 'naive-ui'
 import { getImages, getImage, deleteImage, updateImage } from '../api/image'
 
@@ -91,6 +111,69 @@ const pageSize = 20
 const total = ref(0)
 const detailVisible = ref(false)
 const detail = ref<any>(null)
+
+// Batch mode
+const batchMode = ref(false)
+const selectedKeys = ref<string[]>([])
+const allSelected = ref(false)
+const batchDeleting = ref(false)
+
+function toggleSelect(key: string) {
+  const idx = selectedKeys.value.indexOf(key)
+  if (idx >= 0) {
+    selectedKeys.value.splice(idx, 1)
+  } else {
+    selectedKeys.value.push(key)
+  }
+  allSelected.value = selectedKeys.value.length === images.value.length && images.value.length > 0
+}
+
+function toggleSelectAll(checked: boolean) {
+  if (checked) {
+    selectedKeys.value = images.value.map((img: any) => img.key)
+  } else {
+    selectedKeys.value = []
+  }
+}
+
+function exitBatch() {
+  batchMode.value = false
+  selectedKeys.value = []
+  allSelected.value = false
+}
+
+async function batchDelete() {
+  if (selectedKeys.value.length === 0) return
+  const count = selectedKeys.value.length
+  dialog.warning({
+    title: '确认批量删除',
+    content: `确定要删除选中的 ${count} 张图片吗？此操作不可撤销。`,
+    positiveText: '删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      batchDeleting.value = true
+      let success = 0
+      let failed = 0
+      for (const key of selectedKeys.value) {
+        try {
+          await deleteImage(key)
+          success++
+        } catch {
+          failed++
+        }
+      }
+      batchDeleting.value = false
+      if (failed === 0) {
+        message.success(`成功删除 ${success} 张图片`)
+      } else {
+        message.warning(`删除完成：成功 ${success} 张，失败 ${failed} 张`)
+      }
+      selectedKeys.value = []
+      allSelected.value = false
+      fetchImages()
+    },
+  })
+}
 
 onMounted(() => fetchImages())
 
