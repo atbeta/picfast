@@ -1,10 +1,18 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { UploadResult as UploadResultType } from '../lib/upload'
 import { formatFileSize } from '../lib/upload'
 
+interface UploadResultLike {
+  origin_name: string
+  size_bytes: number
+  extension: string
+  width: number
+  height: number
+  links: { url: string; html: string; bbcode: string; markdown: string; thumbnail_url: string }
+}
+
 interface UploadResultCardProps {
-  result: UploadResultType
+  result: UploadResultLike
 }
 
 interface CopyItem {
