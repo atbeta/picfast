@@ -88,7 +88,7 @@ const typeOptions = [
 const columns: DataTableColumns = [
 	{ title: 'ID', key: 'id', width: 60 },
 	{ title: '名称', key: 'name' },
-	{ title: '类型', key: 'type', width: 100, render: (row: any) => (row.type === 'local' ? '本地存储' : 'S3 存储') },
+	{ title: '类型', key: 'strategy_type', width: 100, render: (row: any) => (row.strategy_type === 'local' ? '本地存储' : 'S3 存储') },
 	{
 		title: '操作',
 		key: 'actions',
@@ -133,9 +133,9 @@ function openCreate() {
 function openEdit(s: any) {
 	editing.value = s
 	form.name = s.name
-	form.type = s.type
+	form.type = s.strategy_type
 	const c = s.configs || {}
-	if (s.type === 'local') {
+	if (s.strategy_type === 'local') {
 		form.localRoot = c.root || ''
 	} else {
 		form.s3Endpoint = c.endpoint || ''
