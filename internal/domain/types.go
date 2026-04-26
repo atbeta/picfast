@@ -70,8 +70,8 @@ type S3StrategyConfig struct {
 	Endpoint        string `json:"endpoint"`
 	Region          string `json:"region"`
 	Bucket          string `json:"bucket"`
-	AccessKeyID     string `json:"access_key_id"`
-	SecretAccessKey  string `json:"secret_access_key"`
+	AccessKeyID     string `json:"access_key"`
+	SecretAccessKey string `json:"secret_key"`
 	URL             string `json:"url"`
 }
 

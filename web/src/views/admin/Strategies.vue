@@ -37,6 +37,9 @@
 					<n-form-item label="Secret Key"
 						><n-input v-model:value="form.s3SecretKey" type="password" show-password-on="click"
 					/></n-form-item>
+					<n-form-item label="访问 URL"
+						><n-input v-model:value="form.s3URL" placeholder="https://pub-xxx.r2.dev 或自定义域名"
+					/></n-form-item>
 				</template>
 			</n-form>
 		</n-modal>
@@ -74,6 +77,7 @@ const form = reactive({
 	s3Bucket: '',
 	s3AccessKey: '',
 	s3SecretKey: '',
+	s3URL: '',
 })
 
 const typeOptions = [
@@ -122,6 +126,7 @@ function openCreate() {
 	form.s3Bucket = ''
 	form.s3AccessKey = ''
 	form.s3SecretKey = ''
+	form.s3URL = ''
 	showModal.value = true
 }
 
@@ -138,6 +143,7 @@ function openEdit(s: any) {
 		form.s3Bucket = c.bucket || ''
 		form.s3AccessKey = c.access_key || ''
 		form.s3SecretKey = c.secret_key || ''
+		form.s3URL = c.url || ''
 	}
 	showModal.value = true
 }
@@ -157,6 +163,7 @@ async function saveStrategy() {
 			bucket: form.s3Bucket,
 			access_key: form.s3AccessKey,
 			secret_key: form.s3SecretKey,
+			url: form.s3URL,
 		}
 	}
 	try {
