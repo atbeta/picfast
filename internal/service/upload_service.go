@@ -105,8 +105,14 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 
 	// Capacity check for authenticated users
 	if params.UserID != nil {
-		used, _ := s.db.GetUserUsedCapacity(ctx, domain.PgInt8(userID))
-		user, _ := s.db.GetUserByID(ctx, userID)
+		used, err := s.db.GetUserUsedCapacity(ctx, domain.PgInt8(userID))
+		if err != nil {
+			return nil, fmt.Errorf("failed to check capacity: %w", err)
+		}
+		user, err := s.db.GetUserByID(ctx, userID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user: %w", err)
+		}
 		if user.CapacityBytes > 0 && used > 0 && used+params.FileSize > user.CapacityBytes {
 			return nil, fmt.Errorf("storage capacity exceeded")
 		}
@@ -195,11 +201,14 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	sha1Hash := fmt.Sprintf("%x", h[:])
 
 	// Step 9: Dedup check
-	existing, _ := s.db.FindDuplicateImage(ctx, sqlc.FindDuplicateImageParams{
+	existing, err := s.db.FindDuplicateImage(ctx, sqlc.FindDuplicateImageParams{
 		StrategyID: domain.PgInt8(strategy.ID),
 		Md5:        md5Hash,
 		Sha1:       sha1Hash,
 	})
+	if err != nil {
+		slog.Warn("dedup check failed, assuming unique", "error", err)
+	}
 	dedup := existing.ID != 0
 
 	// Step 10: Write to storage
@@ -268,9 +277,13 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	})
 	if err != nil {
 		if !dedup {
-			store, _ := s.getStorage(strategy)
-			if store != nil {
-				store.Delete(ctx, pathname)
+			store, delErr := s.getStorage(strategy)
+			if delErr != nil {
+				slog.Warn("failed to get storage for rollback cleanup", "error", delErr)
+			} else if store != nil {
+				if delErr := store.Delete(ctx, pathname); delErr != nil {
+					slog.Warn("rollback cleanup failed", "pathname", pathname, "error", delErr)
+				}
 			}
 		}
 		return nil, fmt.Errorf("failed to save image record: %w", err)
@@ -343,18 +356,20 @@ func (s *UploadService) checkRateLimit(ctx context.Context, userID int64, client
 			continue
 		}
 		var count int64
+		var err error
 		if userID > 0 {
-			c, _ := s.db.CountImagesInWindow(ctx, sqlc.CountImagesInWindowParams{
-				UserID: domain.PgInt8(userID),
+			count, err = s.db.CountImagesInWindow(ctx, sqlc.CountImagesInWindowParams{
+				UserID:  domain.PgInt8(userID),
 				Column2: lim.secs,
 			})
-			count = c
 		} else {
-			c, _ := s.db.CountImagesInWindowByIP(ctx, sqlc.CountImagesInWindowByIPParams{
+			count, err = s.db.CountImagesInWindowByIP(ctx, sqlc.CountImagesInWindowByIPParams{
 				UploadedIp: clientIP,
 				Column2:    lim.secs,
 			})
-			count = c
+		}
+		if err != nil {
+			return fmt.Errorf("rate limit check failed: %w", err)
 		}
 		if count >= int64(lim.count) {
 			return fmt.Errorf("rate limit exceeded: %d uploads per %s", lim.count, lim.desc)

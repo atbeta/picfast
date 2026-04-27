@@ -25,6 +25,7 @@ func (h *AdminSettingHandler) Get(w http.ResponseWriter, r *http.Request) {
 		"user_initial_capacity":   h.config.App.UserInitialCapacity,
 		"default_image_ttl":       h.config.App.DefaultImageTTL.String(),
 		"moderation_mode":         h.config.App.ModerationMode,
+		"_warning":                "settings are volatile (in-memory only); restart resets to config file defaults",
 	})
 }
 
@@ -79,5 +80,6 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		"user_initial_capacity":   h.config.App.UserInitialCapacity,
 		"default_image_ttl":       h.config.App.DefaultImageTTL.String(),
 		"moderation_mode":         h.config.App.ModerationMode,
+		"_warning":                "settings are volatile (in-memory only); restart resets to config file defaults",
 	})
 }

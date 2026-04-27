@@ -113,7 +113,11 @@ func main() {
 	if existingUser.ID != 0 {
 		slog.Info("test user already exists", "id", existingUser.ID)
 	} else {
-		hash, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+		hash, err := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+		if err != nil {
+			slog.Error("failed to hash test user password", "error", err)
+			os.Exit(1)
+		}
 		user, err := queries.CreateUser(ctx, sqlc.CreateUserParams{
 			GroupID:       domain.PgInt8(defaultGroup.ID),
 			Email:         testEmail,
@@ -129,7 +133,7 @@ func main() {
 		if err != nil {
 			slog.Error("failed to create test user", "error", err)
 		} else {
-			slog.Info("created test user", "id", user.ID, "email", testEmail, "password", "password123")
+			slog.Info("created test user", "id", user.ID, "email", testEmail)
 		}
 	}
 
@@ -139,7 +143,11 @@ func main() {
 	if existingAdmin.ID != 0 {
 		slog.Info("admin user already exists", "id", existingAdmin.ID)
 	} else {
-		hash, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+		hash, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+		if err != nil {
+			slog.Error("failed to hash admin password", "error", err)
+			os.Exit(1)
+		}
 		admin, err := queries.CreateAdminUser(ctx, sqlc.CreateAdminUserParams{
 			GroupID:       domain.PgInt8(defaultGroup.ID),
 			Email:         adminEmail,
@@ -154,7 +162,7 @@ func main() {
 		if err != nil {
 			slog.Error("failed to create admin user", "error", err)
 		} else {
-			slog.Info("created admin user", "id", admin.ID, "email", adminEmail, "password", "admin123")
+			slog.Info("created admin user", "id", admin.ID, "email", adminEmail)
 		}
 	}
 

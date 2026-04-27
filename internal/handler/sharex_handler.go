@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 
@@ -14,40 +13,34 @@ type ShareXHandler struct {
 	baseURL string
 }
 
-func NewShareXHandler(upload *service.UploadService, baseURL string) *ShareXHandler {
-	return &ShareXHandler{upload: upload, baseURL: baseURL}
-}
-
 type shareXResponse struct {
 	URL          string `json:"url"`
 	ThumbnailURL string `json:"thumbnail_url,omitempty"`
 	DeletionURL  string `json:"deletion_url,omitempty"`
 }
 
+func NewShareXHandler(upload *service.UploadService, baseURL string) *ShareXHandler {
+	return &ShareXHandler{upload: upload, baseURL: baseURL}
+}
+
 func (h *ShareXHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 50<<20)
 
 	if err := r.ParseMultipartForm(50 << 20); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "failed to parse multipart form"})
+		Fail(w, http.StatusBadRequest, "failed to parse multipart form")
 		return
 	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "file is required"})
+		Fail(w, http.StatusBadRequest, "file is required")
 		return
 	}
 	defer file.Close()
 
 	fileData, err := io.ReadAll(file)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "failed to read file"})
+		Fail(w, http.StatusInternalServerError, "failed to read file")
 		return
 	}
 
@@ -64,17 +57,14 @@ func (h *ShareXHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		ClientIP: r.RemoteAddr,
 	})
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		Fail(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	imageURL := h.baseURL + "/i/" + result.Image.Key + "." + result.Image.Extension
 	thumbURL := h.baseURL + "/t/" + result.Image.Md5 + ".png"
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(shareXResponse{
+	Success(w, shareXResponse{
 		URL:          imageURL,
 		ThumbnailURL: thumbURL,
 	})
@@ -82,21 +72,21 @@ func (h *ShareXHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 func (h *ShareXHandler) Config(w http.ResponseWriter, r *http.Request) {
 	config := map[string]interface{}{
-		"Version":       "15.0.0",
-		"Name":          "PicFast",
+		"Version":         "15.0.0",
+		"Name":            "PicFast",
 		"DestinationType": "ImageUploader",
-		"RequestMethod": "POST",
-		"RequestURL":    h.baseURL + "/api/v1/sharex/upload",
+		"RequestMethod":   "POST",
+		"RequestURL":      h.baseURL + "/api/v1/sharex/upload",
 		"Headers": map[string]string{
 			"Authorization": "{if:Authorization}",
 		},
-		"Body":        "MultipartFormData",
+		"Body":         "MultipartFormData",
 		"FileFormName": "file",
-		"URL":         "{json:url}",
+		"URL":          "{json:url}",
 		"ThumbnailURL": "{json:thumbnail_url}",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Disposition", `attachment; filename="picfast.sxcu"`)
-	json.NewEncoder(w).Encode(config)
+	Success(w, config)
 }

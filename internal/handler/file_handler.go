@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -10,6 +11,8 @@ import (
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
 )
+
+var md5HashRegex = regexp.MustCompile(`^[a-f0-9]{32}$`)
 
 type FileHandler struct {
 	db       *sqlc.Queries
@@ -40,7 +43,10 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	// Moderation check: pending/rejected images are only visible to owner or admin
 	if img.ModerationStatus != "approved" && img.ModerationStatus != "" {
 		userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)
-		role, _ := r.Context().Value(domain.ContextKeyRole).(domain.UserRole)
+		role := domain.RoleUser
+		if rVal, rOk := r.Context().Value(domain.ContextKeyRole).(domain.UserRole); rOk {
+			role = rVal
+		}
 		if !ok || (img.UserID.Int64 != userID && role != domain.RoleAdmin) {
 			http.NotFound(w, r)
 			return
@@ -97,7 +103,7 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 
 func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 	md5Hash := chi.URLParam(r, "hash")
-	if md5Hash == "" {
+	if !md5HashRegex.MatchString(md5Hash) {
 		http.NotFound(w, r)
 		return
 	}

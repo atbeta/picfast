@@ -17,8 +17,31 @@ func NewLocalStorage(root, url string) *LocalStorage {
 	return &LocalStorage{root: root, url: url}
 }
 
-func (s *LocalStorage) Write(ctx context.Context, path string, data []byte) error {
+func (s *LocalStorage) safePath(path string) (string, error) {
+	if strings.Contains(path, "..") {
+		return "", fmt.Errorf("invalid path: contains '..'")
+	}
 	fullPath := filepath.Join(s.root, path)
+	// Ensure the resolved path stays within root
+	absRoot, err := filepath.Abs(s.root)
+	if err != nil {
+		return "", fmt.Errorf("resolve root: %w", err)
+	}
+	absPath, err := filepath.Abs(fullPath)
+	if err != nil {
+		return "", fmt.Errorf("resolve path: %w", err)
+	}
+	if !strings.HasPrefix(absPath, absRoot+string(filepath.Separator)) && absPath != absRoot {
+		return "", fmt.Errorf("invalid path: escapes root directory")
+	}
+	return fullPath, nil
+}
+
+func (s *LocalStorage) Write(ctx context.Context, path string, data []byte) error {
+	fullPath, err := s.safePath(path)
+	if err != nil {
+		return err
+	}
 	dir := filepath.Dir(fullPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("create directory: %w", err)
@@ -27,12 +50,18 @@ func (s *LocalStorage) Write(ctx context.Context, path string, data []byte) erro
 }
 
 func (s *LocalStorage) Read(ctx context.Context, path string) ([]byte, error) {
-	fullPath := filepath.Join(s.root, path)
+	fullPath, err := s.safePath(path)
+	if err != nil {
+		return nil, err
+	}
 	return os.ReadFile(fullPath)
 }
 
 func (s *LocalStorage) Delete(ctx context.Context, path string) error {
-	fullPath := filepath.Join(s.root, path)
+	fullPath, err := s.safePath(path)
+	if err != nil {
+		return err
+	}
 	return os.Remove(fullPath)
 }
 
