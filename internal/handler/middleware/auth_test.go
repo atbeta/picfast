@@ -36,7 +36,7 @@ func TestAuth_ValidToken(t *testing.T) {
 	jwtSvc := testJWT()
 	token, _, _ := jwtSvc.GenerateAccessToken(42, domain.RoleUser, 7)
 
-	r := chiRouter(Auth(jwtSvc), okHandler)
+	r := chiRouter(Auth(NewJWTAuthenticator(jwtSvc)), okHandler)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rec := httptest.NewRecorder()
@@ -56,7 +56,7 @@ func TestAuth_ValidToken(t *testing.T) {
 
 func TestAuth_MissingHeader(t *testing.T) {
 	jwtSvc := testJWT()
-	r := chiRouter(Auth(jwtSvc), okHandler)
+	r := chiRouter(Auth(NewJWTAuthenticator(jwtSvc)), okHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
@@ -69,7 +69,7 @@ func TestAuth_MissingHeader(t *testing.T) {
 
 func TestAuth_InvalidToken(t *testing.T) {
 	jwtSvc := testJWT()
-	r := chiRouter(Auth(jwtSvc), okHandler)
+	r := chiRouter(Auth(NewJWTAuthenticator(jwtSvc)), okHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer invalid-token")
@@ -83,7 +83,7 @@ func TestAuth_InvalidToken(t *testing.T) {
 
 func TestOptionalAuth_NoToken(t *testing.T) {
 	jwtSvc := testJWT()
-	r := chiRouter(OptionalAuth(jwtSvc), okHandler)
+	r := chiRouter(OptionalAuth(NewJWTAuthenticator(jwtSvc)), okHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
@@ -104,7 +104,7 @@ func TestOptionalAuth_ValidToken(t *testing.T) {
 	jwtSvc := testJWT()
 	token, _, _ := jwtSvc.GenerateAccessToken(99, domain.RoleAdmin, 3)
 
-	r := chiRouter(OptionalAuth(jwtSvc), okHandler)
+	r := chiRouter(OptionalAuth(NewJWTAuthenticator(jwtSvc)), okHandler)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rec := httptest.NewRecorder()

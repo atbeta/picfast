@@ -38,3 +38,28 @@ func New(typ string, cfg json.RawMessage) (Storage, error) {
 	}
 	return ctor(cfg)
 }
+
+// ConfigValidator validates the JSON configuration for a storage type.
+type ConfigValidator func(json.RawMessage) error
+
+var validatorRegistry = map[string]ConfigValidator{}
+
+// RegisterValidator registers a config validator for a storage backend type.
+func RegisterValidator(typ string, v ConfigValidator) {
+	validatorRegistry[typ] = v
+}
+
+// ValidateConfig validates config JSON for the given storage type.
+func ValidateConfig(typ string, cfg json.RawMessage) error {
+	v, ok := validatorRegistry[typ]
+	if !ok {
+		return fmt.Errorf("unknown storage type: %s", typ)
+	}
+	return v(cfg)
+}
+
+// IsKnownType returns true if the type is a registered storage backend.
+func IsKnownType(typ string) bool {
+	_, ok := registry[typ]
+	return ok
+}

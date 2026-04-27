@@ -107,36 +107,49 @@ func (m *ManualModerator) Moderate(ctx context.Context, imageID int64, imageKey 
 
 func (m *ManualModerator) SupportsAsync() bool { return false }
 
+// ModConstructor creates a Moderator. db may be nil for modes that don't need it.
+type ModConstructor func(db *sqlc.Queries) (Moderator, error)
+
+var modRegistry = map[Mode]ModConstructor{}
+var modeAliases = map[string]Mode{}
+
+// RegisterMode registers a moderation mode with its constructor and aliases.
+// Call from init() in each moderator implementation.
+func RegisterMode(mode Mode, aliases []string, ctor ModConstructor) {
+	modRegistry[mode] = ctor
+	for _, a := range aliases {
+		modeAliases[a] = mode
+	}
+	modeAliases[string(mode)] = mode
+}
+
 // New creates a Moderator based on the configured mode.
 func New(mode Mode, db *sqlc.Queries) (Moderator, error) {
-	switch mode {
-	case ModeDisabled:
-		return NewNoopModerator(), nil
-	case ModeManual:
-		if db == nil {
-			return nil, fmt.Errorf("manual moderator requires database")
-		}
-		return NewManualModerator(db), nil
-	case ModeAuto:
-		// Future: instantiate AI moderator
-		return nil, fmt.Errorf("auto moderation not yet implemented; use 'manual' or 'disabled'")
-	default:
+	ctor, ok := modRegistry[mode]
+	if !ok {
 		return nil, fmt.Errorf("unknown moderation mode: %s", mode)
 	}
+	return ctor(db)
 }
 
 // ParseMode converts a string to a Mode with validation.
 func ParseMode(s string) (Mode, error) {
-	switch s {
-	case "disabled", "off", "none":
-		return ModeDisabled, nil
-	case "manual", "human":
-		return ModeManual, nil
-	case "auto", "ai", "api":
-		return ModeAuto, nil
-	default:
-		return "", fmt.Errorf("invalid moderation mode: %s (valid: disabled, manual, auto)", s)
+	if mode, ok := modeAliases[s]; ok {
+		return mode, nil
 	}
+	return "", fmt.Errorf("invalid moderation mode: %s", s)
+}
+
+func init() {
+	RegisterMode(ModeDisabled, []string{"off", "none"}, func(db *sqlc.Queries) (Moderator, error) {
+		return NewNoopModerator(), nil
+	})
+	RegisterMode(ModeManual, []string{"human"}, func(db *sqlc.Queries) (Moderator, error) {
+		if db == nil {
+			return nil, fmt.Errorf("manual moderator requires database")
+		}
+		return NewManualModerator(db), nil
+	})
 }
 
 // ModerationContext carries moderation state through the request context.

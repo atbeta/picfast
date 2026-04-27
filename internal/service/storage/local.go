@@ -20,6 +20,16 @@ func init() {
 	Register(string(domain.StrategyTypeLocal), func(cfg json.RawMessage) (Storage, error) {
 		return NewLocalStorage(cfg)
 	})
+	RegisterValidator(string(domain.StrategyTypeLocal), func(cfg json.RawMessage) error {
+		var c domain.LocalStrategyConfig
+		if err := json.Unmarshal(cfg, &c); err != nil {
+			return err
+		}
+		if c.Root == "" || c.URL == "" {
+			return fmt.Errorf("root and url are required for local storage")
+		}
+		return nil
+	})
 }
 
 func NewLocalStorage(cfg json.RawMessage) (*LocalStorage, error) {

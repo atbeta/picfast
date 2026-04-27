@@ -23,6 +23,16 @@ func init() {
 	Register(string(domain.StrategyTypeS3), func(cfg json.RawMessage) (Storage, error) {
 		return NewS3Storage(cfg)
 	})
+	RegisterValidator(string(domain.StrategyTypeS3), func(cfg json.RawMessage) error {
+		var c domain.S3StrategyConfig
+		if err := json.Unmarshal(cfg, &c); err != nil {
+			return err
+		}
+		if c.Endpoint == "" || c.Bucket == "" || c.AccessKeyID == "" || c.SecretAccessKey == "" {
+			return fmt.Errorf("endpoint, bucket, access_key, and secret_key are required for S3 storage")
+		}
+		return nil
+	})
 }
 
 func NewS3Storage(cfg json.RawMessage) (*S3Storage, error) {

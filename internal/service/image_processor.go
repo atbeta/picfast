@@ -13,6 +13,19 @@ type ProcessedImage struct {
 	Height int
 }
 
+// FormatExporter encodes a vips image to a specific format.
+type FormatExporter interface {
+	Name() string
+	Export(img *vips.ImageRef, quality int, stripMetadata bool) ([]byte, error)
+}
+
+var exportRegistry = map[string]FormatExporter{}
+
+// RegisterExporter registers an image format exporter.
+func RegisterExporter(e FormatExporter) {
+	exportRegistry[e.Name()] = e
+}
+
 func ProcessImage(data []byte, saveFormat string, quality int, stripExif bool) (*ProcessedImage, error) {
 	params := vips.NewImportParams()
 	params.AutoRotate.Set(true)
@@ -33,44 +46,19 @@ func ProcessImage(data []byte, saveFormat string, quality int, stripExif bool) (
 		return &ProcessedImage{Data: data, Width: width, Height: height}, nil
 	}
 
-	var out []byte
-	var exportErr error
-
-	switch saveFormat {
-	case "png":
-		p := vips.NewPngExportParams()
-		if stripExif {
-			p.StripMetadata = true
-		}
-		out, _, exportErr = img.ExportPng(p)
-	case "webp":
-		p := vips.NewWebpExportParams()
-		if quality > 0 && quality <= 100 {
-			p.Quality = quality
-		}
-		if stripExif {
-			p.StripMetadata = true
-		}
-		out, _, exportErr = img.ExportWebp(p)
-	case "gif":
-		p := vips.NewGifExportParams()
-		if stripExif {
-			p.StripMetadata = true
-		}
-		out, _, exportErr = img.ExportGIF(p)
-	default: // jpeg
-		p := vips.NewJpegExportParams()
-		if quality > 0 && quality < 100 {
-			p.Quality = quality
-		}
-		if stripExif {
-			p.StripMetadata = true
-		}
-		out, _, exportErr = img.ExportJpeg(p)
+	format := saveFormat
+	if format == "" {
+		format = "jpeg"
 	}
 
-	if exportErr != nil {
-		return nil, exportErr
+	exporter, ok := exportRegistry[format]
+	if !ok {
+		exporter = exportRegistry["jpeg"]
+	}
+
+	out, err := exporter.Export(img, quality, stripExif)
+	if err != nil {
+		return nil, err
 	}
 
 	return &ProcessedImage{Data: out, Width: width, Height: height}, nil
@@ -82,4 +70,67 @@ func DecodeImageDimensions(r io.Reader) (int, int, error) {
 		return 0, 0, err
 	}
 	return img.Width, img.Height, nil
+}
+
+// Format exporter implementations
+
+type jpegExporter struct{}
+
+func (e *jpegExporter) Name() string { return "jpeg" }
+func (e *jpegExporter) Export(img *vips.ImageRef, quality int, stripMetadata bool) ([]byte, error) {
+	p := vips.NewJpegExportParams()
+	if quality > 0 && quality < 100 {
+		p.Quality = quality
+	}
+	if stripMetadata {
+		p.StripMetadata = true
+	}
+	out, _, err := img.ExportJpeg(p)
+	return out, err
+}
+
+type pngExporter struct{}
+
+func (e *pngExporter) Name() string { return "png" }
+func (e *pngExporter) Export(img *vips.ImageRef, quality int, stripMetadata bool) ([]byte, error) {
+	p := vips.NewPngExportParams()
+	if stripMetadata {
+		p.StripMetadata = true
+	}
+	out, _, err := img.ExportPng(p)
+	return out, err
+}
+
+type webpExporter struct{}
+
+func (e *webpExporter) Name() string { return "webp" }
+func (e *webpExporter) Export(img *vips.ImageRef, quality int, stripMetadata bool) ([]byte, error) {
+	p := vips.NewWebpExportParams()
+	if quality > 0 && quality <= 100 {
+		p.Quality = quality
+	}
+	if stripMetadata {
+		p.StripMetadata = true
+	}
+	out, _, err := img.ExportWebp(p)
+	return out, err
+}
+
+type gifExporter struct{}
+
+func (e *gifExporter) Name() string { return "gif" }
+func (e *gifExporter) Export(img *vips.ImageRef, quality int, stripMetadata bool) ([]byte, error) {
+	p := vips.NewGifExportParams()
+	if stripMetadata {
+		p.StripMetadata = true
+	}
+	out, _, err := img.ExportGIF(p)
+	return out, err
+}
+
+func init() {
+	RegisterExporter(&jpegExporter{})
+	RegisterExporter(&pngExporter{})
+	RegisterExporter(&webpExporter{})
+	RegisterExporter(&gifExporter{})
 }

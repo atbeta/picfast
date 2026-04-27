@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/atbeta/picfast/internal/sqlc"
 )
 
@@ -61,8 +61,8 @@ func (h *AdminStrategyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.StrategyType != string(domain.StrategyTypeLocal) && req.StrategyType != string(domain.StrategyTypeS3) {
-		Fail(w, http.StatusBadRequest, "strategy_type must be 'local' or 's3'")
+	if !storage.IsKnownType(req.StrategyType) {
+		Fail(w, http.StatusBadRequest, "unknown strategy_type")
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *AdminStrategyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := validateStrategyConfigs(req.StrategyType, req.Configs); err != nil {
+	if err := storage.ValidateConfig(req.StrategyType, req.Configs); err != nil {
 		Fail(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -116,14 +116,14 @@ func (h *AdminStrategyHandler) Update(w http.ResponseWriter, r *http.Request) {
 		name = req.Name
 	}
 	if req.StrategyType != "" {
-		if req.StrategyType != string(domain.StrategyTypeLocal) && req.StrategyType != string(domain.StrategyTypeS3) {
-			Fail(w, http.StatusBadRequest, "strategy_type must be 'local' or 's3'")
+		if !storage.IsKnownType(req.StrategyType) {
+			Fail(w, http.StatusBadRequest, "unknown strategy_type")
 			return
 		}
 		strategyType = req.StrategyType
 	}
 	if len(req.Configs) > 0 {
-		if err := validateStrategyConfigs(strategyType, req.Configs); err != nil {
+		if err := storage.ValidateConfig(strategyType, req.Configs); err != nil {
 			Fail(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -157,38 +157,6 @@ func (h *AdminStrategyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	SuccessMessage(w, "deleted")
-}
-
-func validateStrategyConfigs(strategyType string, configs json.RawMessage) error {
-	switch strategyType {
-	case string(domain.StrategyTypeLocal):
-		var cfg domain.LocalStrategyConfig
-		if err := json.Unmarshal(configs, &cfg); err != nil {
-			return errInvalidConfigs()
-		}
-		if cfg.Root == "" || cfg.URL == "" {
-			return errInvalidConfigs()
-		}
-	case string(domain.StrategyTypeS3):
-		var cfg domain.S3StrategyConfig
-		if err := json.Unmarshal(configs, &cfg); err != nil {
-			return errInvalidConfigs()
-		}
-		if cfg.Endpoint == "" || cfg.Bucket == "" || cfg.AccessKeyID == "" || cfg.SecretAccessKey == "" {
-			return errInvalidConfigs()
-		}
-	}
-	return nil
-}
-
-func errInvalidConfigs() error {
-	return &invalidConfigsError{}
-}
-
-type invalidConfigsError struct{}
-
-func (e *invalidConfigsError) Error() string {
-	return "invalid configs for this strategy type"
 }
 
 func strategyJSON(s sqlc.Strategy) AdminStrategyResponse {

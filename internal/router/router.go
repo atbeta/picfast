@@ -162,7 +162,7 @@ func New(
 	loginLimiter := middleware.NewRateLimiter(10, 60*1e9)
 
 	// Image file serving: /i/{key}.{ext} — with OptionalAuth so private images can be accessed by owner
-	r.With(middleware.OptionalAuth(jwtSvc)).Get("/i/{key}.{ext}", fileHandler.ServeImage)
+	r.With(middleware.OptionalAuth(middleware.NewJWTAuthenticator(jwtSvc))).Get("/i/{key}.{ext}", fileHandler.ServeImage)
 
 	// Thumbnail serving: /t/{hash}.png
 	r.Get("/t/{hash}.png", fileHandler.ServeThumbnail)
@@ -197,7 +197,7 @@ func New(
 
 		// Authenticated user routes
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.Auth(jwtSvc))
+			r.Use(middleware.Auth(middleware.NewJWTAuthenticator(jwtSvc)))
 
 			r.Post("/auth/logout", authHandler.Logout)
 
@@ -228,17 +228,17 @@ func New(
 		})
 
 		// Optional auth for guest upload
-		r.With(middleware.OptionalAuth(jwtSvc)).
+		r.With(middleware.OptionalAuth(middleware.NewJWTAuthenticator(jwtSvc))).
 			Post("/upload", imageHandler.Upload)
 
 		// ShareX endpoints
 		sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL)
-		r.With(middleware.OptionalAuth(jwtSvc), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
+		r.With(middleware.OptionalAuth(middleware.NewJWTAuthenticator(jwtSvc)), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
 		r.Get("/sharex/config", sharexHandler.Config)
 
 		// Admin routes
 		r.Route("/admin", func(r chi.Router) {
-			r.Use(middleware.Auth(jwtSvc))
+			r.Use(middleware.Auth(middleware.NewJWTAuthenticator(jwtSvc)))
 
 			r.Use(middleware.Admin)
 
