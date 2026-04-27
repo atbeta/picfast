@@ -39,6 +39,8 @@ COPY --from=backend-builder /picfast /usr/local/bin/picfast
 COPY --from=backend-builder /app/migrations /migrations
 COPY --from=frontend-builder /web-dist /web-dist
 
+WORKDIR /app
+
 EXPOSE 8080
 
 ENV PICFAST_SERVER_WEB_DIR=/web-dist
