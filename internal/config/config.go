@@ -27,9 +27,10 @@ type DatabaseConfig struct {
 }
 
 type JWTConfig struct {
-	Secret     string        `mapstructure:"secret"`
-	AccessTTL  time.Duration `mapstructure:"access_ttl"`
-	RefreshTTL time.Duration `mapstructure:"refresh_ttl"`
+	Secret        string        `mapstructure:"secret"`
+	AccessTTL     time.Duration `mapstructure:"access_ttl"`
+	RefreshTTL    time.Duration `mapstructure:"refresh_ttl"`
+	SigningMethod string        `mapstructure:"signing_method"` // HS256, HS384, HS512
 }
 
 type StorageConfig struct {
@@ -101,6 +102,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("jwt.secret", "change-me-in-production")
 	v.SetDefault("jwt.access_ttl", 15*time.Minute)
 	v.SetDefault("jwt.refresh_ttl", 168*time.Hour)
+	v.SetDefault("jwt.signing_method", "HS256")
 
 	v.SetDefault("storage.local_root", "./data/uploads")
 	v.SetDefault("storage.thumbnail_dir", "./data/thumbnails")

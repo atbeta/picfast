@@ -20,6 +20,17 @@ func NewJWTService(cfg *config.JWTConfig) *JWTService {
 	return &JWTService{cfg: cfg}
 }
 
+func (s *JWTService) signingMethod() jwt.SigningMethod {
+	switch s.cfg.SigningMethod {
+	case "HS384":
+		return jwt.SigningMethodHS384
+	case "HS512":
+		return jwt.SigningMethodHS512
+	default:
+		return jwt.SigningMethodHS256
+	}
+}
+
 func (s *JWTService) GenerateAccessToken(userID int64, role domain.UserRole, groupID int64) (string, int64, error) {
 	expiresAt := time.Now().Add(s.cfg.AccessTTL)
 	claims := domain.TokenClaims{
@@ -31,7 +42,7 @@ func (s *JWTService) GenerateAccessToken(userID int64, role domain.UserRole, gro
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwt.NewWithClaims(s.signingMethod(), claims)
 	signed, err := token.SignedString([]byte(s.cfg.Secret))
 	if err != nil {
 		return "", 0, err
@@ -40,8 +51,9 @@ func (s *JWTService) GenerateAccessToken(userID int64, role domain.UserRole, gro
 }
 
 func (s *JWTService) ValidateAccessToken(tokenStr string) (*domain.TokenClaims, error) {
+	expectedMethod := s.signingMethod()
 	token, err := jwt.ParseWithClaims(tokenStr, &domain.TokenClaims{}, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+		if t.Method.Alg() != expectedMethod.Alg() {
 			return nil, errors.New("unexpected signing method")
 		}
 		return []byte(s.cfg.Secret), nil

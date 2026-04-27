@@ -8,7 +8,13 @@ import (
 	"github.com/atbeta/picfast/internal/handler"
 )
 
-type RateLimiter struct {
+// RateLimiter decides whether a request identified by key should be allowed.
+type RateLimiter interface {
+	Allow(key string) bool
+}
+
+// MemoryRateLimiter is an in-memory sliding-window rate limiter.
+type MemoryRateLimiter struct {
 	mu       sync.Mutex
 	windows  map[string]*slidingWindow
 	max      int
@@ -16,19 +22,19 @@ type RateLimiter struct {
 }
 
 type slidingWindow struct {
-	count    int
-	resetAt  time.Time
+	count   int
+	resetAt time.Time
 }
 
-func NewRateLimiter(max int, interval time.Duration) *RateLimiter {
-	return &RateLimiter{
+func NewRateLimiter(max int, interval time.Duration) *MemoryRateLimiter {
+	return &MemoryRateLimiter{
 		windows:  make(map[string]*slidingWindow),
 		max:      max,
 		interval: interval,
 	}
 }
 
-func (rl *RateLimiter) Allow(key string) bool {
+func (rl *MemoryRateLimiter) Allow(key string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
@@ -43,7 +49,7 @@ func (rl *RateLimiter) Allow(key string) bool {
 	return w.count <= rl.max
 }
 
-func RateLimit(limiter *RateLimiter, keyFunc func(r *http.Request) string) func(http.Handler) http.Handler {
+func RateLimit(limiter RateLimiter, keyFunc func(r *http.Request) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			key := keyFunc(r)

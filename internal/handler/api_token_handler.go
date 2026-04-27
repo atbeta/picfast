@@ -66,18 +66,8 @@ func (h *APITokenHandler) Create(w http.ResponseWriter, r *http.Request) {
 	hash := sha256.Sum256([]byte(plainToken))
 	tokenHash := hex.EncodeToString(hash[:])
 
-	// Parse expiration
-	var expiresAt interface{}
-	switch req.ExpiresIn {
-	case "30d":
-		expiresAt = time.Now().Add(30 * 24 * time.Hour)
-	case "90d":
-		expiresAt = time.Now().Add(90 * 24 * time.Hour)
-	case "1y":
-		expiresAt = time.Now().Add(365 * 24 * time.Hour)
-	default:
-		expiresAt = nil // never
-	}
+	// Parse expiration: supports Go duration strings plus "d" (days) and "y" (years).
+	expiresAt := parseTokenExpiry(req.ExpiresIn)
 
 	scopes, _ := json.Marshal(req.Scopes)
 	if len(req.Scopes) == 0 {
@@ -175,4 +165,34 @@ func (h *APITokenHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	SuccessMessage(w, "token deleted")
+}
+
+// parseTokenExpiry converts an expiry string to an optional time.
+// Supports Go duration strings ("24h", "72h"), compact forms ("30d", "90d", "1y"),
+// and "never" or empty string for no expiry.
+func parseTokenExpiry(s string) interface{} {
+	if s == "" || s == "never" {
+		return nil
+	}
+	// Try standard Go duration parsing first
+	if d, err := time.ParseDuration(s); err == nil {
+		return time.Now().Add(d)
+	}
+	// Compact forms with day/year suffix
+	var unit time.Duration
+	switch {
+	case len(s) > 1 && s[len(s)-1] == 'd':
+		s = s[:len(s)-1]
+		unit = 24 * time.Hour
+	case len(s) > 1 && s[len(s)-1] == 'y':
+		s = s[:len(s)-1]
+		unit = 365 * 24 * time.Hour
+	default:
+		return nil
+	}
+	var n int
+	if _, err := fmt.Sscanf(s, "%d", &n); err != nil || n <= 0 {
+		return nil
+	}
+	return time.Now().Add(time.Duration(n) * unit)
 }
