@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -18,10 +19,21 @@ type S3Storage struct {
 	url    string
 }
 
-func NewS3Storage(cfg domain.S3StrategyConfig) (*S3Storage, error) {
-	creds := credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.SecretAccessKey, "")
+func init() {
+	Register(string(domain.StrategyTypeS3), func(cfg json.RawMessage) (Storage, error) {
+		return NewS3Storage(cfg)
+	})
+}
 
-	region := cfg.Region
+func NewS3Storage(cfg json.RawMessage) (*S3Storage, error) {
+	var c domain.S3StrategyConfig
+	if err := json.Unmarshal(cfg, &c); err != nil {
+		return nil, err
+	}
+
+	creds := credentials.NewStaticCredentialsProvider(c.AccessKeyID, c.SecretAccessKey, "")
+
+	region := c.Region
 	if region == "" {
 		region = "auto"
 	}
@@ -29,15 +41,15 @@ func NewS3Storage(cfg domain.S3StrategyConfig) (*S3Storage, error) {
 	client := s3.New(s3.Options{
 		Region:               region,
 		Credentials:          creds,
-		BaseEndpoint:         aws.String(cfg.Endpoint),
+		BaseEndpoint:         aws.String(c.Endpoint),
 		UsePathStyle:         true,
 		AuthSchemePreference: []string{"sigv4"},
 	})
 
 	return &S3Storage{
 		client: client,
-		bucket: cfg.Bucket,
-		url:    cfg.URL,
+		bucket: c.Bucket,
+		url:    c.URL,
 	}, nil
 }
 
@@ -91,8 +103,10 @@ func (s *S3Storage) URL(pathname string) string {
 	if s.url != "" {
 		return s.url + "/" + pathname
 	}
-	return fmt.Sprintf("https://%s.s3.%s/%s", s.bucket, "endpoint", pathname)
+	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucket, s.client.Options().Region, pathname)
 }
+
+func (s *S3Storage) Close() error { return nil }
 
 func (s *S3Storage) HealthCheck(ctx context.Context) HealthResult {
 	_, err := s.client.HeadBucket(ctx, &s3.HeadBucketInput{

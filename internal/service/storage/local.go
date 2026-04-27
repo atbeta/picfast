@@ -2,10 +2,13 @@ package storage
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/atbeta/picfast/internal/domain"
 )
 
 type LocalStorage struct {
@@ -13,8 +16,18 @@ type LocalStorage struct {
 	url  string
 }
 
-func NewLocalStorage(root, url string) *LocalStorage {
-	return &LocalStorage{root: root, url: url}
+func init() {
+	Register(string(domain.StrategyTypeLocal), func(cfg json.RawMessage) (Storage, error) {
+		return NewLocalStorage(cfg)
+	})
+}
+
+func NewLocalStorage(cfg json.RawMessage) (*LocalStorage, error) {
+	var c domain.LocalStrategyConfig
+	if err := json.Unmarshal(cfg, &c); err != nil {
+		return nil, err
+	}
+	return &LocalStorage{root: c.Root, url: c.URL}, nil
 }
 
 func (s *LocalStorage) safePath(path string) (string, error) {
@@ -68,6 +81,8 @@ func (s *LocalStorage) Delete(ctx context.Context, path string) error {
 func (s *LocalStorage) URL(pathname string) string {
 	return strings.TrimRight(s.url, "/") + "/" + strings.TrimLeft(pathname, "/")
 }
+
+func (s *LocalStorage) Close() error { return nil }
 
 func (s *LocalStorage) HealthCheck(ctx context.Context) HealthResult {
 	// Try to create and remove a temporary file

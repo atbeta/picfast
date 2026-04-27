@@ -74,6 +74,7 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
+	defer store.Close()
 
 	pathname := img.Name
 	if img.Path != "" && img.Path != "." {

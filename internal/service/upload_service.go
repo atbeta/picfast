@@ -217,6 +217,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		if err != nil {
 			return nil, fmt.Errorf("failed to init storage: %w", err)
 		}
+		defer store.Close()
 		if err := store.Write(ctx, pathname, fileData); err != nil {
 			return nil, fmt.Errorf("failed to write file: %w", err)
 		}
@@ -281,6 +282,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 			if delErr != nil {
 				slog.Warn("failed to get storage for rollback cleanup", "error", delErr)
 			} else if store != nil {
+				defer store.Close()
 				if delErr := store.Delete(ctx, pathname); delErr != nil {
 					slog.Warn("rollback cleanup failed", "pathname", pathname, "error", delErr)
 				}

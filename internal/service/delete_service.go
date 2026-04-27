@@ -66,6 +66,7 @@ func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) e
 		if err == nil {
 			store, err := GetStorageForStrategy(strategy)
 			if err == nil {
+				defer store.Close()
 				pathname := img.Name
 				if img.Path != "" && img.Path != "." {
 					pathname = img.Path + "/" + img.Name

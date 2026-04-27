@@ -275,7 +275,8 @@ func New(
 					if err != nil {
 						item["error"] = "failed to init: " + err.Error()
 					} else {
-						health := store.HealthCheck(r.Context())
+						defer store.Close()
+					health := store.HealthCheck(r.Context())
 						item["healthy"] = health.Healthy
 						if health.Error != "" {
 							item["error"] = health.Error
