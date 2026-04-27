@@ -16,9 +16,10 @@ storage:
 
 app:
   name: "PicFast"
-  allow_guest_upload: true
-  allow_registration: true
+  allow_guest_upload: false
+  allow_registration: false
   user_initial_capacity: 524288000
+  default_image_ttl: "0"       # 0 = no default expiration; e.g. "24h", "7d"
   admin_email: ""
   admin_password: ""
   moderation_mode: "disabled"  # disabled | manual | auto (future)

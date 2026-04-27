@@ -48,6 +48,12 @@ type UploadResult struct {
 }
 
 func (s *UploadService) Store(ctx context.Context, params UploadParams) (*UploadResult, error) {
+	// Apply default TTL if none provided
+	if params.ExpiresAt == nil && s.config.App.DefaultImageTTL > 0 {
+		t := time.Now().Add(s.config.App.DefaultImageTTL)
+		params.ExpiresAt = &t
+	}
+
 	// Step 1: Resolve identity
 	var group sqlc.Group
 	var userID int64

@@ -152,6 +152,41 @@ make clean        # 清理构建产物
 管理员端点前缀：`/api/v1/admin/*`
 pprof 调试端点：`/api/v1/admin/debug/pprof/*`
 
+### API 快速调用示例
+
+**上传图片（curl）**
+```bash
+curl -X POST http://localhost:8080/api/v1/upload \
+  -F "file=@photo.png" \
+  -F "expires_in=24h"
+```
+
+**上传图片（TypeScript / Fetch）**
+```typescript
+const file = document.getElementById('file').files[0];
+const form = new FormData();
+form.append('file', file);
+form.append('expires_in', '24h');
+
+const res = await fetch('/api/v1/upload', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer <token>', // optional for guest upload
+  },
+  body: form,
+});
+const data = await res.json();
+console.log(data.data.url);          // https://...
+console.log(data.data.markdown);     // ![photo.png](https://...)
+console.log(data.data.thumbnail_url);// https://.../t/xxx.png
+```
+
+**ShareX 配置下载**
+```bash
+curl http://localhost:8080/api/v1/sharex/config \
+  -o picfast.sxcu
+```
+
 ## 核心功能
 
 - **多存储策略**：支持本地磁盘和 S3 兼容对象存储，可按用户组分配

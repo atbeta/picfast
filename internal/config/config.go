@@ -38,13 +38,14 @@ type StorageConfig struct {
 }
 
 type AppConfig struct {
-	Name                string `mapstructure:"name"`
-	AllowGuestUpload    bool   `mapstructure:"allow_guest_upload"`
-	AllowRegistration   bool   `mapstructure:"allow_registration"`
-	UserInitialCapacity int64  `mapstructure:"user_initial_capacity"`
-	AdminEmail          string `mapstructure:"admin_email"`
-	AdminPassword       string `mapstructure:"admin_password"`
-	ModerationMode      string `mapstructure:"moderation_mode"` // disabled, manual, auto
+	Name                string        `mapstructure:"name"`
+	AllowGuestUpload    bool          `mapstructure:"allow_guest_upload"`
+	AllowRegistration   bool          `mapstructure:"allow_registration"`
+	UserInitialCapacity int64         `mapstructure:"user_initial_capacity"`
+	DefaultImageTTL     time.Duration `mapstructure:"default_image_ttl"`
+	AdminEmail          string        `mapstructure:"admin_email"`
+	AdminPassword       string        `mapstructure:"admin_password"`
+	ModerationMode      string        `mapstructure:"moderation_mode"` // disabled, manual, auto
 }
 
 type Setter struct {
@@ -59,6 +60,7 @@ func (s *Setter) SetAppName(name string)         { s.cfg.App.Name = name }
 func (s *Setter) SetAllowGuestUpload(v bool)     { s.cfg.App.AllowGuestUpload = v }
 func (s *Setter) SetAllowRegistration(v bool)    { s.cfg.App.AllowRegistration = v }
 func (s *Setter) SetUserInitialCapacity(v int64) { s.cfg.App.UserInitialCapacity = v }
+func (s *Setter) SetDefaultImageTTL(v time.Duration) { s.cfg.App.DefaultImageTTL = v }
 func (s *Setter) SetModerationMode(mode string)  { s.cfg.App.ModerationMode = mode }
 
 func Load() (*Config, error) {
@@ -104,8 +106,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("storage.thumbnail_dir", "./data/thumbnails")
 
 	v.SetDefault("app.name", "PicFast")
-	v.SetDefault("app.allow_guest_upload", true)
-	v.SetDefault("app.allow_registration", true)
+	v.SetDefault("app.allow_guest_upload", false)
+	v.SetDefault("app.allow_registration", false)
 	v.SetDefault("app.user_initial_capacity", int64(524288000))
+	v.SetDefault("app.default_image_ttl", time.Duration(0))
 	v.SetDefault("app.moderation_mode", "disabled")
 }
