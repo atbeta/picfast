@@ -5,8 +5,8 @@ SELECT * FROM images WHERE key = $1;
 SELECT * FROM images WHERE id = $1;
 
 -- name: CreateImage :one
-INSERT INTO images (user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, uploaded_ip)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+INSERT INTO images (user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, uploaded_ip, expires_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 RETURNING *;
 
 -- name: DeleteImage :exec
@@ -60,3 +60,12 @@ LIMIT $1 OFFSET $2;
 
 -- name: CountAllImages :one
 SELECT COUNT(*) FROM images;
+
+-- name: GetExpiredImages :many
+SELECT * FROM images
+WHERE expires_at IS NOT NULL AND expires_at <= NOW()
+ORDER BY expires_at ASC
+LIMIT $1;
+
+-- name: UpdateImageExpiration :exec
+UPDATE images SET expires_at = $2, updated_at = NOW() WHERE id = $1;

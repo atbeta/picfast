@@ -71,29 +71,30 @@ func (q *Queries) CountImagesInWindowByIP(ctx context.Context, arg CountImagesIn
 }
 
 const createImage = `-- name: CreateImage :one
-INSERT INTO images (user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, uploaded_ip)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-RETURNING id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status
+INSERT INTO images (user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, uploaded_ip, expires_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+RETURNING id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at
 `
 
 type CreateImageParams struct {
-	UserID     pgtype.Int8 `json:"user_id"`
-	AlbumID    pgtype.Int8 `json:"album_id"`
-	GroupID    pgtype.Int8 `json:"group_id"`
-	StrategyID pgtype.Int8 `json:"strategy_id"`
-	Key        string      `json:"key"`
-	Path       string      `json:"path"`
-	Name       string      `json:"name"`
-	OriginName string      `json:"origin_name"`
-	SizeBytes  int64       `json:"size_bytes"`
-	Mimetype   string      `json:"mimetype"`
-	Extension  string      `json:"extension"`
-	Md5        string      `json:"md5"`
-	Sha1       string      `json:"sha1"`
-	Width      int32       `json:"width"`
-	Height     int32       `json:"height"`
-	Permission int16       `json:"permission"`
-	UploadedIp string      `json:"uploaded_ip"`
+	UserID     pgtype.Int8        `json:"user_id"`
+	AlbumID    pgtype.Int8        `json:"album_id"`
+	GroupID    pgtype.Int8        `json:"group_id"`
+	StrategyID pgtype.Int8        `json:"strategy_id"`
+	Key        string             `json:"key"`
+	Path       string             `json:"path"`
+	Name       string             `json:"name"`
+	OriginName string             `json:"origin_name"`
+	SizeBytes  int64              `json:"size_bytes"`
+	Mimetype   string             `json:"mimetype"`
+	Extension  string             `json:"extension"`
+	Md5        string             `json:"md5"`
+	Sha1       string             `json:"sha1"`
+	Width      int32              `json:"width"`
+	Height     int32              `json:"height"`
+	Permission int16              `json:"permission"`
+	UploadedIp string             `json:"uploaded_ip"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
 }
 
 func (q *Queries) CreateImage(ctx context.Context, arg CreateImageParams) (Image, error) {
@@ -115,6 +116,7 @@ func (q *Queries) CreateImage(ctx context.Context, arg CreateImageParams) (Image
 		arg.Height,
 		arg.Permission,
 		arg.UploadedIp,
+		arg.ExpiresAt,
 	)
 	var i Image
 	err := row.Scan(
@@ -140,6 +142,7 @@ func (q *Queries) CreateImage(ctx context.Context, arg CreateImageParams) (Image
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ModerationStatus,
+		&i.ExpiresAt,
 	)
 	return i, err
 }
@@ -163,7 +166,7 @@ func (q *Queries) DeleteImageByKey(ctx context.Context, key string) error {
 }
 
 const findDuplicateImage = `-- name: FindDuplicateImage :one
-SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status FROM images
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at FROM images
 WHERE strategy_id = $1 AND md5 = $2 AND sha1 = $3
 LIMIT 1
 `
@@ -200,12 +203,64 @@ func (q *Queries) FindDuplicateImage(ctx context.Context, arg FindDuplicateImage
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ModerationStatus,
+		&i.ExpiresAt,
 	)
 	return i, err
 }
 
+const getExpiredImages = `-- name: GetExpiredImages :many
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at FROM images
+WHERE expires_at IS NOT NULL AND expires_at <= NOW()
+ORDER BY expires_at ASC
+LIMIT $1
+`
+
+func (q *Queries) GetExpiredImages(ctx context.Context, limit int32) ([]Image, error) {
+	rows, err := q.db.Query(ctx, getExpiredImages, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Image{}
+	for rows.Next() {
+		var i Image
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.AlbumID,
+			&i.GroupID,
+			&i.StrategyID,
+			&i.Key,
+			&i.Path,
+			&i.Name,
+			&i.OriginName,
+			&i.SizeBytes,
+			&i.Mimetype,
+			&i.Extension,
+			&i.Md5,
+			&i.Sha1,
+			&i.Width,
+			&i.Height,
+			&i.Permission,
+			&i.IsUnhealthy,
+			&i.UploadedIp,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ModerationStatus,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getImageByID = `-- name: GetImageByID :one
-SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status FROM images WHERE id = $1
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at FROM images WHERE id = $1
 `
 
 func (q *Queries) GetImageByID(ctx context.Context, id int64) (Image, error) {
@@ -234,12 +289,13 @@ func (q *Queries) GetImageByID(ctx context.Context, id int64) (Image, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ModerationStatus,
+		&i.ExpiresAt,
 	)
 	return i, err
 }
 
 const getImageByKey = `-- name: GetImageByKey :one
-SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status FROM images WHERE key = $1
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at FROM images WHERE key = $1
 `
 
 func (q *Queries) GetImageByKey(ctx context.Context, key string) (Image, error) {
@@ -268,12 +324,13 @@ func (q *Queries) GetImageByKey(ctx context.Context, key string) (Image, error) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ModerationStatus,
+		&i.ExpiresAt,
 	)
 	return i, err
 }
 
 const listAllImages = `-- name: ListAllImages :many
-SELECT images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status, users.email as user_email FROM images
+SELECT images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status, images.expires_at, users.email as user_email FROM images
 LEFT JOIN users ON images.user_id = users.id
 ORDER BY images.created_at DESC
 LIMIT $1 OFFSET $2
@@ -285,29 +342,30 @@ type ListAllImagesParams struct {
 }
 
 type ListAllImagesRow struct {
-	ID               int64       `json:"id"`
-	UserID           pgtype.Int8 `json:"user_id"`
-	AlbumID          pgtype.Int8 `json:"album_id"`
-	GroupID          pgtype.Int8 `json:"group_id"`
-	StrategyID       pgtype.Int8 `json:"strategy_id"`
-	Key              string      `json:"key"`
-	Path             string      `json:"path"`
-	Name             string      `json:"name"`
-	OriginName       string      `json:"origin_name"`
-	SizeBytes        int64       `json:"size_bytes"`
-	Mimetype         string      `json:"mimetype"`
-	Extension        string      `json:"extension"`
-	Md5              string      `json:"md5"`
-	Sha1             string      `json:"sha1"`
-	Width            int32       `json:"width"`
-	Height           int32       `json:"height"`
-	Permission       int16       `json:"permission"`
-	IsUnhealthy      bool        `json:"is_unhealthy"`
-	UploadedIp       string      `json:"uploaded_ip"`
-	CreatedAt        time.Time   `json:"created_at"`
-	UpdatedAt        time.Time   `json:"updated_at"`
-	ModerationStatus string      `json:"moderation_status"`
-	UserEmail        pgtype.Text `json:"user_email"`
+	ID               int64              `json:"id"`
+	UserID           pgtype.Int8        `json:"user_id"`
+	AlbumID          pgtype.Int8        `json:"album_id"`
+	GroupID          pgtype.Int8        `json:"group_id"`
+	StrategyID       pgtype.Int8        `json:"strategy_id"`
+	Key              string             `json:"key"`
+	Path             string             `json:"path"`
+	Name             string             `json:"name"`
+	OriginName       string             `json:"origin_name"`
+	SizeBytes        int64              `json:"size_bytes"`
+	Mimetype         string             `json:"mimetype"`
+	Extension        string             `json:"extension"`
+	Md5              string             `json:"md5"`
+	Sha1             string             `json:"sha1"`
+	Width            int32              `json:"width"`
+	Height           int32              `json:"height"`
+	Permission       int16              `json:"permission"`
+	IsUnhealthy      bool               `json:"is_unhealthy"`
+	UploadedIp       string             `json:"uploaded_ip"`
+	CreatedAt        time.Time          `json:"created_at"`
+	UpdatedAt        time.Time          `json:"updated_at"`
+	ModerationStatus string             `json:"moderation_status"`
+	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+	UserEmail        pgtype.Text        `json:"user_email"`
 }
 
 func (q *Queries) ListAllImages(ctx context.Context, arg ListAllImagesParams) ([]ListAllImagesRow, error) {
@@ -342,6 +400,7 @@ func (q *Queries) ListAllImages(ctx context.Context, arg ListAllImagesParams) ([
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ModerationStatus,
+			&i.ExpiresAt,
 			&i.UserEmail,
 		); err != nil {
 			return nil, err
@@ -356,7 +415,7 @@ func (q *Queries) ListAllImages(ctx context.Context, arg ListAllImagesParams) ([
 
 const listImagesByUser = `-- name: ListImagesByUser :many
 SELECT
-    images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status,
+    images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status, images.expires_at,
     strategies.name as strategy_name,
     strategies.strategy_type as strategy_type
 FROM images
@@ -373,30 +432,31 @@ type ListImagesByUserParams struct {
 }
 
 type ListImagesByUserRow struct {
-	ID               int64       `json:"id"`
-	UserID           pgtype.Int8 `json:"user_id"`
-	AlbumID          pgtype.Int8 `json:"album_id"`
-	GroupID          pgtype.Int8 `json:"group_id"`
-	StrategyID       pgtype.Int8 `json:"strategy_id"`
-	Key              string      `json:"key"`
-	Path             string      `json:"path"`
-	Name             string      `json:"name"`
-	OriginName       string      `json:"origin_name"`
-	SizeBytes        int64       `json:"size_bytes"`
-	Mimetype         string      `json:"mimetype"`
-	Extension        string      `json:"extension"`
-	Md5              string      `json:"md5"`
-	Sha1             string      `json:"sha1"`
-	Width            int32       `json:"width"`
-	Height           int32       `json:"height"`
-	Permission       int16       `json:"permission"`
-	IsUnhealthy      bool        `json:"is_unhealthy"`
-	UploadedIp       string      `json:"uploaded_ip"`
-	CreatedAt        time.Time   `json:"created_at"`
-	UpdatedAt        time.Time   `json:"updated_at"`
-	ModerationStatus string      `json:"moderation_status"`
-	StrategyName     pgtype.Text `json:"strategy_name"`
-	StrategyType     pgtype.Text `json:"strategy_type"`
+	ID               int64              `json:"id"`
+	UserID           pgtype.Int8        `json:"user_id"`
+	AlbumID          pgtype.Int8        `json:"album_id"`
+	GroupID          pgtype.Int8        `json:"group_id"`
+	StrategyID       pgtype.Int8        `json:"strategy_id"`
+	Key              string             `json:"key"`
+	Path             string             `json:"path"`
+	Name             string             `json:"name"`
+	OriginName       string             `json:"origin_name"`
+	SizeBytes        int64              `json:"size_bytes"`
+	Mimetype         string             `json:"mimetype"`
+	Extension        string             `json:"extension"`
+	Md5              string             `json:"md5"`
+	Sha1             string             `json:"sha1"`
+	Width            int32              `json:"width"`
+	Height           int32              `json:"height"`
+	Permission       int16              `json:"permission"`
+	IsUnhealthy      bool               `json:"is_unhealthy"`
+	UploadedIp       string             `json:"uploaded_ip"`
+	CreatedAt        time.Time          `json:"created_at"`
+	UpdatedAt        time.Time          `json:"updated_at"`
+	ModerationStatus string             `json:"moderation_status"`
+	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+	StrategyName     pgtype.Text        `json:"strategy_name"`
+	StrategyType     pgtype.Text        `json:"strategy_type"`
 }
 
 func (q *Queries) ListImagesByUser(ctx context.Context, arg ListImagesByUserParams) ([]ListImagesByUserRow, error) {
@@ -431,6 +491,7 @@ func (q *Queries) ListImagesByUser(ctx context.Context, arg ListImagesByUserPara
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ModerationStatus,
+			&i.ExpiresAt,
 			&i.StrategyName,
 			&i.StrategyType,
 		); err != nil {
@@ -450,7 +511,7 @@ UPDATE images SET
     permission = COALESCE($3, permission),
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status
+RETURNING id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at
 `
 
 type UpdateImageParams struct {
@@ -485,6 +546,21 @@ func (q *Queries) UpdateImage(ctx context.Context, arg UpdateImageParams) (Image
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ModerationStatus,
+		&i.ExpiresAt,
 	)
 	return i, err
+}
+
+const updateImageExpiration = `-- name: UpdateImageExpiration :exec
+UPDATE images SET expires_at = $2, updated_at = NOW() WHERE id = $1
+`
+
+type UpdateImageExpirationParams struct {
+	ID        int64              `json:"id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) UpdateImageExpiration(ctx context.Context, arg UpdateImageExpirationParams) error {
+	_, err := q.db.Exec(ctx, updateImageExpiration, arg.ID, arg.ExpiresAt)
+	return err
 }

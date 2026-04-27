@@ -94,19 +94,15 @@ func TestParseColor(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		col, err := parseColor(c.hex, c.opacity)
+		r, _, _, a, err := parseColor(c.hex, c.opacity)
 		if err != nil {
 			t.Fatalf("parseColor(%q, %f) error: %v", c.hex, c.opacity, err)
 		}
-		rgba, ok := col.(color.RGBA)
-		if !ok {
-			t.Fatal("expected color.RGBA")
+		if r != c.wantR {
+			t.Fatalf("parseColor(%q) R=%d, want %d", c.hex, r, c.wantR)
 		}
-		if rgba.R != c.wantR {
-			t.Fatalf("parseColor(%q) R=%d, want %d", c.hex, rgba.R, c.wantR)
-		}
-		if rgba.A != c.wantA {
-			t.Fatalf("parseColor(%q) A=%d, want %d", c.hex, rgba.A, c.wantA)
+		if a != c.wantA {
+			t.Fatalf("parseColor(%q) A=%d, want %d", c.hex, a, c.wantA)
 		}
 	}
 }
@@ -117,11 +113,11 @@ func TestCalcWatermarkPosition(t *testing.T) {
 		wantX     int
 		wantY     int
 	}{
-		{"top-left", 10, 26},
-		{"top-right", 110, 26},
-		{"bottom-left", 10, 190},
-		{"bottom-right", 110, 190},
-		{"center", 60, 108},
+		{"top-left", 10, 10},
+		{"top-right", 110, 10},
+		{"bottom-left", 10, 174},
+		{"bottom-right", 110, 174},
+		{"center", 60, 92},
 	}
 
 	for _, tt := range tests {

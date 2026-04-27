@@ -48,28 +48,29 @@ type GroupStrategy struct {
 }
 
 type Image struct {
-	ID               int64       `json:"id"`
-	UserID           pgtype.Int8 `json:"user_id"`
-	AlbumID          pgtype.Int8 `json:"album_id"`
-	GroupID          pgtype.Int8 `json:"group_id"`
-	StrategyID       pgtype.Int8 `json:"strategy_id"`
-	Key              string      `json:"key"`
-	Path             string      `json:"path"`
-	Name             string      `json:"name"`
-	OriginName       string      `json:"origin_name"`
-	SizeBytes        int64       `json:"size_bytes"`
-	Mimetype         string      `json:"mimetype"`
-	Extension        string      `json:"extension"`
-	Md5              string      `json:"md5"`
-	Sha1             string      `json:"sha1"`
-	Width            int32       `json:"width"`
-	Height           int32       `json:"height"`
-	Permission       int16       `json:"permission"`
-	IsUnhealthy      bool        `json:"is_unhealthy"`
-	UploadedIp       string      `json:"uploaded_ip"`
-	CreatedAt        time.Time   `json:"created_at"`
-	UpdatedAt        time.Time   `json:"updated_at"`
-	ModerationStatus string      `json:"moderation_status"`
+	ID               int64              `json:"id"`
+	UserID           pgtype.Int8        `json:"user_id"`
+	AlbumID          pgtype.Int8        `json:"album_id"`
+	GroupID          pgtype.Int8        `json:"group_id"`
+	StrategyID       pgtype.Int8        `json:"strategy_id"`
+	Key              string             `json:"key"`
+	Path             string             `json:"path"`
+	Name             string             `json:"name"`
+	OriginName       string             `json:"origin_name"`
+	SizeBytes        int64              `json:"size_bytes"`
+	Mimetype         string             `json:"mimetype"`
+	Extension        string             `json:"extension"`
+	Md5              string             `json:"md5"`
+	Sha1             string             `json:"sha1"`
+	Width            int32              `json:"width"`
+	Height           int32              `json:"height"`
+	Permission       int16              `json:"permission"`
+	IsUnhealthy      bool               `json:"is_unhealthy"`
+	UploadedIp       string             `json:"uploaded_ip"`
+	CreatedAt        time.Time          `json:"created_at"`
+	UpdatedAt        time.Time          `json:"updated_at"`
+	ModerationStatus string             `json:"moderation_status"`
+	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
 }
 
 type ImageModeration struct {

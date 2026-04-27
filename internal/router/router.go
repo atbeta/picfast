@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -109,6 +110,19 @@ func New(
 	uploadSvc := service.NewUploadService(queries, pool, cfg)
 	deleteSvc := service.NewDeleteService(queries, pool, cfg.Storage.ThumbnailDir)
 
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			deleted, err := deleteSvc.CleanExpiredImages(context.Background(), 100)
+			if err != nil {
+				slog.Warn("failed to clean expired images", "error", err)
+			} else if deleted > 0 {
+				slog.Info("cleaned expired images", "deleted", deleted)
+			}
+		}
+	}()
+
 	// Handlers
 	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg)
 	userHandler := handler.NewUserHandler(queries)
@@ -206,6 +220,11 @@ func New(
 		// Optional auth for guest upload
 		r.With(middleware.OptionalAuth(jwtSvc)).
 			Post("/upload", imageHandler.Upload)
+
+		// ShareX endpoints
+		sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL)
+		r.With(middleware.OptionalAuth(jwtSvc), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
+		r.Get("/sharex/config", sharexHandler.Config)
 
 		// Admin routes
 		r.Route("/admin", func(r chi.Router) {

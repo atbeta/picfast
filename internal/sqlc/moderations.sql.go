@@ -75,7 +75,7 @@ func (q *Queries) GetImageModeration(ctx context.Context, imageID int64) (ImageM
 }
 
 const listPendingImages = `-- name: ListPendingImages :many
-SELECT i.id, i.user_id, i.album_id, i.group_id, i.strategy_id, i.key, i.path, i.name, i.origin_name, i.size_bytes, i.mimetype, i.extension, i.md5, i.sha1, i.width, i.height, i.permission, i.is_unhealthy, i.uploaded_ip, i.created_at, i.updated_at, i.moderation_status FROM images i
+SELECT i.id, i.user_id, i.album_id, i.group_id, i.strategy_id, i.key, i.path, i.name, i.origin_name, i.size_bytes, i.mimetype, i.extension, i.md5, i.sha1, i.width, i.height, i.permission, i.is_unhealthy, i.uploaded_ip, i.created_at, i.updated_at, i.moderation_status, i.expires_at FROM images i
 LEFT JOIN image_moderations m ON i.id = m.image_id
 WHERE i.moderation_status = 'pending'
 ORDER BY i.created_at DESC
@@ -119,6 +119,7 @@ func (q *Queries) ListPendingImages(ctx context.Context, arg ListPendingImagesPa
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ModerationStatus,
+			&i.ExpiresAt,
 		); err != nil {
 			return nil, err
 		}
@@ -175,7 +176,7 @@ UPDATE images SET
     moderation_status = $2,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status
+RETURNING id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at
 `
 
 type UpdateImageModerationStatusParams struct {
@@ -209,6 +210,7 @@ func (q *Queries) UpdateImageModerationStatus(ctx context.Context, arg UpdateIma
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ModerationStatus,
+		&i.ExpiresAt,
 	)
 	return i, err
 }

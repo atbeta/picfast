@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/atbeta/picfast/internal/domain"
@@ -75,6 +76,17 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var expiresAt *time.Time
+	if exp := r.FormValue("expires_in"); exp != "" {
+		duration, err := time.ParseDuration(exp)
+		if err != nil {
+			Fail(w, http.StatusBadRequest, "invalid expires_in format")
+			return
+		}
+		t := time.Now().Add(duration)
+		expiresAt = &t
+	}
+
 	result, err := h.upload.Store(r.Context(), service.UploadParams{
 		FileData:   fileData,
 		FileName:   header.Filename,
@@ -84,6 +96,7 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		Permission: perm,
 		UserID:     userID,
 		ClientIP:   r.RemoteAddr,
+		ExpiresAt:  expiresAt,
 	})
 	if err != nil {
 		Fail(w, http.StatusBadRequest, err.Error())

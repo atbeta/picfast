@@ -1,12 +1,11 @@
 package service
 
 import (
-	"bytes"
 	"log/slog"
 	"os"
 	"path/filepath"
 
-	"github.com/disintegration/imaging"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
 const ThumbnailMaxSize = 400
@@ -17,13 +16,12 @@ func GenerateThumbnail(data []byte, extension, thumbnailDir, md5Hash string) err
 		return nil
 	}
 
-	img, err := imaging.Decode(bytes.NewReader(data), imaging.AutoOrientation(true))
+	thumb, err := vips.NewThumbnailFromBuffer(data, ThumbnailMaxSize, ThumbnailMaxSize, vips.InterestingNone)
 	if err != nil {
-		slog.Warn("thumbnail decode failed", "md5", md5Hash, "ext", extension, "error", err)
+		slog.Warn("thumbnail decode/resize failed", "md5", md5Hash, "ext", extension, "error", err)
 		return nil // best effort, don't fail upload
 	}
-
-	thumb := imaging.Fit(img, ThumbnailMaxSize, ThumbnailMaxSize, imaging.Lanczos)
+	defer thumb.Close()
 
 	if err := os.MkdirAll(thumbnailDir, 0755); err != nil {
 		slog.Error("thumbnail mkdir failed", "dir", thumbnailDir, "error", err)
@@ -31,8 +29,15 @@ func GenerateThumbnail(data []byte, extension, thumbnailDir, md5Hash string) err
 	}
 
 	outPath := filepath.Join(thumbnailDir, md5Hash+".png")
-	if err := imaging.Save(thumb, outPath); err != nil {
-		slog.Error("thumbnail save failed", "path", outPath, "error", err)
+	p := vips.NewPngExportParams()
+	out, _, err := thumb.ExportPng(p)
+	if err != nil {
+		slog.Error("thumbnail export failed", "path", outPath, "error", err)
+		return err
+	}
+
+	if err := os.WriteFile(outPath, out, 0644); err != nil {
+		slog.Error("thumbnail write failed", "path", outPath, "error", err)
 		return err
 	}
 

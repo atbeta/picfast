@@ -25,8 +25,30 @@ func (s *DeleteService) DeleteImage(ctx context.Context, imgID int64) error {
 	if err != nil {
 		return err
 	}
+	return s.deleteImageRecord(ctx, img)
+}
 
-	// Check dedup: only delete physical file if no other images share same md5+sha1+strategy
+func (s *DeleteService) CleanExpiredImages(ctx context.Context, batchSize int32) (int, error) {
+	expired, err := s.db.GetExpiredImages(ctx, batchSize)
+	if err != nil {
+		return 0, err
+	}
+	if len(expired) == 0 {
+		return 0, nil
+	}
+
+	deleted := 0
+	for _, img := range expired {
+		if err := s.deleteImageRecord(ctx, img); err != nil {
+			slog.Warn("failed to delete expired image", "image_id", img.ID, "error", err)
+			continue
+		}
+		deleted++
+	}
+	return deleted, nil
+}
+
+func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) error {
 	shouldDeleteFile := true
 	if img.StrategyID.Valid {
 		dup, err := s.db.FindDuplicateImage(ctx, sqlc.FindDuplicateImageParams{
@@ -42,7 +64,7 @@ func (s *DeleteService) DeleteImage(ctx context.Context, imgID int64) error {
 	if shouldDeleteFile && img.StrategyID.Valid {
 		strategy, err := s.db.GetStrategyByID(ctx, img.StrategyID.Int64)
 		if err == nil {
-		store, err := GetStorageForStrategy(strategy)
+			store, err := GetStorageForStrategy(strategy)
 			if err == nil {
 				pathname := img.Name
 				if img.Path != "" && img.Path != "." {
@@ -55,16 +77,14 @@ func (s *DeleteService) DeleteImage(ctx context.Context, imgID int64) error {
 		}
 	}
 
-	// Delete thumbnail
 	thumbPath := filepath.Join(s.thumbDir, img.Md5+".png")
 	os.Remove(thumbPath)
 
-	// DB: delete record + decrement counters in one transaction
 	userID := img.UserID
 	albumID := img.AlbumID
 
-	err = sqlc.RunInTx(ctx, s.pool, func(qtx *sqlc.Queries) error {
-		if err := qtx.DeleteImage(ctx, imgID); err != nil {
+	return sqlc.RunInTx(ctx, s.pool, func(qtx *sqlc.Queries) error {
+		if err := qtx.DeleteImage(ctx, img.ID); err != nil {
 			return err
 		}
 		if userID.Valid {
@@ -75,7 +95,6 @@ func (s *DeleteService) DeleteImage(ctx context.Context, imgID int64) error {
 		}
 		return nil
 	})
-	return err
 }
 
 

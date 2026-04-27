@@ -1,13 +1,10 @@
 package service
 
 import (
-	"bytes"
 	"image"
-	"image/jpeg"
-	"image/png"
 	"io"
 
-	"github.com/disintegration/imaging"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
 type ProcessedImage struct {
@@ -16,44 +13,67 @@ type ProcessedImage struct {
 	Height int
 }
 
-func ProcessImage(data []byte, saveFormat string, quality int) (*ProcessedImage, error) {
-	img, err := imaging.Decode(bytes.NewReader(data), imaging.AutoOrientation(true))
+func ProcessImage(data []byte, saveFormat string, quality int, stripExif bool) (*ProcessedImage, error) {
+	params := vips.NewImportParams()
+	params.AutoRotate.Set(true)
+	params.FailOnError.Set(true)
+
+	img, err := vips.LoadImageFromBuffer(data, params)
 	if err != nil {
 		return nil, err
 	}
+	defer img.Close()
 
-	bounds := img.Bounds()
-	width := bounds.Dx()
-	height := bounds.Dy()
+	width := img.Width()
+	height := img.Height()
 
-	// Determine output format
-	format := imaging.JPEG
-	if saveFormat == "png" {
-		format = imaging.PNG
-	} else if saveFormat == "gif" {
-		format = imaging.GIF
-	} else if saveFormat == "webp" {
-		// imaging doesn't support webp, keep original
+	// stripExif implies re-encoding because loading to vips.ImageRef drops EXIF metadata.
+	// Avoid unnecessary re-encoding only when no changes are requested.
+	if !stripExif && saveFormat == "" && (quality <= 0 || quality >= 100) {
 		return &ProcessedImage{Data: data, Width: width, Height: height}, nil
 	}
 
-	// Re-encode if format change or quality adjustment needed
-	buf := new(bytes.Buffer)
-	if format == imaging.JPEG && quality > 0 && quality < 100 {
-		if err := jpeg.Encode(buf, img, &jpeg.Options{Quality: quality}); err != nil {
-			return nil, err
+	var out []byte
+	var exportErr error
+
+	switch saveFormat {
+	case "png":
+		p := vips.NewPngExportParams()
+		if stripExif {
+			p.StripMetadata = true
 		}
-	} else if format == imaging.PNG {
-		if err := png.Encode(buf, img); err != nil {
-			return nil, err
+		out, _, exportErr = img.ExportPng(p)
+	case "webp":
+		p := vips.NewWebpExportParams()
+		if quality > 0 && quality <= 100 {
+			p.Quality = quality
 		}
-	} else {
-		if err := imaging.Encode(buf, img, format); err != nil {
-			return nil, err
+		if stripExif {
+			p.StripMetadata = true
 		}
+		out, _, exportErr = img.ExportWebp(p)
+	case "gif":
+		p := vips.NewGifExportParams()
+		if stripExif {
+			p.StripMetadata = true
+		}
+		out, _, exportErr = img.ExportGIF(p)
+	default: // jpeg
+		p := vips.NewJpegExportParams()
+		if quality > 0 && quality < 100 {
+			p.Quality = quality
+		}
+		if stripExif {
+			p.StripMetadata = true
+		}
+		out, _, exportErr = img.ExportJpeg(p)
 	}
 
-	return &ProcessedImage{Data: buf.Bytes(), Width: width, Height: height}, nil
+	if exportErr != nil {
+		return nil, exportErr
+	}
+
+	return &ProcessedImage{Data: out, Width: width, Height: height}, nil
 }
 
 func DecodeImageDimensions(r io.Reader) (int, int, error) {

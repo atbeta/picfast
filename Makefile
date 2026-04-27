@@ -22,7 +22,7 @@ frontend:
 	cd web && pnpm build
 
 build:
-	CGO_ENABLED=0 go build -o ./bin/picfast ./cmd/picfast
+	go build -o ./bin/picfast ./cmd/picfast
 
 build-full: frontend build
 

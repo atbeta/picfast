@@ -44,6 +44,7 @@ type GroupConfig struct {
 	IsEnableWatermark        bool            `json:"is_enable_watermark"`
 	WatermarkConfigs         json.RawMessage `json:"watermark_configs"`
 	IsEnableOriginalProtection bool           `json:"is_enable_original_protection"`
+	IsStripExif                bool            `json:"is_strip_exif"`
 }
 
 func (c *GroupConfig) IsExtensionAllowed(ext string) bool {

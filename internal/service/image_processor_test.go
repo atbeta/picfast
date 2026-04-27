@@ -6,8 +6,18 @@ import (
 	"image/color"
 	"image/jpeg"
 	"image/png"
+	"os"
 	"testing"
+
+	"github.com/davidbyttow/govips/v2/vips"
 )
+
+func TestMain(m *testing.M) {
+	vips.Startup(nil)
+	code := m.Run()
+	vips.Shutdown()
+	os.Exit(code)
+}
 
 func createTestImage(format string, width, height int) []byte {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
@@ -27,7 +37,7 @@ func createTestImage(format string, width, height int) []byte {
 
 func TestProcessImageJPEG(t *testing.T) {
 	data := createTestImage("jpeg", 200, 200)
-	processed, err := ProcessImage(data, "jpeg", 80)
+	processed, err := ProcessImage(data, "jpeg", 80, false)
 	if err != nil {
 		t.Fatalf("process image failed: %v", err)
 	}
@@ -41,7 +51,7 @@ func TestProcessImageJPEG(t *testing.T) {
 
 func TestProcessImagePNG(t *testing.T) {
 	data := createTestImage("png", 100, 100)
-	processed, err := ProcessImage(data, "png", 100)
+	processed, err := ProcessImage(data, "png", 100, false)
 	if err != nil {
 		t.Fatalf("process image failed: %v", err)
 	}
@@ -50,10 +60,21 @@ func TestProcessImagePNG(t *testing.T) {
 	}
 }
 
-func TestProcessImageWebPKeepOriginal(t *testing.T) {
-	// WebP is not supported by imaging, should return original
+func TestProcessImageWebP(t *testing.T) {
+	// govips supports webp, should encode successfully
 	data := createTestImage("jpeg", 100, 100)
-	processed, err := ProcessImage(data, "webp", 90)
+	processed, err := ProcessImage(data, "webp", 90, false)
+	if err != nil {
+		t.Fatalf("process image failed: %v", err)
+	}
+	if len(processed.Data) == 0 {
+		t.Fatal("processed data is empty")
+	}
+}
+
+func TestProcessImageStripExif(t *testing.T) {
+	data := createTestImage("jpeg", 100, 100)
+	processed, err := ProcessImage(data, "", 0, true)
 	if err != nil {
 		t.Fatalf("process image failed: %v", err)
 	}
@@ -63,7 +84,7 @@ func TestProcessImageWebPKeepOriginal(t *testing.T) {
 }
 
 func TestProcessImageInvalidData(t *testing.T) {
-	_, err := ProcessImage([]byte("not-an-image"), "jpeg", 80)
+	_, err := ProcessImage([]byte("not-an-image"), "jpeg", 80, false)
 	if err == nil {
 		t.Fatal("expected error for invalid image data")
 	}

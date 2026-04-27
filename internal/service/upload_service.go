@@ -9,6 +9,7 @@ import (
 	"math"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/atbeta/picfast/internal/config"
@@ -37,6 +38,7 @@ type UploadParams struct {
 	Permission   *int16
 	UserID       *int64
 	ClientIP     string
+	ExpiresAt    *time.Time
 }
 
 type UploadResult struct {
@@ -138,12 +140,13 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 
 	skipExts := map[string]bool{"gif": true, "svg": true, "ico": true}
 	if !skipExts[ext] {
-		if groupConfig.ImageSaveFormat != "" || groupConfig.ImageSaveQuality < 100 {
+		needProcess := groupConfig.ImageSaveFormat != "" || groupConfig.ImageSaveQuality < 100 || groupConfig.IsStripExif
+		if needProcess {
 			targetFormat := groupConfig.ImageSaveFormat
 			if targetFormat == "" {
 				targetFormat = ext
 			}
-			processed, err := ProcessImage(fileData, targetFormat, groupConfig.ImageSaveQuality)
+			processed, err := ProcessImage(fileData, targetFormat, groupConfig.ImageSaveQuality, groupConfig.IsStripExif)
 			if err != nil {
 				slog.Warn("image processing failed, using original", "error", err)
 			} else {
@@ -244,6 +247,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 			Height:      int32(height),
 			Permission:  perm,
 			UploadedIp:  params.ClientIP,
+			ExpiresAt:   domain.PgTimeWithZonePtr(params.ExpiresAt),
 		})
 		if err != nil {
 			return err
