@@ -70,7 +70,7 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
           />
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{result.origin_name}</p>
+          <p className="truncate text-sm font-medium text-zinc-700 dark:text-zinc-300">{result.origin_name}</p>
           <p className="mt-0.5 text-xs text-zinc-500">
             {result.width}×{result.height} · {formatFileSize(result.size_bytes)} · {result.extension.toUpperCase()}
           </p>

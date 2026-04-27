@@ -176,41 +176,41 @@ export function AdminGroupsPage() {
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-sm font-medium">{t('admin.colName')}</label>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colName')}</label>
                 <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
               </div>
 
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="isDefault" checked={form.is_default} onChange={(e) => update('is_default', e.target.checked)} className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600" />
-                <label htmlFor="isDefault" className="text-sm">{t('admin.defaultGroup', { defaultValue: '默认分组' })}</label>
+                <label htmlFor="isDefault" className="text-sm text-zinc-700 dark:text-zinc-300">{t('admin.defaultGroup', { defaultValue: '默认分组' })}</label>
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</label>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</label>
                 <div className="flex items-center gap-2">
                   <input type="number" min={1} value={form.max_size} onChange={(e) => update('max_size', Number(e.target.value))} className={`${inputCls} w-32`} />
-                  <span className="text-sm text-zinc-500">MB</span>
+                  <span className="text-sm text-zinc-500 dark:text-zinc-400">MB</span>
                 </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium">{t('admin.extensions', { defaultValue: '允许格式' })}</label>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.extensions', { defaultValue: '允许格式' })}</label>
                 <input value={form.extensions} onChange={(e) => update('extensions', e.target.value)} placeholder="jpg,png,gif,webp" className={inputCls} />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</label>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</label>
                 <input type="number" min={0} value={form.limit_per_day} onChange={(e) => update('limit_per_day', Number(e.target.value))} className={inputCls} />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium">{t('admin.limitPerMonth', { defaultValue: '每月上限' })}</label>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.limitPerMonth', { defaultValue: '每月上限' })}</label>
                 <input type="number" min={0} value={form.limit_per_month} onChange={(e) => update('limit_per_month', Number(e.target.value))} className={inputCls} />
               </div>
 
               {/* Strategy binding */}
               <div className="border-t border-zinc-200 pt-3 dark:border-zinc-700">
-                <label className="mb-2 block text-sm font-medium">{t('admin.availableStrategies', { defaultValue: '可用策略' })}</label>
+                <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.availableStrategies', { defaultValue: '可用策略' })}</label>
                 {allStrategies.length === 0 ? (
                   <p className="text-xs text-zinc-400">{t('admin.noStrategies', { defaultValue: '暂无策略，请先创建策略' })}</p>
                 ) : (

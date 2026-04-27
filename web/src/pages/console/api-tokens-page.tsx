@@ -152,13 +152,13 @@ export function ApiTokensPage() {
 
           {/* Scope selection */}
           <div>
-            <label className="mb-1 block text-sm font-medium">{t('tokens.scopes', { defaultValue: '权限' })}</label>
+            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('tokens.scopes', { defaultValue: '权限' })}</label>
             <div className="flex gap-4">
-              <label className="flex items-center gap-1.5 text-sm">
+              <label className="flex items-center gap-1.5 text-sm text-zinc-700 dark:text-zinc-300">
                 <input type="checkbox" checked={newScopes.includes('read')} onChange={() => toggleScope('read')} className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600" />
                 read
               </label>
-              <label className="flex items-center gap-1.5 text-sm">
+              <label className="flex items-center gap-1.5 text-sm text-zinc-700 dark:text-zinc-300">
                 <input type="checkbox" checked={newScopes.includes('write')} onChange={() => toggleScope('write')} className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600" />
                 write
               </label>

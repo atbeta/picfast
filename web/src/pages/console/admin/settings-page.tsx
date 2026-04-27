@@ -70,35 +70,35 @@ export function AdminSettingsPage() {
       {data && (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium">{t('admin.appName')}</label>
+            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.appName')}</label>
             <input {...register('app_name')} className="w-full max-w-sm rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800" />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">{t('admin.appUrl', { defaultValue: '站点地址' })}</label>
+            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.appUrl', { defaultValue: '站点地址' })}</label>
             <input {...register('app_url')} placeholder="https://your-domain.com" className="w-full max-w-sm rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800" />
           </div>
 
           <div className="flex items-center gap-2">
             <input type="checkbox" id="guestUpload" {...register('allow_guest_upload')} className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600" />
-            <label htmlFor="guestUpload" className="text-sm">{t('admin.allowGuestUpload')}</label>
+            <label htmlFor="guestUpload" className="text-sm text-zinc-700 dark:text-zinc-300">{t('admin.allowGuestUpload')}</label>
           </div>
 
           <div className="flex items-center gap-2">
             <input type="checkbox" id="registration" {...register('allow_registration')} className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600" />
-            <label htmlFor="registration" className="text-sm">{t('admin.allowRegistration')}</label>
+            <label htmlFor="registration" className="text-sm text-zinc-700 dark:text-zinc-300">{t('admin.allowRegistration')}</label>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">{t('admin.initialCapacity')}</label>
+            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.initialCapacity')}</label>
             <div className="flex items-center gap-2">
               <input type="number" {...register('user_initial_capacity_mb', { valueAsNumber: true })} className="w-32 rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800" />
-              <span className="text-sm text-zinc-500">MB</span>
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">MB</span>
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">{t('admin.moderationMode')}</label>
+            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.moderationMode')}</label>
             <select {...register('moderation_mode')} className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900">
               <option value="disabled">{t('admin.modDisabled')}</option>
               <option value="manual">{t('admin.modManual')}</option>

@@ -81,7 +81,7 @@ export function SettingsPage() {
 
       {/* Storage usage */}
       <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-        <h2 className="text-sm font-medium">{t('settings.storage')}</h2>
+        <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.storage')}</h2>
         <div className="mt-3 flex items-center gap-3">
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
             <div
@@ -101,7 +101,7 @@ export function SettingsPage() {
       {/* Profile form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium">{t('settings.email')}</label>
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.email')}</label>
           <input
             id="email"
             type="email"
@@ -112,7 +112,7 @@ export function SettingsPage() {
         </div>
 
         <div>
-          <label htmlFor="name" className="mb-1 block text-sm font-medium">{t('settings.name')}</label>
+          <label htmlFor="name" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.name')}</label>
           <input
             id="name"
             type="text"
@@ -123,7 +123,7 @@ export function SettingsPage() {
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium">{t('settings.newPassword')}</label>
+          <label htmlFor="password" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.newPassword')}</label>
           <input
             id="password"
             type="password"
@@ -137,7 +137,7 @@ export function SettingsPage() {
 
         {/* Default strategy */}
         <div>
-          <label htmlFor="strategy" className="mb-1 block text-sm font-medium">{t('settings.defaultStrategy', { defaultValue: '默认策略' })}</label>
+          <label htmlFor="strategy" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.defaultStrategy', { defaultValue: '默认策略' })}</label>
           <select
             id="strategy"
             value={defaultStrategy}
@@ -175,7 +175,7 @@ export function SettingsPage() {
 
       {/* Preferences */}
       <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-        <h2 className="mb-3 text-sm font-medium">{t('settings.preferences')}</h2>
+        <h2 className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.preferences')}</h2>
         <div className="flex flex-wrap gap-6">
           <LanguageSelector />
           <ThemeSelector />

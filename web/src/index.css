@@ -7,6 +7,11 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
 }
 
 body {
@@ -18,4 +23,23 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
+}
+
+/* ===== Dark-mode form controls ===== */
+/* These reset browser defaults that ignore Tailwind's dark variant */
+
+.dark input,
+.dark textarea,
+.dark select {
+  color-scheme: dark;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #71717a; /* zinc-500 */
+}
+
+.dark select option {
+  background-color: #18181b; /* zinc-900 */
+  color: #f4f4f5; /* zinc-100 */
 }

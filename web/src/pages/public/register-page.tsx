@@ -39,12 +39,12 @@ export function RegisterPage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+    <section className="mx-auto w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
       <h1 className="text-xl font-semibold">{t('page.register.title')}</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
         <div>
-          <label htmlFor="name" className="mb-1 block text-sm font-medium">
+          <label htmlFor="name" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
             {t('auth.name')}
           </label>
           <input
@@ -58,7 +58,7 @@ export function RegisterPage() {
         </div>
 
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium">
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
             {t('auth.email')}
           </label>
           <input
@@ -72,7 +72,7 @@ export function RegisterPage() {
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium">
+          <label htmlFor="password" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
             {t('auth.password')}
           </label>
           <input

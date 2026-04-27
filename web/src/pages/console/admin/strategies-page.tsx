@@ -145,19 +145,19 @@ export function AdminStrategiesPage() {
       {/* Modal overlay */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowModal(false)}>
-          <div className="w-full max-w-[550px] rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-800" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-[550px] rounded-xl bg-white p-6 shadow-xl text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100" onClick={(e) => e.stopPropagation()}>
             <h2 className="mb-4 text-lg font-semibold">
               {editing ? t('admin.edit') : t('admin.create')}
             </h2>
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-sm font-medium">{t('admin.colName')}</label>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colName')}</label>
                 <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium">{t('admin.colType', { defaultValue: '类型' })}</label>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colType', { defaultValue: '类型' })}</label>
                 <select value={form.type} onChange={(e) => update('type', e.target.value)} disabled={!!editing} className={inputCls}>
                   <option value="local">{t('admin.typeLocal', { defaultValue: '本地存储' })}</option>
                   <option value="s3">{t('admin.typeS3', { defaultValue: 'S3 兼容存储' })}</option>
@@ -166,7 +166,7 @@ export function AdminStrategiesPage() {
 
               {form.type === 'local' && (
                 <div>
-                  <label className="mb-1 block text-sm font-medium">{t('admin.localRoot', { defaultValue: '存储路径' })}</label>
+                  <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.localRoot', { defaultValue: '存储路径' })}</label>
                   <input value={form.localRoot} onChange={(e) => update('localRoot', e.target.value)} placeholder="/data/images" className={inputCls} />
                 </div>
               )}
@@ -179,27 +179,27 @@ export function AdminStrategiesPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2">
-                      <label className="mb-1 block text-sm font-medium">Endpoint</label>
+                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Endpoint</label>
                       <input value={form.s3Endpoint} onChange={(e) => update('s3Endpoint', e.target.value)} placeholder="https://<account-id>.r2.cloudflarestorage.com" className={inputCls} />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium">Region</label>
+                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Region</label>
                       <input value={form.s3Region} onChange={(e) => update('s3Region', e.target.value)} placeholder="R2: auto" className={inputCls} />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium">Bucket</label>
+                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Bucket</label>
                       <input value={form.s3Bucket} onChange={(e) => update('s3Bucket', e.target.value)} className={inputCls} />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium">Access Key</label>
+                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Access Key</label>
                       <input value={form.s3AccessKey} onChange={(e) => update('s3AccessKey', e.target.value)} className={inputCls} />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium">Secret Key</label>
+                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Secret Key</label>
                       <input value={form.s3SecretKey} onChange={(e) => update('s3SecretKey', e.target.value)} type="password" className={inputCls} />
                     </div>
                     <div className="col-span-2">
-                      <label className="mb-1 block text-sm font-medium">{t('admin.accessURL', { defaultValue: '访问 URL' })}</label>
+                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.accessURL', { defaultValue: '访问 URL' })}</label>
                       <input value={form.s3URL} onChange={(e) => update('s3URL', e.target.value)} placeholder="https://pub-xxx.r2.dev" className={inputCls} />
                     </div>
                   </div>
