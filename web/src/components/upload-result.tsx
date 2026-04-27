@@ -67,6 +67,7 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
             src={result.links.thumbnail_url}
             alt={result.origin_name}
             className="h-20 w-20 shrink-0 rounded-md border border-zinc-200 object-cover dark:border-zinc-700"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
           />
         )}
         <div className="min-w-0 flex-1">

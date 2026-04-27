@@ -306,10 +306,10 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		}
 	}
 
-	// Step 13: Generate thumbnail (best effort)
-	go func() {
-		GenerateThumbnail(fileData, ext, s.config.Storage.ThumbnailDir, md5Hash)
-	}()
+	// Step 13: Generate thumbnail (synchronous to avoid race with frontend)
+	if thumbErr := GenerateThumbnail(fileData, ext, s.config.Storage.ThumbnailDir, md5Hash); thumbErr != nil {
+		slog.Warn("thumbnail generation failed", "md5", md5Hash, "error", thumbErr)
+	}
 
 	// Step 14: Build response
 	imageURL := s.config.Server.BaseURL + "/i/" + imageKey + "." + ext

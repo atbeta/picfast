@@ -172,8 +172,14 @@ export function ImagesPage() {
                 onClick={() => batchMode ? toggleSelect(img.key) : showDetail(img)}
               >
                 <div className="relative aspect-square flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-zinc-900">
-                  {img.thumbnail_url ? (
-                    <img src={toRelative(img.thumbnail_url)} alt="" className="h-full w-full object-cover" loading="lazy" />
+                  {img.thumbnail_url || img.links?.thumbnail_url ? (
+                    <img
+                      src={toRelative(img.thumbnail_url || img.links?.thumbnail_url || '')}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
                   ) : (
                     <span className="text-xs text-zinc-400">{img.extension.toUpperCase()}</span>
                   )}
@@ -225,7 +231,12 @@ export function ImagesPage() {
 
             {/* Preview */}
             <div className="mb-4 flex justify-center rounded-lg bg-slate-50 p-3 dark:bg-zinc-900">
-              <img src={toRelative(detail.url)} alt={detail.key} className="max-h-72 object-contain" />
+              <img
+                src={toRelative(detail.links?.url ?? detail.url ?? '')}
+                alt={detail.key}
+                className="max-h-72 object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
             </div>
 
             {/* Metadata */}
