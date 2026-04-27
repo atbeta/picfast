@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod/v4'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../../lib/auth-context'
+import { getSiteConfig } from '../../lib/site-config'
 
 const loginSchema = z.object({
   email: z.email(),
@@ -17,6 +18,11 @@ export function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [serverError, setServerError] = useState('')
+  const [allowRegister, setAllowRegister] = useState(false)
+
+  useEffect(() => {
+    getSiteConfig().then((cfg) => setAllowRegister(cfg.allow_registration)).catch(() => {})
+  }, [])
 
   const {
     register,
@@ -85,12 +91,14 @@ export function LoginPage() {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-zinc-500">
-        {t('auth.noAccount')}{' '}
-        <Link to="/register" className="text-blue-600 hover:underline dark:text-blue-400">
-          {t('nav.register')}
-        </Link>
-      </p>
+      {allowRegister && (
+        <p className="mt-4 text-center text-sm text-zinc-500">
+          {t('auth.noAccount')}{' '}
+          <Link to="/register" className="text-blue-600 hover:underline dark:text-blue-400">
+            {t('nav.register')}
+          </Link>
+        </p>
+      )}
     </section>
   )
 }

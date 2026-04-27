@@ -171,6 +171,16 @@ func New(
 	os.MkdirAll(cfg.Storage.ThumbnailDir, 0755)
 
 	r.Route("/api/v1", func(r chi.Router) {
+		// Public site config
+		r.Get("/config", func(w http.ResponseWriter, r *http.Request) {
+			handler.Success(w, map[string]interface{}{
+				"app_name":             cfg.App.Name,
+				"allow_guest_upload":   cfg.App.AllowGuestUpload,
+				"allow_registration":   cfg.App.AllowRegistration,
+				"base_url":             cfg.Server.BaseURL,
+			})
+		})
+
 		// Auth
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authHandler.Register)

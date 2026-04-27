@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 
 import { useAuth } from '../lib/auth-context'
+import { getSiteConfig, type SiteConfig } from '../lib/site-config'
 import { ConsoleLayout } from '../pages/layouts/console-layout'
 import { PublicLayout } from '../pages/layouts/public-layout'
 import { AlbumsPage } from '../pages/console/albums-page'
@@ -48,13 +50,49 @@ function RequireAdmin() {
   return <Outlet />
 }
 
-export function AppRouter() {
+function PublicRoutes() {
+  const [config, setConfig] = useState<SiteConfig | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getSiteConfig()
+      .then(setConfig)
+      .catch(() => setConfig(null))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" />
+      </div>
+    )
+  }
+
   return (
     <Routes>
       <Route element={<PublicLayout />}>
-        <Route path="/" element={<GuestUploadPage />} />
+        <Route
+          path="/"
+          element={
+            config?.allow_guest_upload ? (
+              <GuestUploadPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/register"
+          element={
+            config?.allow_registration ? (
+              <RegisterPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
       </Route>
 
       <Route element={<RequireAuth />}>
@@ -80,4 +118,8 @@ export function AppRouter() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
+}
+
+export function AppRouter() {
+  return <PublicRoutes />
 }
