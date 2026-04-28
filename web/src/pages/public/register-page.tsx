@@ -46,49 +46,49 @@ export function RegisterPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
         <div>
-          <label htmlFor="name" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label htmlFor="name" className="mb-1 block text-sm font-medium text-foreground">
             {t('auth.name')}
           </label>
           <input
             id="name"
             type="text"
             autoComplete="name"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:focus:border-zinc-500"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
             {...register('name')}
           />
-          {errors.name && <p className="mt-1 text-xs text-red-500">{t('auth.required')}</p>}
+          {errors.name && <p className="mt-1 text-xs text-destructive">{t('auth.required')}</p>}
         </div>
 
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-foreground">
             {t('auth.email')}
           </label>
           <input
             id="email"
             type="email"
             autoComplete="email"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:focus:border-zinc-500"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
             {...register('email')}
           />
-          {errors.email && <p className="mt-1 text-xs text-red-500">{t('auth.invalidEmail')}</p>}
+          {errors.email && <p className="mt-1 text-xs text-destructive">{t('auth.invalidEmail')}</p>}
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label htmlFor="password" className="mb-1 block text-sm font-medium text-foreground">
             {t('auth.password')}
           </label>
           <input
             id="password"
             type="password"
             autoComplete="new-password"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:focus:border-zinc-500"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
             {...register('password')}
           />
-          {errors.password && <p className="mt-1 text-xs text-red-500">{t('auth.passwordMin')}</p>}
+          {errors.password && <p className="mt-1 text-xs text-destructive">{t('auth.passwordMin')}</p>}
         </div>
 
         {serverError && (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+          <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {serverError}
           </p>
         )}
@@ -96,15 +96,15 @@ export function RegisterPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer disabled:cursor-not-allowed"
         >
           {isSubmitting ? t('auth.registering') : t('auth.register')}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-zinc-500">
+      <p className="mt-4 text-center text-sm text-muted-foreground">
         {t('auth.hasAccount')}{' '}
-        <Link to="/login" className="text-blue-600 hover:underline dark:text-blue-400">
+        <Link to="/login" className="text-primary hover:underline transition-colors">
           {t('nav.login')}
         </Link>
       </p>

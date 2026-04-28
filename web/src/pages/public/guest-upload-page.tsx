@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AlertCircle } from 'lucide-react'
 
 import { UploadZone } from '../../components/upload-zone'
 import { UploadResultCard } from '../../components/upload-result'
@@ -53,47 +54,56 @@ export function GuestUploadPage() {
   }, [t])
 
   return (
-    <section className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">{t('page.guestUpload.title')}</h1>
-        <p className="mt-1 text-sm text-zinc-500">{t('page.guestUpload.subtitle')}</p>
+    <section className="mx-auto max-w-3xl space-y-8 animate-in slide-in-from-bottom-4 fade-in duration-700">
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/70 dark:from-white dark:to-white/60">
+          {t('page.guestUpload.title')}
+        </h1>
+        <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+          {t('page.guestUpload.subtitle')}
+        </p>
       </div>
 
-      <UploadZone onFiles={handleFiles} disabled={busy} />
+      <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-xl p-2 shadow-xl shadow-black/5 dark:shadow-black/20">
+        <UploadZone onFiles={handleFiles} disabled={busy} />
+      </div>
 
       {uploading.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-4 shadow-sm">
           {uploading.map((u) => (
-            <div key={u.file.name} className="flex items-center gap-3">
-              <span className="min-w-0 flex-1 truncate text-sm">{u.file.name}</span>
-              <div className="h-1.5 w-32 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+            <div key={u.file.name} className="flex items-center gap-4">
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">{u.file.name}</span>
+              <div className="h-2 w-32 md:w-48 overflow-hidden rounded-full bg-secondary">
                 <div
-                  className="h-full rounded-full bg-zinc-600 transition-all dark:bg-zinc-400"
+                  className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
                   style={{ width: `${u.progress}%` }}
                 />
               </div>
-              <span className="text-xs text-zinc-500">{u.progress}%</span>
+              <span className="text-xs font-medium text-muted-foreground w-8 text-right">{u.progress}%</span>
             </div>
           ))}
         </div>
       )}
 
       {errors.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2 animate-in fade-in">
           {errors.map((msg, i) => (
-            <p key={i} className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-              {msg}
-            </p>
+            <div key={i} className="flex items-center gap-3 rounded-xl bg-destructive/10 px-5 py-4 text-sm text-destructive border border-destructive/20 shadow-sm">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <p className="font-medium">{msg}</p>
+            </div>
           ))}
         </div>
       )}
 
       {results.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-medium">{t('upload.results')}</h2>
-          {results.map((r) => (
-            <UploadResultCard key={r.id} result={r} />
-          ))}
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150 fill-mode-both">
+          <h2 className="text-xl font-semibold tracking-tight">{t('upload.results')}</h2>
+          <div className="grid gap-4">
+            {results.map((r) => (
+              <UploadResultCard key={r.id} result={r} />
+            ))}
+          </div>
         </div>
       )}
     </section>

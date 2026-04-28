@@ -116,12 +116,12 @@ body {
 
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #71717a; /* zinc-500 */
+  color: var(--muted-foreground);
 }
 
 .dark select option {
-  background-color: #18181b; /* zinc-900 */
-  color: #f4f4f5; /* zinc-100 */
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 @theme inline {
@@ -183,5 +183,6 @@ body {
   }
   html {
     @apply font-sans;
+    overflow-y: scroll;
   }
 }

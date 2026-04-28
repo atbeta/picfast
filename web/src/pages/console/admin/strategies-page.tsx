@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Pencil, Trash2 } from 'lucide-react'
 
 import {
   createAdminStrategy,
@@ -17,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface StrategyForm {
   name: string
@@ -142,13 +144,13 @@ export function AdminStrategiesPage() {
   const update = <K extends keyof StrategyForm>(key: K, value: StrategyForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
-  const inputCls = 'w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-600 dark:bg-zinc-900'
+  const inputCls = 'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all'
 
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{t('admin.strategiesTitle')}</h1>
-        <button type="button" onClick={openCreate} className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300">
+        <h1 className="text-2xl font-bold tracking-tight">{t('admin.strategiesTitle')}</h1>
+        <button type="button" onClick={openCreate} className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
           {t('admin.create')}
         </button>
       </div>
@@ -164,54 +166,67 @@ export function AdminStrategiesPage() {
 
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colName')}</label>
+              <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.colName')}</label>
               <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colType', { defaultValue: '类型' })}</label>
-              <select value={form.type} onChange={(e) => update('type', e.target.value)} disabled={!!editing} className={inputCls}>
-                <option value="local">{t('admin.typeLocal', { defaultValue: '本地存储' })}</option>
-                <option value="s3">{t('admin.typeS3', { defaultValue: 'S3 兼容存储' })}</option>
-              </select>
+              <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.colType', { defaultValue: '类型' })}</label>
+              <Select 
+          value={form.type} 
+          onValueChange={(val) => val !== null && update('type', val as string)} 
+          disabled={!!editing}
+          items={{
+                  local: t('admin.typeLocal', { defaultValue: '本地存储' }),
+                  s3: t('admin.typeS3', { defaultValue: 'S3 兼容存储' })
+                }}
+              >
+                <SelectTrigger className="w-full bg-background border-input">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="local">{t('admin.typeLocal', { defaultValue: '本地存储' })}</SelectItem>
+                  <SelectItem value="s3">{t('admin.typeS3', { defaultValue: 'S3 兼容存储' })}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {form.type === 'local' && (
               <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.localRoot', { defaultValue: '存储路径' })}</label>
+                <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.localRoot', { defaultValue: '存储路径' })}</label>
                 <input value={form.localRoot} onChange={(e) => update('localRoot', e.target.value)} placeholder="/data/images" className={inputCls} />
               </div>
             )}
 
             {form.type === 's3' && (
               <>
-                <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                <div className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
                   <strong>Endpoint</strong> {t('admin.s3EndpointHint', { defaultValue: '是 S3 API 地址（上传用），' })}
                   <strong>URL</strong> {t('admin.s3URLHint', { defaultValue: '是图片公开访问地址（浏览用）。两者通常不同。' })}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
-                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Endpoint</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">Endpoint</label>
                     <input value={form.s3Endpoint} onChange={(e) => update('s3Endpoint', e.target.value)} placeholder="https://<account-id>.r2.cloudflarestorage.com" className={inputCls} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Region</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">Region</label>
                     <input value={form.s3Region} onChange={(e) => update('s3Region', e.target.value)} placeholder="R2: auto" className={inputCls} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Bucket</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">Bucket</label>
                     <input value={form.s3Bucket} onChange={(e) => update('s3Bucket', e.target.value)} className={inputCls} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Access Key</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">Access Key</label>
                     <input value={form.s3AccessKey} onChange={(e) => update('s3AccessKey', e.target.value)} className={inputCls} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Secret Key</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">Secret Key</label>
                     <input value={form.s3SecretKey} onChange={(e) => update('s3SecretKey', e.target.value)} type="password" className={inputCls} />
                   </div>
                   <div className="col-span-2">
-                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.accessURL', { defaultValue: '访问 URL' })}</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.accessURL', { defaultValue: '访问 URL' })}</label>
                     <input value={form.s3URL} onChange={(e) => update('s3URL', e.target.value)} placeholder="https://pub-xxx.r2.dev" className={inputCls} />
                   </div>
                 </div>
@@ -219,37 +234,43 @@ export function AdminStrategiesPage() {
             )}
           </div>
 
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowModal(false)} className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600">
+          <div className="flex justify-end gap-2 mt-4">
+            <button type="button" onClick={() => setShowModal(false)} className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
               {t('admin.cancel')}
             </button>
-            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900">
+            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors cursor-pointer disabled:cursor-not-allowed">
               {saving ? '…' : t('admin.confirmSave')}
             </button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" /></div>}
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">{t('admin.loadFailed')}</p>}
-      {strategies && strategies.length === 0 && <p className="py-12 text-center text-sm text-zinc-400">{t('admin.empty')}</p>}
+      {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}
+      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
+      {strategies && strategies.length === 0 && <p className="py-12 text-center text-sm text-muted-foreground">{t('admin.empty')}</p>}
 
       {strategies && strategies.length > 0 && (
-        <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <div className="divide-y divide-border/50">
           {strategies.map((s) => (
             <div key={s.id} className="flex items-center justify-between py-3">
               <div>
                 <p className="font-medium">{s.name}</p>
-                <p className="mt-0.5 text-xs text-zinc-400">
-                  <span className={['rounded px-1.5 py-0.5', s.strategy_type === 'local' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'].join(' ')}>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  <span className={['rounded px-1.5 py-0.5', s.strategy_type === 'local' ? 'bg-primary/10 text-primary' : 'bg-secondary/50 text-secondary-foreground'].join(' ')}>
                     {s.strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: '本地存储' })) : 'S3'}
                   </span>
                   <span className="ml-2">{new Date(s.created_at).toLocaleDateString()}</span>
                 </p>
               </div>
               <div className="flex gap-1">
-                <button type="button" onClick={() => openEdit(s)} className="rounded px-2 py-1 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800">{t('admin.edit')}</button>
-                <button type="button" onClick={() => setDeleteTarget(s.id)} disabled={deleting === s.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('admin.delete')}</button>
+                <button type="button" onClick={() => openEdit(s)} title={t('admin.edit')} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
+                  <Pencil className="size-4" />
+                </button>
+                {s.id !== 1 && (
+                  <button type="button" onClick={() => setDeleteTarget(s.id)} disabled={deleting === s.id} title={t('admin.delete')} className="rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
+                    <Trash2 className="size-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))}

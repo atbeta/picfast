@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Pencil, Trash2 } from 'lucide-react'
 
 import {
   createAdminGroup,
@@ -19,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Switch } from '@/components/ui/switch'
 
 interface GroupForm {
   name: string
@@ -161,7 +163,7 @@ export function AdminGroupsPage() {
     }))
   }
 
-  const inputCls = 'w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-600 dark:bg-zinc-900'
+  const inputCls = 'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all'
 
   const getStrategyName = (id: number) => {
     const s = allStrategies.find((x) => x.id === id)
@@ -169,73 +171,71 @@ export function AdminGroupsPage() {
   }
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{t('admin.groupsTitle')}</h1>
-        <button type="button" onClick={openCreate} className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300">
+        <h1 className="text-2xl font-bold tracking-tight">{t('admin.groupsTitle')}</h1>
+        <button type="button" onClick={openCreate} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
           {t('admin.create')}
         </button>
       </div>
 
       {/* Group create/edit dialog */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px]">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px] border-border bg-card">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-xl">
               {editing ? t('admin.edit') : t('admin.create')}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colName')}</label>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('admin.colName')}</label>
               <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
             </div>
 
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="isDefault" checked={form.is_default} onChange={(e) => update('is_default', e.target.checked)} className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600" />
-              <label htmlFor="isDefault" className="text-sm text-zinc-700 dark:text-zinc-300">{t('admin.defaultGroup', { defaultValue: '默认分组' })}</label>
+            <div className="flex items-center justify-between rounded-lg border border-border bg-background p-4 shadow-sm">
+              <label htmlFor="isDefault" className="text-sm font-medium text-foreground cursor-pointer">{t('admin.defaultGroup', { defaultValue: '默认分组' })}</label>
+              <Switch id="isDefault" checked={form.is_default} onCheckedChange={(checked) => update('is_default', checked)} />
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</label>
               <div className="flex items-center gap-2">
                 <input type="number" min={1} value={form.max_size} onChange={(e) => update('max_size', Number(e.target.value))} className={`${inputCls} w-32`} />
-                <span className="text-sm text-zinc-500 dark:text-zinc-400">MB</span>
+                <span className="text-sm text-muted-foreground">MB</span>
               </div>
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.extensions', { defaultValue: '允许格式' })}</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('admin.extensions', { defaultValue: '允许格式' })}</label>
               <input value={form.extensions} onChange={(e) => update('extensions', e.target.value)} placeholder="jpg,png,gif,webp" className={inputCls} />
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</label>
               <input type="number" min={0} value={form.limit_per_day} onChange={(e) => update('limit_per_day', Number(e.target.value))} className={inputCls} />
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.limitPerMonth', { defaultValue: '每月上限' })}</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('admin.limitPerMonth', { defaultValue: '每月上限' })}</label>
               <input type="number" min={0} value={form.limit_per_month} onChange={(e) => update('limit_per_month', Number(e.target.value))} className={inputCls} />
             </div>
 
             {/* Strategy binding */}
-            <div className="border-t border-zinc-200 pt-3 dark:border-zinc-700">
-              <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.availableStrategies', { defaultValue: '可用策略' })}</label>
+            <div className="border-t border-border pt-4">
+              <label className="mb-3 block text-sm font-medium text-foreground">{t('admin.availableStrategies', { defaultValue: '可用策略' })}</label>
               {allStrategies.length === 0 ? (
-                <p className="text-xs text-zinc-400">{t('admin.noStrategies', { defaultValue: '暂无策略，请先创建策略' })}</p>
+                <p className="text-sm text-muted-foreground">{t('admin.noStrategies', { defaultValue: '暂无策略，请先创建策略' })}</p>
               ) : (
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col gap-3">
                   {allStrategies.map((s) => (
-                    <label key={s.id} className="flex items-center gap-1.5 text-sm">
-                      <input
-                        type="checkbox"
+                    <label key={s.id} className="flex items-center justify-between rounded-lg border border-border bg-background p-3 shadow-sm cursor-pointer hover:bg-accent transition-colors">
+                      <span className="text-sm font-medium text-foreground">{s.name}</span>
+                      <Switch
                         checked={form.strategy_ids.includes(s.id)}
-                        onChange={() => toggleStrategy(s.id)}
-                        className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
+                        onCheckedChange={() => toggleStrategy(s.id)}
                       />
-                      {s.name}
                     </label>
                   ))}
                 </div>
@@ -243,63 +243,67 @@ export function AdminGroupsPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowModal(false)} className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600">
+          <div className="flex justify-end gap-3 pt-6 border-t border-border mt-6">
+            <button type="button" onClick={() => setShowModal(false)} className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
               {t('admin.cancel')}
             </button>
-            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900">
+            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
               {saving ? '…' : t('admin.confirmSave')}
             </button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" /></div>}
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">{t('admin.loadFailed')}</p>}
-      {groups && groups.length === 0 && <p className="py-12 text-center text-sm text-zinc-400">{t('admin.empty')}</p>}
+      {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}
+      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
+      {groups && groups.length === 0 && <p className="py-12 text-center text-sm text-muted-foreground">{t('admin.empty')}</p>}
 
       {groups && groups.length > 0 && (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-xs text-zinc-500 dark:border-zinc-700">
-                <th className="pb-2 pr-3 font-medium">{t('admin.colName')}</th>
-                <th className="pb-2 pr-3 font-medium">{t('admin.userCount', { defaultValue: '用户数' })}</th>
-                <th className="pb-2 pr-3 font-medium">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</th>
-                <th className="pb-2 pr-3 font-medium">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</th>
-                <th className="pb-2 pr-3 font-medium">{t('admin.availableStrategies', { defaultValue: '策略' })}</th>
-                <th className="pb-2 font-medium">{t('admin.colActions')}</th>
+              <tr className="border-b border-border text-left text-xs text-muted-foreground bg-muted/50">
+                <th className="px-4 py-3 font-medium">{t('admin.colName')}</th>
+                <th className="px-4 py-3 font-medium">{t('admin.userCount', { defaultValue: '用户数' })}</th>
+                <th className="px-4 py-3 font-medium">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</th>
+                <th className="px-4 py-3 font-medium">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</th>
+                <th className="px-4 py-3 font-medium">{t('admin.availableStrategies', { defaultValue: '策略' })}</th>
+                <th className="px-4 py-3 font-medium">{t('admin.colActions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            <tbody className="divide-y divide-border">
               {groups.map((g) => (
-                <tr key={g.id}>
-                  <td className="py-2 pr-3 font-medium">
+                <tr key={g.id} className="group hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-3 font-medium">
                     {g.name}
-                    {g.is_default && <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{t('admin.default')}</span>}
-                    {g.is_guest && <span className="ml-2 rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700 dark:bg-green-900/30 dark:text-green-400">{t('admin.guest')}</span>}
+                    {g.is_default && <span className="ml-2 rounded-lg bg-primary/10 px-1.5 py-0.5 text-xs text-primary">{t('admin.default')}</span>}
+                    {g.is_guest && <span className="ml-2 rounded-lg bg-success/10 px-1.5 py-0.5 text-xs text-success">{t('admin.guest')}</span>}
                   </td>
-                  <td className="py-2 pr-3 text-zinc-500">{(g as unknown as Record<string, unknown>).user_count as number ?? '-'}</td>
-                  <td className="py-2 pr-3 text-zinc-500">{formatSize((g.configs?.maximum_file_size as number) || 0)}</td>
-                  <td className="py-2 pr-3 text-zinc-500">{(g.configs?.limit_per_day as number) || '-'}</td>
-                  <td className="py-2 pr-3">
+                  <td className="px-4 py-3 text-muted-foreground">{(g as unknown as Record<string, unknown>).user_count as number ?? '-'}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{formatSize((g.configs?.maximum_file_size as number) || 0)}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{(g.configs?.limit_per_day as number) || '-'}</td>
+                  <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {(g.strategy_ids || []).length > 0 ? (
                         g.strategy_ids.map((id) => (
-                          <span key={id} className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          <span key={id} className="rounded-lg bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
                             {getStrategyName(id)}
                           </span>
                         ))
                       ) : (
-                        <span className="text-xs text-zinc-400">-</span>
+                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </div>
                   </td>
-                  <td className="py-2">
+                  <td className="px-4 py-3">
                     <div className="flex gap-1">
-                      <button type="button" onClick={() => openEdit(g)} className="rounded px-2 py-1 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800">{t('admin.edit')}</button>
+                      <button type="button" onClick={() => openEdit(g)} title={t('admin.edit')} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
+                        <Pencil className="size-4" />
+                      </button>
                       {!g.is_default && !g.is_guest && (
-                        <button type="button" onClick={() => setDeleteTarget(g.id)} disabled={deleting === g.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('admin.delete')}</button>
+                        <button type="button" onClick={() => setDeleteTarget(g.id)} disabled={deleting === g.id} title={t('admin.delete')} className="rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 transition-colors cursor-pointer">
+                          <Trash2 className="size-4" />
+                        </button>
                       )}
                     </div>
                   </td>

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { deleteAdminImage, listAdminImages } from '../../../lib/admin-api'
 import { formatFileSize } from '../../../lib/upload'
@@ -38,55 +39,63 @@ export function AdminImagesPage() {
 
   return (
     <section className="space-y-4">
-      <h1 className="text-xl font-semibold">{t('admin.imagesTitle')}</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{t('admin.imagesTitle')}</h1>
 
       <div className="flex flex-wrap gap-2">
-        <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(1) }} placeholder={t('admin.searchName')} className="w-48 rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800" />
-        <input value={emailFilter} onChange={(e) => { setEmailFilter(e.target.value); setPage(1) }} placeholder={t('admin.searchEmail')} className="w-48 rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800" />
+        <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(1) }} placeholder={t('admin.searchName')} className="w-48 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+    <input value={emailFilter} onChange={(e) => { setEmailFilter(e.target.value); setPage(1) }} placeholder={t('admin.searchEmail')} className="w-48 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
       </div>
 
-      {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" /></div>}
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">{t('admin.loadFailed')}</p>}
-      {data && data.items.length === 0 && <p className="py-12 text-center text-sm text-zinc-400">{t('admin.empty')}</p>}
+      {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}
+      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
+      {data && data.items.length === 0 && <p className="py-12 text-center text-sm text-muted-foreground">{t('admin.empty')}</p>}
 
       {data && data.items.length > 0 && (
         <>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-border/50 bg-card shadow-sm">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-zinc-200 text-left text-xs text-zinc-500 dark:border-zinc-700">
-                  <th className="pb-2 pr-3 font-medium">{t('admin.colPreview')}</th>
-                  <th className="pb-2 pr-3 font-medium">Key</th>
-                  <th className="pb-2 pr-3 font-medium">{t('admin.colName')}</th>
-                  <th className="pb-2 pr-3 font-medium">{t('admin.colUploader')}</th>
-                  <th className="pb-2 pr-3 font-medium">{t('admin.colSize')}</th>
-                  <th className="pb-2 pr-3 font-medium">{t('images.permission', { defaultValue: '权限' })}</th>
-                  <th className="pb-2 pr-3 font-medium">{t('admin.colDate')}</th>
-                  <th className="pb-2 font-medium">{t('admin.colActions')}</th>
+                <tr className="border-b border-border/50 text-left text-xs text-muted-foreground bg-muted/30">
+                  <th className="pb-2 pr-3 pl-4 pt-2 font-medium">{t('admin.colPreview')}</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">Key</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colName')}</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colUploader')}</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colSize')}</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('images.permission', { defaultValue: '权限' })}</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colDate')}</th>
+                  <th className="pb-2 pr-4 pt-2 font-medium">{t('admin.colActions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <tbody className="divide-y divide-border/50">
                 {data.items.map((img) => (
-                  <tr key={img.id}>
-                    <td className="py-2 pr-3">
+                  <tr key={img.id} className="group hover:bg-muted/20 transition-colors">
+                    <td className="py-2 pr-3 pl-4">
                       {img.thumbnail_url ? (
-                        <img src={img.thumbnail_url} alt="" className="h-10 w-10 rounded border border-zinc-200 object-cover dark:border-zinc-700" />
+                        <img src={img.thumbnail_url} alt="" className="h-10 w-10 rounded border border-border/50 object-cover" />
                       ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded border border-zinc-200 text-xs text-zinc-400 dark:border-zinc-700">{img.extension.toUpperCase()}</div>
+                        <div className="flex h-10 w-10 items-center justify-center rounded border border-border/50 text-xs text-muted-foreground bg-muted/30">{img.extension.toUpperCase()}</div>
                       )}
                     </td>
-                    <td className="max-w-[120px] truncate py-2 pr-3 font-mono text-xs text-zinc-500">{img.key}</td>
-                    <td className="max-w-[140px] truncate py-2 pr-3">{img.origin_name}</td>
-                    <td className="py-2 pr-3 text-zinc-500">{img.user_email ?? '—'}</td>
-                    <td className="whitespace-nowrap py-2 pr-3 text-zinc-500">{formatFileSize(img.size_bytes)}</td>
+                    <td className="max-w-[120px] truncate py-2 pr-3 font-mono text-xs text-muted-foreground">{img.key}</td>
+                    <td className="max-w-[140px] truncate py-2 pr-3 text-foreground">{img.origin_name}</td>
+                    <td className="py-2 pr-3 text-muted-foreground">{img.user_email ?? '—'}</td>
+                    <td className="whitespace-nowrap py-2 pr-3 text-muted-foreground">{formatFileSize(img.size_bytes)}</td>
                     <td className="py-2 pr-3">
-                      <span className={['rounded px-1.5 py-0.5 text-xs', img.permission === 1 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'].join(' ')}>
+                      <span className={['rounded px-1.5 py-0.5 text-xs font-medium', img.permission === 1 ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'].join(' ')}>
                         {img.permission === 1 ? (t('images.public', { defaultValue: '公开' })) : (t('images.private', { defaultValue: '私有' }))}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap py-2 pr-3 text-zinc-500">{new Date(img.created_at).toLocaleDateString()}</td>
-                    <td className="py-2">
-                      <button type="button" onClick={() => setDeleteTarget(img.id)} disabled={deleting === img.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('admin.delete')}</button>
+                    <td className="whitespace-nowrap py-2 pr-3 text-muted-foreground">{new Date(img.created_at).toLocaleDateString()}</td>
+                    <td className="py-2 pr-4">
+                      <button 
+                        type="button" 
+                        onClick={() => setDeleteTarget(img.id)} 
+                        disabled={deleting === img.id} 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                        title={t('admin.delete')}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -95,11 +104,27 @@ export function AdminImagesPage() {
           </div>
 
           {data.total > 20 && (
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-zinc-500">{t('admin.pagination', { total: data.total })}</span>
+            <div className="flex items-center justify-between pt-4">
+              <span className="text-xs text-muted-foreground">{t('admin.pagination', { total: data.total })}</span>
               <div className="flex gap-2">
-                <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded border border-zinc-300 px-3 py-1 text-xs disabled:opacity-40 dark:border-zinc-700">{t('admin.prev')}</button>
-                <button type="button" disabled={page * 20 >= data.total} onClick={() => setPage((p) => p + 1)} className="rounded border border-zinc-300 px-3 py-1 text-xs disabled:opacity-40 dark:border-zinc-700">{t('admin.next')}</button>
+                <button 
+                  type="button" 
+                  disabled={page <= 1} 
+                  onClick={() => setPage((p) => p - 1)} 
+                  title={t('admin.prev')}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                <button 
+                  type="button" 
+                  disabled={page * 20 >= data.total} 
+                  onClick={() => setPage((p) => p + 1)} 
+                  title={t('admin.next')}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
               </div>
             </div>
           )}

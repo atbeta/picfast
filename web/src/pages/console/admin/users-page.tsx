@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Ban, Unlock, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { deleteAdminUser, listAdminUsers, updateAdminUser } from '../../../lib/admin-api'
 import { formatFileSize } from '../../../lib/upload'
@@ -56,65 +57,66 @@ export function AdminUsersPage() {
 
   return (
     <section className="space-y-4">
-      <h1 className="text-xl font-semibold">{t('admin.usersTitle')}</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{t('admin.usersTitle')}</h1>
 
       <input
         value={keyword}
         onChange={(e) => { setKeyword(e.target.value); setPage(1) }}
         placeholder={t('admin.searchPlaceholder')}
-        className="w-full max-w-xs rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800"
+        className="w-full max-w-xs rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
       />
 
       {isLoading && (
-        <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" /></div>
+        <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
       )}
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">{t('admin.loadFailed')}</p>}
-      {data && data.items.length === 0 && <p className="py-12 text-center text-sm text-zinc-400">{t('admin.empty')}</p>}
+      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
+      {data && data.items.length === 0 && <p className="py-12 text-center text-sm text-muted-foreground">{t('admin.empty')}</p>}
 
       {data && data.items.length > 0 && (
         <>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-border/50 bg-card shadow-sm">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-zinc-200 text-left text-xs text-zinc-500 dark:border-zinc-700">
-                  <th className="pb-2 pr-3 font-medium">ID</th>
-                  <th className="pb-2 pr-3 font-medium">{t('admin.colEmail')}</th>
-                  <th className="pb-2 pr-3 font-medium">{t('admin.colName')}</th>
-                  <th className="pb-2 pr-3 font-medium">{t('admin.colRole')}</th>
-                  <th className="pb-2 pr-3 font-medium">{t('admin.colStatus')}</th>
-                  <th className="pb-2 pr-3 font-medium">{t('admin.colImages')}</th>
-                  <th className="pb-2 pr-3 font-medium">{t('admin.usedCapacity', { defaultValue: '已用容量' })}</th>
-                  <th className="pb-2 font-medium">{t('admin.colActions')}</th>
+                <tr className="border-b border-border/50 text-left text-xs text-muted-foreground bg-muted/30">
+                  <th className="pb-2 pr-3 pl-4 pt-2 font-medium">ID</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colEmail')}</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colName')}</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colRole')}</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colStatus')}</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colImages')}</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.usedCapacity', { defaultValue: '已用容量' })}</th>
+                  <th className="pb-2 pr-4 pt-2 font-medium">{t('admin.colActions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <tbody className="divide-y divide-border/50">
                 {data.items.map((u) => (
-                  <tr key={u.id}>
-                    <td className="py-2 pr-3 text-zinc-500">{u.id}</td>
-                    <td className="py-2 pr-3">{u.email}</td>
-                    <td className="py-2 pr-3">{u.name}</td>
+                  <tr key={u.id} className="group hover:bg-muted/20 transition-colors">
+                    <td className="py-2 pr-3 pl-4 text-muted-foreground">{u.id}</td>
+                    <td className="py-2 pr-3 text-foreground">{u.email}</td>
+                    <td className="py-2 pr-3 text-foreground">{u.name}</td>
                     <td className="py-2 pr-3">
-                      <span className={['rounded px-1.5 py-0.5 text-xs', u.role === 'admin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'].join(' ')}>
+                      <span className={['rounded px-1.5 py-0.5 text-xs font-medium', u.role === 'admin' ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground'].join(' ')}>
                         {u.role}
                       </span>
                     </td>
                     <td className="py-2 pr-3">
-                      <span className={['rounded px-1.5 py-0.5 text-xs', u.status === 1 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'].join(' ')}>
+                      <span className={['rounded px-1.5 py-0.5 text-xs font-medium', u.status === 1 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'].join(' ')}>
                         {u.status === 1 ? t('admin.active') : t('admin.frozen')}
                       </span>
                     </td>
-                    <td className="py-2 pr-3 text-zinc-500">{u.image_num}</td>
-                    <td className="py-2 pr-3 text-zinc-500">{formatFileSize(u.used_capacity || 0)} / {formatFileSize(u.capacity_bytes)}</td>
-                    <td className="py-2">
+                    <td className="py-2 pr-3 text-muted-foreground">{u.image_num}</td>
+                    <td className="py-2 pr-3 text-muted-foreground">{formatFileSize(u.used_capacity || 0)} / {formatFileSize(u.capacity_bytes)}</td>
+                    <td className="py-2 pr-4">
                       <div className="flex gap-1">
                         {u.role !== 'admin' && (
                           <button
                             type="button"
                             onClick={() => toggleStatus(u)}
                             disabled={saving === u.id}
-                            className="rounded px-2 py-1 text-xs hover:bg-zinc-100 disabled:opacity-50 dark:hover:bg-zinc-800"
+                            title={u.status === 1 ? t('admin.freeze') : t('admin.activate')}
+                            className="rounded-lg px-2 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50 transition-colors cursor-pointer"
                           >
-                            {u.status === 1 ? t('admin.freeze') : t('admin.activate')}
+                            {u.status === 1 ? <Ban className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                           </button>
                         )}
                         {u.role !== 'admin' && (
@@ -122,9 +124,10 @@ export function AdminUsersPage() {
                             type="button"
                             onClick={() => setDeleteTarget(u.id)}
                             disabled={deleting === u.id}
-                            className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20"
+                            title={t('admin.delete')}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                           >
-                            {t('admin.delete')}
+                            <Trash2 className="size-4" />
                           </button>
                         )}
                       </div>
@@ -136,11 +139,27 @@ export function AdminUsersPage() {
           </div>
 
           {data.total > 20 && (
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-zinc-500">{t('admin.pagination', { total: data.total })}</span>
+            <div className="flex items-center justify-between pt-4">
+              <span className="text-xs text-muted-foreground">{t('admin.pagination', { total: data.total })}</span>
               <div className="flex gap-2">
-                <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded border border-zinc-300 px-3 py-1 text-xs disabled:opacity-40 dark:border-zinc-700">{t('admin.prev')}</button>
-                <button type="button" disabled={page * 20 >= data.total} onClick={() => setPage((p) => p + 1)} className="rounded border border-zinc-300 px-3 py-1 text-xs disabled:opacity-40 dark:border-zinc-700">{t('admin.next')}</button>
+                <button 
+                  type="button" 
+                  disabled={page <= 1} 
+                  onClick={() => setPage((p) => p - 1)} 
+                  title={t('admin.prev')}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                <button 
+                  type="button" 
+                  disabled={page * 20 >= data.total} 
+                  onClick={() => setPage((p) => p + 1)} 
+                  title={t('admin.next')}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
               </div>
             </div>
           )}

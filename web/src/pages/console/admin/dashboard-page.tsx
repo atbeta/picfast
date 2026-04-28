@@ -19,13 +19,14 @@ export function AdminDashboardPage() {
   ]
 
   return (
-    <section>
-      <h1 className="mb-4 text-xl font-semibold">{t('admin.dashboardTitle', { defaultValue: '概览' })}</h1>
+    <section className="space-y-6">
+      <h1 className="text-2xl font-bold tracking-tight">{t('admin.dashboardTitle', { defaultValue: '概览' })}</h1>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-800">
-            <div className="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-400">{s.label}</div>
-            <div className="text-2xl font-bold">{s.value}</div>
+          <div key={s.label} className="group overflow-hidden rounded-xl border border-border/50 bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-1 hover:border-primary/30">
+            <div className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">{s.label}</div>
+            <div className="text-3xl font-bold tracking-tight text-foreground">{s.value}</div>
+            <div className="mt-4 h-1 w-12 rounded-full bg-primary/20 transition-all group-hover:w-full group-hover:bg-primary" />
           </div>
         ))}
       </div>

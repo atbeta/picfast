@@ -16,19 +16,25 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(() => authApi.hasToken())
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (!authApi.hasToken()) return
-    setIsLoading(true)
-    authApi
-      .getProfile()
-      .then(setUser)
-      .catch(() => {
+    let mounted = true
+    const fetchProfile = async () => {
+      setIsLoading(true)
+      try {
+        const profile = await authApi.getProfile()
+        if (mounted) setUser(profile)
+      } catch {
         authApi.clearTokens()
-        setUser(null)
-      })
-      .finally(() => setIsLoading(false))
+        if (mounted) setUser(null)
+      } finally {
+        if (mounted) setIsLoading(false)
+      }
+    }
+    fetchProfile()
+    return () => { mounted = false }
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
@@ -72,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used within AuthProvider')

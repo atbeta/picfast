@@ -57,16 +57,43 @@ export function UploadZone({ onFiles, disabled }: UploadZoneProps) {
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       className={[
-        'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-colors',
+        'relative flex cursor-pointer flex-col items-center justify-center rounded-xl p-12 transition-all duration-300 overflow-hidden group',
         dragging
-          ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20'
-          : 'border-border hover:border-muted-foreground/30 dark:hover:border-muted-foreground/40',
+          ? 'bg-primary/5 dark:bg-primary/10'
+          : 'bg-muted/30 hover:bg-muted/50 dark:bg-muted/10 dark:hover:bg-muted/20',
         disabled && 'pointer-events-none opacity-50',
       ].join(' ')}
     >
-      <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
-      <p className="text-sm font-medium text-muted-foreground">{t('upload.dropHint')}</p>
-      <p className="mt-1 text-xs text-muted-foreground/70">{t('upload.dropFormats')}</p>
+      {/* Animated Border */}
+      <div className={[
+        "absolute inset-0 rounded-xl border-2 border-dashed transition-colors duration-300",
+        dragging ? "border-primary scale-[0.99]" : "border-border group-hover:border-primary/50"
+      ].join(' ')} />
+
+      {/* Inner Glow Effect */}
+      <div className={[
+        "absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-info/10 opacity-0 transition-opacity duration-500",
+        dragging ? "opacity-100" : "group-hover:opacity-100"
+      ].join(' ')} />
+
+      <div className="relative z-10 flex flex-col items-center">
+        <div className={[
+          "mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-300 border border-border/50",
+          dragging ? "scale-110 shadow-primary/20 shadow-lg" : "group-hover:scale-105 group-hover:shadow-md"
+        ].join(' ')}>
+          <Upload className={[
+            "h-8 w-8 transition-colors duration-300",
+            dragging ? "text-primary" : "text-muted-foreground group-hover:text-primary/80"
+          ].join(' ')} />
+        </div>
+        <h3 className="text-xl font-semibold tracking-tight text-foreground">
+          {t('upload.dropHint')}
+        </h3>
+        <p className="mt-2 text-sm text-muted-foreground/80 max-w-xs text-center">
+          {t('upload.dropFormats')}
+        </p>
+      </div>
+
       <input
         ref={inputRef}
         type="file"

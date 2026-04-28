@@ -1,23 +1,28 @@
 import { useTranslation } from 'react-i18next'
-
-import { cn } from '../lib/cn'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export function LanguageSwitcher() {
   const { i18n, t } = useTranslation()
+
   return (
-    <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-      <span>{t('common.language')}</span>
-      <select
-        value={i18n.language}
-        onChange={(e) => void i18n.changeLanguage(e.target.value)}
-        className={cn(
-          'rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm',
-          'dark:border-zinc-700 dark:bg-zinc-900',
-        )}
+    <label className="flex items-center gap-2 text-sm text-muted-foreground">
+      <span>{t('nav.language', { defaultValue: 'Language' })}</span>
+      <Select 
+        value={i18n.language} 
+        onValueChange={(val) => val !== null && void i18n.changeLanguage(val as string)}
+        items={{
+          'zh-CN': '中文',
+          'en-US': 'English'
+        }}
       >
-        <option value="zh-CN">中文</option>
-        <option value="en-US">English</option>
-      </select>
+        <SelectTrigger className="w-[100px] h-8 bg-background border-input hover:bg-accent transition-colors">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="zh-CN">中文</SelectItem>
+          <SelectItem value="en-US">English</SelectItem>
+        </SelectContent>
+      </Select>
     </label>
   )
 }
