@@ -1,0 +1,14 @@
+.git
+.github
+.ai
+bin
+data
+picfast
+web/node_modules
+web/dist
+web-dist
+.env
+.env.*
+Dockerfile
+README.md
+docs

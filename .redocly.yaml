@@ -1,0 +1,11 @@
+extends:
+  - recommended
+
+rules:
+  # We will incrementally add operationId and explicit 4xx responses.
+  operation-operationId: off
+  operation-4xx-response: off
+  # Localhost is expected in local dev server declarations.
+  no-server-example.com: off
+  # Keep existing schemas for forward compatibility during active refactors.
+  no-unused-components: off

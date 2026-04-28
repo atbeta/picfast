@@ -1,0 +1,119 @@
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { formatFileSize } from '../lib/upload'
+import { Copy, Check, ExternalLink } from 'lucide-react'
+
+interface UploadResultLike {
+  origin_name: string
+  size_bytes: number
+  extension: string
+  width: number
+  height: number
+  links: { url: string; html: string; bbcode: string; markdown: string; thumbnail_url: string }
+}
+
+interface UploadResultCardProps {
+  result: UploadResultLike
+}
+
+interface CopyItem {
+  label: string
+  value: string
+}
+
+function CopyButton({ text }: { text: string }) {
+  const { t } = useTranslation()
+  const [copied, setCopied] = useState(false)
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <button
+          type="button"
+          onClick={copy}
+          title={copied ? t('upload.copied') : t('upload.copy')}
+          className="shrink-0 flex items-center justify-center h-8 w-8 rounded-md bg-background/50 border border-border/50 text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 shadow-sm cursor-pointer active:scale-95 hover:scale-105"
+        >
+      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+    </button>
+  )
+}
+
+function CopyRow({ item }: { item: CopyItem }) {
+  return (
+    <div className="group flex items-center gap-3 rounded-lg bg-muted/30 px-4 py-2.5 transition-all duration-300 hover:bg-muted/50 border border-border/40 hover:border-primary/30 hover:shadow-sm">
+      <span className="shrink-0 w-20 text-xs font-semibold tracking-wider text-muted-foreground uppercase">{item.label}</span>
+      <code className="min-w-0 flex-1 truncate text-sm font-medium text-foreground bg-background/50 px-2.5 py-1 rounded-md border border-border/40 shadow-inner">{item.value}</code>
+      <CopyButton text={item.value} />
+    </div>
+  )
+}
+
+export function UploadResultCard({ result }: UploadResultCardProps) {
+  const items: CopyItem[] = [
+    { label: 'URL', value: result.links.url },
+    { label: 'Markdown', value: result.links.markdown },
+    { label: 'HTML', value: result.links.html },
+    { label: 'BBCode', value: result.links.bbcode },
+  ]
+
+  return (
+    <div className="group overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20 transition-all hover:shadow-xl hover:border-border/80">
+      <div className="flex flex-col sm:flex-row sm:items-start gap-6 p-6">
+        {/* Image Preview */}
+        <div className="relative shrink-0 group-hover:scale-[1.02] transition-transform duration-500">
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl blur-md" />
+          <div className="relative h-32 w-32 sm:h-40 sm:w-40 overflow-hidden rounded-xl border border-border/60 bg-muted/30 shadow-sm">
+            {result.links.thumbnail_url ? (
+              <img
+                src={result.links.thumbnail_url}
+                alt={result.origin_name}
+                className="h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-110"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted-foreground">
+                <span className="text-xs font-medium uppercase tracking-widest">{result.extension}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Details & Links */}
+        <div className="min-w-0 flex-1 flex flex-col justify-center">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="truncate text-lg font-bold tracking-tight text-foreground" title={result.origin_name}>
+                {result.origin_name}
+              </h3>
+              <div className="mt-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <span className="bg-muted px-2 py-0.5 rounded-full border border-border/50">{result.width}×{result.height}</span>
+                <span className="bg-muted px-2 py-0.5 rounded-full border border-border/50">{formatFileSize(result.size_bytes)}</span>
+                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider">{result.extension}</span>
+              </div>
+            </div>
+            <a 
+              href={result.links.url} 
+              target="_blank" 
+              rel="noreferrer"
+              className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm shrink-0 cursor-pointer"
+              title="Open Original"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+
+          <div className="space-y-2">
+            {items.map((item) => (
+              <CopyRow key={item.label} item={item} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: picfast-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-picfast}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-picfast}
+      POSTGRES_DB: ${POSTGRES_DB:-picfast}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-picfast} -d ${POSTGRES_DB:-picfast}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - picfast-net
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: picfast-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PICFAST_DATABASE_URL: "postgres://${POSTGRES_USER:-picfast}:${POSTGRES_PASSWORD:-picfast}@db:5432/${POSTGRES_DB:-picfast}?sslmode=disable"
+      PICFAST_JWT_SECRET: ${PICFAST_JWT_SECRET:-change-me-in-production}
+      PICFAST_SERVER_BASE_URL: ${PICFAST_SERVER_BASE_URL:-http://localhost:8080}
+      PICFAST_APP_ADMIN_EMAIL: ${PICFAST_APP_ADMIN_EMAIL:-}
+      PICFAST_APP_ADMIN_PASSWORD: ${PICFAST_APP_ADMIN_PASSWORD:-}
+      PICFAST_APP_ALLOW_GUEST_UPLOAD: ${PICFAST_APP_ALLOW_GUEST_UPLOAD:-false}
+      PICFAST_APP_ALLOW_REGISTRATION: ${PICFAST_APP_ALLOW_REGISTRATION:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/data/uploads
+      - thumbnails:/app/data/thumbnails
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - picfast-net
+
+volumes:
+  pgdata:
+  uploads:
+  thumbnails:
+
+networks:
+  picfast-net:
+    driver: bridge

@@ -1,0 +1,25 @@
+server:
+  port: 8080
+  base_url: "http://localhost:8080"
+
+database:
+  url: "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable"
+
+jwt:
+  secret: "change-me-in-production"
+  access_ttl: 15m
+  refresh_ttl: 168h
+
+storage:
+  local_root: "./data/uploads"
+  thumbnail_dir: "./data/thumbnails"
+
+app:
+  name: "PicFast"
+  allow_guest_upload: false
+  allow_registration: false
+  user_initial_capacity: 524288000
+  default_image_ttl: "0"       # 0 = no default expiration; e.g. "24h", "7d"
+  admin_email: ""
+  admin_password: ""
+  moderation_mode: "disabled"  # disabled | manual | auto (future)

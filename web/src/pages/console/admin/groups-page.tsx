@@ -1,0 +1,328 @@
+import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { Pencil, Trash2 } from 'lucide-react'
+
+import {
+  createAdminGroup,
+  deleteAdminGroup,
+  listAdminGroups,
+  listAdminStrategies,
+  setAdminGroupStrategies,
+  updateAdminGroup,
+  type AdminGroup,
+} from '../../../lib/admin-api'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Switch } from '@/components/ui/switch'
+
+interface GroupForm {
+  name: string
+  is_default: boolean
+  max_size: number
+  extensions: string
+  limit_per_day: number
+  limit_per_month: number
+  strategy_ids: number[]
+}
+
+function emptyForm(): GroupForm {
+  return {
+    name: '',
+    is_default: false,
+    max_size: 5,
+    extensions: 'jpg,jpeg,png,gif,webp,bmp,svg',
+    limit_per_day: 300,
+    limit_per_month: 9999,
+    strategy_ids: [],
+  }
+}
+
+function groupToForm(g: AdminGroup): GroupForm {
+  const c = g.configs || {}
+  return {
+    name: g.name,
+    is_default: g.is_default,
+    max_size: Math.round(((c.maximum_file_size as number) || 5242880) / 1048576),
+    extensions: ((c.accepted_extensions as string[]) || []).join(','),
+    limit_per_day: (c.limit_per_day as number) || 300,
+    limit_per_month: (c.limit_per_month as number) || 9999,
+    strategy_ids: (g.strategy_ids || []).map(Number),
+  }
+}
+
+function formToConfigs(form: GroupForm) {
+  return {
+    maximum_file_size: form.max_size * 1048576,
+    accepted_extensions: form.extensions.split(',').map((s) => s.trim()).filter(Boolean),
+    limit_per_day: form.limit_per_day,
+    limit_per_month: form.limit_per_month,
+  }
+}
+
+function formatSize(bytes: number): string {
+  if (!bytes) return '-'
+  const mb = bytes / 1048576
+  return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb.toFixed(1)} MB`
+}
+
+export function AdminGroupsPage() {
+  const { t } = useTranslation()
+  const qc = useQueryClient()
+
+  const { data: groups, isLoading, error } = useQuery({
+    queryKey: ['admin-groups'],
+    queryFn: listAdminGroups,
+  })
+
+  const { data: allStrategies = [] } = useQuery({
+    queryKey: ['admin-strategies'],
+    queryFn: listAdminStrategies,
+  })
+
+  // Modal state
+  const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState<AdminGroup | null>(null)
+  const [form, setForm] = useState<GroupForm>(emptyForm())
+  const [saving, setSaving] = useState(false)
+
+  const openCreate = () => {
+    setEditing(null)
+    setForm(emptyForm())
+    setShowModal(true)
+  }
+
+  const openEdit = (g: AdminGroup) => {
+    setEditing(g)
+    setForm(groupToForm(g))
+    setShowModal(true)
+  }
+
+  const handleSave = useCallback(async () => {
+    if (!form.name.trim()) return
+    setSaving(true)
+    try {
+      const configs = formToConfigs(form)
+      if (editing) {
+        await updateAdminGroup(editing.id, {
+          name: form.name.trim(),
+          is_default: form.is_default,
+          is_guest: editing.is_guest,
+          configs,
+        })
+        await setAdminGroupStrategies(editing.id, form.strategy_ids)
+      } else {
+        await createAdminGroup({
+          name: form.name.trim(),
+          is_default: form.is_default,
+          configs,
+        })
+      }
+      setShowModal(false)
+      await qc.invalidateQueries({ queryKey: ['admin-groups'] })
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
+    } finally {
+      setSaving(false)
+    }
+  }, [form, editing, qc, t])
+
+  // Delete
+  const [deleting, setDeleting] = useState<number | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+
+  const onDelete = useCallback(async () => {
+    if (deleteTarget === null) return
+    setDeleting(deleteTarget)
+    try {
+      await deleteAdminGroup(deleteTarget)
+      setDeleteTarget(null)
+      await qc.invalidateQueries({ queryKey: ['admin-groups'] })
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
+    } finally {
+      setDeleting(null)
+    }
+  }, [deleteTarget, qc, t])
+
+  const update = <K extends keyof GroupForm>(key: K, value: GroupForm[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }))
+
+  const toggleStrategy = (id: number) => {
+    setForm((prev) => ({
+      ...prev,
+      strategy_ids: prev.strategy_ids.includes(id)
+        ? prev.strategy_ids.filter((x) => x !== id)
+        : [...prev.strategy_ids, id],
+    }))
+  }
+
+  const inputCls = 'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all'
+
+  const getStrategyName = (id: number) => {
+    const s = allStrategies.find((x) => x.id === id)
+    return s ? s.name : String(id)
+  }
+
+  return (
+    <section className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">{t('admin.groupsTitle')}</h1>
+        <button type="button" onClick={openCreate} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
+          {t('admin.create')}
+        </button>
+      </div>
+
+      {/* Group create/edit dialog */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px] border-border bg-card">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              {editing ? t('admin.edit') : t('admin.create')}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('admin.colName')}</label>
+              <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-border bg-background p-4 shadow-sm">
+              <label htmlFor="isDefault" className="text-sm font-medium text-foreground cursor-pointer">{t('admin.defaultGroup', { defaultValue: '默认分组' })}</label>
+              <Switch id="isDefault" checked={form.is_default} onCheckedChange={(checked) => update('is_default', checked)} />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</label>
+              <div className="flex items-center gap-2">
+                <input type="number" min={1} value={form.max_size} onChange={(e) => update('max_size', Number(e.target.value))} className={`${inputCls} w-32`} />
+                <span className="text-sm text-muted-foreground">MB</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('admin.extensions', { defaultValue: '允许格式' })}</label>
+              <input value={form.extensions} onChange={(e) => update('extensions', e.target.value)} placeholder="jpg,png,gif,webp" className={inputCls} />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</label>
+              <input type="number" min={0} value={form.limit_per_day} onChange={(e) => update('limit_per_day', Number(e.target.value))} className={inputCls} />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('admin.limitPerMonth', { defaultValue: '每月上限' })}</label>
+              <input type="number" min={0} value={form.limit_per_month} onChange={(e) => update('limit_per_month', Number(e.target.value))} className={inputCls} />
+            </div>
+
+            {/* Strategy binding */}
+            <div className="border-t border-border pt-4">
+              <label className="mb-3 block text-sm font-medium text-foreground">{t('admin.availableStrategies', { defaultValue: '可用策略' })}</label>
+              {allStrategies.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t('admin.noStrategies', { defaultValue: '暂无策略，请先创建策略' })}</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {allStrategies.map((s) => (
+                    <label key={s.id} className="flex items-center justify-between rounded-lg border border-border bg-background p-3 shadow-sm cursor-pointer hover:bg-accent transition-colors">
+                      <span className="text-sm font-medium text-foreground">{s.name}</span>
+                      <Switch
+                        checked={form.strategy_ids.includes(s.id)}
+                        onCheckedChange={() => toggleStrategy(s.id)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-6 border-t border-border mt-6">
+            <button type="button" onClick={() => setShowModal(false)} className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+              {t('admin.cancel')}
+            </button>
+            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
+              {saving ? '…' : t('admin.confirmSave')}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}
+      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
+      {groups && groups.length === 0 && <p className="py-12 text-center text-sm text-muted-foreground">{t('admin.empty')}</p>}
+
+      {groups && groups.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs text-muted-foreground bg-muted/50">
+                <th className="px-4 py-3 font-medium">{t('admin.colName')}</th>
+                <th className="px-4 py-3 font-medium">{t('admin.userCount', { defaultValue: '用户数' })}</th>
+                <th className="px-4 py-3 font-medium">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</th>
+                <th className="px-4 py-3 font-medium">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</th>
+                <th className="px-4 py-3 font-medium">{t('admin.availableStrategies', { defaultValue: '策略' })}</th>
+                <th className="px-4 py-3 font-medium">{t('admin.colActions')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {groups.map((g) => (
+                <tr key={g.id} className="group hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-3 font-medium">
+                    {g.name}
+                    {g.is_default && <span className="ml-2 rounded-lg bg-primary/10 px-1.5 py-0.5 text-xs text-primary">{t('admin.default')}</span>}
+                    {g.is_guest && <span className="ml-2 rounded-lg bg-success/10 px-1.5 py-0.5 text-xs text-success">{t('admin.guest')}</span>}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{(g as unknown as Record<string, unknown>).user_count as number ?? '-'}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{formatSize((g.configs?.maximum_file_size as number) || 0)}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{(g.configs?.limit_per_day as number) || '-'}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {(g.strategy_ids || []).length > 0 ? (
+                        g.strategy_ids.map((id) => (
+                          <span key={id} className="rounded-lg bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
+                            {getStrategyName(id)}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1">
+                      <button type="button" onClick={() => openEdit(g)} title={t('admin.edit')} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
+                        <Pencil className="size-4" />
+                      </button>
+                      {!g.is_default && !g.is_guest && (
+                        <button type="button" onClick={() => setDeleteTarget(g.id)} disabled={deleting === g.id} title={t('admin.delete')} className="rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 transition-colors cursor-pointer">
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        title={t('admin.confirmDeleteGroup')}
+        description={t('admin.deleteGroupDescription')}
+        confirmLabel={t('admin.delete')}
+        onConfirm={onDelete}
+        loading={!!deleting}
+      />
+    </section>
+  )
+}
