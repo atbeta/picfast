@@ -29,17 +29,17 @@ func expandRule(rule, fileMD5 string, userID int64) string {
 	result := rule
 
 	placeholders := map[string]string{
-		"{Y}":            now.Format("2006"),
-		"{y}":            now.Format("06"),
-		"{m}":            now.Format("01"),
-		"{d}":            now.Format("02"),
-		"{timestamp}":    fmt.Sprintf("%d", now.Unix()),
-		"{uniqid}":       generateRandomString(13),
-		"{md5}":          fileMD5,
-		"{md5-16}":       truncate(fileMD5, 16),
+		"{Y}":             now.Format("2006"),
+		"{y}":             now.Format("06"),
+		"{m}":             now.Format("01"),
+		"{d}":             now.Format("02"),
+		"{timestamp}":     fmt.Sprintf("%d", now.Unix()),
+		"{uniqid}":        generateRandomString(13),
+		"{md5}":           fileMD5,
+		"{md5-16}":        truncate(fileMD5, 16),
 		"{str-random-16}": generateRandomString(16),
 		"{str-random-10}": generateRandomString(10),
-		"{uid}":          fmt.Sprintf("%d", userID),
+		"{uid}":           fmt.Sprintf("%d", userID),
 	}
 
 	for key, val := range placeholders {

@@ -17,9 +17,9 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port      int    `mapstructure:"port"`
-	BaseURL   string `mapstructure:"base_url"`
-	WebDir    string `mapstructure:"web_dir"`
+	Port    int    `mapstructure:"port"`
+	BaseURL string `mapstructure:"base_url"`
+	WebDir  string `mapstructure:"web_dir"`
 }
 
 type DatabaseConfig struct {
@@ -57,12 +57,12 @@ func NewSetter(cfg *Config) *Setter {
 	return &Setter{cfg: cfg}
 }
 
-func (s *Setter) SetAppName(name string)         { s.cfg.App.Name = name }
-func (s *Setter) SetAllowGuestUpload(v bool)     { s.cfg.App.AllowGuestUpload = v }
-func (s *Setter) SetAllowRegistration(v bool)    { s.cfg.App.AllowRegistration = v }
-func (s *Setter) SetUserInitialCapacity(v int64) { s.cfg.App.UserInitialCapacity = v }
+func (s *Setter) SetAppName(name string)             { s.cfg.App.Name = name }
+func (s *Setter) SetAllowGuestUpload(v bool)         { s.cfg.App.AllowGuestUpload = v }
+func (s *Setter) SetAllowRegistration(v bool)        { s.cfg.App.AllowRegistration = v }
+func (s *Setter) SetUserInitialCapacity(v int64)     { s.cfg.App.UserInitialCapacity = v }
 func (s *Setter) SetDefaultImageTTL(v time.Duration) { s.cfg.App.DefaultImageTTL = v }
-func (s *Setter) SetModerationMode(mode string)  { s.cfg.App.ModerationMode = mode }
+func (s *Setter) SetModerationMode(mode string)      { s.cfg.App.ModerationMode = mode }
 
 func Load() (*Config, error) {
 	v := viper.New()

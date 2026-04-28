@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -183,18 +183,18 @@ func (h *AdminUserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 func userJSON(u sqlc.User) map[string]interface{} {
 	return map[string]interface{}{
-		"id":              u.ID,
-		"email":           u.Email,
-		"name":            u.Name,
-		"role":            u.Role,
-		"group_id":        domain.PgInt8PtrVal(u.GroupID),
-		"capacity_bytes":  u.CapacityBytes,
-		"image_num":       u.ImageNum,
-		"album_num":       u.AlbumNum,
-		"status":          u.Status,
-		"email_verified":  u.EmailVerified,
-		"settings":        json.RawMessage(u.Settings),
-		"created_at":      u.CreatedAt,
+		"id":             u.ID,
+		"email":          u.Email,
+		"name":           u.Name,
+		"role":           u.Role,
+		"group_id":       domain.PgInt8PtrVal(u.GroupID),
+		"capacity_bytes": u.CapacityBytes,
+		"image_num":      u.ImageNum,
+		"album_num":      u.AlbumNum,
+		"status":         u.Status,
+		"email_verified": u.EmailVerified,
+		"settings":       json.RawMessage(u.Settings),
+		"created_at":     u.CreatedAt,
 	}
 }
 

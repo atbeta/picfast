@@ -6,14 +6,16 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 func testDBURL() string {
@@ -29,6 +31,9 @@ func SetupDB(t *testing.T) (*pgxpool.Pool, *sqlc.Queries) {
 	t.Helper()
 
 	url := testDBURL()
+	if err := ensureDatabaseExists(url); err != nil {
+		t.Fatalf("ensure test database: %v", err)
+	}
 
 	// Run migrations
 	migrationsDir := migrationsPath(t)
@@ -96,4 +101,55 @@ func migrationsPath(t *testing.T) string {
 		t.Fatalf("resolve migrations path: %v", err)
 	}
 	return abs
+}
+
+func ensureDatabaseExists(dbURL string) error {
+	config, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		return fmt.Errorf("parse db config: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	if err == nil {
+		pingErr := pool.Ping(ctx)
+		pool.Close()
+		if pingErr == nil {
+			return nil
+		}
+		if !isMissingDatabaseError(pingErr, config.ConnConfig.Database) {
+			return nil
+		}
+	} else if !isMissingDatabaseError(err, config.ConnConfig.Database) {
+		return nil
+	}
+
+	adminConfig := config.ConnConfig.Copy()
+	adminConfig.Database = "postgres"
+
+	conn, err := pgx.ConnectConfig(ctx, adminConfig)
+	if err != nil {
+		return fmt.Errorf("connect admin database: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	_, err = conn.Exec(
+		ctx,
+		fmt.Sprintf("CREATE DATABASE %s", pgx.Identifier{config.ConnConfig.Database}.Sanitize()),
+	)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return fmt.Errorf("create database %q: %w", config.ConnConfig.Database, err)
+	}
+
+	return nil
+}
+
+func isMissingDatabaseError(err error, database string) bool {
+	if err == nil {
+		return false
+	}
+
+	return strings.Contains(err.Error(), fmt.Sprintf("database %q does not exist", database))
 }

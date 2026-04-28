@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/handler"
 	"github.com/atbeta/picfast/internal/router"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/atbeta/picfast/internal/testutil"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type testEnv struct {

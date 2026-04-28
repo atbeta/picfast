@@ -193,4 +193,3 @@ func localStrategyConfig(root, url string) []byte {
 	b, _ := json.Marshal(cfg)
 	return b
 }
-

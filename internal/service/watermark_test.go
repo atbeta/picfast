@@ -109,9 +109,9 @@ func TestParseColor(t *testing.T) {
 
 func TestCalcWatermarkPosition(t *testing.T) {
 	tests := []struct {
-		pos       string
-		wantX     int
-		wantY     int
+		pos   string
+		wantX int
+		wantY int
 	}{
 		{"top-left", 10, 10},
 		{"top-right", 110, 10},

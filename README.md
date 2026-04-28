@@ -1,33 +1,49 @@
 # PicFast
 
-PicFast 是一个现代化的图床/图片托管服务，支持多用户、多存储策略、分组权限管理和 SAAS 化部署。
+PicFast 是一个面向个人与团队的现代化图床/图片托管服务，支持游客上传、多用户、多存储策略、管理后台以及 AI / MCP 集成。
 
 ## 技术栈
 
 | 层级 | 技术 |
 |------|------|
 | 后端 | Go 1.26, Chi Router, pgx/v5, sqlc, JWT |
-| 前端 | Vue 3, TypeScript, Vite, Naive UI, Tailwind CSS v4 |
+| 前端 | React 19, TypeScript, Vite, React Router, Tailwind CSS v4 |
 | 数据库 | PostgreSQL 16 |
 | 存储 | 本地文件系统 / AWS S3 兼容对象存储 |
-| 监控 | Prometheus (metrics 端点) |
+| 可观测性 | Prometheus metrics, health check |
+
+## 当前能力
+
+- 用户注册、登录、刷新令牌、登出
+- 游客上传与认证用户上传
+- 图片列表、权限更新、删除
+- 相册管理
+- 管理后台：用户、分组、存储策略、系统设置、图片管理
+- 本地存储与 S3 兼容存储
+- 图片压缩、水印、同步缩略图生成
+- 审核能力与审核状态回传
+- ShareX 配置下载与上传接口
+- API Token 与 MCP Server 集成
+- 健康检查、Prometheus 指标、pprof 调试端点
 
 ## 快速开始
 
 ### 前置要求
 
 - Go 1.26+
-- Node.js 20+ + pnpm
-- PostgreSQL 16 (或 Docker)
-- `golang-migrate` CLI (数据库迁移)
+- Node.js 20+ 与 pnpm
+- PostgreSQL 16
+- `golang-migrate` CLI
 
 ### 1. 启动数据库
 
 ```bash
-# 使用 Docker（推荐）
 make docker-up
+```
 
-# 或使用本地 PostgreSQL
+或使用本地 PostgreSQL：
+
+```bash
 createdb picfast
 ```
 
@@ -35,103 +51,101 @@ createdb picfast
 
 ```bash
 cp .env.example .env
-# 按需编辑 .env 文件
 ```
 
-### 3. 运行数据库迁移
+按需修改数据库、JWT、存储和站点配置。
+
+### 3. 执行迁移并填充开发数据
 
 ```bash
 make migrate-up
-```
-
-### 4. 填充开发数据
-
-```bash
 make seed
 ```
 
-这会创建：
-- 默认用户组 + 游客组
-- 本地存储策略
-- 测试用户：`test@example.com` / `password123`
+默认会创建：
+
+- 普通测试用户：`test@example.com` / `password123`
 - 管理员用户：`admin@example.com` / `admin123`
 
-### 5. 启动后端
+### 4. 启动前后端
+
+后端：
 
 ```bash
-make run
-# 或开发模式（热重载需自行配置 air）
 go run ./cmd/picfast
 ```
 
-### 6. 启动前端
+前端开发服务器：
 
 ```bash
-cd web && pnpm install && pnpm dev
+cd web
+pnpm install
+pnpm dev
 ```
 
-前端开发服务器会代理 API 请求到 `http://localhost:8080`。
+开发时访问 [http://localhost:5173](http://localhost:5173)，Vite 会代理 `/api`、`/i`、`/t` 到后端 `http://localhost:8080`。
 
-访问 http://localhost:5173 即可使用。
+### 5. 本地静态托管前端
 
-## 目录结构
+如果希望由 Go 服务直接托管前端静态资源：
 
+```bash
+cd web && pnpm build
+go run ./cmd/picfast
 ```
-.
-├── cmd/
-│   ├── picfast/          # 主服务入口
-│   └── seed/            # 开发数据填充脚本
-├── internal/
-│   ├── config/          # 配置管理 (Viper)
-│   ├── domain/          # 领域类型和常量
-│   ├── handler/         # HTTP handlers
-│   │   └── middleware/  # 认证、限流、日志、指标
-│   ├── router/          # 路由注册
-│   ├── service/         # 业务逻辑 (上传、删除、水印、缩略图)
-│   │   └── storage/     # 存储抽象 (Local / S3)
-│   ├── sqlc/            # sqlc 生成的类型安全数据库代码
-│   │   └── queries/     # SQL 查询定义
-│   └── testutil/        # 测试辅助工具
-├── web/                 # Vue 3 前端
-│   └── src/
-│       ├── api/         # API 客户端和类型
-│       ├── views/       # 页面组件
-│       └── stores/      # Pinia 状态管理
-├── migrations/          # 数据库迁移文件
-├── docker/              # Docker 配置
-└── docs/                # 文档
-```
+
+服务会优先查找：
+
+1. `PICFAST_SERVER_WEB_DIR` / `server.web_dir`
+2. 根目录 `web-dist`
+3. 前端默认产物目录 `web/dist`
 
 ## 常用命令
 
 ```bash
 # 开发
-make dev          # 显示开发环境启动指南
-make seed         # 填充开发测试数据
+make dev
+make seed
 
 # 构建
-make build        # 编译后端
-make build-full   # 编译前端 + 后端
-make frontend     # 仅编译前端
+make build
+make frontend
+make build-full
 
 # 数据库
-make migrate-up   # 执行迁移
-make migrate-down # 回滚一步
-make generate     # 重新生成 sqlc 代码
+make migrate-up
+make migrate-down
+make generate
 
 # 质量
-make test         # 运行全部测试
-make format       # 格式化 Go + 前端代码
-make lint         # 静态检查
-make tidy         # 整理 Go 依赖
+make test
+make lint
+make format
 
 # Docker
-make docker-up    # 启动 Docker 环境
-make docker-down  # 停止 Docker 环境
-make docker-logs  # 查看应用日志
+make docker-up
+make docker-down
+make docker-logs
+```
 
-# 其他
-make clean        # 清理构建产物
+## 目录结构
+
+```text
+.
+├── cmd/                 # 服务入口与开发 seed 脚本
+├── internal/
+│   ├── config/          # 配置加载
+│   ├── domain/          # 领域模型与常量
+│   ├── handler/         # HTTP handlers 与 middleware
+│   ├── router/          # 路由注册
+│   ├── service/         # 上传、删除、审核、缩略图、存储等业务逻辑
+│   ├── sqlc/            # sqlc 生成代码
+│   └── testutil/        # 测试数据库与测试辅助
+├── migrations/          # 数据库迁移
+├── api/                 # OpenAPI 描述
+├── docker/              # Dockerfile 与 compose
+├── web/                 # React 前端
+└── web-dist/            # 可选的根级静态构建产物目录
 ```
 
 ## API 概览
@@ -144,132 +158,29 @@ make clean        # 清理构建产物
 | `POST /api/v1/upload` | 游客上传 |
 | `POST /api/v1/images` | 认证用户上传 |
 | `GET /api/v1/images` | 图片列表 |
+| `GET /api/v1/albums` | 相册列表 |
+| `GET /api/v1/sharex/config` | 下载 ShareX 配置 |
 | `GET /i/{key}.{ext}` | 访问图片 |
 | `GET /t/{hash}.png` | 访问缩略图 |
-| `GET /health` | 健康检查 (含数据库/存储状态) |
+| `GET /health` | 健康检查 |
 | `GET /metrics` | Prometheus 指标 |
 
 管理员端点前缀：`/api/v1/admin/*`
-pprof 调试端点：`/api/v1/admin/debug/pprof/*`
 
-### API 快速调用示例
-
-**上传图片（curl）**
-```bash
-curl -X POST http://localhost:8080/api/v1/upload \
-  -F "file=@photo.png" \
-  -F "expires_in=24h"
-```
-
-**上传图片（TypeScript / Fetch）**
-```typescript
-const file = document.getElementById('file').files[0];
-const form = new FormData();
-form.append('file', file);
-form.append('expires_in', '24h');
-
-const res = await fetch('/api/v1/upload', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer <token>', // optional for guest upload
-  },
-  body: form,
-});
-const data = await res.json();
-console.log(data.data.url);          // https://...
-console.log(data.data.markdown);     // ![photo.png](https://...)
-console.log(data.data.thumbnail_url);// https://.../t/xxx.png
-```
-
-**ShareX 配置下载**
-```bash
-curl http://localhost:8080/api/v1/sharex/config \
-  -o picfast.sxcu
-```
-
-## 核心功能
-
-- **多存储策略**：支持本地磁盘和 S3 兼容对象存储，可按用户组分配
-- **图片处理**：格式转换、质量压缩、文字水印（5 种位置 + 透明度）
-- **文件去重**：MD5 + SHA1 双哈希去重，节省存储空间
-- **缩略图**：异步生成 400px 缩略图
-- **权限控制**：公开/私有图片，私有图片需所有者才能访问
-- **速率限制**：按分钟/小时/天/月多维度限流
-- **容量配额**：用户级别存储容量限制
-- **JWT 认证**：Access Token + Refresh Token 双令牌机制
-
-## 配置
-
-应用支持通过 `config.yaml` 或环境变量配置。环境变量前缀为 `PICFAST_`，层级用 `_` 分隔。
-
-示例：
-```yaml
-server:
-  port: 8080
-  base_url: "http://localhost:8080"
-
-database:
-  url: "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable"
-
-jwt:
-  secret: "change-me-in-production"
-  access_ttl: 15m
-  refresh_ttl: 168h
-
-storage:
-  local_root: "./data/uploads"
-  thumbnail_dir: "./data/thumbnails"
-
-app:
-  name: "PicFast"
-  allow_guest_upload: true
-  allow_registration: true
-  user_initial_capacity: 524288000
-  admin_email: ""
-  admin_password: ""
-```
-
-## 测试
+## 测试与校验
 
 ```bash
-# 全部测试
 make test
-
-# 仅后端服务测试
-go test -v ./internal/service/...
-
-# 仅中间件测试
-go test -v ./internal/handler/middleware/...
-
-# 启动测试数据库容器
-make docker-test-db
+make lint
 ```
 
-## 部署
+说明：
 
-```bash
-# Docker Compose
-make docker-up
+- `go test ./...` 会在默认本地 Postgres 上自动创建 `picfast_test` 测试库（如不存在）。
+- `make lint` 会执行 `go vet`、前端 ESLint 和 TypeScript 编译检查。
 
-# 手动构建
-make build-full
-./bin/picfast
-```
+## 部署说明
 
-生产环境部署前请务必：
-1. 修改 JWT Secret
-2. 配置 HTTPS Base URL
-3. 设置强密码的 Admin 账户
-4. 配置 S3 存储或使用持久化的本地卷
-
-## 致谢
-
-PicFast 在功能设计和交互理念上受到了 [lsky-pro](https://github.com/lsky-org/lsky-pro) 的启发。
-本项目使用全新的技术栈（Go + Vue3）独立实现，谨向 lsky-pro 团队对开源图床领域的贡献致以敬意。
-
-## License
-
-本项目采用 [GNU General Public License v3.0](LICENSE) 协议开源。
-
-> **非商业声明**：PicFast 为社区驱动项目，不计划商业化运营，仅接受捐赠以维持服务器和开发成本。
-> 你可以自由使用、修改和分发，但请遵守 GPL v3 的 copyleft 要求。
+- Docker 镜像会在构建时编译前端，并通过 `PICFAST_SERVER_WEB_DIR=/web-dist` 交给 Go 服务托管。
+- `/docs` 会加载 OpenAPI 文档页，`/openapi.yaml` 提供规范文件下载。
+- `/api/v1/admin/debug/pprof/*` 仅管理员可访问。

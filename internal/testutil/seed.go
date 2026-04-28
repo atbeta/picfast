@@ -13,18 +13,18 @@ import (
 func SeedDefaultGroup(t *testing.T, q *sqlc.Queries) sqlc.Group {
 	t.Helper()
 	cfg := domain.GroupConfig{
-		MaximumFileSize:     5242880,
-		AcceptedExtensions:  []string{"jpeg", "jpg", "png", "gif", "webp"},
-		LimitPerMinute:      20,
-		LimitPerHour:        100,
-		LimitPerDay:         300,
-		LimitPerMonth:       999,
-		PathNamingRule:      "{Y}/{m}/{d}",
-		FileNamingRule:      "{uniqid}",
-		ImageSaveQuality:    75,
-		ImageSaveFormat:     "",
-		IsEnableWatermark:   false,
-		WatermarkConfigs:    json.RawMessage(`{}`),
+		MaximumFileSize:            5242880,
+		AcceptedExtensions:         []string{"jpeg", "jpg", "png", "gif", "webp"},
+		LimitPerMinute:             20,
+		LimitPerHour:               100,
+		LimitPerDay:                300,
+		LimitPerMonth:              999,
+		PathNamingRule:             "{Y}/{m}/{d}",
+		FileNamingRule:             "{uniqid}",
+		ImageSaveQuality:           75,
+		ImageSaveFormat:            "",
+		IsEnableWatermark:          false,
+		WatermarkConfigs:           json.RawMessage(`{}`),
 		IsEnableOriginalProtection: false,
 	}
 	configs, _ := json.Marshal(cfg)

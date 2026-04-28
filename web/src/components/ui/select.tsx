@@ -33,7 +33,12 @@ function SelectValue({ className, placeholder, children, ...props }: SelectPrimi
       placeholder={placeholder}
       {...props}
     >
-      {children !== undefined ? children : context.items ? (value: any) => context.items![value] || placeholder : undefined}
+      {children !== undefined
+        ? children
+        : context.items
+          ? (value: string | null) =>
+              (value !== null ? context.items?.[value] : undefined) ?? placeholder
+          : undefined}
     </SelectPrimitive.Value>
   )
 }

@@ -7,9 +7,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type JWTService struct {

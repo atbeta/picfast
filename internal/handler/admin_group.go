@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 type AdminGroupHandler struct {
@@ -40,7 +40,7 @@ func (h *AdminGroupHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-type groupRow struct {
+	type groupRow struct {
 		ID          int64           `json:"id"`
 		Name        string          `json:"name"`
 		IsDefault   bool            `json:"is_default"`
@@ -89,14 +89,14 @@ func (h *AdminGroupHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Success(w, map[string]interface{}{
-		"id":             group.ID,
-		"name":           group.Name,
-		"is_default":     group.IsDefault,
-		"is_guest":       group.IsGuest,
-		"configs":        json.RawMessage(group.Configs),
-		"strategy_ids":   stratIDs,
-		"created_at":     group.CreatedAt,
-		"updated_at":     group.UpdatedAt,
+		"id":           group.ID,
+		"name":         group.Name,
+		"is_default":   group.IsDefault,
+		"is_guest":     group.IsGuest,
+		"configs":      json.RawMessage(group.Configs),
+		"strategy_ids": stratIDs,
+		"created_at":   group.CreatedAt,
+		"updated_at":   group.UpdatedAt,
 	})
 }
 

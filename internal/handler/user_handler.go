@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,18 +34,18 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	usedCapacity, _ := h.db.GetUserUsedCapacity(r.Context(), pgtype.Int8{Int64: userID, Valid: true})
 
 	Success(w, map[string]interface{}{
-		"id":              user.ID,
-		"email":           user.Email,
-		"name":            user.Name,
-		"role":            user.Role,
-		"status":          user.Status,
-		"capacity_bytes":  user.CapacityBytes,
-		"used_bytes":      usedCapacity,
-		"image_num":       user.ImageNum,
-		"album_num":       user.AlbumNum,
-		"settings":        json.RawMessage(user.Settings),
-		"email_verified":  user.EmailVerified,
-		"created_at":      user.CreatedAt,
+		"id":             user.ID,
+		"email":          user.Email,
+		"name":           user.Name,
+		"role":           user.Role,
+		"status":         user.Status,
+		"capacity_bytes": user.CapacityBytes,
+		"used_bytes":     usedCapacity,
+		"image_num":      user.ImageNum,
+		"album_num":      user.AlbumNum,
+		"settings":       json.RawMessage(user.Settings),
+		"email_verified": user.EmailVerified,
+		"created_at":     user.CreatedAt,
 	})
 }
 

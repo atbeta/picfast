@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/atbeta/picfast/internal/domain"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 // StructuredLogger replaces chi's default Logger with structured slog output.

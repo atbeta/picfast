@@ -76,7 +76,7 @@ func ApplyWatermark(data []byte, cfg WatermarkConfig, formatHint string, quality
 	// Parse color
 	r, g, b, a, err := parseColor(cfg.Color, cfg.Opacity)
 	if err != nil {
-		r, g, b, a = 255, 255, 255, uint8(cfg.Opacity * 255)
+		r, g, b, a = 255, 255, 255, uint8(cfg.Opacity*255)
 	}
 
 	// Build Pango markup for colored text with alpha

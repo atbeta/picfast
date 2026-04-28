@@ -6,10 +6,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/go-chi/chi/v5"
 )
 
 var md5HashRegex = regexp.MustCompile(`^[a-f0-9]{32}$`)
@@ -112,5 +112,3 @@ func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 	filePath := filepath.Join(h.thumbDir, md5Hash+".png")
 	http.ServeFile(w, r, filePath)
 }
-
-

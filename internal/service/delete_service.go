@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type DeleteService struct {
@@ -97,5 +97,3 @@ func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) e
 		return nil
 	})
 }
-
-

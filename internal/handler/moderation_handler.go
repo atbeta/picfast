@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/go-chi/chi/v5"
 )
 
 type ModerationHandler struct {

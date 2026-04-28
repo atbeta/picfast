@@ -174,10 +174,10 @@ func New(
 		// Public site config
 		r.Get("/config", func(w http.ResponseWriter, r *http.Request) {
 			handler.Success(w, map[string]interface{}{
-				"app_name":             cfg.App.Name,
-				"allow_guest_upload":   cfg.App.AllowGuestUpload,
-				"allow_registration":   cfg.App.AllowRegistration,
-				"base_url":             cfg.Server.BaseURL,
+				"app_name":           cfg.App.Name,
+				"allow_guest_upload": cfg.App.AllowGuestUpload,
+				"allow_registration": cfg.App.AllowRegistration,
+				"base_url":           cfg.Server.BaseURL,
 			})
 		})
 
@@ -276,7 +276,7 @@ func New(
 						item["error"] = "failed to init: " + err.Error()
 					} else {
 						defer store.Close()
-					health := store.HealthCheck(r.Context())
+						health := store.HealthCheck(r.Context())
 						item["healthy"] = health.Healthy
 						if health.Error != "" {
 							item["error"] = health.Error

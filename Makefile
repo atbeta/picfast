@@ -49,11 +49,12 @@ migrate-down:
 
 format:
 	gofmt -w ./internal ./cmd
-	cd web && pnpm exec prettier --write "src/**/*.{ts,vue,css}"
+	cd web && pnpm exec eslint . --fix
 
 lint:
 	go vet ./...
-	cd web && pnpm exec vue-tsc --noEmit
+	cd web && pnpm lint
+	cd web && pnpm exec tsc -b --pretty false
 
 openapi-lint:
 	pnpm --package=@redocly/cli dlx redocly lint --config .redocly.yaml api/openapi.yaml
@@ -85,4 +86,4 @@ docker-test-db:
 ## Cleanup
 
 clean:
-	rm -rf bin/ data/ web-dist/
+	rm -rf bin/ data/ web-dist/ web/dist/

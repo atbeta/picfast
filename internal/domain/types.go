@@ -31,19 +31,19 @@ const (
 )
 
 type GroupConfig struct {
-	MaximumFileSize          int64           `json:"maximum_file_size"`
-	AcceptedExtensions       []string        `json:"accepted_extensions"`
-	LimitPerMinute           int             `json:"limit_per_minute"`
-	LimitPerHour             int             `json:"limit_per_hour"`
-	LimitPerDay              int             `json:"limit_per_day"`
-	LimitPerMonth            int             `json:"limit_per_month"`
-	PathNamingRule           string          `json:"path_naming_rule"`
-	FileNamingRule            string          `json:"file_naming_rule"`
-	ImageSaveQuality         int             `json:"image_save_quality"`
-	ImageSaveFormat          string          `json:"image_save_format"`
-	IsEnableWatermark        bool            `json:"is_enable_watermark"`
-	WatermarkConfigs         json.RawMessage `json:"watermark_configs"`
-	IsEnableOriginalProtection bool           `json:"is_enable_original_protection"`
+	MaximumFileSize            int64           `json:"maximum_file_size"`
+	AcceptedExtensions         []string        `json:"accepted_extensions"`
+	LimitPerMinute             int             `json:"limit_per_minute"`
+	LimitPerHour               int             `json:"limit_per_hour"`
+	LimitPerDay                int             `json:"limit_per_day"`
+	LimitPerMonth              int             `json:"limit_per_month"`
+	PathNamingRule             string          `json:"path_naming_rule"`
+	FileNamingRule             string          `json:"file_naming_rule"`
+	ImageSaveQuality           int             `json:"image_save_quality"`
+	ImageSaveFormat            string          `json:"image_save_format"`
+	IsEnableWatermark          bool            `json:"is_enable_watermark"`
+	WatermarkConfigs           json.RawMessage `json:"watermark_configs"`
+	IsEnableOriginalProtection bool            `json:"is_enable_original_protection"`
 	IsStripExif                bool            `json:"is_strip_exif"`
 }
 
@@ -80,8 +80,8 @@ type WatermarkConfig struct {
 	Text     string  `json:"text"`
 	Position string  `json:"position"` // bottom-right, bottom-left, top-right, top-left, center
 	FontSize float64 `json:"font_size"`
-	Color    string  `json:"color"`    // #RRGGBB or #RRGGBBAA
-	Opacity  float64 `json:"opacity"`  // 0.0 - 1.0
+	Color    string  `json:"color"`   // #RRGGBB or #RRGGBBAA
+	Opacity  float64 `json:"opacity"` // 0.0 - 1.0
 }
 
 type ImageLinks struct {

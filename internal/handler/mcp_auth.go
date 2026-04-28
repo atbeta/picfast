@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/modelcontextprotocol/go-sdk/auth"
 )
 
 // MCPAuth implements auth.TokenVerifier for MCP connections.

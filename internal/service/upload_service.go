@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UploadService struct {
@@ -30,15 +30,15 @@ func NewUploadService(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Config) 
 }
 
 type UploadParams struct {
-	FileData     []byte
-	FileName     string
-	FileSize     int64
-	StrategyID   *int64
-	AlbumID      *int64
-	Permission   *int16
-	UserID       *int64
-	ClientIP     string
-	ExpiresAt    *time.Time
+	FileData   []byte
+	FileName   string
+	FileSize   int64
+	StrategyID *int64
+	AlbumID    *int64
+	Permission *int16
+	UserID     *int64
+	ClientIP   string
+	ExpiresAt  *time.Time
 }
 
 type UploadResult struct {
@@ -246,24 +246,24 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	err = sqlc.RunInTx(ctx, s.pool, func(qtx *sqlc.Queries) error {
 		var err error
 		img, err = qtx.CreateImage(ctx, sqlc.CreateImageParams{
-			UserID:      domain.PgInt8Ptr(params.UserID),
-			AlbumID:     domain.PgInt8Ptr(params.AlbumID),
-			GroupID:     domain.PgInt8(groupID),
-			StrategyID:  domain.PgInt8(strategy.ID),
-			Key:         imageKey,
-			Path:        filepath.Dir(pathname),
-			Name:        filepath.Base(pathname),
-			OriginName:  params.FileName,
-			SizeBytes:   int64(len(fileData)),
-			Mimetype:    mimetypeFromExt(ext),
-			Extension:   ext,
-			Md5:         md5Hash,
-			Sha1:        sha1Hash,
-			Width:       int32(width),
-			Height:      int32(height),
-			Permission:  perm,
-			UploadedIp:  params.ClientIP,
-			ExpiresAt:   domain.PgTimeWithZonePtr(params.ExpiresAt),
+			UserID:     domain.PgInt8Ptr(params.UserID),
+			AlbumID:    domain.PgInt8Ptr(params.AlbumID),
+			GroupID:    domain.PgInt8(groupID),
+			StrategyID: domain.PgInt8(strategy.ID),
+			Key:        imageKey,
+			Path:       filepath.Dir(pathname),
+			Name:       filepath.Base(pathname),
+			OriginName: params.FileName,
+			SizeBytes:  int64(len(fileData)),
+			Mimetype:   mimetypeFromExt(ext),
+			Extension:  ext,
+			Md5:        md5Hash,
+			Sha1:       sha1Hash,
+			Width:      int32(width),
+			Height:     int32(height),
+			Permission: perm,
+			UploadedIp: params.ClientIP,
+			ExpiresAt:  domain.PgTimeWithZonePtr(params.ExpiresAt),
 		})
 		if err != nil {
 			return err

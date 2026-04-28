@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/modelcontextprotocol/go-sdk/auth"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/modelcontextprotocol/go-sdk/auth"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // MCPServerFactory creates and configures an MCP server for picfast.
@@ -178,14 +178,14 @@ func (f *MCPServerFactory) listImagesTool(ctx context.Context, req *mcp.CallTool
 	items := make([]map[string]any, len(images))
 	for i, img := range images {
 		items[i] = map[string]any{
-			"key":        img.Key,
+			"key":         img.Key,
 			"origin_name": img.OriginName,
-			"size_bytes": img.SizeBytes,
-			"width":      img.Width,
-			"height":     img.Height,
-			"url":        f.Config.Server.BaseURL + "/i/" + img.Key + "." + img.Extension,
-			"permission": img.Permission,
-			"created_at": img.CreatedAt,
+			"size_bytes":  img.SizeBytes,
+			"width":       img.Width,
+			"height":      img.Height,
+			"url":         f.Config.Server.BaseURL + "/i/" + img.Key + "." + img.Extension,
+			"permission":  img.Permission,
+			"created_at":  img.CreatedAt,
 		}
 	}
 

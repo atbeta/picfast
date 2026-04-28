@@ -1,6 +1,8 @@
+.ai/
 bin/
 data/
 web-dist/
+web/dist/
 *.exe
 .env
 web/node_modules/

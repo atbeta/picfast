@@ -13,9 +13,9 @@ import (
 type Status string
 
 const (
-	StatusPending   Status = "pending"
-	StatusApproved  Status = "approved"
-	StatusRejected  Status = "rejected"
+	StatusPending  Status = "pending"
+	StatusApproved Status = "approved"
+	StatusRejected Status = "rejected"
 )
 
 // Mode represents how moderation is configured.
@@ -29,12 +29,12 @@ const (
 
 // Result is returned by a Moderator after analyzing an image.
 type Result struct {
-	Status      Status            `json:"status"`
-	Score       float64           `json:"score"`        // 0.0 - 1.0 confidence
-	Labels      []string          `json:"labels"`       // e.g. ["nsfw", "violence"]
-	Reason      string            `json:"reason"`       // human-readable explanation
-	Provider    string            `json:"provider"`     // which engine made the decision
-	Extra       map[string]any    `json:"extra"`        // provider-specific metadata
+	Status   Status         `json:"status"`
+	Score    float64        `json:"score"`    // 0.0 - 1.0 confidence
+	Labels   []string       `json:"labels"`   // e.g. ["nsfw", "violence"]
+	Reason   string         `json:"reason"`   // human-readable explanation
+	Provider string         `json:"provider"` // which engine made the decision
+	Extra    map[string]any `json:"extra"`    // provider-specific metadata
 }
 
 // Moderator is the interface for content moderation engines.
@@ -175,8 +175,8 @@ func FromContext(ctx context.Context) Moderator {
 func UpdateImageModeration(ctx context.Context, db *sqlc.Queries, imageID int64, status Status, moderatorID int64, reason string) error {
 	// Update image status
 	_, err := db.UpdateImageModerationStatus(ctx, sqlc.UpdateImageModerationStatusParams{
-		ID:                imageID,
-		ModerationStatus:  string(status),
+		ID:               imageID,
+		ModerationStatus: string(status),
 	})
 	if err != nil {
 		return fmt.Errorf("update image status: %w", err)
@@ -184,10 +184,10 @@ func UpdateImageModeration(ctx context.Context, db *sqlc.Queries, imageID int64,
 
 	// Update moderation record
 	_, err = db.UpdateImageModeration(ctx, sqlc.UpdateImageModerationParams{
-		ImageID:      imageID,
-		Status:       string(status),
-		ModeratorID:  domain.PgInt8(moderatorID),
-		Reason:       reason,
+		ImageID:     imageID,
+		Status:      string(status),
+		ModeratorID: domain.PgInt8(moderatorID),
+		Reason:      reason,
 	})
 	if err != nil {
 		return fmt.Errorf("update moderation record: %w", err)
