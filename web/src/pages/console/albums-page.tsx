@@ -1,9 +1,17 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { createAlbum, deleteAlbum, listAlbums, listImages, updateAlbum } from '../../lib/console-api'
 import type { ImageItem } from '../../lib/console-api'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 function toRelative(url: string): string {
   try { return new URL(url).pathname }
@@ -36,7 +44,7 @@ export function AlbumsPage() {
       setNewIntro('')
       await qc.invalidateQueries({ queryKey: ['albums'] })
     } catch (err: unknown) {
-      alert(
+      toast.error(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         t('albums.createFailed'),
       )
@@ -65,7 +73,7 @@ export function AlbumsPage() {
       setEditingId(null)
       await qc.invalidateQueries({ queryKey: ['albums'] })
     } catch (err: unknown) {
-      alert(
+      toast.error(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         t('albums.updateFailed'),
       )
@@ -76,16 +84,18 @@ export function AlbumsPage() {
 
   // Delete
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
 
   const handleDelete = useCallback(
-    async (id: number) => {
-      if (!window.confirm(t('albums.confirmDelete'))) return
-      setDeleting(id)
+    async () => {
+      if (deleteTarget === null) return
+      setDeleting(deleteTarget)
       try {
-        await deleteAlbum(id)
+        await deleteAlbum(deleteTarget)
+        setDeleteTarget(null)
         await qc.invalidateQueries({ queryKey: ['albums'] })
       } catch (err: unknown) {
-        alert(
+        toast.error(
           (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
           t('albums.deleteFailed'),
         )
@@ -93,7 +103,7 @@ export function AlbumsPage() {
         setDeleting(null)
       }
     },
-    [qc, t],
+    [deleteTarget, qc, t],
   )
 
   // Album image viewer
@@ -222,7 +232,7 @@ export function AlbumsPage() {
                   </button>
                   <div className="flex gap-1">
                     <button type="button" onClick={() => startEdit(album)} className="rounded px-2 py-1 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800">{t('albums.edit')}</button>
-                    <button type="button" onClick={() => handleDelete(album.id)} disabled={deleting === album.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('albums.delete')}</button>
+                    <button type="button" onClick={() => setDeleteTarget(album.id)} disabled={deleting === album.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('albums.delete')}</button>
                   </div>
                 </div>
                 <p className="text-xs text-zinc-400">{album.intro || t('albums.noDesc', { defaultValue: '暂无描述' })}</p>
@@ -245,36 +255,46 @@ export function AlbumsPage() {
         </div>
       )}
 
-      {/* Album image viewer modal */}
-      {viewingAlbum && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setViewingAlbum(null)}>
-          <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-800 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-lg font-semibold">{viewingAlbum.name} - {t('albums.imageList', { defaultValue: '图片列表' })}</h2>
+      {/* Album image viewer dialog */}
+      <Dialog open={!!viewingAlbum} onOpenChange={(open) => { if (!open) setViewingAlbum(null) }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{viewingAlbum?.name} - {t('albums.imageList', { defaultValue: '图片列表' })}</DialogTitle>
+          </DialogHeader>
 
-            {albumImagesLoading && <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" /></div>}
+          {albumImagesLoading && <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" /></div>}
 
-            {!albumImagesLoading && albumImages.length === 0 && (
-              <p className="py-8 text-center text-sm text-zinc-400">{t('albums.noImages', { defaultValue: '相册内暂无图片' })}</p>
-            )}
+          {!albumImagesLoading && albumImages.length === 0 && (
+            <p className="py-8 text-center text-sm text-zinc-400">{t('albums.noImages', { defaultValue: '相册内暂无图片' })}</p>
+          )}
 
-            {!albumImagesLoading && albumImages.length > 0 && (
-              <div className="grid grid-cols-4 gap-2">
-                {albumImages.map((img) => (
-                  <div key={img.key} className="aspect-square overflow-hidden rounded">
-                    {img.thumbnail_url ? (
-                      <img src={toRelative(img.thumbnail_url)} alt="" className="h-full w-full object-cover" loading="lazy" />
-                    ) : img.url ? (
-                      <img src={toRelative(img.url)} alt="" className="h-full w-full object-cover" loading="lazy" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-900">{img.extension}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+          {!albumImagesLoading && albumImages.length > 0 && (
+            <div className="grid grid-cols-4 gap-2">
+              {albumImages.map((img) => (
+                <div key={img.key} className="aspect-square overflow-hidden rounded">
+                  {img.thumbnail_url ? (
+                    <img src={toRelative(img.thumbnail_url)} alt="" className="h-full w-full object-cover" loading="lazy" />
+                  ) : img.url ? (
+                    <img src={toRelative(img.url)} alt="" className="h-full w-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-900">{img.extension}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        title={t('albums.confirmDelete')}
+        destructive
+        confirmLabel={t('albums.delete')}
+        onConfirm={handleDelete}
+        loading={!!deleting}
+      />
     </section>
   )
 }

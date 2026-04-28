@@ -1,26 +1,19 @@
-import { useTranslation } from 'react-i18next'
-
+import { Moon, Sun } from 'lucide-react'
 import { useTheme } from '../lib/theme'
-import { cn } from '../lib/cn'
+import { Button } from '@/components/ui/button'
 
 export function ThemeSwitcher() {
-  const { t } = useTranslation()
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
+
   return (
-    <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-      <span>{t('common.theme')}</span>
-      <select
-        value={theme}
-        onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
-        className={cn(
-          'rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm',
-          'dark:border-zinc-700 dark:bg-zinc-900',
-        )}
-      >
-        <option value="light">light</option>
-        <option value="dark">dark</option>
-        <option value="system">system</option>
-      </select>
-    </label>
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+    >
+      <Sun className="size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      <span className="sr-only">Toggle theme</span>
+    </Button>
   )
 }

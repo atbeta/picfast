@@ -1,8 +1,10 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { createApiToken, deleteApiToken, listApiTokens } from '../../lib/console-api'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 function isRealDate(s?: string): boolean {
   if (!s) return false
@@ -50,7 +52,7 @@ export function ApiTokensPage() {
       setNewScopes(['read', 'write'])
       await qc.invalidateQueries({ queryKey: ['api-tokens'] })
     } catch (err: unknown) {
-      alert(
+      toast.error(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         t('tokens.createFailed'),
       )
@@ -61,16 +63,18 @@ export function ApiTokensPage() {
 
   // Delete
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
 
   const handleDelete = useCallback(
-    async (id: number) => {
-      if (!window.confirm(t('tokens.confirmDelete'))) return
-      setDeleting(id)
+    async () => {
+      if (deleteTarget === null) return
+      setDeleting(deleteTarget)
       try {
-        await deleteApiToken(id)
+        await deleteApiToken(deleteTarget)
+        setDeleteTarget(null)
         await qc.invalidateQueries({ queryKey: ['api-tokens'] })
       } catch (err: unknown) {
-        alert(
+        toast.error(
           (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
           t('tokens.deleteFailed'),
         )
@@ -78,11 +82,12 @@ export function ApiTokensPage() {
         setDeleting(null)
       }
     },
-    [qc, t],
+    [deleteTarget, qc, t],
   )
 
   const onCopy = async (text: string) => {
     await navigator.clipboard.writeText(text)
+    toast.success(t('upload.copied'))
   }
 
   const toggleScope = (scope: string) => {
@@ -227,7 +232,7 @@ export function ApiTokensPage() {
               </div>
               <button
                 type="button"
-                onClick={() => handleDelete(tk.id)}
+                onClick={() => setDeleteTarget(tk.id)}
                 disabled={deleting === tk.id}
                 className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20"
               >
@@ -237,6 +242,16 @@ export function ApiTokensPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        title={t('tokens.confirmDelete')}
+        destructive
+        confirmLabel={t('tokens.delete')}
+        onConfirm={handleDelete}
+        loading={!!deleting}
+      />
     </section>
   )
 }

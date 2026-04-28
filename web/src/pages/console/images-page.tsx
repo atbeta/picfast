@@ -1,10 +1,18 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { deleteImage, getImage, listImages, updateImage } from '../../lib/console-api'
 import type { ImageItem } from '../../lib/console-api'
 import { formatFileSize } from '../../lib/upload'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 function toRelative(url: string): string {
   try { return new URL(url).pathname }
@@ -51,16 +59,22 @@ export function ImagesPage() {
     }
   }
 
-  // Delete from detail modal
-  const deleteDetail = async () => {
-    if (!detail) return
-    if (!window.confirm(t('images.confirmDelete'))) return
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleteLoading(true)
     try {
-      await deleteImage(detail.key)
+      await deleteImage(deleteTarget)
       setDetail(null)
+      setDeleteTarget(null)
       await qc.invalidateQueries({ queryKey: ['images'] })
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('images.deleteFailed'))
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('images.deleteFailed'))
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -68,6 +82,7 @@ export function ImagesPage() {
   const [batchMode, setBatchMode] = useState(false)
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
   const [batchDeleting, setBatchDeleting] = useState(false)
+  const [showBatchConfirm, setShowBatchConfirm] = useState(false)
 
   const toggleSelect = (key: string) => {
     setSelectedKeys((prev) => {
@@ -93,9 +108,6 @@ export function ImagesPage() {
   }
 
   const batchDelete = async () => {
-    if (selectedKeys.size === 0) return
-    const count = selectedKeys.size
-    if (!window.confirm(t('images.confirmBatchDelete', { defaultValue: `确定要删除选中的 ${count} 张图片吗？此操作不可撤销。` }))) return
     setBatchDeleting(true)
     let success = 0
     let failed = 0
@@ -103,17 +115,19 @@ export function ImagesPage() {
       try { await deleteImage(key); success++ } catch { failed++ }
     }
     setBatchDeleting(false)
+    setShowBatchConfirm(false)
     setSelectedKeys(new Set())
     if (failed === 0) {
-      alert(t('images.batchDeleteSuccess', { defaultValue: `成功删除 ${success} 张图片` }))
+      toast.success(t('images.batchDeleteSuccess', { defaultValue: `成功删除 ${success} 张图片` }))
     } else {
-      alert(t('images.batchDeletePartial', { defaultValue: `删除完成：成功 ${success} 张，失败 ${failed} 张` }))
+      toast.error(t('images.batchDeletePartial', { defaultValue: `删除完成：成功 ${success} 张，失败 ${failed} 张` }))
     }
     await qc.invalidateQueries({ queryKey: ['images'] })
   }
 
   const onCopy = async (text: string) => {
     await navigator.clipboard.writeText(text)
+    toast.success(t('upload.copied'))
   }
 
   return (
@@ -141,7 +155,7 @@ export function ImagesPage() {
             <input type="checkbox" checked={data ? selectedKeys.size === data.items.length && data.items.length > 0 : false} onChange={toggleSelectAll} className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600" />
             {t('images.selectAll', { defaultValue: '全选' })} ({selectedKeys.size} / {data?.items.length ?? 0})
           </label>
-          <button type="button" onClick={batchDelete} disabled={selectedKeys.size === 0 || batchDeleting} className="rounded bg-red-500 px-3 py-1 text-xs text-white disabled:opacity-50">
+          <button type="button" onClick={() => setShowBatchConfirm(true)} disabled={selectedKeys.size === 0 || batchDeleting} className="rounded bg-red-500 px-3 py-1 text-xs text-white disabled:opacity-50">
             {batchDeleting ? '…' : t('images.delete')}
           </button>
         </div>
@@ -221,69 +235,93 @@ export function ImagesPage() {
         </>
       )}
 
-      {/* Detail modal */}
-      {detail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDetail(null)}>
-          <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-800 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-lg font-semibold">{t('images.detailTitle', { defaultValue: '图片详情' })}</h2>
+      {/* Detail dialog */}
+      <Dialog open={!!detail} onOpenChange={(open) => { if (!open) setDetail(null) }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{t('images.detailTitle', { defaultValue: '图片详情' })}</DialogTitle>
+          </DialogHeader>
 
-            {detailLoading && <div className="flex justify-center py-4"><div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" /></div>}
+          {detailLoading && <div className="flex justify-center py-4"><div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" /></div>}
 
-            {/* Preview */}
-            <div className="mb-4 flex justify-center rounded-lg bg-slate-50 p-3 dark:bg-zinc-900">
-              <img
-                src={toRelative(detail.links?.url ?? detail.url ?? '')}
-                alt={detail.key}
-                className="max-h-72 object-contain"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-              />
-            </div>
-
-            {/* Metadata */}
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><span className="text-zinc-400">Key:</span> <span className="break-all">{detail.key}</span></div>
-              <div><span className="text-zinc-400">{t('images.colName')}:</span> {detail.origin_name}</div>
-              <div><span className="text-zinc-400">{t('images.colSize')}:</span> {formatFileSize(detail.size_bytes)}</div>
-              <div><span className="text-zinc-400">{t('images.type', { defaultValue: '类型' })}:</span> {detail.mimetype}</div>
-              <div><span className="text-zinc-400">{t('images.dimensions', { defaultValue: '尺寸' })}:</span> {detail.width}x{detail.height}</div>
-              <div className="flex items-center gap-2">
-                <span className="text-zinc-400">{t('images.permission', { defaultValue: '权限' })}:</span>
-                <button
-                  type="button"
-                  onClick={togglePermission}
-                  className={['rounded px-2 py-0.5 text-xs', detail.permission === 1 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'].join(' ')}
-                >
-                  {detail.permission === 1 ? (t('images.public', { defaultValue: '公开' })) : (t('images.private', { defaultValue: '私有' }))}
-                </button>
+          {detail && (
+            <>
+              {/* Preview */}
+              <div className="flex justify-center rounded-lg bg-slate-50 p-3 dark:bg-zinc-900">
+                <img
+                  src={toRelative(detail.links?.url ?? detail.url ?? '')}
+                  alt={detail.key}
+                  className="max-h-72 object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
               </div>
-              {detail.strategy_name && (
-                <div className="col-span-2">
-                  <span className="text-zinc-400">{t('images.strategy', { defaultValue: '存储策略' })}:</span>
-                  <span className="ml-1 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                    {detail.strategy_name} ({detail.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: '本地' }) : 'S3'})
-                  </span>
+
+              {/* Metadata */}
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="text-zinc-400">Key:</span> <span className="break-all">{detail.key}</span></div>
+                <div><span className="text-zinc-400">{t('images.colName')}:</span> {detail.origin_name}</div>
+                <div><span className="text-zinc-400">{t('images.colSize')}:</span> {formatFileSize(detail.size_bytes)}</div>
+                <div><span className="text-zinc-400">{t('images.type', { defaultValue: '类型' })}:</span> {detail.mimetype}</div>
+                <div><span className="text-zinc-400">{t('images.dimensions', { defaultValue: '尺寸' })}:</span> {detail.width}x{detail.height}</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-zinc-400">{t('images.permission', { defaultValue: '权限' })}:</span>
+                  <button
+                    type="button"
+                    onClick={togglePermission}
+                    className={['rounded px-2 py-0.5 text-xs', detail.permission === 1 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'].join(' ')}
+                  >
+                    {detail.permission === 1 ? (t('images.public', { defaultValue: '公开' })) : (t('images.private', { defaultValue: '私有' }))}
+                  </button>
+                </div>
+                {detail.strategy_name && (
+                  <div className="col-span-2">
+                    <span className="text-zinc-400">{t('images.strategy', { defaultValue: '存储策略' })}:</span>
+                    <span className="ml-1 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                      {detail.strategy_name} ({detail.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: '本地' }) : 'S3'})
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Links */}
+              {detail.links && (
+                <div className="space-y-2">
+                  {Object.entries(detail.links).map(([fmt, val]) => (
+                    <div key={fmt} className="flex items-center gap-2">
+                      <input value={val} readOnly className="min-w-0 flex-1 rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900" />
+                      <button type="button" onClick={() => onCopy(val)} className="shrink-0 rounded bg-zinc-100 px-2 py-1 text-xs hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600">{fmt}</button>
+                    </div>
+                  ))}
                 </div>
               )}
-            </div>
 
-            {/* Links */}
-            {detail.links && (
-              <div className="mt-4 space-y-2">
-                {Object.entries(detail.links).map(([fmt, val]) => (
-                  <div key={fmt} className="flex items-center gap-2">
-                    <input value={val} readOnly className="min-w-0 flex-1 rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900" />
-                    <button type="button" onClick={() => onCopy(val)} className="shrink-0 rounded bg-zinc-100 px-2 py-1 text-xs hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600">{fmt}</button>
-                  </div>
-                ))}
+              <div className="flex justify-end">
+                <button type="button" onClick={() => setDeleteTarget(detail.key)} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">{t('images.delete')}</button>
               </div>
-            )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
-            <div className="mt-4 flex justify-end">
-              <button type="button" onClick={deleteDetail} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">{t('images.delete')}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        title={t('images.confirmDelete')}
+        destructive
+        confirmLabel={t('images.delete')}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
+      />
+
+      <ConfirmDialog
+        open={showBatchConfirm}
+        onOpenChange={setShowBatchConfirm}
+        title={t('images.confirmBatchDelete', { defaultValue: `确定要删除选中的 ${selectedKeys.size} 张图片吗？此操作不可撤销。` })}
+        destructive
+        confirmLabel={t('images.delete')}
+        onConfirm={batchDelete}
+        loading={batchDeleting}
+      />
     </section>
   )
 }

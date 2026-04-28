@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import {
   createAdminGroup,
@@ -11,6 +12,13 @@ import {
   updateAdminGroup,
   type AdminGroup,
 } from '../../../lib/admin-api'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface GroupForm {
   name: string
@@ -117,7 +125,7 @@ export function AdminGroupsPage() {
       setShowModal(false)
       await qc.invalidateQueries({ queryKey: ['admin-groups'] })
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -125,18 +133,21 @@ export function AdminGroupsPage() {
 
   // Delete
   const [deleting, setDeleting] = useState<number | null>(null)
-  const onDelete = useCallback(async (id: number) => {
-    if (!window.confirm(t('admin.confirmDeleteGroup'))) return
-    setDeleting(id)
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+
+  const onDelete = useCallback(async () => {
+    if (deleteTarget === null) return
+    setDeleting(deleteTarget)
     try {
-      await deleteAdminGroup(id)
+      await deleteAdminGroup(deleteTarget)
+      setDeleteTarget(null)
       await qc.invalidateQueries({ queryKey: ['admin-groups'] })
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
     } finally {
       setDeleting(null)
     }
-  }, [qc, t])
+  }, [deleteTarget, qc, t])
 
   const update = <K extends keyof GroupForm>(key: K, value: GroupForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -166,82 +177,82 @@ export function AdminGroupsPage() {
         </button>
       </div>
 
-      {/* Modal overlay */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowModal(false)}>
-          <div className="w-full max-w-[500px] rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-800 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-lg font-semibold">
+      {/* Group create/edit dialog */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
               {editing ? t('admin.edit') : t('admin.create')}
-            </h2>
+            </DialogTitle>
+          </DialogHeader>
 
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colName')}</label>
-                <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
-              </div>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colName')}</label>
+              <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
+            </div>
 
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="isDefault" checked={form.is_default} onChange={(e) => update('is_default', e.target.checked)} className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600" />
+              <label htmlFor="isDefault" className="text-sm text-zinc-700 dark:text-zinc-300">{t('admin.defaultGroup', { defaultValue: '默认分组' })}</label>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</label>
               <div className="flex items-center gap-2">
-                <input type="checkbox" id="isDefault" checked={form.is_default} onChange={(e) => update('is_default', e.target.checked)} className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600" />
-                <label htmlFor="isDefault" className="text-sm text-zinc-700 dark:text-zinc-300">{t('admin.defaultGroup', { defaultValue: '默认分组' })}</label>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</label>
-                <div className="flex items-center gap-2">
-                  <input type="number" min={1} value={form.max_size} onChange={(e) => update('max_size', Number(e.target.value))} className={`${inputCls} w-32`} />
-                  <span className="text-sm text-zinc-500 dark:text-zinc-400">MB</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.extensions', { defaultValue: '允许格式' })}</label>
-                <input value={form.extensions} onChange={(e) => update('extensions', e.target.value)} placeholder="jpg,png,gif,webp" className={inputCls} />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</label>
-                <input type="number" min={0} value={form.limit_per_day} onChange={(e) => update('limit_per_day', Number(e.target.value))} className={inputCls} />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.limitPerMonth', { defaultValue: '每月上限' })}</label>
-                <input type="number" min={0} value={form.limit_per_month} onChange={(e) => update('limit_per_month', Number(e.target.value))} className={inputCls} />
-              </div>
-
-              {/* Strategy binding */}
-              <div className="border-t border-zinc-200 pt-3 dark:border-zinc-700">
-                <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.availableStrategies', { defaultValue: '可用策略' })}</label>
-                {allStrategies.length === 0 ? (
-                  <p className="text-xs text-zinc-400">{t('admin.noStrategies', { defaultValue: '暂无策略，请先创建策略' })}</p>
-                ) : (
-                  <div className="flex flex-wrap gap-3">
-                    {allStrategies.map((s) => (
-                      <label key={s.id} className="flex items-center gap-1.5 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={form.strategy_ids.includes(s.id)}
-                          onChange={() => toggleStrategy(s.id)}
-                          className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
-                        />
-                        {s.name}
-                      </label>
-                    ))}
-                  </div>
-                )}
+                <input type="number" min={1} value={form.max_size} onChange={(e) => update('max_size', Number(e.target.value))} className={`${inputCls} w-32`} />
+                <span className="text-sm text-zinc-500 dark:text-zinc-400">MB</span>
               </div>
             </div>
 
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setShowModal(false)} className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600">
-                {t('admin.cancel')}
-              </button>
-              <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900">
-                {saving ? '…' : t('admin.confirmSave')}
-              </button>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.extensions', { defaultValue: '允许格式' })}</label>
+              <input value={form.extensions} onChange={(e) => update('extensions', e.target.value)} placeholder="jpg,png,gif,webp" className={inputCls} />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</label>
+              <input type="number" min={0} value={form.limit_per_day} onChange={(e) => update('limit_per_day', Number(e.target.value))} className={inputCls} />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.limitPerMonth', { defaultValue: '每月上限' })}</label>
+              <input type="number" min={0} value={form.limit_per_month} onChange={(e) => update('limit_per_month', Number(e.target.value))} className={inputCls} />
+            </div>
+
+            {/* Strategy binding */}
+            <div className="border-t border-zinc-200 pt-3 dark:border-zinc-700">
+              <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.availableStrategies', { defaultValue: '可用策略' })}</label>
+              {allStrategies.length === 0 ? (
+                <p className="text-xs text-zinc-400">{t('admin.noStrategies', { defaultValue: '暂无策略，请先创建策略' })}</p>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {allStrategies.map((s) => (
+                    <label key={s.id} className="flex items-center gap-1.5 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={form.strategy_ids.includes(s.id)}
+                        onChange={() => toggleStrategy(s.id)}
+                        className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
+                      />
+                      {s.name}
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      )}
+
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setShowModal(false)} className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600">
+              {t('admin.cancel')}
+            </button>
+            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900">
+              {saving ? '…' : t('admin.confirmSave')}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" /></div>}
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">{t('admin.loadFailed')}</p>}
@@ -288,7 +299,7 @@ export function AdminGroupsPage() {
                     <div className="flex gap-1">
                       <button type="button" onClick={() => openEdit(g)} className="rounded px-2 py-1 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800">{t('admin.edit')}</button>
                       {!g.is_default && !g.is_guest && (
-                        <button type="button" onClick={() => onDelete(g.id)} disabled={deleting === g.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('admin.delete')}</button>
+                        <button type="button" onClick={() => setDeleteTarget(g.id)} disabled={deleting === g.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('admin.delete')}</button>
                       )}
                     </div>
                   </td>
@@ -298,6 +309,16 @@ export function AdminGroupsPage() {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        title={t('admin.confirmDeleteGroup')}
+        destructive
+        confirmLabel={t('admin.delete')}
+        onConfirm={onDelete}
+        loading={!!deleting}
+      />
     </section>
   )
 }

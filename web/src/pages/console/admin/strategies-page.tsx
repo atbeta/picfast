@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import {
   createAdminStrategy,
@@ -9,6 +10,13 @@ import {
   updateAdminStrategy,
   type AdminStrategy,
 } from '../../../lib/admin-api'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface StrategyForm {
   name: string
@@ -107,7 +115,7 @@ export function AdminStrategiesPage() {
       setShowModal(false)
       await qc.invalidateQueries({ queryKey: ['admin-strategies'] })
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -115,18 +123,21 @@ export function AdminStrategiesPage() {
 
   // Delete
   const [deleting, setDeleting] = useState<number | null>(null)
-  const onDelete = useCallback(async (id: number) => {
-    if (!window.confirm(t('admin.confirmDeleteStrategy'))) return
-    setDeleting(id)
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+
+  const onDelete = useCallback(async () => {
+    if (deleteTarget === null) return
+    setDeleting(deleteTarget)
     try {
-      await deleteAdminStrategy(id)
+      await deleteAdminStrategy(deleteTarget)
+      setDeleteTarget(null)
       await qc.invalidateQueries({ queryKey: ['admin-strategies'] })
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
     } finally {
       setDeleting(null)
     }
-  }, [qc, t])
+  }, [deleteTarget, qc, t])
 
   const update = <K extends keyof StrategyForm>(key: K, value: StrategyForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -142,82 +153,82 @@ export function AdminStrategiesPage() {
         </button>
       </div>
 
-      {/* Modal overlay */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowModal(false)}>
-          <div className="w-full max-w-[550px] rounded-xl bg-white p-6 shadow-xl text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-lg font-semibold">
+      {/* Strategy create/edit dialog */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>
               {editing ? t('admin.edit') : t('admin.create')}
-            </h2>
+            </DialogTitle>
+          </DialogHeader>
 
-            <div className="space-y-3">
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colName')}</label>
+              <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colType', { defaultValue: '类型' })}</label>
+              <select value={form.type} onChange={(e) => update('type', e.target.value)} disabled={!!editing} className={inputCls}>
+                <option value="local">{t('admin.typeLocal', { defaultValue: '本地存储' })}</option>
+                <option value="s3">{t('admin.typeS3', { defaultValue: 'S3 兼容存储' })}</option>
+              </select>
+            </div>
+
+            {form.type === 'local' && (
               <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colName')}</label>
-                <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.localRoot', { defaultValue: '存储路径' })}</label>
+                <input value={form.localRoot} onChange={(e) => update('localRoot', e.target.value)} placeholder="/data/images" className={inputCls} />
               </div>
+            )}
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.colType', { defaultValue: '类型' })}</label>
-                <select value={form.type} onChange={(e) => update('type', e.target.value)} disabled={!!editing} className={inputCls}>
-                  <option value="local">{t('admin.typeLocal', { defaultValue: '本地存储' })}</option>
-                  <option value="s3">{t('admin.typeS3', { defaultValue: 'S3 兼容存储' })}</option>
-                </select>
-              </div>
-
-              {form.type === 'local' && (
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.localRoot', { defaultValue: '存储路径' })}</label>
-                  <input value={form.localRoot} onChange={(e) => update('localRoot', e.target.value)} placeholder="/data/images" className={inputCls} />
+            {form.type === 's3' && (
+              <>
+                <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                  <strong>Endpoint</strong> {t('admin.s3EndpointHint', { defaultValue: '是 S3 API 地址（上传用），' })}
+                  <strong>URL</strong> {t('admin.s3URLHint', { defaultValue: '是图片公开访问地址（浏览用）。两者通常不同。' })}
                 </div>
-              )}
-
-              {form.type === 's3' && (
-                <>
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
-                    <strong>Endpoint</strong> {t('admin.s3EndpointHint', { defaultValue: '是 S3 API 地址（上传用），' })}
-                    <strong>URL</strong> {t('admin.s3URLHint', { defaultValue: '是图片公开访问地址（浏览用）。两者通常不同。' })}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Endpoint</label>
+                    <input value={form.s3Endpoint} onChange={(e) => update('s3Endpoint', e.target.value)} placeholder="https://<account-id>.r2.cloudflarestorage.com" className={inputCls} />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Endpoint</label>
-                      <input value={form.s3Endpoint} onChange={(e) => update('s3Endpoint', e.target.value)} placeholder="https://<account-id>.r2.cloudflarestorage.com" className={inputCls} />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Region</label>
-                      <input value={form.s3Region} onChange={(e) => update('s3Region', e.target.value)} placeholder="R2: auto" className={inputCls} />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Bucket</label>
-                      <input value={form.s3Bucket} onChange={(e) => update('s3Bucket', e.target.value)} className={inputCls} />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Access Key</label>
-                      <input value={form.s3AccessKey} onChange={(e) => update('s3AccessKey', e.target.value)} className={inputCls} />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Secret Key</label>
-                      <input value={form.s3SecretKey} onChange={(e) => update('s3SecretKey', e.target.value)} type="password" className={inputCls} />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.accessURL', { defaultValue: '访问 URL' })}</label>
-                      <input value={form.s3URL} onChange={(e) => update('s3URL', e.target.value)} placeholder="https://pub-xxx.r2.dev" className={inputCls} />
-                    </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Region</label>
+                    <input value={form.s3Region} onChange={(e) => update('s3Region', e.target.value)} placeholder="R2: auto" className={inputCls} />
                   </div>
-                </>
-              )}
-            </div>
-
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setShowModal(false)} className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600">
-                {t('admin.cancel')}
-              </button>
-              <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900">
-                {saving ? '…' : t('admin.confirmSave')}
-              </button>
-            </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Bucket</label>
+                    <input value={form.s3Bucket} onChange={(e) => update('s3Bucket', e.target.value)} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Access Key</label>
+                    <input value={form.s3AccessKey} onChange={(e) => update('s3AccessKey', e.target.value)} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Secret Key</label>
+                    <input value={form.s3SecretKey} onChange={(e) => update('s3SecretKey', e.target.value)} type="password" className={inputCls} />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('admin.accessURL', { defaultValue: '访问 URL' })}</label>
+                    <input value={form.s3URL} onChange={(e) => update('s3URL', e.target.value)} placeholder="https://pub-xxx.r2.dev" className={inputCls} />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-        </div>
-      )}
+
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setShowModal(false)} className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600">
+              {t('admin.cancel')}
+            </button>
+            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900">
+              {saving ? '…' : t('admin.confirmSave')}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" /></div>}
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">{t('admin.loadFailed')}</p>}
@@ -238,12 +249,22 @@ export function AdminStrategiesPage() {
               </div>
               <div className="flex gap-1">
                 <button type="button" onClick={() => openEdit(s)} className="rounded px-2 py-1 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800">{t('admin.edit')}</button>
-                <button type="button" onClick={() => onDelete(s.id)} disabled={deleting === s.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('admin.delete')}</button>
+                <button type="button" onClick={() => setDeleteTarget(s.id)} disabled={deleting === s.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('admin.delete')}</button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        title={t('admin.confirmDeleteStrategy')}
+        destructive
+        confirmLabel={t('admin.delete')}
+        onConfirm={onDelete}
+        loading={!!deleting}
+      />
     </section>
   )
 }

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Upload } from 'lucide-react'
 
 interface UploadZoneProps {
   onFiles: (files: File[]) => void
@@ -63,9 +64,7 @@ export function UploadZone({ onFiles, disabled }: UploadZoneProps) {
         disabled && 'pointer-events-none opacity-50',
       ].join(' ')}
     >
-      <svg className="mb-3 h-10 w-10 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-      </svg>
+      <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
       <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{t('upload.dropHint')}</p>
       <p className="mt-1 text-xs text-zinc-400">{t('upload.dropFormats')}</p>
       <input

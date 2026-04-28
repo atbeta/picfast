@@ -1,9 +1,11 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { deleteAdminImage, listAdminImages } from '../../../lib/admin-api'
 import { formatFileSize } from '../../../lib/upload'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export function AdminImagesPage() {
   const { t } = useTranslation()
@@ -18,19 +20,21 @@ export function AdminImagesPage() {
   })
 
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
 
-  const onDelete = useCallback(async (id: number) => {
-    if (!window.confirm(t('admin.confirmDeleteImage'))) return
-    setDeleting(id)
+  const onDelete = useCallback(async () => {
+    if (deleteTarget === null) return
+    setDeleting(deleteTarget)
     try {
-      await deleteAdminImage(id)
+      await deleteAdminImage(deleteTarget)
+      setDeleteTarget(null)
       await qc.invalidateQueries({ queryKey: ['admin-images'] })
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
     } finally {
       setDeleting(null)
     }
-  }, [qc, t])
+  }, [deleteTarget, qc, t])
 
   return (
     <section className="space-y-4">
@@ -82,7 +86,7 @@ export function AdminImagesPage() {
                     </td>
                     <td className="whitespace-nowrap py-2 pr-3 text-zinc-500">{new Date(img.created_at).toLocaleDateString()}</td>
                     <td className="py-2">
-                      <button type="button" onClick={() => onDelete(img.id)} disabled={deleting === img.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('admin.delete')}</button>
+                      <button type="button" onClick={() => setDeleteTarget(img.id)} disabled={deleting === img.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20">{t('admin.delete')}</button>
                     </td>
                   </tr>
                 ))}
@@ -101,6 +105,16 @@ export function AdminImagesPage() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        title={t('admin.confirmDeleteImage')}
+        destructive
+        confirmLabel={t('admin.delete')}
+        onConfirm={onDelete}
+        loading={!!deleting}
+      />
     </section>
   )
 }

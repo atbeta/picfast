@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import '../i18n'
 import { ThemeProvider } from '../lib/theme'
 import { AuthProvider } from '../lib/auth-context'
+import { Toaster } from '../components/ui/sonner'
 
 const queryClient = new QueryClient()
 
@@ -12,7 +13,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>

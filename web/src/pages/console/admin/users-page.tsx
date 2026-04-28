@@ -1,9 +1,11 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { deleteAdminUser, listAdminUsers, updateAdminUser } from '../../../lib/admin-api'
 import { formatFileSize } from '../../../lib/upload'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export function AdminUsersPage() {
   const { t } = useTranslation()
@@ -18,6 +20,7 @@ export function AdminUsersPage() {
 
   const [saving, setSaving] = useState<number | null>(null)
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
 
   const toggleStatus = useCallback(
     async (user: { id: number; status: number }) => {
@@ -26,7 +29,7 @@ export function AdminUsersPage() {
         await updateAdminUser(user.id, { status: user.status === 1 ? 0 : 1 })
         await qc.invalidateQueries({ queryKey: ['admin-users'] })
       } catch (err: unknown) {
-        alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
+        toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
       } finally {
         setSaving(null)
       }
@@ -35,19 +38,20 @@ export function AdminUsersPage() {
   )
 
   const onDelete = useCallback(
-    async (id: number) => {
-      if (!window.confirm(t('admin.confirmDeleteUser'))) return
-      setDeleting(id)
+    async () => {
+      if (deleteTarget === null) return
+      setDeleting(deleteTarget)
       try {
-        await deleteAdminUser(id)
+        await deleteAdminUser(deleteTarget)
+        setDeleteTarget(null)
         await qc.invalidateQueries({ queryKey: ['admin-users'] })
       } catch (err: unknown) {
-        alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
+        toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
       } finally {
         setDeleting(null)
       }
     },
-    [qc, t],
+    [deleteTarget, qc, t],
   )
 
   return (
@@ -116,7 +120,7 @@ export function AdminUsersPage() {
                         {u.role !== 'admin' && (
                           <button
                             type="button"
-                            onClick={() => onDelete(u.id)}
+                            onClick={() => setDeleteTarget(u.id)}
                             disabled={deleting === u.id}
                             className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20"
                           >
@@ -142,6 +146,16 @@ export function AdminUsersPage() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+        title={t('admin.confirmDeleteUser')}
+        destructive
+        confirmLabel={t('admin.delete')}
+        onConfirm={onDelete}
+        loading={!!deleting}
+      />
     </section>
   )
 }
