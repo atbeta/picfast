@@ -260,7 +260,7 @@ export function AdminStrategiesPage() {
         open={deleteTarget !== null}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
         title={t('admin.confirmDeleteStrategy')}
-        destructive
+        description={t('admin.deleteStrategyDescription')}
         confirmLabel={t('admin.delete')}
         onConfirm={onDelete}
         loading={!!deleting}

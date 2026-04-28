@@ -60,13 +60,13 @@ export function UploadZone({ onFiles, disabled }: UploadZoneProps) {
         'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-colors',
         dragging
           ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20'
-          : 'border-zinc-300 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500',
+          : 'border-border hover:border-muted-foreground/30 dark:hover:border-muted-foreground/40',
         disabled && 'pointer-events-none opacity-50',
       ].join(' ')}
     >
       <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
-      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{t('upload.dropHint')}</p>
-      <p className="mt-1 text-xs text-zinc-400">{t('upload.dropFormats')}</p>
+      <p className="text-sm font-medium text-muted-foreground">{t('upload.dropHint')}</p>
+      <p className="mt-1 text-xs text-muted-foreground/70">{t('upload.dropFormats')}</p>
       <input
         ref={inputRef}
         type="file"

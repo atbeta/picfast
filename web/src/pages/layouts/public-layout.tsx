@@ -10,8 +10,8 @@ export function PublicLayout() {
   const { isAuthenticated } = useAuth()
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-      <header className="border-b border-zinc-200 bg-white/90 px-6 py-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
+    <div className="min-h-screen bg-muted/50 text-foreground">
+      <header className="border-b border-border bg-card/90 px-6 py-3 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
           <Link to="/" className="text-lg font-semibold">
             {t('appName')}
@@ -22,16 +22,16 @@ export function PublicLayout() {
             {isAuthenticated ? (
               <Link
                 to="/console"
-                className="text-sm text-zinc-700 hover:text-zinc-950 dark:text-zinc-300"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 {t('nav.console')}
               </Link>
             ) : (
               <>
-                <Link to="/login" className="text-sm text-zinc-700 hover:text-zinc-950 dark:text-zinc-300">
+                <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {t('nav.login')}
                 </Link>
-                <Link to="/register" className="text-sm text-zinc-700 hover:text-zinc-950 dark:text-zinc-300">
+                <Link to="/register" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {t('nav.register')}
                 </Link>
               </>

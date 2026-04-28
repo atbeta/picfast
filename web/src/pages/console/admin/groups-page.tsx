@@ -314,7 +314,7 @@ export function AdminGroupsPage() {
         open={deleteTarget !== null}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
         title={t('admin.confirmDeleteGroup')}
-        destructive
+        description={t('admin.deleteGroupDescription')}
         confirmLabel={t('admin.delete')}
         onConfirm={onDelete}
         loading={!!deleting}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { XIcon } from 'lucide-react'
 
 import { UploadZone } from '../../components/upload-zone'
 import { UploadResultCard } from '../../components/upload-result'
@@ -19,6 +20,9 @@ export function UploadPage() {
   const [uploading, setUploading] = useState<UploadingFile[]>([])
   const [errors, setErrors] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  const [dismissedWelcome, setDismissedWelcome] = useState(false)
+
+  const isNewUser = user && user.image_num === 0 && user.album_num === 0
 
   // Strategy selector
   const [strategies, setStrategies] = useState<Strategy[]>([])
@@ -83,6 +87,23 @@ export function UploadPage() {
   return (
     <section className="space-y-6">
       <h1 className="text-xl font-semibold">{t('page.upload.title')}</h1>
+
+      {/* New user welcome banner */}
+      {isNewUser && !dismissedWelcome && (
+        <div className="flex items-start gap-3 rounded-xl border border-info/30 bg-info/5 p-4">
+          <div className="flex-1">
+            <p className="text-sm font-medium">{t('auth.registerSuccess')}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('auth.registerSuccessDesc')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDismissedWelcome(true)}
+            className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+          >
+            <XIcon className="size-4" />
+          </button>
+        </div>
+      )}
 
       {/* Strategy selector */}
       {strategies.length > 1 && (

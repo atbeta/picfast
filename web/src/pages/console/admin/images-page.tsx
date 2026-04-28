@@ -110,7 +110,7 @@ export function AdminImagesPage() {
         open={deleteTarget !== null}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
         title={t('admin.confirmDeleteImage')}
-        destructive
+        description={t('admin.deleteImageDescription')}
         confirmLabel={t('admin.delete')}
         onConfirm={onDelete}
         loading={!!deleting}

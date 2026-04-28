@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod/v4'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
 import { useAuth } from '../../lib/auth-context'
 
 const registerSchema = z.object({
@@ -29,6 +30,7 @@ export function RegisterPage() {
     setServerError('')
     try {
       await registerUser(data.email, data.password, data.name)
+      toast.success(t('auth.registerSuccess'), { description: t('auth.registerSuccessDesc') })
       navigate('/console', { replace: true })
     } catch (err: unknown) {
       const msg =
@@ -39,7 +41,7 @@ export function RegisterPage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+    <section className="mx-auto w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground">
       <h1 className="text-xl font-semibold">{t('page.register.title')}</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">

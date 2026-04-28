@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
+import { Button } from '@/components/ui/button'
 import { LanguageSwitcher } from '../../components/language-switcher'
 import { ThemeSwitcher } from '../../components/theme-switcher'
 import { useAuth } from '../../lib/auth-context'
@@ -16,25 +17,21 @@ export function ConsoleLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b border-zinc-200 bg-white px-6 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="min-h-screen bg-muted/50">
+      <header className="border-b border-border bg-card px-6 py-3">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
-          <Link to="/console/upload" className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          <Link to="/console/upload" className="text-lg font-semibold text-foreground">
             {t('appName')}
           </Link>
           <div className="flex items-center gap-3">
             <LanguageSwitcher />
             <ThemeSwitcher />
             {user && (
-              <span className="text-sm text-zinc-500">{user.name || user.email}</span>
+              <span className="text-sm text-muted-foreground">{user.name || user.email}</span>
             )}
-            <button
-              type="button"
-              onClick={onLogout}
-              className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
-            >
+            <Button variant="outline" size="sm" onClick={onLogout}>
               {t('common.logout')}
-            </button>
+            </Button>
           </div>
         </div>
       </header>
@@ -48,8 +45,8 @@ export function ConsoleLayout() {
           <ConsoleNavItem to="/console/settings" label={t('nav.settings')} />
           {user?.role === 'admin' && (
             <>
-              <div className="my-2 border-t border-zinc-200 dark:border-zinc-800" />
-              <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-zinc-400">{t('nav.admin')}</p>
+              <div className="my-2 border-t border-border" />
+              <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('nav.admin')}</p>
               <ConsoleNavItem to="/console/admin" label={t('admin.navDashboard', { defaultValue: '概览' })} />
               <ConsoleNavItem to="/console/admin/users" label={t('admin.navUsers')} />
               <ConsoleNavItem to="/console/admin/groups" label={t('admin.navGroups')} />
@@ -59,7 +56,7 @@ export function ConsoleLayout() {
             </>
           )}
         </aside>
-        <main className="rounded-xl border border-zinc-200 bg-white p-6 text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+        <main className="rounded-xl border border-border bg-card p-6 text-card-foreground">
           <Outlet />
         </main>
       </div>
@@ -74,10 +71,10 @@ function ConsoleNavItem({ to, label }: { to: string; label: string }) {
       end={to === '/console/admin'}
       className={({ isActive }) =>
         [
-          'block rounded-md px-3 py-2 text-sm transition',
+          'block rounded-md px-3 py-2 text-sm transition-colors',
           isActive
-            ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-            : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800',
+            ? 'bg-primary text-primary-foreground'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
         ].join(' ')
       }
     >

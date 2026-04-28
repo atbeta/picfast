@@ -151,7 +151,7 @@ export function AdminUsersPage() {
         open={deleteTarget !== null}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
         title={t('admin.confirmDeleteUser')}
-        destructive
+        description={t('admin.deleteUserDescription')}
         confirmLabel={t('admin.delete')}
         onConfirm={onDelete}
         loading={!!deleting}
