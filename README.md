@@ -172,6 +172,84 @@ go run ./cmd/picfast
 3. 到 `http://127.0.0.1:8025` 查看验证邮件
 4. 点击邮件里的验证链接完成验证
 
+## Docker 发布
+
+PicFast 现在可以直接发布到 Docker Hub。当前推荐镜像仓库：
+
+- `xbeta/picfast`
+
+常见标签约定：
+
+- `xbeta/picfast:latest`：`main` 分支最新稳定构建
+- `xbeta/picfast:0.1.0`：版本发布标签
+- `xbeta/picfast:0.1`：同 minor 版本滚动标签
+- `xbeta/picfast:sha-<commit>`：按提交追踪的构建标签
+
+### 拉取镜像
+
+```bash
+docker pull xbeta/picfast:0.1.0
+```
+
+### 运行示例
+
+```bash
+docker run -d \
+  --name picfast \
+  -p 8080:8080 \
+  -e PICFAST_DATABASE_URL='postgres://picfast:picfast@host.docker.internal:5432/picfast?sslmode=disable' \
+  -e PICFAST_JWT_SECRET='replace-with-a-strong-secret' \
+  -e PICFAST_SERVER_BASE_URL='https://picfast.example.com' \
+  -e PICFAST_APP_ADMIN_EMAIL='admin@example.com' \
+  -e PICFAST_APP_ADMIN_PASSWORD='change-this-password' \
+  -v picfast-uploads:/app/data/uploads \
+  -v picfast-thumbnails:/app/data/thumbnails \
+  xbeta/picfast:0.1.0
+```
+
+### GitHub Actions 自动发布
+
+仓库已包含 Docker 发布工作流 [docker-publish.yml](/Users/beta/Projects/picfast/.github/workflows/docker-publish.yml:1)。
+
+触发规则：
+
+- push 到 `main`：发布 `latest`、`main`、`sha-*`
+- push `v*` tag：额外发布 `0.1.0`、`0.1` 这类版本标签
+- 支持手动触发
+
+在 GitHub 仓库 Secrets 中配置：
+
+- `DOCKERHUB_USERNAME=xbeta`
+- `DOCKERHUB_TOKEN=<Docker Hub Access Token>`
+
+建议使用 Docker Hub Access Token，不要直接使用账户密码。
+
+### Traefik 单机模板
+
+如果你已经有现成的 Traefik 反向代理，可以直接使用：
+
+- [docker/docker-compose.traefik.yml](/Users/beta/Projects/picfast/docker/docker-compose.traefik.yml)
+- [docker/.env.traefik.example](/Users/beta/Projects/picfast/docker/.env.traefik.example)
+
+推荐步骤：
+
+```bash
+cd docker
+cp .env.traefik.example .env
+docker compose -f docker-compose.traefik.yml up -d
+```
+
+这份模板适合：
+
+- PostgreSQL 与 PicFast 同机部署
+- Traefik 通过 Docker label 暴露站点
+- 本地存储上传文件与缩略图
+- 通过环境变量初始化管理员账号
+
+当前版本还补了一个关键行为：**空数据库首次启动时，应用会自动补齐默认分组、游客分组、本地存储策略，并在配置了 `PICFAST_APP_ADMIN_EMAIL/PASSWORD` 时自动创建管理员账号。**
+
+这意味着用户不需要再额外执行一次手工 seed，生产 compose 第一次拉起就能进入登录态验证。
+
 ## 常用命令
 
 ```bash

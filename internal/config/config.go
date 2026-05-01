@@ -144,5 +144,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.require_email_verification", false)
 	v.SetDefault("app.user_initial_capacity", int64(524288000))
 	v.SetDefault("app.default_image_ttl", time.Duration(0))
+	v.SetDefault("app.admin_email", "")
+	v.SetDefault("app.admin_password", "")
 	v.SetDefault("app.moderation_mode", "disabled")
 }

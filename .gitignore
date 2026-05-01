@@ -6,5 +6,5 @@ web/dist/
 *.exe
 .env
 web/node_modules/
-picfast
+/picfast
 imgapi

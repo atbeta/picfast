@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { PlugIcon, MonitorIcon, Copy, Trash2, KeyRound, Calendar, Clock, CheckCircle2, History } from 'lucide-react'
 import { createApiToken, deleteApiToken, listApiTokens } from '../../lib/console-api'
+import { getSiteConfig } from '../../lib/site-config'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
@@ -20,6 +21,10 @@ function formatDate(s?: string): string {
   return new Date(s).toLocaleString()
 }
 
+function trimTrailingSlash(value: string): string {
+  return value.replace(/\/+$/, '')
+}
+
 export function ApiTokensPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -27,6 +32,10 @@ export function ApiTokensPage() {
   const { data: tokens, isLoading, error } = useQuery({
     queryKey: ['api-tokens'],
     queryFn: listApiTokens,
+  })
+  const { data: siteConfig } = useQuery({
+    queryKey: ['site-config'],
+    queryFn: getSiteConfig,
   })
 
   // Create
@@ -98,6 +107,20 @@ export function ApiTokensPage() {
       prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope],
     )
   }
+
+  const baseURL = trimTrailingSlash(siteConfig?.base_url || window.location.origin)
+  const mcpEndpoint = `${baseURL}/mcp`
+  const sharexConfigURL = `${baseURL}/api/v1/sharex/config`
+  const mcpConfigExample = `{
+  "mcpServers": {
+    "picfast": {
+      "url": "${mcpEndpoint}",
+      "headers": {
+        "Authorization": "Bearer ${createdToken?.token || '<YOUR_API_TOKEN>'}"
+      }
+    }
+  }
+}`
 
   return (
     <section className="space-y-6">
@@ -301,11 +324,18 @@ export function ApiTokensPage() {
             <div className="mt-3 space-y-2">
               <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t('integrations.mcpEndpoint')}</label>
               <div className="flex items-center gap-1.5">
-                <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs">{window.location.origin}/mcp</code>
-                <button type="button" onClick={() => onCopy(`${window.location.origin}/mcp`)} className="shrink-0 flex items-center justify-center rounded bg-muted w-7 h-7 hover:bg-muted/80 hover:text-foreground text-muted-foreground transition-colors cursor-pointer" title={t('upload.copy')}>
+                <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs">{mcpEndpoint}</code>
+                <button type="button" onClick={() => onCopy(mcpEndpoint)} className="shrink-0 flex items-center justify-center rounded bg-muted w-7 h-7 hover:bg-muted/80 hover:text-foreground text-muted-foreground transition-colors cursor-pointer" title={t('upload.copy')}>
                   <Copy className="size-3.5" />
                 </button>
               </div>
+            </div>
+            <div className="mt-3 space-y-2">
+              <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t('integrations.mcpConfigExample')}</label>
+              <pre className="overflow-x-auto rounded bg-muted px-3 py-2 text-[11px] leading-5 text-muted-foreground">
+                <code>{mcpConfigExample}</code>
+              </pre>
+              <p className="text-[11px] text-muted-foreground">{t('integrations.mcpConfigHint')}</p>
             </div>
             <div className="mt-3">
               <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t('integrations.quickStart')}</label>
@@ -329,14 +359,14 @@ export function ApiTokensPage() {
             <div className="mt-3 space-y-2">
               <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t('integrations.sharexEndpoint')}</label>
               <div className="flex items-center gap-1.5">
-                <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs">{window.location.origin}/api/v1/sharex/config</code>
-                <button type="button" onClick={() => onCopy(`${window.location.origin}/api/v1/sharex/config`)} className="shrink-0 flex items-center justify-center rounded bg-muted w-7 h-7 hover:bg-muted/80 hover:text-foreground text-muted-foreground transition-colors cursor-pointer" title={t('upload.copy')}>
+                <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs">{sharexConfigURL}</code>
+                <button type="button" onClick={() => onCopy(sharexConfigURL)} className="shrink-0 flex items-center justify-center rounded bg-muted w-7 h-7 hover:bg-muted/80 hover:text-foreground text-muted-foreground transition-colors cursor-pointer" title={t('upload.copy')}>
                   <Copy className="size-3.5" />
                 </button>
               </div>
             </div>
             <a
-              href="/api/v1/sharex/config"
+              href={sharexConfigURL}
               className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
             >
               {t('integrations.downloadConfig')}

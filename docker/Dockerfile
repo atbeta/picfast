@@ -36,7 +36,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=backend-builder /picfast /usr/local/bin/picfast
-COPY --from=backend-builder /app/migrations /migrations
+COPY --from=backend-builder /app/migrations /app/migrations
 COPY --from=frontend-builder /web-dist /web-dist
 
 WORKDIR /app

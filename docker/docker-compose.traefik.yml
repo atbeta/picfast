@@ -1,0 +1,75 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - picfast
+
+  app:
+    image: ${PICFAST_IMAGE:-xbeta/picfast:latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      PICFAST_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      PICFAST_SERVER_BASE_URL: ${PICFAST_SERVER_BASE_URL}
+      PICFAST_JWT_SECRET: ${PICFAST_JWT_SECRET}
+      PICFAST_APP_NAME: ${PICFAST_APP_NAME:-PicFast}
+      PICFAST_APP_ADMIN_EMAIL: ${PICFAST_APP_ADMIN_EMAIL}
+      PICFAST_APP_ADMIN_PASSWORD: ${PICFAST_APP_ADMIN_PASSWORD}
+      PICFAST_APP_ALLOW_GUEST_UPLOAD: ${PICFAST_APP_ALLOW_GUEST_UPLOAD:-false}
+      PICFAST_APP_ALLOW_REGISTRATION: ${PICFAST_APP_ALLOW_REGISTRATION:-false}
+      PICFAST_APP_REQUIRE_EMAIL_VERIFICATION: ${PICFAST_APP_REQUIRE_EMAIL_VERIFICATION:-false}
+      PICFAST_APP_MODERATION_MODE: ${PICFAST_APP_MODERATION_MODE:-disabled}
+      PICFAST_APP_USER_INITIAL_CAPACITY: ${PICFAST_APP_USER_INITIAL_CAPACITY:-2147483648}
+      PICFAST_STORAGE_LOCAL_ROOT: /app/data/uploads
+      PICFAST_STORAGE_THUMBNAIL_DIR: /app/data/thumbnails
+      PICFAST_MAIL_HOST: ${PICFAST_MAIL_HOST:-}
+      PICFAST_MAIL_PORT: ${PICFAST_MAIL_PORT:-587}
+      PICFAST_MAIL_USERNAME: ${PICFAST_MAIL_USERNAME:-}
+      PICFAST_MAIL_PASSWORD: ${PICFAST_MAIL_PASSWORD:-}
+      PICFAST_MAIL_FROM_EMAIL: ${PICFAST_MAIL_FROM_EMAIL:-}
+      PICFAST_MAIL_FROM_NAME: ${PICFAST_MAIL_FROM_NAME:-PicFast}
+      PICFAST_MAIL_ENCRYPTION: ${PICFAST_MAIL_ENCRYPTION:-starttls}
+    volumes:
+      - ./data/uploads:/app/data/uploads
+      - ./data/thumbnails:/app/data/thumbnails
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - picfast
+      - traefik_monitoring
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.picfast.rule=Host(`${PICFAST_DOMAIN}`)"
+      - "traefik.http.routers.picfast.entrypoints=web,websecure"
+      - "traefik.http.routers.picfast.tls=true"
+      - "traefik.http.services.picfast.loadbalancer.server.port=8080"
+      - "traefik.docker.network=${TRAEFIK_DOCKER_NETWORK:-traefik_monitoring}"
+
+networks:
+  picfast:
+    driver: bridge
+  traefik_monitoring:
+    external: true
+    name: ${TRAEFIK_DOCKER_NETWORK:-traefik_monitoring}
