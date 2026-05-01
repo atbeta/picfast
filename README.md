@@ -222,6 +222,36 @@ PicFast 现在可以直接发布到 Docker Hub。当前推荐镜像仓库：
 - `xbeta/picfast:0.1`：同 minor 版本滚动标签
 - `xbeta/picfast:sha-<commit>`：按提交追踪的构建标签
 
+### 3 分钟最小部署（本地先跑起来）
+
+如果你只想快速验证可用性，可以按下面步骤先在本机启动：
+
+```bash
+# 1) 启动 PostgreSQL
+docker run -d \
+  --name picfast-db \
+  -e POSTGRES_USER=picfast \
+  -e POSTGRES_PASSWORD=picfast \
+  -e POSTGRES_DB=picfast \
+  -p 5432:5432 \
+  postgres:16-alpine
+
+# 2) 启动 PicFast
+docker run -d \
+  --name picfast \
+  -p 8080:8080 \
+  -e PICFAST_DATABASE_URL='postgres://picfast:picfast@host.docker.internal:5432/picfast?sslmode=disable' \
+  -e PICFAST_JWT_SECRET='replace-with-a-strong-secret' \
+  -e PICFAST_SERVER_BASE_URL='http://localhost:8080' \
+  -e PICFAST_APP_ADMIN_EMAIL='admin@example.com' \
+  -e PICFAST_APP_ADMIN_PASSWORD='change-this-password' \
+  -v picfast-uploads:/app/data/uploads \
+  -v picfast-thumbnails:/app/data/thumbnails \
+  xbeta/picfast:latest
+```
+
+启动后访问 `http://localhost:8080`。线上建议保持应用监听 `8080`，由反向代理统一处理域名与 HTTPS。
+
 ### 拉取镜像
 
 ```bash
@@ -268,6 +298,30 @@ docker run -d \
 - CI 会执行 Trivy 文件系统扫描并上传到 GitHub Security
 - Docker 发布会执行 Trivy 镜像扫描（当前拦截 `CRITICAL` 漏洞）
 - Docker 发布后会使用 Cosign keyless 对镜像摘要签名（依赖 GitHub OIDC）
+
+### 如何选择 Compose 模板
+
+仓库当前提供两套 Compose，面向不同场景：
+
+- `docker/docker-compose.yml`：本地开发与联调，包含 `mailpit`，默认暴露本机端口，适合快速启动
+- `docker/docker-compose.traefik.yml`：生产/私有化部署模板，假设你已有 Traefik 入口，应用通过 label 接入反向代理
+
+如果你不使用 Traefik，也可以继续使用镜像部署 PicFast，只需在外部反代（Nginx/Caddy/NPM/HAProxy 等）把 `443/80` 转发到 PicFast 容器 `8080`，并正确设置 `PICFAST_SERVER_BASE_URL`。
+
+### 生产环境必改项（上线前检查）
+
+至少确认以下配置已经替换为真实值：
+
+- `PICFAST_JWT_SECRET`：使用高强度随机密钥
+- `PICFAST_SERVER_BASE_URL`：设置为真实访问域名（如 `https://img.example.com`）
+- `PICFAST_APP_ADMIN_EMAIL` / `PICFAST_APP_ADMIN_PASSWORD`：避免弱口令
+- `POSTGRES_PASSWORD`：避免示例密码
+
+建议同时检查：
+
+- 反向代理正确透传 `Host` 和 `X-Forwarded-Proto`
+- 上传大小限制与超时配置符合实际需求
+- 若启用邮箱验证，确认 `PICFAST_MAIL_*` 可用且可达
 
 ### Traefik 单机模板
 
