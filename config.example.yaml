@@ -25,6 +25,7 @@ mail:
 
 app:
   name: "PicFast"
+  site_description: "PicFast is a modern self-hosted image hosting service."
   allow_guest_upload: false
   allow_registration: true
   require_email_verification: true  # only takes effect when mail.* is configured and reachable
@@ -33,3 +34,9 @@ app:
   admin_email: ""
   admin_password: ""
   moderation_mode: "disabled"  # disabled | manual | auto (future)
+  icp_number: ""               # e.g. 京ICP备12345678号-1
+  icp_link: "https://beian.miit.gov.cn/"
+  psb_number: ""               # e.g. 京公网安备11000002000001号
+  psb_link: ""
+  analytics_provider: ""       # plausible | umami | ga4 | baidu | custom
+  analytics_config: "{}"       # provider-specific JSON; configurable in admin console

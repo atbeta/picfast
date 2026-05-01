@@ -2,6 +2,10 @@
 
 GOPATH := $(shell go env GOPATH)
 SQLC := $(GOPATH)/bin/sqlc
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+BUILD_TIME ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS := -X github.com/atbeta/picfast/internal/version.Version=$(VERSION) -X github.com/atbeta/picfast/internal/version.Commit=$(COMMIT) -X github.com/atbeta/picfast/internal/version.BuildTime=$(BUILD_TIME)
 
 ## Development
 
@@ -22,7 +26,7 @@ frontend:
 	cd web && pnpm build
 
 build:
-	go build -o ./bin/picfast ./cmd/picfast
+	go build -ldflags "$(LDFLAGS)" -o ./bin/picfast ./cmd/picfast
 
 build-full: frontend build
 

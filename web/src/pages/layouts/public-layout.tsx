@@ -1,14 +1,18 @@
 import { Link, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { ImagePlus } from 'lucide-react'
 
 import { LanguageSwitcher } from '../../components/language-switcher'
 import { ThemeSwitcher } from '../../components/theme-switcher'
 import { useAuth } from '../../lib/auth-context'
+import { getSiteConfig } from '../../lib/site-config'
 
 export function PublicLayout() {
   const { t } = useTranslation()
   const { isAuthenticated } = useAuth()
+  const { data: config } = useQuery({ queryKey: ['site-config'], queryFn: getSiteConfig })
+  const appName = config?.app_name?.trim() || t('appName')
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
@@ -25,7 +29,7 @@ export function PublicLayout() {
               <ImagePlus className="h-5 w-5" />
             </div>
             <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70 dark:from-white dark:to-white/60">
-              {t('appName')}
+              {appName}
             </span>
           </Link>
           <div className="flex items-center gap-4">

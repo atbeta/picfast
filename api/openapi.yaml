@@ -14,6 +14,40 @@ servers:
 security: []
 
 paths:
+  /config:
+    get:
+      tags: [system]
+      summary: Get public site configuration
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PublicConfigResponse"
+
+  /version:
+    get:
+      tags: [system]
+      summary: Get application version
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/VersionResponse"
+
   /auth/register:
     post:
       tags: [auth]
@@ -1296,13 +1330,79 @@ components:
       properties:
         app_name:
           type: string
+        app_url:
+          type: string
+        site_description:
+          type: string
         allow_guest_upload:
           type: boolean
         allow_registration:
           type: boolean
+        require_email_verification:
+          type: boolean
+        email_verification_ready:
+          type: boolean
         user_initial_capacity:
           type: integer
           format: int64
+        default_image_ttl:
+          type: string
+        moderation_mode:
+          type: string
+        icp_number:
+          type: string
+        icp_link:
+          type: string
+        psb_number:
+          type: string
+        psb_link:
+          type: string
+        analytics_provider:
+          type: string
+        analytics_config:
+          type: object
+          additionalProperties: true
+
+    PublicConfigResponse:
+      type: object
+      properties:
+        app_name:
+          type: string
+        site_description:
+          type: string
+        allow_guest_upload:
+          type: boolean
+        allow_registration:
+          type: boolean
+        require_email_verification:
+          type: boolean
+        base_url:
+          type: string
+        icp_number:
+          type: string
+        icp_link:
+          type: string
+        psb_number:
+          type: string
+        psb_link:
+          type: string
+        analytics_provider:
+          type: string
+        analytics_config:
+          type: object
+          additionalProperties: true
+
+    VersionResponse:
+      type: object
+      properties:
+        version:
+          type: string
+        commit:
+          type: string
+        build_time:
+          type: string
+        github_url:
+          type: string
 
     StrategyHealthItem:
       type: object
@@ -1344,10 +1444,34 @@ components:
       properties:
         app_name:
           type: string
+        app_url:
+          type: string
+        site_description:
+          type: string
         allow_guest_upload:
           type: boolean
         allow_registration:
           type: boolean
+        require_email_verification:
+          type: boolean
         user_initial_capacity:
           type: integer
           format: int64
+        default_image_ttl:
+          type: string
+        moderation_mode:
+          type: string
+        icp_number:
+          type: string
+        icp_link:
+          type: string
+        psb_number:
+          type: string
+        psb_link:
+          type: string
+        analytics_provider:
+          type: string
+          enum: ["", plausible, umami, ga4, baidu, custom]
+        analytics_config:
+          type: object
+          additionalProperties: true

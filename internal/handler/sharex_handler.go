@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 
@@ -64,10 +65,14 @@ func (h *ShareXHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	imageURL := h.baseURL + "/i/" + result.Image.Key + "." + result.Image.Extension
 	thumbURL := h.baseURL + "/t/" + result.Image.Md5 + ".png"
 
-	Success(w, shareXResponse{
+	resp := shareXResponse{
 		URL:          imageURL,
 		ThumbnailURL: thumbURL,
-	})
+	}
+
+	// ShareX expects URL fields at the top level of JSON response.
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func (h *ShareXHandler) Config(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +91,8 @@ func (h *ShareXHandler) Config(w http.ResponseWriter, r *http.Request) {
 		"ThumbnailURL": "{json:thumbnail_url}",
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	// Keep exported config in native .sxcu shape (no envelope).
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Content-Disposition", `attachment; filename="picfast.sxcu"`)
-	Success(w, config)
+	_ = json.NewEncoder(w).Encode(config)
 }

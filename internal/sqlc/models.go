@@ -117,17 +117,24 @@ type RefreshToken struct {
 }
 
 type SiteSetting struct {
-	ID                       int16     `json:"id"`
-	AppName                  string    `json:"app_name"`
-	AppUrl                   string    `json:"app_url"`
-	AllowGuestUpload         bool      `json:"allow_guest_upload"`
-	AllowRegistration        bool      `json:"allow_registration"`
-	RequireEmailVerification bool      `json:"require_email_verification"`
-	UserInitialCapacity      int64     `json:"user_initial_capacity"`
-	DefaultImageTtl          string    `json:"default_image_ttl"`
-	ModerationMode           string    `json:"moderation_mode"`
-	CreatedAt                time.Time `json:"created_at"`
-	UpdatedAt                time.Time `json:"updated_at"`
+	ID                       int16           `json:"id"`
+	AppName                  string          `json:"app_name"`
+	AppUrl                   string          `json:"app_url"`
+	AllowGuestUpload         bool            `json:"allow_guest_upload"`
+	AllowRegistration        bool            `json:"allow_registration"`
+	RequireEmailVerification bool            `json:"require_email_verification"`
+	UserInitialCapacity      int64           `json:"user_initial_capacity"`
+	DefaultImageTtl          string          `json:"default_image_ttl"`
+	ModerationMode           string          `json:"moderation_mode"`
+	CreatedAt                time.Time       `json:"created_at"`
+	UpdatedAt                time.Time       `json:"updated_at"`
+	SiteDescription          string          `json:"site_description"`
+	IcpNumber                string          `json:"icp_number"`
+	IcpLink                  string          `json:"icp_link"`
+	PsbNumber                string          `json:"psb_number"`
+	PsbLink                  string          `json:"psb_link"`
+	AnalyticsProvider        string          `json:"analytics_provider"`
+	AnalyticsConfig          json.RawMessage `json:"analytics_config"`
 }
 
 type Strategy struct {

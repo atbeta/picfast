@@ -45,6 +45,30 @@ func TestLoadReadsPprofEnabledFromEnv(t *testing.T) {
 	}
 }
 
+func TestLoadReadsSiteMetadataFromEnv(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+	t.Setenv("PICFAST_APP_SITE_DESCRIPTION", "Private image hosting")
+	t.Setenv("PICFAST_APP_ANALYTICS_PROVIDER", "umami")
+	t.Setenv("PICFAST_APP_ANALYTICS_CONFIG", `{"website_id":"site-1"}`)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.App.SiteDescription != "Private image hosting" {
+		t.Fatalf("SiteDescription = %q", cfg.App.SiteDescription)
+	}
+	if cfg.App.AnalyticsProvider != "umami" {
+		t.Fatalf("AnalyticsProvider = %q", cfg.App.AnalyticsProvider)
+	}
+	if string(cfg.App.AnalyticsConfig) != `{"website_id":"site-1"}` {
+		t.Fatalf("AnalyticsConfig = %s", cfg.App.AnalyticsConfig)
+	}
+}
+
 func TestRuntimeSnapshotsFollowSetterUpdates(t *testing.T) {
 	cfg := &Config{}
 	setter := NewSetter(cfg)

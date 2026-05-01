@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/atbeta/picfast/internal/domain"
@@ -89,9 +90,12 @@ func (s *OSSStorage) URL(pathname string) string {
 }
 
 func (s *OSSStorage) HealthCheck(ctx context.Context) HealthResult {
-	_, err := s.bucket.ListObjects(oss.MaxKeys(1))
-	if err != nil {
-		return HealthResult{Healthy: false, Error: "bucket unreachable: " + err.Error()}
+	key := fmt.Sprintf(".picfast-healthcheck/%d", time.Now().UnixNano())
+	if err := s.bucket.PutObject(key, strings.NewReader("ok")); err != nil {
+		return HealthResult{Healthy: false, Error: "bucket write failed: " + err.Error()}
+	}
+	if err := s.bucket.DeleteObject(key); err != nil {
+		return HealthResult{Healthy: true, Warning: "bucket cleanup failed: " + err.Error()}
 	}
 	return HealthResult{Healthy: true}
 }

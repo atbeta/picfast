@@ -1,7 +1,10 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -100,5 +103,47 @@ func TestWebDAVStorageURLFallsBackToEndpoint(t *testing.T) {
 	got := store.URL("2026/05/cat.png")
 	if !strings.HasPrefix(got, "https://dav.example.com/uploads/") {
 		t.Fatalf("URL() = %q, want endpoint prefix", got)
+	}
+}
+
+func TestOSSHealthCheckUsesObjectWriteInsteadOfListPermission(t *testing.T) {
+	var sawPut bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			sawPut = true
+			w.WriteHeader(http.StatusOK)
+		case http.MethodDelete:
+			http.Error(w, "delete forbidden", http.StatusForbidden)
+		default:
+			http.Error(w, "list forbidden", http.StatusForbidden)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	cfg, err := json.Marshal(map[string]string{
+		"endpoint":   server.URL,
+		"access_key": "ak",
+		"secret_key": "sk",
+		"bucket":     "bucket",
+	})
+	if err != nil {
+		t.Fatalf("marshal config: %v", err)
+	}
+	store, err := New("oss", cfg)
+	if err != nil {
+		t.Fatalf("New(oss) error = %v", err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+
+	health := store.HealthCheck(context.Background())
+	if !health.Healthy {
+		t.Fatalf("HealthCheck healthy = false, error = %q", health.Error)
+	}
+	if health.Warning == "" {
+		t.Fatal("HealthCheck warning is empty, want cleanup warning")
+	}
+	if !sawPut {
+		t.Fatal("HealthCheck should verify write permission")
 	}
 }

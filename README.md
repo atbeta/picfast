@@ -79,6 +79,30 @@ cp config.example.yaml config.yaml
 
 环境变量优先级高于 `config.yaml`。通常本地开发二选一即可，不需要两边同时维护。
 
+### 站点个性化、SEO 与统计
+
+管理员后台的“站点设置”支持配置站点简介、备案信息、访问统计和页脚展示。这些配置会持久化到数据库，并通过 `/api/v1/config` 下发给前端用于：
+
+- 更新 `<title>`、`meta description`、Open Graph 和 Twitter 分享信息
+- 在页脚显示 ICP 备案号、公安备案号、PicFast 版本和 GitHub 链接
+- 按需注入 Plausible、Umami、Google Analytics 4、百度统计或自定义统计脚本
+
+也可以通过配置文件或环境变量提供初始值：
+
+```yaml
+app:
+  name: "PicFast"
+  site_description: "Modern self-hosted image hosting for teams."
+  icp_number: "京ICP备12345678号-1"
+  icp_link: "https://beian.miit.gov.cn/"
+  psb_number: "京公网安备11000002000001号"
+  psb_link: "https://www.beian.gov.cn/"
+  analytics_provider: "umami" # plausible | umami | ga4 | baidu | custom
+  analytics_config: '{"script_url":"https://analytics.example.com/script.js","website_id":"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"}'
+```
+
+未配置备案信息时页脚不会展示备案；未配置统计服务时不会加载第三方脚本；页脚会默认显示 `Powered by PicFast`，GitHub 链接固定指向 `https://github.com/atbeta/picfast`。生产环境如果启用了严格 CSP，需要为所选统计服务补充相应的 `script-src` 白名单。
+
 ### 3. 执行迁移并填充开发数据
 
 ```bash

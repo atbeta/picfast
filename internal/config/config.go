@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -53,16 +54,23 @@ type MailConfig struct {
 }
 
 type AppConfig struct {
-	Name                     string        `mapstructure:"name"`
-	AllowGuestUpload         bool          `mapstructure:"allow_guest_upload"`
-	AllowRegistration        bool          `mapstructure:"allow_registration"`
-	RequireEmailVerification bool          `mapstructure:"require_email_verification"`
-	AuditUploadLogs          bool          `mapstructure:"audit_upload_logs"`
-	UserInitialCapacity      int64         `mapstructure:"user_initial_capacity"`
-	DefaultImageTTL          time.Duration `mapstructure:"default_image_ttl"`
-	AdminEmail               string        `mapstructure:"admin_email"`
-	AdminPassword            string        `mapstructure:"admin_password"`
-	ModerationMode           string        `mapstructure:"moderation_mode"` // disabled, manual, auto
+	Name                     string          `mapstructure:"name"`
+	SiteDescription          string          `mapstructure:"site_description"`
+	AllowGuestUpload         bool            `mapstructure:"allow_guest_upload"`
+	AllowRegistration        bool            `mapstructure:"allow_registration"`
+	RequireEmailVerification bool            `mapstructure:"require_email_verification"`
+	AuditUploadLogs          bool            `mapstructure:"audit_upload_logs"`
+	UserInitialCapacity      int64           `mapstructure:"user_initial_capacity"`
+	DefaultImageTTL          time.Duration   `mapstructure:"default_image_ttl"`
+	AdminEmail               string          `mapstructure:"admin_email"`
+	AdminPassword            string          `mapstructure:"admin_password"`
+	ModerationMode           string          `mapstructure:"moderation_mode"` // disabled, manual, auto
+	ICPNumber                string          `mapstructure:"icp_number"`
+	ICPLink                  string          `mapstructure:"icp_link"`
+	PSBNumber                string          `mapstructure:"psb_number"`
+	PSBLink                  string          `mapstructure:"psb_link"`
+	AnalyticsProvider        string          `mapstructure:"analytics_provider"`
+	AnalyticsConfig          json.RawMessage `mapstructure:"analytics_config"`
 }
 
 type Setter struct {
@@ -77,6 +85,12 @@ func (s *Setter) SetAppName(name string) {
 	s.cfg.mu.Lock()
 	defer s.cfg.mu.Unlock()
 	s.cfg.App.Name = name
+}
+
+func (s *Setter) SetSiteDescription(description string) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.SiteDescription = description
 }
 
 func (s *Setter) SetBaseURL(url string) {
@@ -119,6 +133,22 @@ func (s *Setter) SetModerationMode(mode string) {
 	s.cfg.mu.Lock()
 	defer s.cfg.mu.Unlock()
 	s.cfg.App.ModerationMode = mode
+}
+
+func (s *Setter) SetFiling(icpNumber, icpLink, psbNumber, psbLink string) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.ICPNumber = icpNumber
+	s.cfg.App.ICPLink = icpLink
+	s.cfg.App.PSBNumber = psbNumber
+	s.cfg.App.PSBLink = psbLink
+}
+
+func (s *Setter) SetAnalytics(provider string, cfg json.RawMessage) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.AnalyticsProvider = provider
+	s.cfg.App.AnalyticsConfig = cfg
 }
 
 func (c *Config) AppSnapshot() AppConfig {
@@ -169,6 +199,11 @@ func Load() (*Config, error) {
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("unmarshal config: %w", err)
 	}
+	if v.IsSet("app.analytics_config") {
+		if raw := strings.TrimSpace(v.GetString("app.analytics_config")); raw != "" {
+			cfg.App.AnalyticsConfig = json.RawMessage(raw)
+		}
+	}
 
 	if cfg.JWT.Secret == "change-me-in-production" {
 		return nil, fmt.Errorf("jwt.secret must be changed from default value; set PICFAST_JWT_SECRET environment variable or configure jwt.secret in config.yaml")
@@ -202,6 +237,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("mail.encryption", "starttls")
 
 	v.SetDefault("app.name", "PicFast")
+	v.SetDefault("app.site_description", "PicFast is a modern self-hosted image hosting service.")
 	v.SetDefault("app.allow_guest_upload", false)
 	v.SetDefault("app.allow_registration", false)
 	v.SetDefault("app.require_email_verification", false)
@@ -211,4 +247,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.admin_email", "")
 	v.SetDefault("app.admin_password", "")
 	v.SetDefault("app.moderation_mode", "")
+	v.SetDefault("app.icp_number", "")
+	v.SetDefault("app.icp_link", "https://beian.miit.gov.cn/")
+	v.SetDefault("app.psb_number", "")
+	v.SetDefault("app.psb_link", "")
+	v.SetDefault("app.analytics_provider", "")
 }

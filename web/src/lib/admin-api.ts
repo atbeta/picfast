@@ -177,6 +177,7 @@ export async function deleteAdminImage(id: number): Promise<void> {
 export interface AdminSettings {
   app_name: string
   app_url: string
+  site_description: string
   allow_guest_upload: boolean
   allow_registration: boolean
   require_email_verification: boolean
@@ -184,6 +185,12 @@ export interface AdminSettings {
   user_initial_capacity: number
   default_image_ttl: string
   moderation_mode: string
+  icp_number: string
+  icp_link: string
+  psb_number: string
+  psb_link: string
+  analytics_provider: string
+  analytics_config: Record<string, unknown>
 }
 
 export async function getAdminSettings(): Promise<AdminSettings> {
@@ -217,5 +224,72 @@ export async function listAdminAuditLogs(params?: {
   resource_type?: string
 }): Promise<PaginatedData<AdminAuditLog>> {
   const res = await api.get<ApiResponse<PaginatedData<AdminAuditLog>>>('/admin/audit-logs', { params })
+  return res.data.data
+}
+
+// ============================================================
+// Observability
+// ============================================================
+
+export interface AdminHealthItem {
+  healthy: boolean
+  ready?: boolean
+  path?: string
+  error?: string
+  warning?: string
+}
+
+export interface AdminStorageStrategyHealth {
+  id: number
+  name: string
+  type: string
+  healthy: boolean
+  error?: string
+  warning?: string
+}
+
+export interface AdminObservabilitySummary {
+  generated_at: string
+  uptime_seconds: number
+  health: {
+    database: AdminHealthItem
+    uploads: AdminHealthItem
+    thumbnails: AdminHealthItem
+    mail: AdminHealthItem
+  }
+  runtime: {
+    go_version: string
+    goos: string
+    goarch: string
+    num_cpu: number
+    goroutines: number
+    memory_alloc_bytes: number
+    memory_sys_bytes: number
+  }
+  database: {
+    total_connections: number
+    acquired_connections: number
+    idle_connections: number
+    max_connections: number
+  }
+  usage: {
+    users_total: number
+    images_total: number
+    storage_bytes: number
+    uploads_24h: number
+    pending_moderation: number
+    audit_logs_24h: number
+  }
+  storage_strategies: AdminStorageStrategyHealth[]
+  config: {
+    metrics_enabled: boolean
+    pprof_enabled: boolean
+    moderation_mode: string
+    audit_upload_logs: boolean
+  }
+}
+
+export async function getAdminObservabilitySummary(): Promise<AdminObservabilitySummary> {
+  const res = await api.get<ApiResponse<AdminObservabilitySummary>>('/admin/observability/summary')
   return res.data.data
 }

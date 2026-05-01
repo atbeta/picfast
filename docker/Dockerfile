@@ -22,7 +22,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -ldflags="-s -w" -o /picfast ./cmd/picfast
+ARG VERSION=dev
+ARG COMMIT=unknown
+ARG BUILD_TIME=unknown
+RUN go build -ldflags="-s -w -X github.com/atbeta/picfast/internal/version.Version=${VERSION} -X github.com/atbeta/picfast/internal/version.Commit=${COMMIT} -X github.com/atbeta/picfast/internal/version.BuildTime=${BUILD_TIME}" -o /picfast ./cmd/picfast
 
 # ---- Stage 3: Runtime ----
 FROM debian:12-slim

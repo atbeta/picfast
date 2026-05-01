@@ -18,6 +18,7 @@ import (
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/atbeta/picfast/internal/version"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -144,6 +145,7 @@ func New(
 	adminImageHandler := handler.NewAdminImageHandler(queries, deleteSvc, cfg.Server.BaseURL)
 	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg), queries, mailSender != nil && mailSender.Ready())
 	adminAuditHandler := handler.NewAdminAuditHandler(queries)
+	adminObservabilityHandler := handler.NewAdminObservabilityHandler(queries, pool, cfg, mailSender != nil && mailSender.Ready())
 
 	// MCP Server
 	mcpFactory := handler.NewMCPServerFactory(queries, pool, cfg)
@@ -192,11 +194,22 @@ func New(
 			server, app := cfg.RuntimeSnapshot()
 			handler.Success(w, map[string]interface{}{
 				"app_name":                   app.Name,
+				"site_description":           app.SiteDescription,
 				"allow_guest_upload":         app.AllowGuestUpload,
 				"allow_registration":         app.AllowRegistration,
 				"require_email_verification": app.RequireEmailVerification && mailSender != nil && mailSender.Ready(),
 				"base_url":                   server.BaseURL,
+				"icp_number":                 app.ICPNumber,
+				"icp_link":                   app.ICPLink,
+				"psb_number":                 app.PSBNumber,
+				"psb_link":                   app.PSBLink,
+				"analytics_provider":         app.AnalyticsProvider,
+				"analytics_config":           normalizeJSON(app.AnalyticsConfig),
+				"github_url":                 version.DefaultGitHubURL(),
 			})
+		})
+		r.Get("/version", func(w http.ResponseWriter, r *http.Request) {
+			handler.Success(w, version.Info())
 		})
 
 		// Auth
@@ -324,6 +337,7 @@ func New(
 			r.Get("/settings", adminSettingHandler.Get)
 			r.Put("/settings", adminSettingHandler.Update)
 			r.Get("/audit-logs", adminAuditHandler.List)
+			r.Get("/observability/summary", adminObservabilityHandler.Summary)
 
 			if cfg.ServerSnapshot().EnablePprof {
 				// Debug / pprof (admin only)
@@ -364,4 +378,11 @@ func New(
 	}
 
 	return r
+}
+
+func normalizeJSON(raw json.RawMessage) json.RawMessage {
+	if len(raw) == 0 || string(raw) == "null" {
+		return json.RawMessage(`{}`)
+	}
+	return raw
 }

@@ -186,6 +186,7 @@ func applyPersistedSiteSettings(ctx context.Context, queries *sqlc.Queries, cfg 
 
 	cfg.App.Name = settings.AppName
 	cfg.Server.BaseURL = settings.AppUrl
+	cfg.App.SiteDescription = settings.SiteDescription
 	cfg.App.AllowGuestUpload = settings.AllowGuestUpload
 	cfg.App.AllowRegistration = settings.AllowRegistration
 	cfg.App.RequireEmailVerification = settings.RequireEmailVerification
@@ -200,5 +201,11 @@ func applyPersistedSiteSettings(ctx context.Context, queries *sqlc.Queries, cfg 
 		cfg.App.DefaultImageTTL = d
 	}
 	cfg.App.ModerationMode = settings.ModerationMode
+	cfg.App.ICPNumber = settings.IcpNumber
+	cfg.App.ICPLink = settings.IcpLink
+	cfg.App.PSBNumber = settings.PsbNumber
+	cfg.App.PSBLink = settings.PsbLink
+	cfg.App.AnalyticsProvider = settings.AnalyticsProvider
+	cfg.App.AnalyticsConfig = settings.AnalyticsConfig
 	return nil
 }

@@ -9,6 +9,7 @@ import (
 type HealthResult struct {
 	Healthy bool   `json:"healthy"`
 	Error   string `json:"error,omitempty"`
+	Warning string `json:"warning,omitempty"`
 }
 
 type Storage interface {

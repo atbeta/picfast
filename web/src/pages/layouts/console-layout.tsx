@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { 
   ImagePlus, 
   UploadCloud, 
@@ -15,18 +16,23 @@ import {
   Database, 
   Files, 
   Globe,
-  ScrollText
+  ScrollText,
+  ShieldCheck,
+  BarChart3
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { LanguageSwitcher } from '../../components/language-switcher'
 import { ThemeSwitcher } from '../../components/theme-switcher'
 import { useAuth } from '../../lib/auth-context'
+import { getSiteConfig } from '../../lib/site-config'
 
 export function ConsoleLayout() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const { data: config } = useQuery({ queryKey: ['site-config'], queryFn: getSiteConfig })
+  const appName = config?.app_name?.trim() || t('appName')
 
   const onLogout = async () => {
     await logout()
@@ -47,7 +53,7 @@ export function ConsoleLayout() {
               <ImagePlus className="h-5 w-5" />
             </div>
             <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              {t('appName')}
+              {appName}
             </span>
           </Link>
           <div className="flex items-center gap-4">
@@ -87,7 +93,10 @@ export function ConsoleLayout() {
                   <ConsoleNavItem to="/console/admin/strategies" label={t('admin.navStrategies')} icon={Database} />
                   <ConsoleNavItem to="/console/admin/images" label={t('admin.navImages')} icon={Files} />
                   <ConsoleNavItem to="/console/admin/audit-logs" label={t('admin.navAuditLogs', { defaultValue: '审计日志' })} icon={ScrollText} />
-                  <ConsoleNavItem to="/console/admin/settings" label={t('admin.navSettings')} icon={Globe} />
+                  <ConsoleNavItem to="/console/admin/site" label={t('admin.navSiteSettings')} icon={Globe} />
+                  <ConsoleNavItem to="/console/admin/access" label={t('admin.navAccessSettings')} icon={ShieldCheck} />
+                  <ConsoleNavItem to="/console/admin/compliance" label={t('admin.navComplianceSettings')} icon={ScrollText} />
+                  <ConsoleNavItem to="/console/admin/analytics" label={t('admin.navAnalyticsSettings')} icon={BarChart3} />
                 </MobileNavRail>
               </div>
             )}

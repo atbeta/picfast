@@ -69,6 +69,7 @@ func newTestEnv(t *testing.T) *testEnv {
 		},
 		App: config.AppConfig{
 			Name:                "TestAPI",
+			SiteDescription:     "Test API",
 			AllowGuestUpload:    true,
 			AllowRegistration:   true,
 			UserInitialCapacity: 524288000,
