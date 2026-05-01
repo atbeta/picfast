@@ -51,6 +51,7 @@ func TestLoadReadsSiteMetadataFromEnv(t *testing.T) {
 
 	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
 	t.Setenv("PICFAST_APP_SITE_DESCRIPTION", "Private image hosting")
+	t.Setenv("PICFAST_APP_FAVICON_URL", "https://img.example.com/favicon.ico")
 	t.Setenv("PICFAST_APP_ANALYTICS_PROVIDER", "umami")
 	t.Setenv("PICFAST_APP_ANALYTICS_CONFIG", `{"website_id":"site-1"}`)
 
@@ -60,6 +61,9 @@ func TestLoadReadsSiteMetadataFromEnv(t *testing.T) {
 	}
 	if cfg.App.SiteDescription != "Private image hosting" {
 		t.Fatalf("SiteDescription = %q", cfg.App.SiteDescription)
+	}
+	if cfg.App.FaviconURL != "https://img.example.com/favicon.ico" {
+		t.Fatalf("FaviconURL = %q", cfg.App.FaviconURL)
 	}
 	if cfg.App.AnalyticsProvider != "umami" {
 		t.Fatalf("AnalyticsProvider = %q", cfg.App.AnalyticsProvider)

@@ -36,6 +36,7 @@ type updateSettingsRequest struct {
 	AppName                  *string          `json:"app_name"`
 	AppURL                   *string          `json:"app_url"`
 	SiteDescription          *string          `json:"site_description"`
+	FaviconURL               *string          `json:"favicon_url"`
 	AllowGuestUpload         *bool            `json:"allow_guest_upload"`
 	AllowRegistration        *bool            `json:"allow_registration"`
 	RequireEmailVerification *bool            `json:"require_email_verification"`
@@ -70,6 +71,13 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.SiteDescription != nil {
 		h.setter.SetSiteDescription(*req.SiteDescription)
+	}
+	if req.FaviconURL != nil {
+		if err := validateOptionalURL(*req.FaviconURL); err != nil {
+			Fail(w, http.StatusBadRequest, "invalid favicon_url")
+			return
+		}
+		h.setter.SetFaviconURL(*req.FaviconURL)
 	}
 	if req.AllowGuestUpload != nil {
 		h.setter.SetAllowGuestUpload(*req.AllowGuestUpload)
@@ -179,6 +187,7 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 		DefaultImageTtl:          app.DefaultImageTTL.String(),
 		ModerationMode:           app.ModerationMode,
 		SiteDescription:          app.SiteDescription,
+		FaviconUrl:               app.FaviconURL,
 		IcpNumber:                app.ICPNumber,
 		IcpLink:                  app.ICPLink,
 		PsbNumber:                app.PSBNumber,
@@ -195,6 +204,7 @@ func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string
 		"app_name":                   app.Name,
 		"app_url":                    server.BaseURL,
 		"site_description":           app.SiteDescription,
+		"favicon_url":                app.FaviconURL,
 		"allow_guest_upload":         app.AllowGuestUpload,
 		"allow_registration":         app.AllowRegistration,
 		"require_email_verification": app.RequireEmailVerification,

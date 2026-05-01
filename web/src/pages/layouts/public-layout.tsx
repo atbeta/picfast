@@ -1,7 +1,6 @@
 import { Link, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { ImagePlus } from 'lucide-react'
 
 import { LanguageSwitcher } from '../../components/language-switcher'
 import { ThemeSwitcher } from '../../components/theme-switcher'
@@ -13,6 +12,7 @@ export function PublicLayout() {
   const { isAuthenticated } = useAuth()
   const { data: config } = useQuery({ queryKey: ['site-config'], queryFn: getSiteConfig })
   const appName = config?.app_name?.trim() || t('appName')
+  const logoSrc = config?.favicon_url?.trim() || '/favicon-default.svg'
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
@@ -25,8 +25,15 @@ export function PublicLayout() {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-3 transition-opacity duration-150 hover:opacity-80">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <ImagePlus className="h-5 w-5" />
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-sm">
+              <img
+                src={logoSrc}
+                alt="logo"
+                className="h-full w-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.src = '/favicon-default.svg'
+                }}
+              />
             </div>
             <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70 dark:from-white dark:to-white/60">
               {appName}

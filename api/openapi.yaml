@@ -1334,6 +1334,8 @@ components:
           type: string
         site_description:
           type: string
+        favicon_url:
+          type: string
         allow_guest_upload:
           type: boolean
         allow_registration:
@@ -1369,6 +1371,8 @@ components:
         app_name:
           type: string
         site_description:
+          type: string
+        favicon_url:
           type: string
         allow_guest_upload:
           type: boolean
@@ -1447,6 +1451,8 @@ components:
         app_url:
           type: string
         site_description:
+          type: string
+        favicon_url:
           type: string
         allow_guest_upload:
           type: boolean

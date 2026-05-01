@@ -195,6 +195,7 @@ func New(
 			handler.Success(w, map[string]interface{}{
 				"app_name":                   app.Name,
 				"site_description":           app.SiteDescription,
+				"favicon_url":                app.FaviconURL,
 				"allow_guest_upload":         app.AllowGuestUpload,
 				"allow_registration":         app.AllowRegistration,
 				"require_email_verification": app.RequireEmailVerification && mailSender != nil && mailSender.Ready(),

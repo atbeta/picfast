@@ -25,6 +25,8 @@ mail:
 
 app:
   name: "PicFast"
+  site_description: "PicFast is a modern self-hosted image hosting service."
+  favicon_url: ""
   allow_guest_upload: false
   allow_registration: false
   require_email_verification: false # reserved for future email verification flow; keep false until mail delivery is configured

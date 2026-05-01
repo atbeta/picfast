@@ -115,6 +115,7 @@ func TestAdminSettingsPersistSiteMetadata(t *testing.T) {
 
 	body := map[string]interface{}{
 		"site_description":   "A private image hosting service for the team.",
+		"favicon_url":        "https://img.example.com/favicon.ico",
 		"icp_number":         "京ICP备12345678号-1",
 		"icp_link":           "https://beian.miit.gov.cn/",
 		"psb_number":         "京公网安备11000002000001号",
@@ -136,6 +137,9 @@ func TestAdminSettingsPersistSiteMetadata(t *testing.T) {
 	if data["site_description"] != "A private image hosting service for the team." {
 		t.Fatalf("site_description = %v", data["site_description"])
 	}
+	if data["favicon_url"] != "https://img.example.com/favicon.ico" {
+		t.Fatalf("favicon_url = %v", data["favicon_url"])
+	}
 	if data["icp_number"] != "京ICP备12345678号-1" {
 		t.Fatalf("icp_number = %v", data["icp_number"])
 	}
@@ -149,6 +153,9 @@ func TestAdminSettingsPersistSiteMetadata(t *testing.T) {
 	}
 	if settings.SiteDescription != "A private image hosting service for the team." {
 		t.Fatalf("persisted site_description = %q", settings.SiteDescription)
+	}
+	if settings.FaviconUrl != "https://img.example.com/favicon.ico" {
+		t.Fatalf("persisted favicon_url = %q", settings.FaviconUrl)
 	}
 	var analytics map[string]string
 	if err := json.Unmarshal(settings.AnalyticsConfig, &analytics); err != nil {
@@ -182,6 +189,7 @@ func TestPublicConfigIncludesSiteMetadata(t *testing.T) {
 
 	body := map[string]interface{}{
 		"site_description":   "Public description",
+		"favicon_url":        "https://img.example.com/site.ico",
 		"icp_number":         "沪ICP备12345678号",
 		"analytics_provider": "plausible",
 		"analytics_config": map[string]interface{}{
@@ -203,6 +211,9 @@ func TestPublicConfigIncludesSiteMetadata(t *testing.T) {
 	data := respDataMap(t, parseResp(t, cfgRec))
 	if data["site_description"] != "Public description" {
 		t.Fatalf("site_description = %v", data["site_description"])
+	}
+	if data["favicon_url"] != "https://img.example.com/site.ico" {
+		t.Fatalf("favicon_url = %v", data["favicon_url"])
 	}
 	if data["icp_number"] != "沪ICP备12345678号" {
 		t.Fatalf("icp_number = %v", data["icp_number"])

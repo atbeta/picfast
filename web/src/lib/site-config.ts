@@ -3,6 +3,7 @@ import api from './api'
 export interface SiteConfig {
   app_name: string
   site_description: string
+  favicon_url: string
   allow_guest_upload: boolean
   allow_registration: boolean
   require_email_verification: boolean

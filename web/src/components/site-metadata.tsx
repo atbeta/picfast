@@ -36,6 +36,32 @@ function setCanonical(url: string) {
   if (!existing) document.head.appendChild(link)
 }
 
+function setFavicon(url: string) {
+  const href = url.trim()
+  if (!href) return
+  const selectors = ['link[rel="icon"]', 'link[rel="shortcut icon"]', 'link[rel="apple-touch-icon"]']
+  selectors.forEach((selector) => {
+    const existing = document.head.querySelector<HTMLLinkElement>(selector)
+    const link = existing ?? document.createElement('link')
+    if (selector.includes('shortcut')) {
+      link.setAttribute('rel', 'shortcut icon')
+    } else if (selector.includes('apple-touch-icon')) {
+      link.setAttribute('rel', 'apple-touch-icon')
+    } else {
+      link.setAttribute('rel', 'icon')
+    }
+    link.setAttribute('href', href)
+    link.dataset.picfastFaviconFallbackBound = ''
+    link.onerror = null
+    link.addEventListener('error', () => {
+      if (link.dataset.picfastFaviconFallbackBound === '1') return
+      link.dataset.picfastFaviconFallbackBound = '1'
+      link.setAttribute('href', '/favicon-default.svg')
+    }, { once: true })
+    if (!existing) document.head.appendChild(link)
+  })
+}
+
 function removeAnalyticsScripts() {
   document.querySelectorAll('[data-picfast-analytics="true"]').forEach((node) => node.remove())
 }
@@ -118,6 +144,7 @@ export function SiteMetadata({ config }: { config: SiteConfig }) {
     const title = config.app_name?.trim() || 'PicFast'
     const description = config.site_description?.trim() || 'PicFast is a modern self-hosted image hosting service.'
     const canonical = config.base_url?.trim() || window.location.origin
+    const faviconURL = config.favicon_url?.trim() || ''
 
     document.title = title
     setNamedMeta('description', description)
@@ -129,6 +156,7 @@ export function SiteMetadata({ config }: { config: SiteConfig }) {
     setNamedMeta('twitter:title', title)
     setNamedMeta('twitter:description', description)
     setCanonical(canonical)
+    if (faviconURL) setFavicon(faviconURL)
     injectAnalytics(config)
 
     return removeAnalyticsScripts

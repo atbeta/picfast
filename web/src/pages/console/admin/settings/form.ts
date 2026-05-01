@@ -9,6 +9,7 @@ export interface SettingsForm {
   app_name: string
   app_url: string
   site_description: string
+  favicon_url: string
   allow_guest_upload: boolean
   allow_registration: boolean
   require_email_verification: boolean
@@ -35,6 +36,7 @@ const defaultValues: SettingsForm = {
   app_name: '',
   app_url: '',
   site_description: '',
+  favicon_url: '',
   allow_guest_upload: false,
   allow_registration: false,
   require_email_verification: false,
@@ -69,6 +71,7 @@ function settingsToForm(data: AdminSettings): SettingsForm {
     app_name: data.app_name,
     app_url: data.app_url || '',
     site_description: data.site_description || '',
+    favicon_url: data.favicon_url || '',
     allow_guest_upload: data.allow_guest_upload,
     allow_registration: data.allow_registration,
     require_email_verification: data.require_email_verification,

@@ -178,6 +178,7 @@ export interface AdminSettings {
   app_name: string
   app_url: string
   site_description: string
+  favicon_url: string
   allow_guest_upload: boolean
   allow_registration: boolean
   require_email_verification: boolean

@@ -3,7 +3,6 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { 
-  ImagePlus, 
   UploadCloud, 
   Image as ImageIcon, 
   FolderOpen, 
@@ -33,6 +32,7 @@ export function ConsoleLayout() {
   const { user, logout } = useAuth()
   const { data: config } = useQuery({ queryKey: ['site-config'], queryFn: getSiteConfig })
   const appName = config?.app_name?.trim() || t('appName')
+  const logoSrc = config?.favicon_url?.trim() || '/favicon-default.svg'
 
   const onLogout = async () => {
     await logout()
@@ -49,8 +49,15 @@ export function ConsoleLayout() {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center justify-between px-6">
           <Link to="/console/upload" className="flex items-center gap-2 text-lg font-bold tracking-tight transition-opacity hover:opacity-80">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-              <ImagePlus className="h-5 w-5" />
+            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg shadow-sm">
+              <img
+                src={logoSrc}
+                alt="logo"
+                className="h-full w-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.src = '/favicon-default.svg'
+                }}
+              />
             </div>
             <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               {appName}

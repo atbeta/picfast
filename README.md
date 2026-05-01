@@ -248,6 +248,8 @@ docker run -d \
 
 仓库已包含 Docker 发布工作流 [docker-publish.yml](/Users/beta/Projects/picfast/.github/workflows/docker-publish.yml:1)。
 
+版本发布由 [release-please.yml](/Users/beta/Projects/picfast/.github/workflows/release-please.yml:1) 驱动：当 `main` 上累计了符合 Conventional Commits 的变更后，会自动创建或更新 Release PR；合并后自动打 `v*` tag 并创建 GitHub Release。
+
 触发规则：
 
 - push 到 `main`：发布 `latest`、`main`、`sha-*`
@@ -260,6 +262,12 @@ docker run -d \
 - `DOCKERHUB_TOKEN=<Docker Hub Access Token>`
 
 建议使用 Docker Hub Access Token，不要直接使用账户密码。
+
+安全发布能力：
+
+- CI 会执行 Trivy 文件系统扫描并上传到 GitHub Security
+- Docker 发布会执行 Trivy 镜像扫描（当前拦截 `CRITICAL` 漏洞）
+- Docker 发布后会使用 Cosign keyless 对镜像摘要签名（依赖 GitHub OIDC）
 
 ### Traefik 单机模板
 

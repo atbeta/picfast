@@ -17,28 +17,32 @@ export function SiteFooter({ config }: { config: SiteConfig }) {
 
   return (
     <footer className="relative z-10 mx-auto w-full max-w-[1400px] px-6 pb-8 text-xs text-muted-foreground">
-      <div className="flex flex-col gap-2 border-t border-border/40 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
-        {config.icp_number && (
-          <a
-            href={ICP_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="transition-colors hover:text-foreground"
-          >
-            {config.icp_number}
-          </a>
+      <div className="flex flex-col gap-2 border-t border-border/40 pt-4">
+        {(config.icp_number || config.psb_number) && (
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {config.icp_number && (
+              <a
+                href={ICP_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="transition-colors hover:text-foreground"
+              >
+                {config.icp_number}
+              </a>
+            )}
+            {config.psb_number && (
+              <a
+                href={PSB_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="transition-colors hover:text-foreground"
+              >
+                {config.psb_number}
+              </a>
+            )}
+          </div>
         )}
-        {config.psb_number && (
-          <a
-            href={PSB_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="transition-colors hover:text-foreground"
-          >
-            {config.psb_number}
-          </a>
-        )}
-        <span>
+        <span className="text-center">
           Powered by{' '}
           <a href={githubURL} target="_blank" rel="noreferrer" className="transition-colors hover:text-foreground">
             PicFast

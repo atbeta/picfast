@@ -56,6 +56,7 @@ type MailConfig struct {
 type AppConfig struct {
 	Name                     string          `mapstructure:"name"`
 	SiteDescription          string          `mapstructure:"site_description"`
+	FaviconURL               string          `mapstructure:"favicon_url"`
 	AllowGuestUpload         bool            `mapstructure:"allow_guest_upload"`
 	AllowRegistration        bool            `mapstructure:"allow_registration"`
 	RequireEmailVerification bool            `mapstructure:"require_email_verification"`
@@ -91,6 +92,12 @@ func (s *Setter) SetSiteDescription(description string) {
 	s.cfg.mu.Lock()
 	defer s.cfg.mu.Unlock()
 	s.cfg.App.SiteDescription = description
+}
+
+func (s *Setter) SetFaviconURL(url string) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.FaviconURL = strings.TrimSpace(url)
 }
 
 func (s *Setter) SetBaseURL(url string) {
@@ -238,6 +245,7 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("app.name", "PicFast")
 	v.SetDefault("app.site_description", "PicFast is a modern self-hosted image hosting service.")
+	v.SetDefault("app.favicon_url", "")
 	v.SetDefault("app.allow_guest_upload", false)
 	v.SetDefault("app.allow_registration", false)
 	v.SetDefault("app.require_email_verification", false)

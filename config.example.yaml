@@ -26,6 +26,7 @@ mail:
 app:
   name: "PicFast"
   site_description: "PicFast is a modern self-hosted image hosting service."
+  favicon_url: ""              # custom site icon URL; empty uses bundled favicon
   allow_guest_upload: false
   allow_registration: true
   require_email_verification: true  # only takes effect when mail.* is configured and reachable

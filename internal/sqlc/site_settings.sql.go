@@ -11,7 +11,7 @@ import (
 )
 
 const getSiteSettings = `-- name: GetSiteSettings :one
-SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config FROM site_settings WHERE id = 1
+SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, favicon_url, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config FROM site_settings WHERE id = 1
 `
 
 func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
@@ -30,6 +30,7 @@ func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SiteDescription,
+		&i.FaviconUrl,
 		&i.IcpNumber,
 		&i.IcpLink,
 		&i.PsbNumber,
@@ -52,6 +53,7 @@ INSERT INTO site_settings (
     default_image_ttl,
     moderation_mode,
     site_description,
+    favicon_url,
     icp_number,
     icp_link,
     psb_number,
@@ -59,7 +61,7 @@ INSERT INTO site_settings (
     analytics_provider,
     analytics_config
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
@@ -70,6 +72,7 @@ ON CONFLICT (id) DO UPDATE SET
     default_image_ttl = EXCLUDED.default_image_ttl,
     moderation_mode = EXCLUDED.moderation_mode,
     site_description = EXCLUDED.site_description,
+    favicon_url = EXCLUDED.favicon_url,
     icp_number = EXCLUDED.icp_number,
     icp_link = EXCLUDED.icp_link,
     psb_number = EXCLUDED.psb_number,
@@ -77,7 +80,7 @@ ON CONFLICT (id) DO UPDATE SET
     analytics_provider = EXCLUDED.analytics_provider,
     analytics_config = EXCLUDED.analytics_config,
     updated_at = NOW()
-RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config
+RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, favicon_url, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config
 `
 
 type UpsertSiteSettingsParams struct {
@@ -90,6 +93,7 @@ type UpsertSiteSettingsParams struct {
 	DefaultImageTtl          string          `json:"default_image_ttl"`
 	ModerationMode           string          `json:"moderation_mode"`
 	SiteDescription          string          `json:"site_description"`
+	FaviconUrl               string          `json:"favicon_url"`
 	IcpNumber                string          `json:"icp_number"`
 	IcpLink                  string          `json:"icp_link"`
 	PsbNumber                string          `json:"psb_number"`
@@ -109,6 +113,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		arg.DefaultImageTtl,
 		arg.ModerationMode,
 		arg.SiteDescription,
+		arg.FaviconUrl,
 		arg.IcpNumber,
 		arg.IcpLink,
 		arg.PsbNumber,
@@ -130,6 +135,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SiteDescription,
+		&i.FaviconUrl,
 		&i.IcpNumber,
 		&i.IcpLink,
 		&i.PsbNumber,
