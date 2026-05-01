@@ -44,6 +44,7 @@ RUN groupadd --system --gid 10001 picfast \
 
 COPY --from=backend-builder /picfast /usr/local/bin/picfast
 COPY --from=backend-builder /app/migrations /app/migrations
+COPY --from=backend-builder /app/api/openapi.yaml /app/api/openapi.yaml
 COPY --from=frontend-builder /web-dist /web-dist
 
 RUN chown -R picfast:picfast /app /web-dist /home/picfast
