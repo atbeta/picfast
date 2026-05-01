@@ -11,6 +11,25 @@
   - `read`：允许读取图片/统计/资源
   - `write`：允许上传和删除
 
+## 1.1) Server Instructions（客户端握手文案）
+
+当前 MCP 服务端会向客户端暴露以下 instructions（与代码保持一致）：
+
+```text
+PicFast MCP Server — manage image hosting via AI.
+
+Available tools:
+- upload_image: Upload an image and get shareable links (URL, Markdown, HTML, BBCode).
+- list_images: List your uploaded images with pagination.
+- get_image: Get details and all format links for a specific image by key.
+- delete_image: Delete an image by key.
+- get_usage_stats: Get your storage usage and quota.
+
+You can also read resources:
+- picfast://user/profile — current user info and capacity.
+- picfast://images — list of images (as resource).
+```
+
 ## 2) 通用返回规范
 
 ### 2.1 工具成功返回
@@ -43,6 +62,15 @@
 
 ## 3) Tool Reference
 
+## 3.0) REST 对照关系（OpenAPI ↔ MCP）
+
+- `upload_image` ↔ `POST /api/v1/images`
+- `list_images` ↔ `GET /api/v1/images`
+- `get_image` ↔ `GET /api/v1/images/{key}`
+- `delete_image` ↔ `DELETE /api/v1/images/{key}`
+- `get_usage_stats` ↔（组合查询，暂无单一 REST 等价端点）
+- MCP 鉴权 token 创建：`POST /api/v1/api-tokens`
+
 ## `upload_image`
 
 - **用途**：上传图片并返回可直接分享的链接
@@ -51,7 +79,7 @@
   - `file_data` (string, required)：图片二进制的 base64 字符串
   - `filename` (string, required)：文件名（用于扩展名和展示名）
   - `album_id` (int64, optional)：目标相册 ID
-  - `permission` (int16, optional)：权限级别
+  - `permission` (int16, optional)：权限级别（`0=private`, `1=public`）
 - **成功返回示例**：
 
 ```json
@@ -199,3 +227,4 @@
 - 始终先尝试将 `content[].text` 解析为 JSON，再回退纯文本展示。
 - 错误处理以 `error.code` 为主，`error.message` 直接展示给用户或记录日志。
 - 对上传类场景展示 `original_size -> stored_size` 与 `processed`，便于理解压缩/处理行为。
+- 如需调用管理能力（用户、分组、策略、审核），应走 OpenAPI 对应的 `/api/v1/admin/*` REST 接口。

@@ -98,10 +98,10 @@ You can also read resources:
 // --- Tool handlers ---
 
 type uploadImageArgs struct {
-	FileData   string `json:"file_data"`
-	Filename   string `json:"filename"`
-	AlbumID    *int64 `json:"album_id,omitempty"`
-	Permission *int16 `json:"permission,omitempty"`
+	FileData   string `json:"file_data" jsonschema_description:"Base64-encoded image binary data."`
+	Filename   string `json:"filename" jsonschema_description:"Original filename with extension."`
+	AlbumID    *int64 `json:"album_id,omitempty" jsonschema_description:"Target album ID. Optional."`
+	Permission *int16 `json:"permission,omitempty" jsonschema_description:"Image visibility. 0=private, 1=public. Optional."`
 }
 
 const (
@@ -162,8 +162,8 @@ func (f *MCPServerFactory) uploadImageTool(ctx context.Context, req *mcp.CallToo
 }
 
 type listImagesArgs struct {
-	Page     int32 `json:"page,omitempty"`
-	PageSize int32 `json:"page_size,omitempty"`
+	Page     int32 `json:"page,omitempty" jsonschema_description:"Page number, starting from 1."`
+	PageSize int32 `json:"page_size,omitempty" jsonschema_description:"Page size. Default 20, max 100."`
 }
 
 func (f *MCPServerFactory) listImagesTool(ctx context.Context, req *mcp.CallToolRequest, args listImagesArgs) (*mcp.CallToolResult, any, error) {
@@ -227,7 +227,7 @@ func (f *MCPServerFactory) listImagesTool(ctx context.Context, req *mcp.CallTool
 }
 
 type getImageArgs struct {
-	Key string `json:"key"`
+	Key string `json:"key" jsonschema_description:"Image key."`
 }
 
 func (f *MCPServerFactory) getImageTool(ctx context.Context, req *mcp.CallToolRequest, args getImageArgs) (*mcp.CallToolResult, any, error) {
@@ -268,7 +268,7 @@ func (f *MCPServerFactory) getImageTool(ctx context.Context, req *mcp.CallToolRe
 }
 
 type deleteImageArgs struct {
-	Key string `json:"key"`
+	Key string `json:"key" jsonschema_description:"Image key to delete."`
 }
 
 func (f *MCPServerFactory) deleteImageTool(ctx context.Context, req *mcp.CallToolRequest, args deleteImageArgs) (*mcp.CallToolResult, any, error) {

@@ -3,11 +3,15 @@ info:
   title: PicFast
   version: "1.0"
   description: Image hosting service API
+  x-mcp-endpoint: /mcp
+  x-mcp-transport: streamable-http
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html
 
 servers:
+  - url: https://picfast.pbeta.me/api/v1
+    description: Production
   - url: http://localhost:8080/api/v1
     description: Local development
 
@@ -539,6 +543,9 @@ paths:
     post:
       tags: [mcp]
       summary: Create an API token
+      x-mcp:
+        - Use this token to authenticate MCP requests to /mcp.
+        - Default scopes are ["read", "write"] when omitted.
       security:
         - BearerAuth: []
       requestBody:
@@ -1281,6 +1288,8 @@ components:
           format: int64
         permission:
           type: integer
+          description: 'Image visibility. 0 = private, 1 = public.'
+          enum: [0, 1]
 
     UpdateImageRequest:
       type: object
@@ -1290,6 +1299,8 @@ components:
           format: int64
         permission:
           type: integer
+          description: 'Image visibility. 0 = private, 1 = public.'
+          enum: [0, 1]
 
     AlbumResponse:
       type: object
@@ -1364,8 +1375,12 @@ components:
           type: string
         role:
           type: string
+          description: User role.
+          enum: [admin, user]
         status:
           type: integer
+          description: 'User status. 0 = frozen, 1 = active.'
+          enum: [0, 1]
         capacity_bytes:
           type: integer
           format: int64
@@ -1425,6 +1440,8 @@ components:
           type: string
         role:
           type: string
+          description: User role.
+          enum: [admin, user]
         group_id:
           type: integer
           format: int64
@@ -1440,6 +1457,8 @@ components:
           format: int64
         status:
           type: integer
+          description: 'User status. 0 = frozen, 1 = active.'
+          enum: [0, 1]
         email_verified:
           type: boolean
         settings:
@@ -1572,8 +1591,12 @@ components:
           format: int64
         default_image_ttl:
           type: string
+          description: 'Go duration format. Empty means never expires. Examples: 24h, 720h.'
+          example: 24h
         moderation_mode:
           type: string
+          description: Moderation pipeline mode.
+          enum: ["", disabled, manual, auto]
         icp_number:
           type: string
         icp_link:
@@ -1688,8 +1711,12 @@ components:
           format: int64
         default_image_ttl:
           type: string
+          description: 'Go duration format. Empty means never expires. Examples: 24h, 720h.'
+          example: 24h
         moderation_mode:
           type: string
+          description: Moderation pipeline mode.
+          enum: ["", disabled, manual, auto]
         icp_number:
           type: string
         icp_link:
@@ -1718,8 +1745,10 @@ components:
           description: Returned only on creation.
         scopes:
           type: array
+          description: 'Token scopes. read = list/get/stats and resources. write = upload/delete.'
           items:
             type: string
+            enum: [read, write]
         last_used_at:
           type: string
           format: date-time
@@ -1741,6 +1770,7 @@ components:
           description: 'Examples: 30d, 90d, 1y, 24h, never.'
         scopes:
           type: array
+          description: 'Token scopes. read = list/get/stats and resources. write = upload/delete.'
           items:
             type: string
             enum: [read, write]

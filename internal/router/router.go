@@ -106,6 +106,9 @@ func New(
 		if baseURL != "" {
 			spec = []byte(strings.ReplaceAll(string(spec), "http://localhost:8080/api/v1", baseURL+"/api/v1"))
 		}
+		if v := strings.TrimSpace(version.Version); v != "" {
+			spec = []byte(strings.ReplaceAll(string(spec), `version: "1.0"`, fmt.Sprintf(`version: "%s"`, v)))
+		}
 		w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
 		if _, err := w.Write(spec); err != nil {
 			slog.Warn("failed to write openapi spec", "error", err)
