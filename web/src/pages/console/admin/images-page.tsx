@@ -15,6 +15,7 @@ export function AdminImagesPage() {
   const [page, setPage] = useState(1)
   const [keyword, setKeyword] = useState('')
   const [emailFilter, setEmailFilter] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'email'>('name')
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-images', page, keyword, emailFilter],
@@ -40,11 +41,34 @@ export function AdminImagesPage() {
 
   return (
     <section className="space-y-4">
-      <h1 className="text-2xl font-bold tracking-tight">{t('admin.imagesTitle')}</h1>
-
-      <div className="flex flex-wrap gap-2">
-        <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(1) }} placeholder={t('admin.searchName')} className="w-48 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-    <input value={emailFilter} onChange={(e) => { setEmailFilter(e.target.value); setPage(1) }} placeholder={t('admin.searchEmail')} className="w-48 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <h1 className="text-2xl font-bold tracking-tight">{t('admin.imagesTitle', { defaultValue: '图片管理' })}</h1>
+        
+        <div className="flex items-center rounded-lg border border-input bg-background shadow-sm focus-within:ring-1 focus-within:ring-primary/20 focus-within:border-primary transition-all overflow-hidden h-9">
+          <select 
+            className="h-full bg-muted/30 px-3 py-1 text-sm outline-none border-r border-input cursor-pointer"
+            value={searchType}
+            onChange={(e) => {
+              setSearchType(e.target.value as 'name' | 'email');
+              setKeyword('');
+              setEmailFilter('');
+              setPage(1);
+            }}
+          >
+            <option value="name">{t('admin.searchName', { defaultValue: '搜文件名' })}</option>
+            <option value="email">{t('admin.searchEmail', { defaultValue: '搜用户邮箱' })}</option>
+          </select>
+          <input 
+            value={searchType === 'name' ? keyword : emailFilter} 
+            onChange={(e) => { 
+              if (searchType === 'name') setKeyword(e.target.value);
+              else setEmailFilter(e.target.value);
+              setPage(1);
+            }} 
+            placeholder={searchType === 'name' ? t('admin.searchName') : t('admin.searchEmail')} 
+            className="h-full w-48 sm:w-64 bg-transparent px-3 py-1 text-sm outline-none" 
+          />
+        </div>
       </div>
 
       {isLoading && <LoadingState />}
@@ -70,12 +94,12 @@ export function AdminImagesPage() {
                   <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colSize')}</th>
                   <th className="pb-2 pr-3 pt-2 font-medium">{t('images.permission', { defaultValue: '权限' })}</th>
                   <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colDate')}</th>
-                  <th className="pb-2 pr-4 pt-2 font-medium">{t('admin.colActions')}</th>
+                  <th className="pb-2 pr-4 pt-2 font-medium text-right">{t('admin.colActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {data.items.map((img) => (
-                  <tr key={img.id} className="group hover:bg-muted/20 transition-colors">
+                  <tr key={img.id} className="group hover:bg-muted/50 transition-colors">
                     <td className="py-2 pr-3 pl-4">
                       {img.thumbnail_url ? (
                         <img src={img.thumbnail_url} alt="" className="h-10 w-10 rounded border border-border/50 object-cover" />
@@ -88,17 +112,17 @@ export function AdminImagesPage() {
                     <td className="py-2 pr-3 text-muted-foreground">{img.user_email ?? '—'}</td>
                     <td className="whitespace-nowrap py-2 pr-3 text-muted-foreground">{formatFileSize(img.size_bytes)}</td>
                     <td className="py-2 pr-3">
-                      <span className={['rounded px-1.5 py-0.5 text-xs font-medium', img.permission === 1 ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'].join(' ')}>
+                      <span className={['rounded px-1.5 py-0.5 text-xs font-medium', img.permission === 1 ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning'].join(' ')}>
                         {img.permission === 1 ? (t('images.public', { defaultValue: '公开' })) : (t('images.private', { defaultValue: '私有' }))}
                       </span>
                     </td>
                     <td className="whitespace-nowrap py-2 pr-3 text-muted-foreground">{new Date(img.created_at).toLocaleDateString()}</td>
-                    <td className="py-2 pr-4">
+                    <td className="py-2 pr-4 text-right">
                       <button 
                         type="button" 
                         onClick={() => setDeleteTarget(img.id)} 
                         disabled={deleting === img.id} 
-                        className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                        className="transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                         title={t('admin.delete')}
                       >
                         <Trash2 className="size-4" />

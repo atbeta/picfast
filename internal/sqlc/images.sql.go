@@ -24,11 +24,18 @@ func (q *Queries) CountAllImages(ctx context.Context) (int64, error) {
 }
 
 const countImagesByUser = `-- name: CountImagesByUser :one
-SELECT COUNT(*) FROM images WHERE user_id = $1
+SELECT COUNT(*) FROM images
+WHERE user_id = $1
+  AND ($2::bigint IS NULL OR album_id = $2)
 `
 
-func (q *Queries) CountImagesByUser(ctx context.Context, userID pgtype.Int8) (int64, error) {
-	row := q.db.QueryRow(ctx, countImagesByUser, userID)
+type CountImagesByUserParams struct {
+	UserID  pgtype.Int8 `json:"user_id"`
+	AlbumID pgtype.Int8 `json:"album_id"`
+}
+
+func (q *Queries) CountImagesByUser(ctx context.Context, arg CountImagesByUserParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countImagesByUser, arg.UserID, arg.AlbumID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -421,14 +428,16 @@ SELECT
 FROM images
 LEFT JOIN strategies ON images.strategy_id = strategies.id
 WHERE images.user_id = $1
+  AND ($4::bigint IS NULL OR images.album_id = $4)
 ORDER BY images.created_at DESC
 LIMIT $2 OFFSET $3
 `
 
 type ListImagesByUserParams struct {
-	UserID pgtype.Int8 `json:"user_id"`
-	Limit  int32       `json:"limit"`
-	Offset int32       `json:"offset"`
+	UserID  pgtype.Int8 `json:"user_id"`
+	Limit   int32       `json:"limit"`
+	Offset  int32       `json:"offset"`
+	AlbumID pgtype.Int8 `json:"album_id"`
 }
 
 type ListImagesByUserRow struct {
@@ -460,7 +469,12 @@ type ListImagesByUserRow struct {
 }
 
 func (q *Queries) ListImagesByUser(ctx context.Context, arg ListImagesByUserParams) ([]ListImagesByUserRow, error) {
-	rows, err := q.db.Query(ctx, listImagesByUser, arg.UserID, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listImagesByUser,
+		arg.UserID,
+		arg.Limit,
+		arg.Offset,
+		arg.AlbumID,
+	)
 	if err != nil {
 		return nil, err
 	}

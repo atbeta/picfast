@@ -62,6 +62,8 @@ func SetupDB(t *testing.T) (*pgxpool.Pool, *sqlc.Queries) {
 		t.Fatalf("ping test db: %v", err)
 	}
 
+	TruncateAll(t, pool)
+
 	t.Cleanup(func() {
 		TruncateAll(t, pool)
 		pool.Close()
@@ -74,6 +76,7 @@ func SetupDB(t *testing.T) (*pgxpool.Pool, *sqlc.Queries) {
 func TruncateAll(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	tables := []string{
+		"site_settings",
 		"email_verification_tokens",
 		"refresh_tokens",
 		"images",

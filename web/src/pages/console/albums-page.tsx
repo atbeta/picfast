@@ -1,28 +1,18 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { createAlbum, deleteAlbum, listAlbums, listImages, updateAlbum } from '../../lib/console-api'
-import type { ImageItem } from '../../lib/console-api'
+import { createAlbum, deleteAlbum, listAlbums, updateAlbum } from '../../lib/console-api'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-
-function toRelative(url: string): string {
-  try { return new URL(url).pathname }
-  catch { return url }
-}
 
 export function AlbumsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [page, setPage] = useState(1)
 
   const { data, isLoading, error } = useQuery({
@@ -108,23 +98,8 @@ export function AlbumsPage() {
     [deleteTarget, qc, t],
   )
 
-  // Album image viewer
-  const [viewingAlbum, setViewingAlbum] = useState<{ id: number; name: string } | null>(null)
-  const [albumImages, setAlbumImages] = useState<ImageItem[]>([])
-  const [albumImagesLoading, setAlbumImagesLoading] = useState(false)
-
-  const viewAlbumImages = async (album: { id: number; name: string }) => {
-    setViewingAlbum(album)
-    setAlbumImagesLoading(true)
-    try {
-      const res = await listImages(1, 50)
-      const all = res.items || []
-      setAlbumImages(all.filter((img) => img.album_id === album.id))
-    } catch {
-      setAlbumImages([])
-    } finally {
-      setAlbumImagesLoading(false)
-    }
+  const viewAlbumImages = (album: { id: number; name: string }) => {
+    navigate(`/console/images?album_id=${album.id}`)
   }
 
   return (
@@ -238,7 +213,25 @@ export function AlbumsPage() {
                 </div>
               </div>
             ) : (
-              <div key={album.id} className="group relative flex flex-col justify-between rounded-xl border border-border/50 bg-card p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-1 hover:border-primary/30">
+              <div key={album.id} className="group relative flex flex-col justify-between rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-1 hover:border-primary/30">
+                <div 
+                  className="mb-4 aspect-video w-full overflow-hidden rounded-lg bg-muted cursor-pointer relative"
+                  onClick={() => viewAlbumImages(album)}
+                >
+                  {album.cover_md5 ? (
+                    <img 
+                      src={`/t/${album.cover_md5}.png`} 
+                      alt={album.name} 
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <ImageIcon className="size-8 text-muted-foreground/30" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
+                </div>
+                
                 <div className="mb-4 flex items-start justify-between">
                   <div className="space-y-1.5 pe-4">
                     <button
@@ -310,50 +303,6 @@ export function AlbumsPage() {
           </div>
         </div>
       )}
-
-      {/* Album image viewer dialog */}
-      <Dialog open={!!viewingAlbum} onOpenChange={(open) => { if (!open) setViewingAlbum(null) }}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl">{viewingAlbum?.name} - {t('albums.imageList', { defaultValue: '图片列表' })}</DialogTitle>
-          </DialogHeader>
-
-          {albumImagesLoading && (
-            <LoadingState compact className="py-10" />
-          )}
-
-          {!albumImagesLoading && albumImages.length === 0 && (
-            <EmptyState
-              icon={<ImageIcon className="size-6 text-muted-foreground/60" />}
-              title={t('albums.noImages', { defaultValue: '相册内暂无图片' })}
-              description={t('albums.noImagesDesc', { defaultValue: '给图片设置相册后，就会在这里展示。' })}
-              compact
-            />
-          )}
-
-          {!albumImagesLoading && albumImages.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {albumImages.map((img) => (
-                <div key={img.key} className="group relative aspect-square overflow-hidden rounded-lg border border-border/50 bg-muted/30">
-                  {img.thumbnail_url || img.url ? (
-                    <img 
-                      src={toRelative(img.thumbnail_url || img.url || '')} 
-                      alt="" 
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                      loading="lazy" 
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-muted/50">
-                      <ImageIcon className="size-8 text-muted-foreground/30 transition-transform duration-300 group-hover:scale-110" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
-                </div>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       <ConfirmDialog
         open={deleteTarget !== null}

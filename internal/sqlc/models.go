@@ -21,15 +21,6 @@ type Album struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type EmailVerificationToken struct {
-	ID        int64              `json:"id"`
-	UserID    int64              `json:"user_id"`
-	TokenHash string             `json:"token_hash"`
-	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
-	UsedAt    pgtype.Timestamptz `json:"used_at"`
-	CreatedAt time.Time          `json:"created_at"`
-}
-
 type ApiToken struct {
 	ID         int64              `json:"id"`
 	UserID     int64              `json:"user_id"`
@@ -39,6 +30,15 @@ type ApiToken struct {
 	LastUsedAt pgtype.Timestamptz `json:"last_used_at"`
 	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt  time.Time          `json:"created_at"`
+}
+
+type EmailVerificationToken struct {
+	ID        int64              `json:"id"`
+	UserID    int64              `json:"user_id"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt time.Time          `json:"expires_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+	CreatedAt time.Time          `json:"created_at"`
 }
 
 type Group struct {
@@ -101,6 +101,20 @@ type RefreshToken struct {
 	TokenHash string    `json:"token_hash"`
 	ExpiresAt time.Time `json:"expires_at"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type SiteSetting struct {
+	ID                       int16     `json:"id"`
+	AppName                  string    `json:"app_name"`
+	AppUrl                   string    `json:"app_url"`
+	AllowGuestUpload         bool      `json:"allow_guest_upload"`
+	AllowRegistration        bool      `json:"allow_registration"`
+	RequireEmailVerification bool      `json:"require_email_verification"`
+	UserInitialCapacity      int64     `json:"user_initial_capacity"`
+	DefaultImageTtl          string    `json:"default_image_ttl"`
+	ModerationMode           string    `json:"moderation_mode"`
+	CreatedAt                time.Time `json:"created_at"`
+	UpdatedAt                time.Time `json:"updated_at"`
 }
 
 type Strategy struct {

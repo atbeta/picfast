@@ -179,7 +179,9 @@ func (f *MCPServerFactory) listImagesTool(ctx context.Context, req *mcp.CallTool
 		return errorResult("failed to list images: " + err.Error()), nil, nil
 	}
 
-	total, _ := f.DB.CountImagesByUser(ctx, domain.PgInt8(userID))
+	total, _ := f.DB.CountImagesByUser(ctx, sqlc.CountImagesByUserParams{
+		UserID: domain.PgInt8(userID),
+	})
 
 	items := make([]map[string]any, len(images))
 	for i, img := range images {

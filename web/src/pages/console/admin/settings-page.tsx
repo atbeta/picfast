@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingState } from '@/components/page-states'
+import { HelpHint } from '@/components/help-hint'
 
 interface SettingsForm {
   app_name: string
@@ -19,20 +20,24 @@ interface SettingsForm {
   moderation_mode: string
 }
 
+const fieldInputCls = 'h-11 w-full rounded-lg border border-input bg-background px-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20'
+
 function SettingField({
   label,
-  description,
+  hint,
   children,
 }: {
   label: string
-  description?: string
+  hint?: string
   children: ReactNode
 }) {
   return (
     <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:gap-6">
-      <div className="space-y-1 pt-1">
-        <p className="text-sm font-medium text-foreground">{label}</p>
-        {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
+      <div className="pt-1">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          {hint ? <HelpHint text={hint} /> : null}
+        </div>
       </div>
       <div className="min-w-0">{children}</div>
     </div>
@@ -100,115 +105,107 @@ export function AdminSettingsPage() {
           <div className="space-y-6 rounded-xl border border-border bg-card p-6 shadow-sm">
             <SettingField
               label={t('admin.appName')}
-              description={t('admin.appNameDesc', { defaultValue: '显示在公共页面与控制台顶部的站点名称。' })}
             >
-              <input {...register('app_name')} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+              <input {...register('app_name')} className={fieldInputCls} />
             </SettingField>
 
             <SettingField
               label={t('admin.appUrl', { defaultValue: '站点地址' })}
-              description={t('admin.appUrlDesc', { defaultValue: '用于生成回调链接、ShareX 配置和邮箱验证链接。' })}
+              hint={t('admin.appUrlDesc', { defaultValue: '用于生成回调链接、ShareX 配置和邮箱验证链接。' })}
             >
-              <input {...register('app_url')} placeholder="https://your-domain.com" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+              <input {...register('app_url')} placeholder="https://your-domain.com" className={fieldInputCls} />
             </SettingField>
 
-            <div className="flex items-center justify-between rounded-lg border border-border bg-background p-4 shadow-sm">
-              <div className="space-y-0.5">
-                <label htmlFor="guestUpload" className="text-sm font-medium text-foreground cursor-pointer">{t('admin.allowGuestUpload')}</label>
-                <p className="text-xs text-muted-foreground">{t('admin.allowGuestUploadDesc', { defaultValue: '允许未登录访客上传图片' })}</p>
-              </div>
-              <Controller
-                name="allow_guest_upload"
-                control={control}
-                render={({ field }) => (
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    id="guestUpload"
-                  />
-                )}
-              />
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg border border-border bg-background p-4 shadow-sm">
-              <div className="space-y-0.5">
-                <label htmlFor="registration" className="text-sm font-medium text-foreground cursor-pointer">{t('admin.allowRegistration')}</label>
-                <p className="text-xs text-muted-foreground">{t('admin.allowRegistrationDesc', { defaultValue: '开放新用户注册通道' })}</p>
-              </div>
-              <Controller
-                name="allow_registration"
-                control={control}
-                render={({ field }) => (
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    id="registration"
-                  />
-                )}
-              />
-            </div>
-
-            <div className={`rounded-lg border p-4 shadow-sm ${data.email_verification_ready ? 'border-success/20 bg-success/5 dark:border-success/30 dark:bg-success/10' : 'border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20'}`}>
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-0.5">
-                  <label htmlFor="requireEmailVerification" className="text-sm font-medium text-foreground">{t('admin.requireEmailVerification')}</label>
-                  <p className="text-xs text-muted-foreground">{t('admin.requireEmailVerificationDesc')}</p>
-                </div>
+            <SettingField label={t('admin.allowGuestUpload')}>
+              <div className="flex h-11 items-center justify-end">
                 <Controller
-                  name="require_email_verification"
+                  name="allow_guest_upload"
                   control={control}
                   render={({ field }) => (
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      id="requireEmailVerification"
-                      disabled={!data.email_verification_ready}
+                      id="guestUpload"
                     />
                   )}
                 />
               </div>
-              <p className={`mt-3 text-xs ${data.email_verification_ready ? 'text-success dark:text-success' : 'text-amber-700 dark:text-amber-300'}`}>
-                {data.email_verification_ready
-                  ? t('admin.emailVerificationReady')
-                  : t('admin.emailVerificationPending')}
-              </p>
-            </div>
+            </SettingField>
+
+            <SettingField label={t('admin.allowRegistration')}>
+              <div className="flex h-11 items-center justify-end">
+                <Controller
+                  name="allow_registration"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      id="registration"
+                    />
+                  )}
+                />
+              </div>
+            </SettingField>
+
+            <SettingField
+              label={t('admin.requireEmailVerification')}
+              hint={t('admin.requireEmailVerificationDesc')}
+            >
+              <div className="space-y-3">
+                <div className="flex h-11 items-center justify-end">
+                  <Controller
+                    name="require_email_verification"
+                    control={control}
+                    render={({ field }) => (
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        id="requireEmailVerification"
+                        disabled={!data.email_verification_ready}
+                      />
+                    )}
+                  />
+                </div>
+                <div className={`rounded-lg border px-4 py-3 text-xs ${data.email_verification_ready ? 'border-success/20 bg-success/5 text-success dark:border-success/30 dark:bg-success/10' : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300'}`}>
+                  {data.email_verification_ready
+                    ? t('admin.emailVerificationReady')
+                    : t('admin.emailVerificationPending')}
+                </div>
+              </div>
+            </SettingField>
 
             <SettingField
               label={t('admin.initialCapacity')}
-              description={t('admin.initialCapacityDesc', { defaultValue: '新注册用户默认可用的总容量。' })}
+              hint={t('admin.initialCapacityDesc', { defaultValue: '新注册用户默认可用的总容量。' })}
             >
-              <div className="flex items-center gap-2">
-                <input type="number" {...register('user_initial_capacity_mb', { valueAsNumber: true })} className="w-32 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+              <div className="flex items-center gap-3">
+                <input type="number" {...register('user_initial_capacity_mb', { valueAsNumber: true })} className={`${fieldInputCls} w-40`} />
                 <span className="text-sm text-muted-foreground">MB</span>
               </div>
             </SettingField>
 
             <SettingField
               label={t('admin.moderationMode')}
-              description={t('admin.moderationModeDesc', { defaultValue: '控制上传内容是直接通过还是进入审核流程。' })}
+              hint={t('admin.moderationModeDesc', { defaultValue: '控制上传内容是直接通过还是进入审核流程。' })}
             >
               <Controller
                 name="moderation_mode"
                 control={control}
                 render={({ field }) => (
                   <Select
-                    value={field.value || 'unset'}
-                    onValueChange={(val) =>
-                      field.onChange(val === 'unset' ? '' : String(val))
-                    }
+                    value={field.value || 'disabled'}
+                    onValueChange={(val) => field.onChange(String(val))}
                     items={{
-                      unset: t('admin.modPlaceholder', { defaultValue: '未设置' }),
                       disabled: t('admin.modDisabled'),
                       manual: t('admin.modManual'),
                       auto: t('admin.modAuto'),
                     }}
                   >
-                    <SelectTrigger className="w-full bg-background border-input">
-                      <SelectValue placeholder={t('admin.modPlaceholder', { defaultValue: '未设置' })} />
+                    <SelectTrigger className="h-11 w-full bg-background border-input">
+                      <SelectValue placeholder={t('admin.modDisabled')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="unset">{t('admin.modPlaceholder', { defaultValue: '未设置' })}</SelectItem>
                       <SelectItem value="disabled">{t('admin.modDisabled')}</SelectItem>
                       <SelectItem value="manual">{t('admin.modManual')}</SelectItem>
                       <SelectItem value="auto">{t('admin.modAuto')}</SelectItem>
@@ -222,9 +219,11 @@ export function AdminSettingsPage() {
           {success && <p className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">{t('admin.saved')}</p>}
           {errorMsg && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{errorMsg}</p>}
 
-          <button type="submit" disabled={isSubmitting} className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
-            {isSubmitting ? t('admin.saving') : t('admin.save')}
-          </button>
+          <div className="flex justify-end pt-4">
+            <button type="submit" disabled={isSubmitting} className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
+              {isSubmitting ? t('admin.saving') : t('admin.save')}
+            </button>
+          </div>
         </form>
       )}
     </section>

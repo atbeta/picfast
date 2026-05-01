@@ -13,7 +13,6 @@ import (
 	"github.com/atbeta/picfast/internal/domain"
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/sqlc"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -143,7 +142,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			_, err = qtx.CreateEmailVerificationToken(r.Context(), sqlc.CreateEmailVerificationTokenParams{
 				UserID:    user.ID,
 				TokenHash: tokenHash,
-				ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(emailVerificationTokenTTL), Valid: true},
+				ExpiresAt: time.Now().Add(emailVerificationTokenTTL),
 			})
 			return err
 		}
@@ -228,7 +227,7 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusBadRequest, "verification token has already been used")
 		return
 	}
-	if stored.ExpiresAt.Valid && time.Now().After(stored.ExpiresAt.Time) {
+	if time.Now().After(stored.ExpiresAt) {
 		_ = h.db.DeleteEmailVerificationTokenByHash(r.Context(), tokenHash)
 		Fail(w, http.StatusBadRequest, "verification token has expired")
 		return
@@ -390,7 +389,7 @@ func (h *AuthHandler) issueVerificationToken(ctx context.Context, qtx *sqlc.Quer
 	_, err = qtx.CreateEmailVerificationToken(ctx, sqlc.CreateEmailVerificationTokenParams{
 		UserID:    userID,
 		TokenHash: tokenHash,
-		ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(emailVerificationTokenTTL), Valid: true},
+		ExpiresAt: time.Now().Add(emailVerificationTokenTTL),
 	})
 	if err != nil {
 		return "", err

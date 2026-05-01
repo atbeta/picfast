@@ -326,7 +326,7 @@ export function AdminGroupsPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {groups.map((g) => (
-                <tr key={g.id} className="group hover:bg-muted/20 transition-colors">
+                <tr key={g.id} className="group hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3 font-medium">
                     {g.name}
                     {g.is_default && <span className="ml-2 rounded-lg bg-primary/10 px-1.5 py-0.5 text-xs text-primary">{t('admin.default')}</span>}

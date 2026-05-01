@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"time"
 )
 
 const countAlbumsByUser = `-- name: CountAlbumsByUser :one
@@ -119,15 +120,17 @@ func (q *Queries) IncrementUserAlbumNum(ctx context.Context, id int64) error {
 }
 
 const listAlbumsByUser = `-- name: ListAlbumsByUser :many
-SELECT id, user_id, name, intro, image_num, created_at, updated_at FROM albums
-WHERE user_id = $1
-AND ($2::text IS NULL OR name ILIKE '%' || $2 || '%')
+SELECT a.id, a.user_id, a.name, a.intro, a.image_num, a.created_at, a.updated_at,
+    COALESCE((SELECT md5 FROM images i WHERE i.album_id = a.id ORDER BY i.created_at DESC LIMIT 1), '') as cover_md5
+FROM albums a
+WHERE a.user_id = $1
+AND ($2::text IS NULL OR a.name ILIKE '%' || $2 || '%')
 ORDER BY
-    CASE WHEN $3 = 'newest' THEN created_at END DESC,
-    CASE WHEN $3 = 'earliest' THEN created_at END ASC,
-    CASE WHEN $3 = 'most' THEN image_num END DESC,
-    CASE WHEN $3 = 'least' THEN image_num END ASC,
-    created_at DESC
+    CASE WHEN $3 = 'newest' THEN a.created_at END DESC,
+    CASE WHEN $3 = 'earliest' THEN a.created_at END ASC,
+    CASE WHEN $3 = 'most' THEN a.image_num END DESC,
+    CASE WHEN $3 = 'least' THEN a.image_num END ASC,
+    a.created_at DESC
 LIMIT $4 OFFSET $5
 `
 
@@ -139,7 +142,18 @@ type ListAlbumsByUserParams struct {
 	Offset  int32       `json:"offset"`
 }
 
-func (q *Queries) ListAlbumsByUser(ctx context.Context, arg ListAlbumsByUserParams) ([]Album, error) {
+type ListAlbumsByUserRow struct {
+	ID        int64       `json:"id"`
+	UserID    int64       `json:"user_id"`
+	Name      string      `json:"name"`
+	Intro     string      `json:"intro"`
+	ImageNum  int64       `json:"image_num"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+	CoverMd5  interface{} `json:"cover_md5"`
+}
+
+func (q *Queries) ListAlbumsByUser(ctx context.Context, arg ListAlbumsByUserParams) ([]ListAlbumsByUserRow, error) {
 	rows, err := q.db.Query(ctx, listAlbumsByUser,
 		arg.UserID,
 		arg.Column2,
@@ -151,9 +165,9 @@ func (q *Queries) ListAlbumsByUser(ctx context.Context, arg ListAlbumsByUserPara
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Album{}
+	items := []ListAlbumsByUserRow{}
 	for rows.Next() {
-		var i Album
+		var i ListAlbumsByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -162,6 +176,7 @@ func (q *Queries) ListAlbumsByUser(ctx context.Context, arg ListAlbumsByUserPara
 			&i.ImageNum,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.CoverMd5,
 		); err != nil {
 			return nil, err
 		}

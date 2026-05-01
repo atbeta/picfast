@@ -135,7 +135,7 @@ func New(
 	adminStrategyHandler := handler.NewAdminStrategyHandler(queries)
 	adminUserHandler := handler.NewAdminUserHandler(queries)
 	adminImageHandler := handler.NewAdminImageHandler(queries, deleteSvc, cfg.Server.BaseURL)
-	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg), mailSender != nil && mailSender.Ready())
+	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg), queries, mailSender != nil && mailSender.Ready())
 
 	// MCP Server
 	mcpFactory := handler.NewMCPServerFactory(queries, pool, cfg)

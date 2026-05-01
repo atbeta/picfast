@@ -40,10 +40,12 @@ export interface ImageItem {
   created_at: string
 }
 
-export async function listImages(page = 1, pageSize = 20): Promise<PaginatedData<ImageItem>> {
-  const res = await api.get<ApiResponse<PaginatedData<ImageItem>>>('/images', {
-    params: { page, page_size: pageSize },
-  })
+export async function listImages(page = 1, pageSize = 20, albumId?: number | null): Promise<PaginatedData<ImageItem>> {
+  const params: Record<string, string | number> = { page, page_size: pageSize }
+  if (albumId) {
+    params.album_id = albumId
+  }
+  const res = await api.get<ApiResponse<PaginatedData<ImageItem>>>('/images', { params })
   return res.data.data
 }
 
@@ -92,6 +94,7 @@ export interface Album {
   image_num: number
   created_at: string
   updated_at: string
+  cover_md5?: string
 }
 
 export async function listAlbums(page = 1, pageSize = 20): Promise<PaginatedData<Album>> {

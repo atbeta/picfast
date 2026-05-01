@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +11,7 @@ import { formatFileSize } from '../../lib/upload'
 import { getStrategies, type Strategy } from '../../lib/console-api'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { HelpHint } from '@/components/help-hint'
 
 const profileSchema = z.object({
   name: z.string().min(1),
@@ -17,6 +19,31 @@ const profileSchema = z.object({
   defaultStrategy: z.number().optional(),
 })
 type ProfileForm = z.infer<typeof profileSchema>
+
+const fieldInputCls = 'h-11 w-full rounded-lg border border-border/50 bg-background/50 px-4 text-sm outline-none transition-all placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20'
+const fieldDisabledCls = 'h-11 w-full rounded-lg border border-border/50 bg-muted/50 px-4 text-sm text-muted-foreground cursor-not-allowed'
+
+function SettingField({
+  label,
+  hint,
+  children,
+}: {
+  label: string
+  hint?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:gap-6">
+      <div className="pt-1">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          {hint ? <HelpHint text={hint} /> : null}
+        </div>
+      </div>
+      <div className="min-w-0">{children}</div>
+    </div>
+  )
+}
 
 export function SettingsPage() {
   const { t } = useTranslation()
@@ -81,7 +108,7 @@ export function SettingsPage() {
     <section className="space-y-8 animate-in slide-in-from-bottom-4 fade-in duration-500">
       <h1 className="text-2xl font-bold tracking-tight">{t('page.settings.title')}</h1>
 
-      <div className="max-w-3xl space-y-8">
+      <div className="max-w-4xl space-y-8">
         {/* Storage usage */}
         <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
         <h2 className="text-lg font-semibold tracking-tight text-foreground">{t('settings.storage')}</h2>
@@ -104,55 +131,61 @@ export function SettingsPage() {
       {/* Profile form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 rounded-xl border border-border/50 bg-card p-6 shadow-sm">
         <h2 className="text-lg font-semibold tracking-tight text-foreground">{t('settings.profile', { defaultValue: '个人资料' })}</h2>
-        <div className="space-y-5">
-          <div>
-            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">{t('settings.email')}</label>
+        <div className="space-y-6">
+          <SettingField
+            label={t('settings.email')}
+            hint={t('settings.emailDesc', { defaultValue: '当前登录邮箱，暂不支持在这里直接修改。' })}
+          >
             <input
               id="email"
               type="email"
               value={user.email}
               disabled
-              className="w-full rounded-lg border border-border/50 bg-muted/50 px-3 py-2 text-sm text-muted-foreground cursor-not-allowed"
+              className={fieldDisabledCls}
             />
-          </div>
+          </SettingField>
 
-          <div>
-            <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-foreground">{t('settings.name')}</label>
+          <SettingField
+            label={t('settings.name')}
+          >
             <input
-                id="name"
-                type="text"
-                placeholder={t('settings.profileNamePlaceholder', { defaultValue: '输入您的昵称' })}
-                className="w-full rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
-                {...register('name')}
-              />
+              id="name"
+              type="text"
+              placeholder={t('settings.profileNamePlaceholder', { defaultValue: '输入您的昵称' })}
+              className={fieldInputCls}
+              {...register('name')}
+            />
             {errors.name && <p className="mt-1.5 text-xs text-destructive">{t('auth.required')}</p>}
-          </div>
+          </SettingField>
 
-          <div>
-            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-foreground">{t('settings.newPassword')}</label>
+          <SettingField
+            label={t('settings.newPassword')}
+            hint={t('settings.passwordHint')}
+          >
             <input
               id="password"
               type="password"
               autoComplete="new-password"
               placeholder={t('settings.profilePasswordPlaceholder', { defaultValue: '留空表示不修改' })}
-              className="w-full rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
+              className={fieldInputCls}
               {...register('password')}
             />
             {errors.password && <p className="mt-1.5 text-xs text-destructive">{t('auth.passwordMin')}</p>}
-          </div>
+          </SettingField>
 
-          {/* Default strategy */}
-          <div>
-            <label htmlFor="strategy" className="mb-1.5 block text-sm font-medium text-foreground">{t('settings.defaultStrategy', { defaultValue: '默认策略' })}</label>
+          <SettingField
+            label={t('settings.defaultStrategy', { defaultValue: '默认策略' })}
+            hint={t('settings.defaultStrategyDesc', { defaultValue: '上传时默认选中的存储策略；不设置时跟随分组默认。' })}
+          >
             <Select
-                value={defaultStrategy.toString()}
-                onValueChange={(val) => val !== null && setDefaultStrategy(Number(val))}
-                items={{
-                  '0': t('settings.followGroupDefault', { defaultValue: '跟随分组默认' }),
-                  ...Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${s.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: '本地' }) : 'S3'})`]))
-                }}
-              >
-              <SelectTrigger id="strategy" className="w-full sm:max-w-xs bg-background/50 border-border/50">
+              value={defaultStrategy.toString()}
+              onValueChange={(val) => val !== null && setDefaultStrategy(Number(val))}
+              items={{
+                '0': t('settings.followGroupDefault', { defaultValue: '跟随分组默认' }),
+                ...Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${s.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: '本地' }) : 'S3'})`]))
+              }}
+            >
+              <SelectTrigger id="strategy" className="h-11 w-full bg-background/50 border-border/50 md:max-w-md">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -164,7 +197,7 @@ export function SettingsPage() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </SettingField>
         </div>
 
         <div className="pt-2">
@@ -179,13 +212,15 @@ export function SettingsPage() {
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-50 active:scale-95 cursor-pointer"
-          >
-            {saving ? t('settings.saving') : t('settings.save')}
-          </button>
+          <div className="flex justify-end mt-6">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-50 active:scale-95 cursor-pointer"
+            >
+              {saving ? t('settings.saving') : t('settings.save')}
+            </button>
+          </div>
         </div>
       </form>
 

@@ -92,12 +92,12 @@ export function AdminUsersPage() {
                   <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colStatus')}</th>
                   <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colImages')}</th>
                   <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.usedCapacity', { defaultValue: '已用容量' })}</th>
-                  <th className="pb-2 pr-4 pt-2 font-medium">{t('admin.colActions')}</th>
+                  <th className="pb-2 pr-4 pt-2 font-medium text-right">{t('admin.colActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {data.items.map((u) => (
-                  <tr key={u.id} className="group hover:bg-muted/20 transition-colors">
+                  <tr key={u.id} className="group hover:bg-muted/50 transition-colors">
                     <td className="py-2 pr-3 pl-4 text-muted-foreground">{u.id}</td>
                     <td className="py-2 pr-3 text-foreground">{u.email}</td>
                     <td className="py-2 pr-3 text-foreground">{u.name}</td>
@@ -114,7 +114,7 @@ export function AdminUsersPage() {
                     <td className="py-2 pr-3 text-muted-foreground">{u.image_num}</td>
                     <td className="py-2 pr-3 text-muted-foreground">{formatFileSize(u.used_capacity || 0)} / {formatFileSize(u.capacity_bytes)}</td>
                     <td className="py-2 pr-4">
-                      <div className="flex gap-1">
+                      <div className="flex justify-end gap-1">
                         {u.role !== 'admin' && (
                           <button
                             type="button"
@@ -132,7 +132,7 @@ export function AdminUsersPage() {
                             onClick={() => setDeleteTarget(u.id)}
                             disabled={deleting === u.id}
                             title={t('admin.delete')}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                            className="transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                           >
                             <Trash2 className="size-4" />
                           </button>

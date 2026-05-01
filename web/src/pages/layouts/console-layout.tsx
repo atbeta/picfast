@@ -31,7 +31,9 @@ export function ConsoleLayout() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
               <ImagePlus className="h-5 w-5" />
             </div>
-            {t('appName')}
+            <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              {t('appName')}
+            </span>
           </Link>
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
@@ -59,8 +61,8 @@ export function ConsoleLayout() {
               <ConsoleNavItem to="/console/settings" label={t('nav.settings')} />
             </MobileNavRail>
             {user?.role === 'admin' && (
-              <div className="pt-2 md:pt-4">
-                <p className="px-4 pb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/70 hidden md:block">{t('nav.admin')}</p>
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <p className="px-4 pb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/50 hidden md:block">{t('nav.admin')}</p>
                 <MobileNavRail>
                   <ConsoleNavItem to="/console/admin" label={t('admin.navDashboard', { defaultValue: '概览' })} />
                   <ConsoleNavItem to="/console/admin/users" label={t('admin.navUsers')} />

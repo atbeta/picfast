@@ -5,8 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 import { UploadZone } from '../../components/upload-zone'
 import { UploadResultCard } from '../../components/upload-result'
-import { getStrategies, uploadImageAuth } from '../../lib/console-api'
-import type { ImageItem, Strategy } from '../../lib/console-api'
+import { getStrategies, uploadImageAuth, listAlbums } from '../../lib/console-api'
+import type { ImageItem, Strategy, Album } from '../../lib/console-api'
 import { useAuth } from '../../lib/auth-context'
 
 interface UploadingFile {
@@ -28,6 +28,10 @@ export function UploadPage() {
   // Strategy selector
   const [strategies, setStrategies] = useState<Strategy[]>([])
   const [selectedStrategyId, setSelectedStrategyId] = useState<number | null>(null)
+  
+  // Album selector
+  const [albums, setAlbums] = useState<Album[]>([])
+  const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null)
 
   useEffect(() => {
     getStrategies()
@@ -48,11 +52,31 @@ export function UploadPage() {
         setSelectedStrategyId(initialId)
       })
       .catch(() => {})
+
+    listAlbums(1, 100)
+      .then((res) => {
+        setAlbums(res.items)
+        const saved = localStorage.getItem('default_album_id')
+        if (saved && res.items.some((a) => a.id === Number(saved))) {
+          setSelectedAlbumId(Number(saved))
+        }
+      })
+      .catch(() => {})
   }, [user])
 
   const onStrategyChange = (id: number) => {
     setSelectedStrategyId(id)
     localStorage.setItem('default_strategy_id', String(id))
+  }
+
+  const onAlbumChange = (id: string | null) => {
+    if (id === null || id === 'none') {
+      setSelectedAlbumId(null)
+      localStorage.removeItem('default_album_id')
+    } else {
+      setSelectedAlbumId(Number(id))
+      localStorage.setItem('default_album_id', id)
+    }
   }
 
   const handleFiles = useCallback(async (files: File[]) => {
@@ -67,23 +91,22 @@ export function UploadPage() {
       try {
         const result = await uploadImageAuth(files[i], {
           strategy_id: selectedStrategyId ?? undefined,
+          album_id: selectedAlbumId ?? undefined,
           onProgress: (p) =>
             setUploading((prev) => prev.map((u, j) => (j === i ? { ...u, progress: p } : u))),
         })
         newResults.push(result)
       } catch (err: unknown) {
-        const msg =
-          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          t('upload.uploadFailed', { name: files[i].name })
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('upload.uploadFailed', { file: files[i].name })
         newErrors.push(msg)
       }
     }
 
     setResults((prev) => [...newResults, ...prev])
-    setUploading([])
     setErrors(newErrors)
+    setUploading([])
     setBusy(false)
-  }, [selectedStrategyId, t])
+  }, [selectedStrategyId, selectedAlbumId, t])
 
   return (
     <section className="mx-auto max-w-4xl space-y-8 animate-in slide-in-from-bottom-4 fade-in duration-700">
@@ -92,32 +115,61 @@ export function UploadPage() {
           {t('page.upload.title')}
         </h1>
 
-        {/* Strategy Info / Selector */}
-        <div className="flex items-center gap-3 rounded-full border border-border/50 bg-card/50 backdrop-blur-md px-4 py-1.5 shadow-sm text-sm">
-          <span className="text-muted-foreground font-medium">{t('upload.strategy', { defaultValue: 'Strategy:' })}</span>
-          {strategies.length > 1 ? (
-            <Select 
-              value={selectedStrategyId?.toString() ?? ''}
-              onValueChange={(val) => val !== null && onStrategyChange(Number(val))}
-              items={Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${s.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: 'Local' }) : 'S3'})`]))}
-            >
-              <SelectTrigger className="w-[140px] h-7 bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {strategies.map((s) => (
-                  <SelectItem key={s.id} value={s.id.toString()}>
-                    {s.name} ({s.strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: 'Local' })) : 'S3'})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : strategies.length === 1 ? (
-            <span className="font-semibold text-foreground">
-              {strategies[0].name} <span className="text-muted-foreground/70 font-normal">({strategies[0].strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: 'Local' })) : 'S3'})</span>
-            </span>
-          ) : (
-            <span className="text-muted-foreground/50">...</span>
+        <div className="flex items-center gap-3">
+          {/* Strategy Selector */}
+          <div className="flex items-center gap-3 rounded-full border border-border/50 bg-card/50 backdrop-blur-md px-4 py-1.5 shadow-sm text-sm">
+            <span className="text-muted-foreground font-medium">{t('upload.strategy', { defaultValue: 'Strategy:' })}</span>
+            {strategies.length > 1 ? (
+              <Select 
+                value={selectedStrategyId?.toString() ?? ''}
+                onValueChange={(val) => val !== null && onStrategyChange(Number(val))}
+                items={Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${s.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: 'Local' }) : 'S3'})`]))}
+              >
+                <SelectTrigger className="w-[140px] h-7 bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {strategies.map((s) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                      {s.name} ({s.strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: 'Local' })) : 'S3'})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : strategies.length === 1 ? (
+              <span className="font-semibold text-foreground">
+                {strategies[0].name} <span className="text-muted-foreground/70 font-normal">({strategies[0].strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: 'Local' })) : 'S3'})</span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground/50">...</span>
+            )}
+          </div>
+
+          {/* Album Selector */}
+          {albums.length > 0 && (
+            <div className="flex items-center gap-3 rounded-full border border-border/50 bg-card/50 backdrop-blur-md px-4 py-1.5 shadow-sm text-sm">
+              <span className="text-muted-foreground font-medium">{t('page.albums.title', { defaultValue: '相册:' })}</span>
+              <Select 
+                value={selectedAlbumId?.toString() ?? 'none'}
+                onValueChange={(val) => val !== null && onAlbumChange(val as string)}
+                items={{
+                  'none': t('albums.noAlbum', { defaultValue: '不指定' }),
+                  ...Object.fromEntries(albums.map(a => [a.id.toString(), a.name]))
+                }}
+              >
+                <SelectTrigger className="w-[140px] h-7 bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('albums.noAlbum', { defaultValue: '不指定' })}</SelectItem>
+                  {albums.map((a) => (
+                    <SelectItem key={a.id} value={a.id.toString()}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
         </div>
       </div>

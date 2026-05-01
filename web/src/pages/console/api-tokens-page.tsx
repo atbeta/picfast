@@ -337,13 +337,14 @@ export function ApiTokensPage() {
                   <th className="px-4 py-3 font-medium">{t('tokens.namePlaceholder', { defaultValue: '名称' })}</th>
                   <th className="px-4 py-3 font-medium">{t('tokens.scopes', { defaultValue: '权限' })}</th>
                   <th className="px-4 py-3 font-medium">{t('tokens.lastUsedAt', { defaultValue: '上次使用' }).replace('{{date}}', '')}</th>
-                  <th className="px-4 py-3 font-medium">创建 / 过期</th>
-                  <th className="px-4 py-3 font-medium text-right">{t('common.actions', { defaultValue: '操作' })}</th>
+                  <th className="px-4 py-3 font-medium">{t('tokens.createdColumn', { defaultValue: '创建时间' })}</th>
+                  <th className="px-4 py-3 font-medium">{t('tokens.expiresColumn', { defaultValue: '过期时间' })}</th>
+                  <th className="px-4 py-3 font-medium">{t('common.actions', { defaultValue: '操作' })}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {tokens.map((tk) => (
-                  <tr key={tk.id} className="group hover:bg-muted/20 transition-colors">
+                  <tr key={tk.id} className="group hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3 font-medium text-foreground">
                       <div className="flex items-center gap-2">
                         <KeyRound className="size-4 text-muted-foreground" />
@@ -371,31 +372,31 @@ export function ApiTokensPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-xs">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Calendar className="size-3.5" />
-                          {formatDate(tk.created_at)}
-                        </div>
-                        {isRealDate(tk.expires_at) ? (
-                          <div className={`flex items-center gap-1.5 ${isExpiringSoon(tk.expires_at) ? 'text-destructive/90' : 'text-amber-500/90'}`}>
-                            <Clock className="size-3.5" />
-                            {formatDate(tk.expires_at)}
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-success/90">
-                            <CheckCircle2 className="size-3.5" />
-                            {t('tokens.noExpiry')}
-                          </div>
-                        )}
+                    <td className="px-4 py-3 text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="size-3.5" />
+                        {formatDate(tk.created_at)}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {isRealDate(tk.expires_at) ? (
+                        <div className={`flex items-center gap-1.5 ${isExpiringSoon(tk.expires_at) ? 'text-destructive/90' : 'text-amber-500/90'}`}>
+                          <Clock className="size-3.5" />
+                          {formatDate(tk.expires_at)}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-success/90">
+                          <CheckCircle2 className="size-3.5" />
+                          {t('tokens.noExpiry')}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
                       <button
                         type="button"
                         onClick={() => setDeleteTarget(tk.id)}
                         disabled={deleting === tk.id}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed inline-flex"
+                        className="transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed inline-flex"
                         title={t('tokens.delete')}
                       >
                         <Trash2 className="size-4" />

@@ -18,15 +18,17 @@ RETURNING *;
 DELETE FROM albums WHERE id = $1;
 
 -- name: ListAlbumsByUser :many
-SELECT * FROM albums
-WHERE user_id = $1
-AND ($2::text IS NULL OR name ILIKE '%' || $2 || '%')
+SELECT a.*,
+    COALESCE((SELECT md5 FROM images i WHERE i.album_id = a.id ORDER BY i.created_at DESC LIMIT 1), '') as cover_md5
+FROM albums a
+WHERE a.user_id = $1
+AND ($2::text IS NULL OR a.name ILIKE '%' || $2 || '%')
 ORDER BY
-    CASE WHEN $3 = 'newest' THEN created_at END DESC,
-    CASE WHEN $3 = 'earliest' THEN created_at END ASC,
-    CASE WHEN $3 = 'most' THEN image_num END DESC,
-    CASE WHEN $3 = 'least' THEN image_num END ASC,
-    created_at DESC
+    CASE WHEN $3 = 'newest' THEN a.created_at END DESC,
+    CASE WHEN $3 = 'earliest' THEN a.created_at END ASC,
+    CASE WHEN $3 = 'most' THEN a.image_num END DESC,
+    CASE WHEN $3 = 'least' THEN a.image_num END ASC,
+    a.created_at DESC
 LIMIT $4 OFFSET $5;
 
 -- name: CountAlbumsByUser :one

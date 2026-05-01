@@ -115,17 +115,28 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	page, pageSize := parsePagination(r)
 
+	var albumID *int64
+	if aid := r.FormValue("album_id"); aid != "" {
+		if v, err := strconv.ParseInt(aid, 10, 64); err == nil {
+			albumID = &v
+		}
+	}
+
 	images, err := h.db.ListImagesByUser(r.Context(), sqlc.ListImagesByUserParams{
-		UserID: domain.PgInt8(userID),
-		Limit:  pageSize,
-		Offset: (page - 1) * pageSize,
+		UserID:  domain.PgInt8(userID),
+		AlbumID: domain.PgInt8Ptr(albumID),
+		Limit:   pageSize,
+		Offset:  (page - 1) * pageSize,
 	})
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to list images")
 		return
 	}
 
-	total, _ := h.db.CountImagesByUser(r.Context(), domain.PgInt8(userID))
+	total, _ := h.db.CountImagesByUser(r.Context(), sqlc.CountImagesByUserParams{
+		UserID:  domain.PgInt8(userID),
+		AlbumID: domain.PgInt8Ptr(albumID),
+	})
 
 	items := make([]ImageListItem, len(images))
 	for i, img := range images {
@@ -253,6 +264,16 @@ func (h *ImageHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to update image")
 		return
+	}
+
+	// Handle album image count updates if album changed
+	if img.AlbumID != updated.AlbumID {
+		if img.AlbumID.Valid {
+			_ = h.db.DecrementAlbumImageNum(r.Context(), img.AlbumID.Int64)
+		}
+		if updated.AlbumID.Valid {
+			_ = h.db.IncrementAlbumImageNum(r.Context(), updated.AlbumID.Int64)
+		}
 	}
 
 	links := h.buildLinks(updated.Key, updated.Extension, updated.Md5, updated.OriginName)

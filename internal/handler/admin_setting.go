@@ -1,21 +1,24 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/atbeta/picfast/internal/config"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 type AdminSettingHandler struct {
 	config    *config.Config
 	setter    *config.Setter
+	queries   *sqlc.Queries
 	mailReady bool
 }
 
-func NewAdminSettingHandler(cfg *config.Config, setter *config.Setter, mailReady bool) *AdminSettingHandler {
-	return &AdminSettingHandler{config: cfg, setter: setter, mailReady: mailReady}
+func NewAdminSettingHandler(cfg *config.Config, setter *config.Setter, queries *sqlc.Queries, mailReady bool) *AdminSettingHandler {
+	return &AdminSettingHandler{config: cfg, setter: setter, queries: queries, mailReady: mailReady}
 }
 
 func (h *AdminSettingHandler) emailVerificationEnabled() bool {
@@ -33,7 +36,6 @@ func (h *AdminSettingHandler) Get(w http.ResponseWriter, r *http.Request) {
 		"user_initial_capacity":      h.config.App.UserInitialCapacity,
 		"default_image_ttl":          h.config.App.DefaultImageTTL.String(),
 		"moderation_mode":            h.config.App.ModerationMode,
-		"_warning":                   "settings are volatile (in-memory only); restart resets to config file defaults",
 	})
 }
 
@@ -92,6 +94,10 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if req.ModerationMode != nil {
 		h.setter.SetModerationMode(*req.ModerationMode)
 	}
+	if err := h.persist(r.Context()); err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to persist settings")
+		return
+	}
 
 	Success(w, map[string]interface{}{
 		"app_name":                   h.config.App.Name,
@@ -103,6 +109,19 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		"user_initial_capacity":      h.config.App.UserInitialCapacity,
 		"default_image_ttl":          h.config.App.DefaultImageTTL.String(),
 		"moderation_mode":            h.config.App.ModerationMode,
-		"_warning":                   "settings are volatile (in-memory only); restart resets to config file defaults",
 	})
+}
+
+func (h *AdminSettingHandler) persist(ctx context.Context) error {
+	_, err := h.queries.UpsertSiteSettings(ctx, sqlc.UpsertSiteSettingsParams{
+		AppName:                  h.config.App.Name,
+		AppUrl:                   h.config.Server.BaseURL,
+		AllowGuestUpload:         h.config.App.AllowGuestUpload,
+		AllowRegistration:        h.config.App.AllowRegistration,
+		RequireEmailVerification: h.config.App.RequireEmailVerification,
+		UserInitialCapacity:      h.config.App.UserInitialCapacity,
+		DefaultImageTtl:          h.config.App.DefaultImageTTL.String(),
+		ModerationMode:           h.config.App.ModerationMode,
+	})
+	return err
 }

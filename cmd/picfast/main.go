@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/atbeta/picfast/internal/config"
@@ -59,6 +61,10 @@ func main() {
 	}
 
 	queries := sqlc.New(pool)
+	if err := applyPersistedSiteSettings(context.Background(), queries, cfg); err != nil {
+		slog.Error("failed to load persisted site settings", "error", err)
+		os.Exit(1)
+	}
 	jwtSvc := handler.NewJWTService(&cfg.JWT)
 	mailSender := mailservice.NewSender(&cfg.Mail)
 
@@ -167,4 +173,32 @@ func resolveWebDir(configured string) string {
 	}
 
 	return ""
+}
+
+func applyPersistedSiteSettings(ctx context.Context, queries *sqlc.Queries, cfg *config.Config) error {
+	settings, err := queries.GetSiteSettings(ctx)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
+
+	cfg.App.Name = settings.AppName
+	cfg.Server.BaseURL = settings.AppUrl
+	cfg.App.AllowGuestUpload = settings.AllowGuestUpload
+	cfg.App.AllowRegistration = settings.AllowRegistration
+	cfg.App.RequireEmailVerification = settings.RequireEmailVerification
+	cfg.App.UserInitialCapacity = settings.UserInitialCapacity
+	if settings.DefaultImageTtl == "" {
+		cfg.App.DefaultImageTTL = 0
+	} else {
+		d, err := time.ParseDuration(settings.DefaultImageTtl)
+		if err != nil {
+			return fmt.Errorf("parse persisted default_image_ttl: %w", err)
+		}
+		cfg.App.DefaultImageTTL = d
+	}
+	cfg.App.ModerationMode = settings.ModerationMode
+	return nil
 }

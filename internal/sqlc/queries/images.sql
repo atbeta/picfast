@@ -31,11 +31,14 @@ SELECT
 FROM images
 LEFT JOIN strategies ON images.strategy_id = strategies.id
 WHERE images.user_id = $1
+  AND (sqlc.narg('album_id')::bigint IS NULL OR images.album_id = sqlc.narg('album_id'))
 ORDER BY images.created_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: CountImagesByUser :one
-SELECT COUNT(*) FROM images WHERE user_id = $1;
+SELECT COUNT(*) FROM images
+WHERE user_id = $1
+  AND (sqlc.narg('album_id')::bigint IS NULL OR album_id = sqlc.narg('album_id'));
 
 -- name: FindDuplicateImage :one
 SELECT * FROM images
