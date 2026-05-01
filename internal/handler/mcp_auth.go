@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -45,8 +46,10 @@ func (a *MCPAuth) VerifyToken(ctx context.Context, token string, req *http.Reque
 	go a.DB.UpdateAPITokenLastUsed(context.Background(), row.ID)
 
 	var scopes []string
-	// scopes is stored as JSON array; try to parse
-	_ = row.Scopes // ignore parse for now, default to read+write
+	if err := json.Unmarshal(row.Scopes, &scopes); err != nil {
+		scopes = nil
+	}
+	scopes = defaultMCScopes(scopes)
 
 	return &auth.TokenInfo{
 		UserID:     strconv.FormatInt(row.UserID, 10),

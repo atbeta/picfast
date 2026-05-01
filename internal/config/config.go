@@ -13,6 +13,7 @@ type Config struct {
 	Database DatabaseConfig `mapstructure:"database"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Storage  StorageConfig  `mapstructure:"storage"`
+	Mail     MailConfig     `mapstructure:"mail"`
 	App      AppConfig      `mapstructure:"app"`
 }
 
@@ -38,15 +39,26 @@ type StorageConfig struct {
 	ThumbnailDir string `mapstructure:"thumbnail_dir"`
 }
 
+type MailConfig struct {
+	Host       string `mapstructure:"host"`
+	Port       int    `mapstructure:"port"`
+	Username   string `mapstructure:"username"`
+	Password   string `mapstructure:"password"`
+	FromEmail  string `mapstructure:"from_email"`
+	FromName   string `mapstructure:"from_name"`
+	Encryption string `mapstructure:"encryption"` // starttls, tls, none
+}
+
 type AppConfig struct {
-	Name                string        `mapstructure:"name"`
-	AllowGuestUpload    bool          `mapstructure:"allow_guest_upload"`
-	AllowRegistration   bool          `mapstructure:"allow_registration"`
-	UserInitialCapacity int64         `mapstructure:"user_initial_capacity"`
-	DefaultImageTTL     time.Duration `mapstructure:"default_image_ttl"`
-	AdminEmail          string        `mapstructure:"admin_email"`
-	AdminPassword       string        `mapstructure:"admin_password"`
-	ModerationMode      string        `mapstructure:"moderation_mode"` // disabled, manual, auto
+	Name                     string        `mapstructure:"name"`
+	AllowGuestUpload         bool          `mapstructure:"allow_guest_upload"`
+	AllowRegistration        bool          `mapstructure:"allow_registration"`
+	RequireEmailVerification bool          `mapstructure:"require_email_verification"`
+	UserInitialCapacity      int64         `mapstructure:"user_initial_capacity"`
+	DefaultImageTTL          time.Duration `mapstructure:"default_image_ttl"`
+	AdminEmail               string        `mapstructure:"admin_email"`
+	AdminPassword            string        `mapstructure:"admin_password"`
+	ModerationMode           string        `mapstructure:"moderation_mode"` // disabled, manual, auto
 }
 
 type Setter struct {
@@ -60,9 +72,16 @@ func NewSetter(cfg *Config) *Setter {
 func (s *Setter) SetAppName(name string)             { s.cfg.App.Name = name }
 func (s *Setter) SetAllowGuestUpload(v bool)         { s.cfg.App.AllowGuestUpload = v }
 func (s *Setter) SetAllowRegistration(v bool)        { s.cfg.App.AllowRegistration = v }
+func (s *Setter) SetRequireEmailVerification(v bool) { s.cfg.App.RequireEmailVerification = v }
 func (s *Setter) SetUserInitialCapacity(v int64)     { s.cfg.App.UserInitialCapacity = v }
 func (s *Setter) SetDefaultImageTTL(v time.Duration) { s.cfg.App.DefaultImageTTL = v }
 func (s *Setter) SetModerationMode(mode string)      { s.cfg.App.ModerationMode = mode }
+
+func (c MailConfig) IsConfigured() bool {
+	return strings.TrimSpace(c.Host) != "" &&
+		c.Port > 0 &&
+		strings.TrimSpace(c.FromEmail) != ""
+}
 
 func Load() (*Config, error) {
 	v := viper.New()
@@ -89,6 +108,10 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("unmarshal config: %w", err)
 	}
 
+	if cfg.JWT.Secret == "change-me-in-production" {
+		return nil, fmt.Errorf("jwt.secret must be changed from default value; set PICFAST_JWT_SECRET environment variable or configure jwt.secret in config.yaml")
+	}
+
 	return &cfg, nil
 }
 
@@ -107,9 +130,18 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("storage.local_root", "./data/uploads")
 	v.SetDefault("storage.thumbnail_dir", "./data/thumbnails")
 
+	v.SetDefault("mail.host", "")
+	v.SetDefault("mail.port", 587)
+	v.SetDefault("mail.username", "")
+	v.SetDefault("mail.password", "")
+	v.SetDefault("mail.from_email", "")
+	v.SetDefault("mail.from_name", "PicFast")
+	v.SetDefault("mail.encryption", "starttls")
+
 	v.SetDefault("app.name", "PicFast")
 	v.SetDefault("app.allow_guest_upload", false)
 	v.SetDefault("app.allow_registration", false)
+	v.SetDefault("app.require_email_verification", false)
 	v.SetDefault("app.user_initial_capacity", int64(524288000))
 	v.SetDefault("app.default_image_ttl", time.Duration(0))
 	v.SetDefault("app.moderation_mode", "disabled")

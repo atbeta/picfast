@@ -21,6 +21,15 @@ type Album struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type EmailVerificationToken struct {
+	ID        int64              `json:"id"`
+	UserID    int64              `json:"user_id"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+	CreatedAt time.Time          `json:"created_at"`
+}
+
 type ApiToken struct {
 	ID         int64              `json:"id"`
 	UserID     int64              `json:"user_id"`

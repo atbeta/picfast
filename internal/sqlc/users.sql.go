@@ -172,6 +172,17 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 	return i, err
 }
 
+const updateUserEmailVerified = `-- name: UpdateUserEmailVerified :exec
+UPDATE users
+SET email_verified = TRUE, updated_at = NOW()
+WHERE id = $1
+`
+
+func (q *Queries) UpdateUserEmailVerified(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, updateUserEmailVerified, id)
+	return err
+}
+
 const getUserByID = `-- name: GetUserByID :one
 SELECT id, group_id, email, password, name, role, capacity_bytes, image_num, album_num, settings, status, email_verified, registered_ip, created_at, updated_at FROM users WHERE id = $1
 `

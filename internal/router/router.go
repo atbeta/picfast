@@ -15,6 +15,7 @@ import (
 	"github.com/atbeta/picfast/internal/handler"
 	"github.com/atbeta/picfast/internal/handler/middleware"
 	"github.com/atbeta/picfast/internal/service"
+	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
@@ -31,6 +32,7 @@ func New(
 	cfg *config.Config,
 	jwtSvc *handler.JWTService,
 	spaHandler *handler.SPAHandler,
+	mailSender mailservice.Sender,
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -124,7 +126,7 @@ func New(
 	}()
 
 	// Handlers
-	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg)
+	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg, mailSender)
 	userHandler := handler.NewUserHandler(queries)
 	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL)
 	albumHandler := handler.NewAlbumHandler(queries, pool)
@@ -133,7 +135,7 @@ func New(
 	adminStrategyHandler := handler.NewAdminStrategyHandler(queries)
 	adminUserHandler := handler.NewAdminUserHandler(queries)
 	adminImageHandler := handler.NewAdminImageHandler(queries, deleteSvc, cfg.Server.BaseURL)
-	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg))
+	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg), mailSender != nil && mailSender.Ready())
 
 	// MCP Server
 	mcpFactory := handler.NewMCPServerFactory(queries, pool, cfg)
@@ -159,7 +161,7 @@ func New(
 		})
 	}
 
-	loginLimiter := middleware.NewRateLimiter(10, 60*1e9)
+	loginLimiter := middleware.NewRateLimiter(5, 60*1e9)
 
 	// Image file serving: /i/{key}.{ext} — with OptionalAuth so private images can be accessed by owner
 	r.With(middleware.OptionalAuth(middleware.NewJWTAuthenticator(jwtSvc))).Get("/i/{key}.{ext}", fileHandler.ServeImage)
@@ -174,16 +176,19 @@ func New(
 		// Public site config
 		r.Get("/config", func(w http.ResponseWriter, r *http.Request) {
 			handler.Success(w, map[string]interface{}{
-				"app_name":           cfg.App.Name,
-				"allow_guest_upload": cfg.App.AllowGuestUpload,
-				"allow_registration": cfg.App.AllowRegistration,
-				"base_url":           cfg.Server.BaseURL,
+				"app_name":                   cfg.App.Name,
+				"allow_guest_upload":         cfg.App.AllowGuestUpload,
+				"allow_registration":         cfg.App.AllowRegistration,
+				"require_email_verification": cfg.App.RequireEmailVerification && mailSender != nil && mailSender.Ready(),
+				"base_url":                   cfg.Server.BaseURL,
 			})
 		})
 
 		// Auth
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authHandler.Register)
+			r.Post("/verify-email", authHandler.VerifyEmail)
+			r.Post("/resend-verification", authHandler.ResendVerification)
 			r.With(middleware.RateLimit(loginLimiter, func(r *http.Request) string {
 				host, _, _ := net.SplitHostPort(r.RemoteAddr)
 				if host == "" {

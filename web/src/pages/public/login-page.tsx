@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod/v4'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { resendVerification } from '../../lib/auth'
 import { useAuth } from '../../lib/auth-context'
 import { getSiteConfig } from '../../lib/site-config'
 
@@ -17,21 +18,40 @@ export function LoginPage() {
   const { t } = useTranslation()
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [serverError, setServerError] = useState('')
   const [allowRegister, setAllowRegister] = useState(false)
+  const [requireVerification, setRequireVerification] = useState(false)
+  const [resendState, setResendState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 
   useEffect(() => {
-    getSiteConfig().then((cfg) => setAllowRegister(cfg.allow_registration)).catch(() => {})
+    getSiteConfig()
+      .then((cfg) => {
+        setAllowRegister(cfg.allow_registration)
+        setRequireVerification(cfg.require_email_verification)
+      })
+      .catch(() => {})
   }, [])
 
   const {
+    control,
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) })
+  const emailValue = useWatch({ control, name: 'email' })
+
+  useEffect(() => {
+    const email = searchParams.get('email')
+    if (email) {
+      setValue('email', email)
+    }
+  }, [searchParams, setValue])
 
   const onSubmit = async (data: LoginForm) => {
     setServerError('')
+    setResendState('idle')
     try {
       await login(data.email, data.password)
       navigate('/console', { replace: true })
@@ -43,9 +63,33 @@ export function LoginPage() {
     }
   }
 
+  const handleResendVerification = async () => {
+    if (!emailValue) return
+    setResendState('loading')
+    try {
+      await resendVerification(emailValue)
+      setResendState('success')
+    } catch {
+      setResendState('error')
+    }
+  }
+
+  const verificationState = searchParams.get('verification')
+
   return (
     <section className="mx-auto w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground">
       <h1 className="text-xl font-semibold">{t('page.login.title')}</h1>
+
+      {verificationState === 'sent' && (
+        <p className="mt-4 rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
+          {t('auth.verificationSent')}
+        </p>
+      )}
+      {verificationState === 'pending' && (
+        <p className="mt-4 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+          {t('auth.verificationPending')}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
         <div>
@@ -80,6 +124,22 @@ export function LoginPage() {
           <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {serverError}
           </p>
+        )}
+
+        {requireVerification && emailValue && (
+          <div className="space-y-2 rounded-lg border border-border bg-background px-3 py-3">
+            <p className="text-xs text-muted-foreground">{t('auth.verificationHelp')}</p>
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resendState === 'loading'}
+              className="text-sm font-medium text-primary transition-colors hover:underline disabled:opacity-50"
+            >
+              {resendState === 'loading' ? t('auth.resendingVerification') : t('auth.resendVerification')}
+            </button>
+            {resendState === 'success' && <p className="text-xs text-success">{t('auth.verificationResent')}</p>}
+            {resendState === 'error' && <p className="text-xs text-destructive">{t('auth.verificationResendFailed')}</p>}
+          </div>
         )}
 
         <button

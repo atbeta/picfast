@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -63,14 +64,14 @@ func NewS3Storage(cfg json.RawMessage) (*S3Storage, error) {
 	}, nil
 }
 
-func (s *S3Storage) Write(ctx context.Context, path string, data []byte) error {
+func (s *S3Storage) Write(ctx context.Context, path string, data []byte, contentType string) error {
 	slog.Info("s3 write starting", "bucket", s.bucket, "key", path, "size", len(data))
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:        aws.String(s.bucket),
 		Key:           aws.String(path),
 		Body:          bytes.NewReader(data),
 		ContentLength: aws.Int64(int64(len(data))),
-		ContentType:   aws.String("application/octet-stream"),
+		ContentType:   aws.String(contentType),
 	})
 	if err != nil {
 		slog.Error("s3 write failed", "bucket", s.bucket, "key", path, "error", err)
@@ -111,7 +112,7 @@ func (s *S3Storage) Delete(ctx context.Context, path string) error {
 
 func (s *S3Storage) URL(pathname string) string {
 	if s.url != "" {
-		return s.url + "/" + pathname
+		return strings.TrimRight(s.url, "/") + "/" + strings.TrimLeft(pathname, "/")
 	}
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucket, s.client.Options().Region, pathname)
 }

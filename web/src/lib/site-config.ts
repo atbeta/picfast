@@ -4,6 +4,7 @@ export interface SiteConfig {
   app_name: string
   allow_guest_upload: boolean
   allow_registration: boolean
+  require_email_verification: boolean
   base_url: string
 }
 

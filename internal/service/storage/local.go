@@ -60,7 +60,7 @@ func (s *LocalStorage) safePath(path string) (string, error) {
 	return fullPath, nil
 }
 
-func (s *LocalStorage) Write(ctx context.Context, path string, data []byte) error {
+func (s *LocalStorage) Write(ctx context.Context, path string, data []byte, contentType string) error {
 	fullPath, err := s.safePath(path)
 	if err != nil {
 		return err

@@ -29,7 +29,17 @@ export function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     setServerError('')
     try {
-      await registerUser(data.email, data.password, data.name)
+      const result = await registerUser(data.email, data.password, data.name)
+      if (result.requires_email_verification) {
+        const verificationState = result.verification_email_sent ? 'sent' : 'pending'
+        toast.success(t('auth.registerVerificationRequired'), {
+          description: result.verification_email_sent
+            ? t('auth.registerVerificationSentDesc')
+            : t('auth.registerVerificationPendingDesc'),
+        })
+        navigate(`/login?email=${encodeURIComponent(data.email)}&verification=${verificationState}`, { replace: true })
+        return
+      }
       toast.success(t('auth.registerSuccess'), { description: t('auth.registerSuccessDesc') })
       navigate('/console', { replace: true })
     } catch (err: unknown) {

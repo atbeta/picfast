@@ -74,6 +74,7 @@ func SetupDB(t *testing.T) (*pgxpool.Pool, *sqlc.Queries) {
 func TruncateAll(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	tables := []string{
+		"email_verification_tokens",
 		"refresh_tokens",
 		"images",
 		"albums",

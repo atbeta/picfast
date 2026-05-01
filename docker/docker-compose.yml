@@ -19,6 +19,16 @@ services:
     networks:
       - picfast-net
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: picfast-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - picfast-net
+
   app:
     build:
       context: ..
@@ -31,13 +41,23 @@ services:
       PICFAST_DATABASE_URL: "postgres://${POSTGRES_USER:-picfast}:${POSTGRES_PASSWORD:-picfast}@db:5432/${POSTGRES_DB:-picfast}?sslmode=disable"
       PICFAST_JWT_SECRET: ${PICFAST_JWT_SECRET:-change-me-in-production}
       PICFAST_SERVER_BASE_URL: ${PICFAST_SERVER_BASE_URL:-http://localhost:8080}
+      PICFAST_MAIL_HOST: ${PICFAST_MAIL_HOST:-mailpit}
+      PICFAST_MAIL_PORT: ${PICFAST_MAIL_PORT:-1025}
+      PICFAST_MAIL_USERNAME: ${PICFAST_MAIL_USERNAME:-}
+      PICFAST_MAIL_PASSWORD: ${PICFAST_MAIL_PASSWORD:-}
+      PICFAST_MAIL_FROM_EMAIL: ${PICFAST_MAIL_FROM_EMAIL:-noreply@picfast.local}
+      PICFAST_MAIL_FROM_NAME: ${PICFAST_MAIL_FROM_NAME:-PicFast}
+      PICFAST_MAIL_ENCRYPTION: ${PICFAST_MAIL_ENCRYPTION:-none}
       PICFAST_APP_ADMIN_EMAIL: ${PICFAST_APP_ADMIN_EMAIL:-}
       PICFAST_APP_ADMIN_PASSWORD: ${PICFAST_APP_ADMIN_PASSWORD:-}
       PICFAST_APP_ALLOW_GUEST_UPLOAD: ${PICFAST_APP_ALLOW_GUEST_UPLOAD:-false}
       PICFAST_APP_ALLOW_REGISTRATION: ${PICFAST_APP_ALLOW_REGISTRATION:-false}
+      PICFAST_APP_REQUIRE_EMAIL_VERIFICATION: ${PICFAST_APP_REQUIRE_EMAIL_VERIFICATION:-true}
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     volumes:
       - uploads:/app/data/uploads
       - thumbnails:/app/data/thumbnails

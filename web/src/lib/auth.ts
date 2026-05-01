@@ -9,6 +9,12 @@ export interface AuthTokens {
   token_type: string
 }
 
+export interface RegisterResult {
+  requires_email_verification: boolean
+  verification_email_sent: boolean
+  tokens?: AuthTokens
+}
+
 export interface UserProfile {
   id: number
   email: string
@@ -41,9 +47,17 @@ export async function login(email: string, password: string): Promise<AuthTokens
   return res.data.data
 }
 
-export async function register(email: string, password: string, name: string): Promise<AuthTokens> {
-  const res = await api.post<ApiResponse<AuthTokens>>('/auth/register', { email, password, name })
+export async function register(email: string, password: string, name: string): Promise<RegisterResult> {
+  const res = await api.post<ApiResponse<RegisterResult>>('/auth/register', { email, password, name })
   return res.data.data
+}
+
+export async function resendVerification(email: string): Promise<void> {
+  await api.post('/auth/resend-verification', { email })
+}
+
+export async function verifyEmail(token: string): Promise<void> {
+  await api.post('/auth/verify-email', { token })
 }
 
 export async function logout(): Promise<void> {

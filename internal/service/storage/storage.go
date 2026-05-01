@@ -12,7 +12,7 @@ type HealthResult struct {
 }
 
 type Storage interface {
-	Write(ctx context.Context, path string, data []byte) error
+	Write(ctx context.Context, path string, data []byte, contentType string) error
 	Read(ctx context.Context, path string) ([]byte, error)
 	Delete(ctx context.Context, path string) error
 	URL(pathname string) string

@@ -104,6 +104,9 @@ type uploadImageArgs struct {
 }
 
 func (f *MCPServerFactory) uploadImageTool(ctx context.Context, req *mcp.CallToolRequest, args uploadImageArgs) (*mcp.CallToolResult, any, error) {
+	if err := requireMCPScope(ctx, mcpScopeWrite); err != nil {
+		return errorResult(err.Error()), nil, nil
+	}
 	userID, ok := userIDFromContext(ctx)
 	if !ok {
 		return errorResult("unauthorized: no user context"), nil, nil
@@ -152,6 +155,9 @@ type listImagesArgs struct {
 }
 
 func (f *MCPServerFactory) listImagesTool(ctx context.Context, req *mcp.CallToolRequest, args listImagesArgs) (*mcp.CallToolResult, any, error) {
+	if err := requireMCPScope(ctx, mcpScopeRead); err != nil {
+		return errorResult(err.Error()), nil, nil
+	}
 	userID, ok := userIDFromContext(ctx)
 	if !ok {
 		return errorResult("unauthorized"), nil, nil
@@ -206,7 +212,15 @@ type getImageArgs struct {
 }
 
 func (f *MCPServerFactory) getImageTool(ctx context.Context, req *mcp.CallToolRequest, args getImageArgs) (*mcp.CallToolResult, any, error) {
-	img, err := f.DB.GetImageByKey(ctx, args.Key)
+	if err := requireMCPScope(ctx, mcpScopeRead); err != nil {
+		return errorResult(err.Error()), nil, nil
+	}
+	userID, ok := userIDFromContext(ctx)
+	if !ok {
+		return errorResult("unauthorized"), nil, nil
+	}
+
+	img, err := loadOwnedImageByKey(ctx, f.DB, userID, args.Key)
 	if err != nil {
 		return errorResult("image not found"), nil, nil
 	}
@@ -240,6 +254,9 @@ type deleteImageArgs struct {
 }
 
 func (f *MCPServerFactory) deleteImageTool(ctx context.Context, req *mcp.CallToolRequest, args deleteImageArgs) (*mcp.CallToolResult, any, error) {
+	if err := requireMCPScope(ctx, mcpScopeWrite); err != nil {
+		return errorResult(err.Error()), nil, nil
+	}
 	userID, ok := userIDFromContext(ctx)
 	if !ok {
 		return errorResult("unauthorized"), nil, nil
@@ -251,7 +268,7 @@ func (f *MCPServerFactory) deleteImageTool(ctx context.Context, req *mcp.CallToo
 	}
 
 	// Permission check
-	if img.UserID.Valid && img.UserID.Int64 != userID {
+	if !imageOwnedByUser(img, userID) {
 		return errorResult("permission denied: not your image"), nil, nil
 	}
 
@@ -266,6 +283,9 @@ func (f *MCPServerFactory) deleteImageTool(ctx context.Context, req *mcp.CallToo
 }
 
 func (f *MCPServerFactory) getUsageStatsTool(ctx context.Context, req *mcp.CallToolRequest, args struct{}) (*mcp.CallToolResult, any, error) {
+	if err := requireMCPScope(ctx, mcpScopeRead); err != nil {
+		return errorResult(err.Error()), nil, nil
+	}
 	userID, ok := userIDFromContext(ctx)
 	if !ok {
 		return errorResult("unauthorized"), nil, nil
@@ -295,6 +315,9 @@ func (f *MCPServerFactory) getUsageStatsTool(ctx context.Context, req *mcp.CallT
 // --- Resources ---
 
 func (f *MCPServerFactory) userProfileResource(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+	if err := requireMCPScope(ctx, mcpScopeRead); err != nil {
+		return nil, err
+	}
 	userID, ok := userIDFromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("unauthorized")
@@ -326,13 +349,21 @@ func (f *MCPServerFactory) userProfileResource(ctx context.Context, req *mcp.Rea
 }
 
 func (f *MCPServerFactory) imageDetailResource(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+	if err := requireMCPScope(ctx, mcpScopeRead); err != nil {
+		return nil, err
+	}
+	userID, ok := userIDFromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
 	// Extract key from URI picfast://images/{key}
 	key := req.Params.URI[len("picfast://images/"):]
 	if key == "" {
 		return nil, fmt.Errorf("missing image key")
 	}
 
-	img, err := f.DB.GetImageByKey(ctx, key)
+	img, err := loadOwnedImageByKey(ctx, f.DB, userID, key)
 	if err != nil {
 		return nil, fmt.Errorf("image not found")
 	}

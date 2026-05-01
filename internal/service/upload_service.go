@@ -218,7 +218,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 			return nil, fmt.Errorf("failed to init storage: %w", err)
 		}
 		defer store.Close()
-		if err := store.Write(ctx, pathname, fileData); err != nil {
+		if err := store.Write(ctx, pathname, fileData, mimetypeFromExt(ext)); err != nil {
 			return nil, fmt.Errorf("failed to write file: %w", err)
 		}
 	} else {

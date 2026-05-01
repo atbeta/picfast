@@ -12,6 +12,7 @@ interface SettingsForm {
   app_url: string
   allow_guest_upload: boolean
   allow_registration: boolean
+  require_email_verification: boolean
   user_initial_capacity_mb: number
   moderation_mode: string
 }
@@ -34,6 +35,7 @@ export function AdminSettingsPage() {
           app_url: data.app_url || '',
           allow_guest_upload: data.allow_guest_upload,
           allow_registration: data.allow_registration,
+          require_email_verification: data.require_email_verification,
           user_initial_capacity_mb: Math.round(data.user_initial_capacity / 1024 / 1024),
           moderation_mode: data.moderation_mode,
         }
@@ -49,6 +51,7 @@ export function AdminSettingsPage() {
         app_url: form.app_url,
         allow_guest_upload: form.allow_guest_upload,
         allow_registration: form.allow_registration,
+        require_email_verification: form.require_email_verification,
         user_initial_capacity: form.user_initial_capacity_mb * 1024 * 1024,
         moderation_mode: form.moderation_mode,
       })
@@ -116,6 +119,32 @@ export function AdminSettingsPage() {
                   />
                 )}
               />
+            </div>
+
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/20">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <label htmlFor="requireEmailVerification" className="text-sm font-medium text-foreground">{t('admin.requireEmailVerification')}</label>
+                  <p className="text-xs text-muted-foreground">{t('admin.requireEmailVerificationDesc')}</p>
+                </div>
+                <Controller
+                  name="require_email_verification"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      id="requireEmailVerification"
+                      disabled={!data.email_verification_ready}
+                    />
+                  )}
+                />
+              </div>
+              <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">
+                {data.email_verification_ready
+                  ? t('admin.emailVerificationReady')
+                  : t('admin.emailVerificationPending')}
+              </p>
             </div>
 
             <div className="space-y-2">

@@ -19,6 +19,7 @@ import { AdminDashboardPage } from '../pages/console/admin/dashboard-page'
 import { GuestUploadPage } from '../pages/public/guest-upload-page'
 import { LoginPage } from '../pages/public/login-page'
 import { RegisterPage } from '../pages/public/register-page'
+import { VerifyEmailPage } from '../pages/public/verify-email-page'
 
 function RequireAuth() {
   const { isAuthenticated, isLoading } = useAuth()
@@ -83,6 +84,7 @@ function PublicRoutes() {
           }
         />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route
           path="/register"
           element={

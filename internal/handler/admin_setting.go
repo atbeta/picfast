@@ -9,33 +9,37 @@ import (
 )
 
 type AdminSettingHandler struct {
-	config *config.Config
-	setter *config.Setter
+	config    *config.Config
+	setter    *config.Setter
+	mailReady bool
 }
 
-func NewAdminSettingHandler(cfg *config.Config, setter *config.Setter) *AdminSettingHandler {
-	return &AdminSettingHandler{config: cfg, setter: setter}
+func NewAdminSettingHandler(cfg *config.Config, setter *config.Setter, mailReady bool) *AdminSettingHandler {
+	return &AdminSettingHandler{config: cfg, setter: setter, mailReady: mailReady}
 }
 
 func (h *AdminSettingHandler) Get(w http.ResponseWriter, r *http.Request) {
 	Success(w, map[string]interface{}{
-		"app_name":              h.config.App.Name,
-		"allow_guest_upload":    h.config.App.AllowGuestUpload,
-		"allow_registration":    h.config.App.AllowRegistration,
-		"user_initial_capacity": h.config.App.UserInitialCapacity,
-		"default_image_ttl":     h.config.App.DefaultImageTTL.String(),
-		"moderation_mode":       h.config.App.ModerationMode,
-		"_warning":              "settings are volatile (in-memory only); restart resets to config file defaults",
+		"app_name":                   h.config.App.Name,
+		"allow_guest_upload":         h.config.App.AllowGuestUpload,
+		"allow_registration":         h.config.App.AllowRegistration,
+		"require_email_verification": h.config.App.RequireEmailVerification,
+		"email_verification_ready":   h.mailReady,
+		"user_initial_capacity":      h.config.App.UserInitialCapacity,
+		"default_image_ttl":          h.config.App.DefaultImageTTL.String(),
+		"moderation_mode":            h.config.App.ModerationMode,
+		"_warning":                   "settings are volatile (in-memory only); restart resets to config file defaults",
 	})
 }
 
 type updateSettingsRequest struct {
-	AppName             *string `json:"app_name"`
-	AllowGuestUpload    *bool   `json:"allow_guest_upload"`
-	AllowRegistration   *bool   `json:"allow_registration"`
-	UserInitialCapacity *int64  `json:"user_initial_capacity"`
-	DefaultImageTTL     *string `json:"default_image_ttl"`
-	ModerationMode      *string `json:"moderation_mode"`
+	AppName                  *string `json:"app_name"`
+	AllowGuestUpload         *bool   `json:"allow_guest_upload"`
+	AllowRegistration        *bool   `json:"allow_registration"`
+	RequireEmailVerification *bool   `json:"require_email_verification"`
+	UserInitialCapacity      *int64  `json:"user_initial_capacity"`
+	DefaultImageTTL          *string `json:"default_image_ttl"`
+	ModerationMode           *string `json:"moderation_mode"`
 }
 
 func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +57,9 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.AllowRegistration != nil {
 		h.setter.SetAllowRegistration(*req.AllowRegistration)
+	}
+	if req.RequireEmailVerification != nil {
+		h.setter.SetRequireEmailVerification(*req.RequireEmailVerification)
 	}
 	if req.UserInitialCapacity != nil {
 		h.setter.SetUserInitialCapacity(*req.UserInitialCapacity)
@@ -74,12 +81,14 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Success(w, map[string]interface{}{
-		"app_name":              h.config.App.Name,
-		"allow_guest_upload":    h.config.App.AllowGuestUpload,
-		"allow_registration":    h.config.App.AllowRegistration,
-		"user_initial_capacity": h.config.App.UserInitialCapacity,
-		"default_image_ttl":     h.config.App.DefaultImageTTL.String(),
-		"moderation_mode":       h.config.App.ModerationMode,
-		"_warning":              "settings are volatile (in-memory only); restart resets to config file defaults",
+		"app_name":                   h.config.App.Name,
+		"allow_guest_upload":         h.config.App.AllowGuestUpload,
+		"allow_registration":         h.config.App.AllowRegistration,
+		"require_email_verification": h.config.App.RequireEmailVerification,
+		"email_verification_ready":   h.mailReady,
+		"user_initial_capacity":      h.config.App.UserInitialCapacity,
+		"default_image_ttl":          h.config.App.DefaultImageTTL.String(),
+		"moderation_mode":            h.config.App.ModerationMode,
+		"_warning":                   "settings are volatile (in-memory only); restart resets to config file defaults",
 	})
 }

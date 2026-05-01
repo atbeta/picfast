@@ -15,21 +15,21 @@ storage:
   thumbnail_dir: "./data/thumbnails"
 
 mail:
-  host: ""
-  port: 587
+  host: "127.0.0.1"
+  port: 1025
   username: ""
   password: ""
-  from_email: ""
+  from_email: "noreply@picfast.local"
   from_name: "PicFast"
-  encryption: "starttls"      # starttls | tls | none
+  encryption: "none"          # starttls | tls | none
 
 app:
   name: "PicFast"
   allow_guest_upload: false
-  allow_registration: false
-  require_email_verification: false # reserved for future email verification flow; keep false until mail delivery is configured
+  allow_registration: true
+  require_email_verification: true  # only takes effect when mail.* is configured and reachable
   user_initial_capacity: 524288000
-  default_image_ttl: "0"       # 0 = no default expiration; e.g. "24h", "7d"
+  default_image_ttl: "0"       # 0 = no default expiration; e.g. "24h", "168h"
   admin_email: ""
   admin_password: ""
   moderation_mode: "disabled"  # disabled | manual | auto (future)

@@ -53,7 +53,18 @@ createdb picfast
 cp .env.example .env
 ```
 
-按需修改数据库、JWT、存储和站点配置。
+PicFast 同时支持两种配置方式：
+
+- 环境变量：直接加载 `.env` 中的 `PICFAST_*` 配置
+- YAML 文件：使用根目录 `config.example.yaml` 复制为 `config.yaml`
+
+如果你更习惯文件配置，可以这样开始：
+
+```bash
+cp config.example.yaml config.yaml
+```
+
+环境变量优先级高于 `config.yaml`。通常本地开发二选一即可，不需要两边同时维护。
 
 ### 3. 执行迁移并填充开发数据
 
@@ -99,6 +110,67 @@ go run ./cmd/picfast
 1. `PICFAST_SERVER_WEB_DIR` / `server.web_dir`
 2. 根目录 `web-dist`
 3. 前端默认产物目录 `web/dist`
+
+## 邮箱验证注册
+
+默认情况下，注册成功后会直接登录。只有在以下两个条件同时满足时，系统才会启用“必须验证邮箱后登录”的流程：
+
+1. `app.require_email_verification=true`
+2. `mail.*` 已完整配置且 SMTP 可用
+
+对于正式发布，我建议把 `PICFAST_APP_REQUIRE_EMAIL_VERIFICATION` 默认设为 `true`，然后只在填好 SMTP 后再开放注册。
+
+本地开发/联调最省事的方案是直接使用 `Mailpit`：
+
+- SMTP 地址：`mailpit:1025`（Docker 内）或 `127.0.0.1:1025`（本机）
+- 邮件预览界面：`http://127.0.0.1:8025`
+- 不会真的把邮件发到外部邮箱，只会拦截在本地收件箱里
+
+最小可用配置示例：
+
+```yaml
+mail:
+  host: "smtp.example.com"
+  port: 587
+  username: "noreply@example.com"
+  password: "your-smtp-password"
+  from_email: "noreply@example.com"
+  from_name: "PicFast"
+  encryption: "starttls"
+
+app:
+  allow_registration: true
+  require_email_verification: true
+```
+
+启用后行为如下：
+
+- 用户注册后不会直接登录，而是收到验证邮件
+- 访问邮件中的 `/verify-email?token=...` 链接后即可完成验证
+- 未验证邮箱的用户无法登录，登录页可重新发送验证邮件
+- 如果只开启 `require_email_verification`，但没有正确配置 SMTP，系统会自动退回普通注册流程，并在启动日志中给出警告
+- Docker Compose 示例已经预留了 `PICFAST_MAIL_*` 和 `PICFAST_APP_REQUIRE_EMAIL_VERIFICATION=true`，填入真实邮件参数后即可直接启用
+- 当前 Docker Compose 也内置了 `Mailpit`，本地启动后可以直接测试验证邮件流程
+
+建议：
+
+- `server.base_url` 一定要写成用户实际访问的域名，邮件里的验证链接会基于它生成
+- 生产环境务必修改 `jwt.secret`
+- 可以先只开启 `allow_registration` 做内测，等 SMTP 打通后再启用邮箱验证
+
+### 用 Mailpit 本地测试
+
+```bash
+docker compose -f docker/docker-compose.yml up -d db mailpit
+go run ./cmd/picfast
+```
+
+然后：
+
+1. 打开 `http://127.0.0.1:5173/register`
+2. 注册一个新账号
+3. 到 `http://127.0.0.1:8025` 查看验证邮件
+4. 点击邮件里的验证链接完成验证
 
 ## 常用命令
 
@@ -184,3 +256,4 @@ make lint
 - Docker 镜像会在构建时编译前端，并通过 `PICFAST_SERVER_WEB_DIR=/web-dist` 交给 Go 服务托管。
 - `/docs` 会加载 OpenAPI 文档页，`/openapi.yaml` 提供规范文件下载。
 - `/api/v1/admin/debug/pprof/*` 仅管理员可访问。
+- 如果要在 Docker / 服务器中启用邮箱验证，记得同时传入 `PICFAST_SERVER_BASE_URL`、`PICFAST_MAIL_*` 和 `PICFAST_APP_REQUIRE_EMAIL_VERIFICATION=true`。

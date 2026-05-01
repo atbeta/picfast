@@ -192,6 +192,8 @@ export interface AdminSettings {
   app_url: string
   allow_guest_upload: boolean
   allow_registration: boolean
+  require_email_verification: boolean
+  email_verification_ready: boolean
   user_initial_capacity: number
   moderation_mode: string
 }

@@ -2,9 +2,8 @@ package handler_test
 
 import (
 	"net/http"
+	"regexp"
 	"testing"
-
-	"github.com/atbeta/picfast/internal/router"
 )
 
 func TestRegister(t *testing.T) {
@@ -27,9 +26,46 @@ func TestRegister(t *testing.T) {
 		if !resp.Status {
 			t.Fatal("expected status true")
 		}
-		tokens := respDataMap(t, resp)
+		result := respDataMap(t, resp)
+		tokens := nestedMap(t, result["tokens"])
 		if tokens["access_token"] == nil || tokens["refresh_token"] == nil {
 			t.Fatal("missing tokens in response")
+		}
+	})
+
+	t.Run("requires verification when enabled", func(t *testing.T) {
+		env.Config.App.RequireEmailVerification = true
+		env.MailSender.ready = true
+		env.MailSender.messages = nil
+		env.rebuildRouter()
+		defer func() {
+			env.Config.App.RequireEmailVerification = false
+			env.MailSender.ready = false
+			env.MailSender.messages = nil
+			env.rebuildRouter()
+		}()
+
+		body := map[string]string{
+			"email":    "verify@example.com",
+			"password": "password123",
+			"name":     "Verify User",
+		}
+		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/register", body)
+		rec := doReq(env.Router, req)
+
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want 201; body: %s", rec.Code, rec.Body.String())
+		}
+
+		data := respDataMap(t, parseResp(t, rec))
+		if data["requires_email_verification"] != true {
+			t.Fatalf("requires_email_verification = %v, want true", data["requires_email_verification"])
+		}
+		if data["verification_email_sent"] != true {
+			t.Fatalf("verification_email_sent = %v, want true", data["verification_email_sent"])
+		}
+		if len(env.MailSender.messages) != 1 {
+			t.Fatalf("sent messages = %d, want 1", len(env.MailSender.messages))
 		}
 	})
 
@@ -62,9 +98,12 @@ func TestRegister(t *testing.T) {
 	})
 
 	t.Run("registration disabled", func(t *testing.T) {
-		env2 := newTestEnv(t)
-		env2.Config.App.AllowRegistration = false
-		env2.Router = router.New(env2.DB, env2.Pool, env2.Config, env2.JWT, nil)
+		env.Config.App.AllowRegistration = false
+		env.rebuildRouter()
+		defer func() {
+			env.Config.App.AllowRegistration = true
+			env.rebuildRouter()
+		}()
 
 		body := map[string]string{
 			"email":    "nope@example.com",
@@ -72,7 +111,7 @@ func TestRegister(t *testing.T) {
 			"name":     "Nope",
 		}
 		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/register", body)
-		rec := doReq(env2.Router, req)
+		rec := doReq(env.Router, req)
 
 		if rec.Code != http.StatusForbidden {
 			t.Fatalf("status = %d, want 403", rec.Code)
@@ -114,6 +153,28 @@ func TestLogin(t *testing.T) {
 		}
 	})
 
+	t.Run("unverified user blocked when verification is required", func(t *testing.T) {
+		env.Config.App.RequireEmailVerification = true
+		env.MailSender.ready = true
+		env.rebuildRouter()
+		defer func() {
+			env.Config.App.RequireEmailVerification = false
+			env.MailSender.ready = false
+			env.rebuildRouter()
+		}()
+
+		body := map[string]string{
+			"email":    "test@example.com",
+			"password": "password123",
+		}
+		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/login", body)
+		rec := doReq(env.Router, req)
+
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("status = %d, want 403; body: %s", rec.Code, rec.Body.String())
+		}
+	})
+
 	t.Run("frozen user", func(t *testing.T) {
 		_, err := env.Pool.Exec(t.Context(), "UPDATE users SET status = 0 WHERE id = $1", user.ID)
 		if err != nil {
@@ -146,7 +207,8 @@ func TestRefresh(t *testing.T) {
 		regReq := newJSONReq(t, http.MethodPost, "/api/v1/auth/register", regBody)
 		regRec := doReq(env.Router, regReq)
 
-		tokens := respDataMap(t, parseResp(t, regRec))
+		result := respDataMap(t, parseResp(t, regRec))
+		tokens := nestedMap(t, result["tokens"])
 		refreshToken := tokens["refresh_token"].(string)
 
 		refreshBody := map[string]string{"refresh_token": refreshToken}
@@ -189,5 +251,47 @@ func TestLogout(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestVerifyEmailFlow(t *testing.T) {
+	env := newTestEnv(t)
+	_, _, _ = env.seedSetup(t)
+	env.Config.App.RequireEmailVerification = true
+	env.MailSender.ready = true
+	env.rebuildRouter()
+
+	regBody := map[string]string{
+		"email":    "verify-flow@example.com",
+		"password": "password123",
+		"name":     "Verify Flow",
+	}
+	regReq := newJSONReq(t, http.MethodPost, "/api/v1/auth/register", regBody)
+	regRec := doReq(env.Router, regReq)
+	if regRec.Code != http.StatusCreated {
+		t.Fatalf("register status = %d, want 201; body: %s", regRec.Code, regRec.Body.String())
+	}
+	if len(env.MailSender.messages) != 1 {
+		t.Fatalf("sent messages = %d, want 1", len(env.MailSender.messages))
+	}
+
+	re := regexp.MustCompile(`token=([a-f0-9]+)`)
+	match := re.FindStringSubmatch(env.MailSender.messages[0].Text)
+	if len(match) != 2 {
+		t.Fatalf("verification token not found in mail body: %s", env.MailSender.messages[0].Text)
+	}
+
+	verifyReq := newJSONReq(t, http.MethodPost, "/api/v1/auth/verify-email", map[string]string{"token": match[1]})
+	verifyRec := doReq(env.Router, verifyReq)
+	if verifyRec.Code != http.StatusOK {
+		t.Fatalf("verify status = %d, want 200; body: %s", verifyRec.Code, verifyRec.Body.String())
+	}
+
+	user, err := env.DB.GetUserByEmail(t.Context(), "verify-flow@example.com")
+	if err != nil {
+		t.Fatalf("load verified user: %v", err)
+	}
+	if !user.EmailVerified {
+		t.Fatal("expected email_verified to be true after verification")
 	}
 }

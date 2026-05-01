@@ -2,7 +2,9 @@ package handler_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -14,17 +16,37 @@ import (
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/handler"
 	"github.com/atbeta/picfast/internal/router"
+	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/atbeta/picfast/internal/testutil"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type fakeMailSender struct {
+	ready    bool
+	failSend bool
+	messages []mailservice.Message
+}
+
+func (s *fakeMailSender) Ready() bool {
+	return s.ready
+}
+
+func (s *fakeMailSender) Send(ctx context.Context, msg mailservice.Message) error {
+	if s.failSend {
+		return errors.New("send failed")
+	}
+	s.messages = append(s.messages, msg)
+	return nil
+}
+
 type testEnv struct {
-	Pool   *pgxpool.Pool
-	DB     *sqlc.Queries
-	JWT    *handler.JWTService
-	Router http.Handler
-	Config *config.Config
+	Pool       *pgxpool.Pool
+	DB         *sqlc.Queries
+	JWT        *handler.JWTService
+	Router     http.Handler
+	Config     *config.Config
+	MailSender *fakeMailSender
 }
 
 func newTestEnv(t *testing.T) *testEnv {
@@ -54,15 +76,21 @@ func newTestEnv(t *testing.T) *testEnv {
 	}
 
 	jwtSvc := handler.NewJWTService(&cfg.JWT)
-	r := router.New(db, pool, cfg, jwtSvc, nil)
+	sender := &fakeMailSender{}
+	r := router.New(db, pool, cfg, jwtSvc, nil, sender)
 
 	return &testEnv{
-		Pool:   pool,
-		DB:     db,
-		JWT:    jwtSvc,
-		Router: r,
-		Config: cfg,
+		Pool:       pool,
+		DB:         db,
+		JWT:        jwtSvc,
+		Router:     r,
+		Config:     cfg,
+		MailSender: sender,
 	}
+}
+
+func (e *testEnv) rebuildRouter() {
+	e.Router = router.New(e.DB, e.Pool, e.Config, e.JWT, nil, e.MailSender)
 }
 
 func (e *testEnv) seedSetup(t *testing.T) (sqlc.Group, sqlc.Strategy, sqlc.User) {
@@ -150,6 +178,19 @@ func respDataMap(t *testing.T, resp handler.Response) map[string]interface{} {
 	var m map[string]interface{}
 	if err := json.Unmarshal(data, &m); err != nil {
 		t.Fatalf("unmarshal data: %v", err)
+	}
+	return m
+}
+
+func nestedMap(t *testing.T, value interface{}) map[string]interface{} {
+	t.Helper()
+	data, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("marshal nested data: %v", err)
+	}
+	var m map[string]interface{}
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("unmarshal nested data: %v", err)
 	}
 	return m
 }
