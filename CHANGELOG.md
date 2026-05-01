@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/atbeta/picfast/compare/v0.2.0...v0.2.1) (2026-05-01)
+
+
+### Bug Fixes
+
+* **i18n:** localize API errors and admin field labels ([0e58a26](https://github.com/atbeta/picfast/commit/0e58a2656222754f7dfa709c4e3d7b1734e54739))
+
 ## [0.2.0](https://github.com/atbeta/picfast/compare/v0.1.0...v0.2.0) (2026-05-01)
 
 
