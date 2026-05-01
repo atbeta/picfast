@@ -55,10 +55,7 @@ func (h *AdminObservabilityHandler) Summary(w http.ResponseWriter, r *http.Reque
 			"database":   h.databaseHealth(ctx),
 			"uploads":    directoryHealth(h.cfg.Storage.LocalRoot),
 			"thumbnails": directoryHealth(h.cfg.Storage.ThumbnailDir),
-			"mail": map[string]any{
-				"healthy": !app.RequireEmailVerification || h.mailReady,
-				"ready":   h.mailReady,
-			},
+			"mail":       h.mailHealth(app),
 		},
 		"runtime":            runtimeSummary(),
 		"database":           databasePoolSummary(h.pool),
@@ -71,6 +68,33 @@ func (h *AdminObservabilityHandler) Summary(w http.ResponseWriter, r *http.Reque
 			"audit_upload_logs": app.AuditUploadLogs,
 		},
 	})
+}
+
+func (h *AdminObservabilityHandler) mailHealth(app config.AppConfig) map[string]any {
+	configured := h.cfg.Mail.IsConfigured()
+	if h.mailReady {
+		return map[string]any{
+			"healthy":    true,
+			"status":     "healthy",
+			"configured": configured,
+			"ready":      true,
+		}
+	}
+	if !app.RequireEmailVerification {
+		return map[string]any{
+			"healthy":    true,
+			"status":     "disabled",
+			"configured": configured,
+			"ready":      false,
+		}
+	}
+	return map[string]any{
+		"healthy":    false,
+		"status":     "unhealthy",
+		"configured": configured,
+		"ready":      false,
+		"error":      "mail sender is not ready",
+	}
 }
 
 func (h *AdminObservabilityHandler) databaseHealth(ctx context.Context) map[string]any {

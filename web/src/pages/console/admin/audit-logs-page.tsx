@@ -20,6 +20,8 @@ const AUDIT_ACTION_FILTER_CODES = [
   'image.update',
   'api_token.create',
   'api_token.delete',
+  'admin.auth.login.success',
+  'admin.auth.login.failed',
   'admin.settings.update',
   'admin.image.delete',
   'admin.user.update',
@@ -40,6 +42,7 @@ const AUDIT_RESOURCE_FILTER_CODES = [
   'group',
   'strategy',
   'api_token',
+  'auth',
   'setting',
 ] as const
 
@@ -69,6 +72,7 @@ export function AdminAuditLogsPage() {
       group: t('admin.auditResourceGroup', { defaultValue: '分组' }),
       strategy: t('admin.auditResourceStrategy', { defaultValue: '存储策略' }),
       api_token: t('admin.auditResourceApiToken', { defaultValue: 'API 令牌' }),
+      auth: t('admin.auditResourceAuth', { defaultValue: '认证' }),
       setting: t('admin.auditResourceSetting', { defaultValue: '站点设置' }),
     }),
     [t],

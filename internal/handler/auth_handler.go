@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/mail"
+	"strconv"
 	"strings"
 	"time"
 
@@ -182,6 +183,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	req.Email = strings.TrimSpace(req.Email)
 
 	user, err := h.db.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
@@ -190,15 +192,18 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user.Status != int16(domain.UserStatusActive) {
+		h.auditAdminLogin(r, user, false, "frozen_user")
 		Fail(w, http.StatusForbidden, "account is frozen")
 		return
 	}
 	if h.emailVerificationEnabled() && !user.EmailVerified {
+		h.auditAdminLogin(r, user, false, "email_unverified")
 		Fail(w, http.StatusForbidden, "email verification required")
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		h.auditAdminLogin(r, user, false, "invalid_credentials")
 		Fail(w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
@@ -211,7 +216,24 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.auditAdminLogin(r, user, true, "")
 	Success(w, tokens)
+}
+
+func (h *AuthHandler) auditAdminLogin(r *http.Request, user sqlc.User, success bool, reason string) {
+	if domain.UserRole(user.Role) != domain.RoleAdmin {
+		return
+	}
+	action := "admin.auth.login.success"
+	details := map[string]any{
+		"email": user.Email,
+	}
+	if !success {
+		action = "admin.auth.login.failed"
+		details["reason"] = reason
+	}
+	ctx := context.WithValue(r.Context(), domain.ContextKeyUserID, user.ID)
+	writeAuditLog(h.db, r.WithContext(ctx), action, "auth", strconv.FormatInt(user.ID, 10), user.Email, details)
 }
 
 func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {

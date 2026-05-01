@@ -39,8 +39,12 @@ func TestAdminObservabilitySummary(t *testing.T) {
 	if got := nestedMap(t, health["database"])["healthy"]; got != true {
 		t.Fatalf("database healthy = %v, want true", got)
 	}
-	if got := nestedMap(t, health["mail"])["healthy"]; got != true {
-		t.Fatalf("mail healthy = %v, want true when email verification is disabled", got)
+	mail := nestedMap(t, health["mail"])
+	if got := mail["status"]; got != "disabled" {
+		t.Fatalf("mail status = %v, want disabled when email verification is disabled", got)
+	}
+	if got := mail["ready"]; got != false {
+		t.Fatalf("mail ready = %v, want false", got)
 	}
 
 	usage := nestedMap(t, data["usage"])

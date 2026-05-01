@@ -3,8 +3,12 @@ package handler_test
 import (
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/testutil"
 )
 
 func TestRegister(t *testing.T) {
@@ -219,6 +223,99 @@ func TestLogin(t *testing.T) {
 
 		if rec.Code != http.StatusForbidden {
 			t.Fatalf("status = %d, want 403", rec.Code)
+		}
+	})
+}
+
+func TestAdminLoginAudit(t *testing.T) {
+	env := newTestEnv(t)
+	_, _, admin := env.seedSetup(t)
+	makeAdmin(t, env, admin.ID)
+
+	t.Run("records admin login success", func(t *testing.T) {
+		body := map[string]string{
+			"email":    "test@example.com",
+			"password": "password123",
+		}
+		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/login", body)
+		req.Header.Set("CF-Connecting-IP", "203.0.113.10")
+		rec := doReq(env.Router, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+		}
+
+		var count int
+		if err := env.Pool.QueryRow(t.Context(), `
+			SELECT COUNT(*)
+			FROM audit_logs
+			WHERE action = 'admin.auth.login.success'
+			  AND resource_type = 'auth'
+			  AND resource_id = $1
+			  AND actor_user_id = $2
+			  AND ip = '203.0.113.10'
+		`, strconv.FormatInt(admin.ID, 10), admin.ID).Scan(&count); err != nil {
+			t.Fatalf("count login success audit logs: %v", err)
+		}
+		if count != 1 {
+			t.Fatalf("success audit log count = %d, want 1", count)
+		}
+	})
+
+	t.Run("records admin login failure", func(t *testing.T) {
+		body := map[string]string{
+			"email":    "test@example.com",
+			"password": "wrongpassword",
+		}
+		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/login", body)
+		rec := doReq(env.Router, req)
+
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("status = %d, want 401", rec.Code)
+		}
+
+		var count int
+		if err := env.Pool.QueryRow(t.Context(), `
+			SELECT COUNT(*)
+			FROM audit_logs
+			WHERE action = 'admin.auth.login.failed'
+			  AND resource_type = 'auth'
+			  AND resource_id = $1
+			  AND actor_user_id = $2
+			  AND details->>'reason' = 'invalid_credentials'
+		`, strconv.FormatInt(admin.ID, 10), admin.ID).Scan(&count); err != nil {
+			t.Fatalf("count login failure audit logs: %v", err)
+		}
+		if count != 1 {
+			t.Fatalf("failure audit log count = %d, want 1", count)
+		}
+	})
+
+	t.Run("skips ordinary user login", func(t *testing.T) {
+		group := testutil.SeedDefaultGroup(t, env.DB)
+		user := testutil.SeedUser(t, env.DB, group.ID, "ordinary@example.com", "password123", string(domain.RoleUser))
+		body := map[string]string{
+			"email":    user.Email,
+			"password": "password123",
+		}
+		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/login", body)
+		rec := doReq(env.Router, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+		}
+
+		var count int
+		if err := env.Pool.QueryRow(t.Context(), `
+			SELECT COUNT(*)
+			FROM audit_logs
+			WHERE action LIKE 'admin.auth.login.%'
+			  AND resource_id = $1
+		`, strconv.FormatInt(user.ID, 10)).Scan(&count); err != nil {
+			t.Fatalf("count ordinary login audit logs: %v", err)
+		}
+		if count != 0 {
+			t.Fatalf("ordinary user audit log count = %d, want 0", count)
 		}
 	})
 }

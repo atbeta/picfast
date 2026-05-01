@@ -34,10 +34,18 @@ function formatDuration(seconds?: number): string {
 }
 
 function HealthBadge({ item }: { item?: AdminHealthItem }) {
+  const { t } = useTranslation()
+  if (item?.status === 'disabled') {
+    return (
+      <span className="inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+        {t('admin.statusNotEnabled', { defaultValue: '未启用' })}
+      </span>
+    )
+  }
   const healthy = item?.healthy === true
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${healthy ? 'bg-success text-white' : 'bg-destructive/10 text-destructive'}`}>
-      {healthy ? '正常' : '异常'}
+      {healthy ? t('admin.statusHealthy', { defaultValue: '正常' }) : t('admin.statusUnhealthy', { defaultValue: '异常' })}
     </span>
   )
 }

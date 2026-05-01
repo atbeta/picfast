@@ -234,7 +234,9 @@ export async function listAdminAuditLogs(params?: {
 
 export interface AdminHealthItem {
   healthy: boolean
+  status?: 'healthy' | 'unhealthy' | 'disabled'
   ready?: boolean
+  configured?: boolean
   path?: string
   error?: string
   warning?: string
