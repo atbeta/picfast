@@ -114,6 +114,44 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /auth/verify-email:
+    post:
+      tags: [auth]
+      summary: Verify email by token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /auth/resend-verification:
+    post:
+      tags: [auth]
+      summary: Resend verification email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendVerificationRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /auth/logout:
     post:
       tags: [auth]
@@ -476,6 +514,116 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
 
+  /api-tokens:
+    get:
+      tags: [mcp]
+      summary: List API tokens for current user
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/APITokenItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [mcp]
+      summary: Create an API token
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAPITokenRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/APITokenItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api-tokens/{id}:
+    delete:
+      tags: [mcp]
+      summary: Delete an API token
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /sharex/upload:
+    post:
+      tags: [sharex]
+      summary: Upload image for ShareX clients
+      security: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareXUploadResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /sharex/config:
+    get:
+      tags: [sharex]
+      summary: Download ShareX .sxcu config
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareXConfigResponse"
+
   /admin/groups:
     get:
       tags: [admin]
@@ -793,6 +941,63 @@ paths:
         "200":
           description: OK
 
+  /admin/audit-logs:
+    get:
+      tags: [admin]
+      summary: List audit logs
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: resource_type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PaginatedAuditLogs"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/observability/summary:
+    get:
+      tags: [admin]
+      summary: Get observability summary
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ObservabilitySummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
 components:
   securitySchemes:
     BearerAuth:
@@ -939,6 +1144,21 @@ components:
       properties:
         refresh_token:
           type: string
+
+    VerifyEmailRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    ResendVerificationRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
 
     ImageLinks:
       type: object
@@ -1479,5 +1699,153 @@ components:
           type: string
           enum: ["", plausible, umami, ga4, baidu, custom]
         analytics_config:
+          type: object
+          additionalProperties: true
+
+    APITokenItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        token:
+          type: string
+          description: Returned only on creation.
+        scopes:
+          type: array
+          items:
+            type: string
+        last_used_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    CreateAPITokenRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        expires_in:
+          type: string
+          description: 'Examples: 30d, 90d, 1y, 24h, never.'
+        scopes:
+          type: array
+          items:
+            type: string
+            enum: [read, write]
+
+    ShareXUploadResponse:
+      type: object
+      properties:
+        url:
+          type: string
+        thumbnail_url:
+          type: string
+        deletion_url:
+          type: string
+
+    ShareXConfigResponse:
+      type: object
+      properties:
+        Version:
+          type: string
+        Name:
+          type: string
+        DestinationType:
+          type: string
+        RequestMethod:
+          type: string
+        RequestURL:
+          type: string
+        Headers:
+          type: object
+          additionalProperties:
+            type: string
+        Body:
+          type: string
+        FileFormName:
+          type: string
+        URL:
+          type: string
+        ThumbnailURL:
+          type: string
+
+    AuditLogItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        actor_user_id:
+          type: integer
+          format: int64
+          nullable: true
+        actor_email:
+          type: string
+          nullable: true
+        action:
+          type: string
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        resource_name:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        ip:
+          type: string
+        user_agent:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    PaginatedAuditLogs:
+      allOf:
+        - $ref: "#/components/schemas/PaginatedData"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AuditLogItem"
+
+    ObservabilitySummary:
+      type: object
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        uptime_seconds:
+          type: integer
+          format: int64
+        health:
+          type: object
+          additionalProperties: true
+        runtime:
+          type: object
+          additionalProperties: true
+        database:
+          type: object
+          additionalProperties: true
+        usage:
+          type: object
+          additionalProperties: true
+        storage_strategies:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        config:
           type: object
           additionalProperties: true

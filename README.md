@@ -1,6 +1,20 @@
 # PicFast
 
-PicFast 是一个面向个人与团队的现代化图床/图片托管服务，支持游客上传、多用户、多存储策略、管理后台以及 AI / MCP 集成。
+[![CI](https://github.com/atbeta/picfast/actions/workflows/ci.yml/badge.svg)](https://github.com/atbeta/picfast/actions/workflows/ci.yml)
+[![Release Please](https://github.com/atbeta/picfast/actions/workflows/release-please.yml/badge.svg)](https://github.com/atbeta/picfast/actions/workflows/release-please.yml)
+[![Publish Docker Image](https://github.com/atbeta/picfast/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/atbeta/picfast/actions/workflows/docker-publish.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/xbeta/picfast?logo=docker)](https://hub.docker.com/r/xbeta/picfast)
+[![Docker Image](https://img.shields.io/docker/image-size/xbeta/picfast/latest?logo=docker&label=image)](https://hub.docker.com/r/xbeta/picfast)
+
+[English](README.en.md)
+
+PicFast 是一个面向个人与团队的现代化图床与图片托管服务，支持游客上传、多用户权限、多存储策略、管理后台以及 AI / MCP 集成能力。
+
+## 界面预览 / UI Preview
+
+| 中文界面 | English UI |
+|---|---|
+| ![PicFast Console Chinese UI](.github/assets/console-zh-cn.png) | ![PicFast Console English UI](.github/assets/console-en-us.png) |
 
 ## 技术栈
 
@@ -218,8 +232,7 @@ PicFast 现在可以直接发布到 Docker Hub。当前推荐镜像仓库：
 常见标签约定：
 
 - `xbeta/picfast:latest`：`main` 分支最新稳定构建
-- `xbeta/picfast:0.1.0`：版本发布标签
-- `xbeta/picfast:0.1`：同 minor 版本滚动标签
+- `xbeta/picfast:vX.Y.Z`：固定版本发布标签
 - `xbeta/picfast:sha-<commit>`：按提交追踪的构建标签
 
 ### 3 分钟最小部署（本地先跑起来）
@@ -255,7 +268,7 @@ docker run -d \
 ### 拉取镜像
 
 ```bash
-docker pull xbeta/picfast:0.1.0
+docker pull xbeta/picfast:latest
 ```
 
 ### 运行示例
@@ -271,19 +284,19 @@ docker run -d \
   -e PICFAST_APP_ADMIN_PASSWORD='change-this-password' \
   -v picfast-uploads:/app/data/uploads \
   -v picfast-thumbnails:/app/data/thumbnails \
-  xbeta/picfast:0.1.0
+  xbeta/picfast:latest
 ```
 
 ### GitHub Actions 自动发布
 
-仓库已包含 Docker 发布工作流 [docker-publish.yml](/Users/beta/Projects/picfast/.github/workflows/docker-publish.yml:1)。
+仓库已包含 Docker 发布工作流 [`docker-publish.yml`](.github/workflows/docker-publish.yml)。
 
-版本发布由 [release-please.yml](/Users/beta/Projects/picfast/.github/workflows/release-please.yml:1) 驱动：当 `main` 上累计了符合 Conventional Commits 的变更后，会自动创建或更新 Release PR；合并后自动打 `v*` tag 并创建 GitHub Release。
+版本发布由 [`release-please.yml`](.github/workflows/release-please.yml) 驱动：当 `main` 上累计了符合 Conventional Commits 的变更后，会自动创建或更新 Release PR；合并后自动打 `v*` tag 并创建 GitHub Release。
 
 触发规则：
 
 - push 到 `main`：发布 `latest`、`main`、`sha-*`
-- push `v*` tag：额外发布 `0.1.0`、`0.1` 这类版本标签
+- push `v*` tag：发布对应 semver 标签并刷新 `latest`
 - 支持手动触发
 
 在 GitHub 仓库 Secrets 中配置：
@@ -327,8 +340,8 @@ docker run -d \
 
 如果你已经有现成的 Traefik 反向代理，可以直接使用：
 
-- [docker/docker-compose.traefik.yml](/Users/beta/Projects/picfast/docker/docker-compose.traefik.yml)
-- [docker/.env.traefik.example](/Users/beta/Projects/picfast/docker/.env.traefik.example)
+- [`docker/docker-compose.traefik.yml`](docker/docker-compose.traefik.yml)
+- [`docker/.env.traefik.example`](docker/.env.traefik.example)
 
 推荐步骤：
 
@@ -457,3 +470,4 @@ make lint
 - `/docs` 会加载 OpenAPI 文档页，`/openapi.yaml` 提供规范文件下载。
 - `/api/v1/admin/debug/pprof/*` 默认关闭；调试时可设置 `PICFAST_SERVER_PPROF_ENABLED=true`，启用后仍需管理员权限访问。
 - 如果要在 Docker / 服务器中启用邮箱验证，记得同时传入 `PICFAST_SERVER_BASE_URL`、`PICFAST_MAIL_*` 和 `PICFAST_APP_REQUIRE_EMAIL_VERIFICATION=true`。
+

@@ -97,7 +97,15 @@ risk: <compat / rollback / migration>
 - 影响发布语义的改动优先使用 `feat`/`fix`/`perf`；纯维护项使用 `chore`/`docs`/`refactor`。
 - 需要触发明确版本说明时，在提交 body 中写清用户可感知影响，避免仅描述实现细节。
 
-## 6) 建议工作流
+## 6) 镜像发布策略（dev / release）
+
+- `dev` 镜像允许本地构建并推送，推荐标签：`dev-<yyyymmdd>-<shortsha>` 与可选滚动标签 `dev-main`。
+- `release` 镜像必须通过 CI 发布，使用 `v*` 标签触发正式构建与签名流程。
+- 禁止将临时开发镜像写入 `latest`。
+- 部署到生产或公开环境时，优先使用 `latest` 或明确的 `v*` 版本标签。
+- 详细操作命令与回滚步骤见：`docs/release-playbook.md`。
+
+## 7) 建议工作流
 
 1. 先看改动范围（按模块理解影响面）。
 2. 完成代码与测试后，再组织 commit message（不要倒序）。
