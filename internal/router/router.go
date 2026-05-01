@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/atbeta/picfast/internal/config"
@@ -98,6 +99,12 @@ func New(
 		if err != nil {
 			http.Error(w, "openapi spec not found", http.StatusNotFound)
 			return
+		}
+		// Keep the server URL in docs aligned with runtime base URL.
+		server := cfg.ServerSnapshot()
+		baseURL := strings.TrimRight(server.BaseURL, "/")
+		if baseURL != "" {
+			spec = []byte(strings.ReplaceAll(string(spec), "http://localhost:8080/api/v1", baseURL+"/api/v1"))
 		}
 		w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
 		if _, err := w.Write(spec); err != nil {
