@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.3](https://github.com/atbeta/picfast/compare/v0.2.2...v0.2.3) (2026-05-01)
+
+
+### Bug Fixes
+
+* **docs:** render OpenAPI server URL from runtime base URL ([69be5cd](https://github.com/atbeta/picfast/commit/69be5cd6c9edbb1a73241a9b3a8300e0ed1e3b92))
+* **openapi:** allow cross-origin spec imports ([5dc3d68](https://github.com/atbeta/picfast/commit/5dc3d68d8a644b5b388ca69214c31bd7f7252929))
+
 ## [0.2.2](https://github.com/atbeta/picfast/compare/v0.2.1...v0.2.2) (2026-05-01)
 
 
