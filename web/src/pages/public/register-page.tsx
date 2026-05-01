@@ -6,6 +6,7 @@ import { z } from 'zod/v4'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { useAuth } from '../../lib/auth-context'
+import { extractErrorMessage } from '../../lib/error-handler'
 
 const registerSchema = z.object({
   name: z.string().min(1),
@@ -43,9 +44,7 @@ export function RegisterPage() {
       toast.success(t('auth.registerSuccess'), { description: t('auth.registerSuccessDesc') })
       navigate('/console', { replace: true })
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        t('auth.registerFailed')
+      const msg = extractErrorMessage(err, t('auth.registerFailed'))
       setServerError(msg)
     }
   }

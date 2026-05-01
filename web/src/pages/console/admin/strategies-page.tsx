@@ -11,6 +11,7 @@ import {
   updateAdminStrategy,
   type AdminStrategy,
 } from '../../../lib/admin-api'
+import { extractErrorMessage } from '../../../lib/error-handler'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
 import { storageStrategyLabel, storageStrategyTypes, type StorageStrategyType } from '@/lib/storage-strategy'
@@ -237,7 +238,7 @@ export function AdminStrategiesPage() {
       setShowModal(false)
       await qc.invalidateQueries({ queryKey: ['admin-strategies'] })
     } catch (err: unknown) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
+      toast.error(extractErrorMessage(err, t('admin.saveFailed')))
     } finally {
       setSaving(false)
     }
@@ -255,7 +256,7 @@ export function AdminStrategiesPage() {
       setDeleteTarget(null)
       await qc.invalidateQueries({ queryKey: ['admin-strategies'] })
     } catch (err: unknown) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
+      toast.error(extractErrorMessage(err, t('admin.deleteFailed')))
     } finally {
       setDeleting(null)
     }
@@ -321,28 +322,28 @@ export function AdminStrategiesPage() {
             {form.type === 's3' && (
               <>
                 <div className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
-                  <strong>Endpoint</strong> {t('admin.s3EndpointHint', { defaultValue: '是 S3 API 地址（上传用），' })}
-                  <strong>URL</strong> {t('admin.s3URLHint', { defaultValue: '是图片公开访问地址（浏览用）。两者通常不同。' })}
+                  <strong>{t('admin.fieldEndpoint')}</strong> {t('admin.s3EndpointHint', { defaultValue: '是 S3 API 地址（上传用），' })}
+                  <strong>{t('admin.fieldURL')}</strong> {t('admin.s3URLHint', { defaultValue: '是图片公开访问地址（浏览用）。两者通常不同。' })}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
-                    <label className="mb-1 block text-sm font-medium text-foreground">Endpoint</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldEndpoint')}</label>
                     <input value={form.s3Endpoint} onChange={(e) => update('s3Endpoint', e.target.value)} placeholder="https://s3.<region>.amazonaws.com 或 https://s3.example.com" className={inputCls} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-foreground">Region</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldRegion')}</label>
                     <input value={form.s3Region} onChange={(e) => update('s3Region', e.target.value)} placeholder="us-east-1 / cn-north-1 / auto" className={inputCls} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-foreground">Bucket</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldBucket')}</label>
                     <input value={form.s3Bucket} onChange={(e) => update('s3Bucket', e.target.value)} className={inputCls} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-foreground">Access Key</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldAccessKey')}</label>
                     <input value={form.s3AccessKey} onChange={(e) => update('s3AccessKey', e.target.value)} className={inputCls} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-foreground">Secret Key</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldSecretKey')}</label>
                     <input value={form.s3SecretKey} onChange={(e) => update('s3SecretKey', e.target.value)} type="password" className={inputCls} />
                   </div>
                   <div className="col-span-2">
@@ -359,15 +360,15 @@ export function AdminStrategiesPage() {
                   {t('admin.kodoHint', { defaultValue: 'Domain 是七牛融合 CDN 或对象下载域名，Zone 可填 z0/z1/z2/na0/as0。' })}
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground">Access Key</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldAccessKey')}</label>
                   <input value={form.kodoAccessKey} onChange={(e) => update('kodoAccessKey', e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground">Secret Key</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldSecretKey')}</label>
                   <input value={form.kodoSecretKey} onChange={(e) => update('kodoSecretKey', e.target.value)} type="password" className={inputCls} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground">Bucket</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldBucket')}</label>
                   <input value={form.kodoBucket} onChange={(e) => update('kodoBucket', e.target.value)} className={inputCls} />
                 </div>
                 <div>
@@ -375,7 +376,7 @@ export function AdminStrategiesPage() {
                   <input value={form.kodoZone} onChange={(e) => update('kodoZone', e.target.value)} placeholder="z0 华东 / z1 华北 / z2 华南 / na0 北美 / as0 东南亚" className={inputCls} />
                 </div>
                 <div className="col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-foreground">Domain</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldDomain')}</label>
                   <input value={form.kodoDomain} onChange={(e) => update('kodoDomain', e.target.value)} placeholder="https://cdn.example.com 或 https://<bucket-domain>" className={inputCls} />
                 </div>
                 <label className="col-span-2 flex items-center gap-2 text-sm text-foreground">
@@ -391,11 +392,11 @@ export function AdminStrategiesPage() {
                   {t('admin.ossHint', { defaultValue: 'Endpoint 是 OSS API 访问域名，用于上传读取；访问 URL 是 CDN、自定义域名或公开 Bucket 域名，用于生成图片链接。' })}
                 </div>
                 <div className="col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-foreground">Endpoint</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldEndpoint')}</label>
                   <input value={form.ossEndpoint} onChange={(e) => update('ossEndpoint', e.target.value)} placeholder="https://oss-cn-hongkong.aliyuncs.com" className={inputCls} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground">Bucket</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldBucket')}</label>
                   <input value={form.ossBucket} onChange={(e) => update('ossBucket', e.target.value)} className={inputCls} />
                 </div>
                 <div>
@@ -403,11 +404,11 @@ export function AdminStrategiesPage() {
                   <input value={form.ossURL} onChange={(e) => update('ossURL', e.target.value)} placeholder="https://img.example.com 或 https://<bucket>.oss-cn-hongkong.aliyuncs.com" className={inputCls} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground">Access Key</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldAccessKey')}</label>
                   <input value={form.ossAccessKey} onChange={(e) => update('ossAccessKey', e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground">Secret Key</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldSecretKey')}</label>
                   <input value={form.ossSecretKey} onChange={(e) => update('ossSecretKey', e.target.value)} type="password" className={inputCls} />
                 </div>
               </div>
@@ -419,15 +420,15 @@ export function AdminStrategiesPage() {
                   {t('admin.cosHint', { defaultValue: 'Bucket URL 使用腾讯云 COS 存储桶访问地址，例如 https://bucket-1250000000.cos.ap-guangzhou.myqcloud.com。' })}
                 </div>
                 <div className="col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-foreground">Bucket URL</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldBucketUrl')}</label>
                   <input value={form.cosBucketURL} onChange={(e) => update('cosBucketURL', e.target.value)} placeholder="https://bucket-1250000000.cos.ap-guangzhou.myqcloud.com" className={inputCls} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground">Secret ID</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldSecretId')}</label>
                   <input value={form.cosSecretID} onChange={(e) => update('cosSecretID', e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground">Secret Key</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldSecretKey')}</label>
                   <input value={form.cosSecretKey} onChange={(e) => update('cosSecretKey', e.target.value)} type="password" className={inputCls} />
                 </div>
                 <div className="col-span-2">
@@ -440,7 +441,7 @@ export function AdminStrategiesPage() {
             {form.type === 'webdav' && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-foreground">Endpoint</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldEndpoint')}</label>
                   <input value={form.webdavEndpoint} onChange={(e) => update('webdavEndpoint', e.target.value)} placeholder="https://dav.example.com/uploads" className={inputCls} />
                 </div>
                 <div>
@@ -497,50 +498,50 @@ export function AdminStrategiesPage() {
                 <div className="mt-4 space-y-2 text-xs text-muted-foreground">
                   {s.strategy_type === 'local' ? (
                     <div className="flex items-center gap-2 truncate">
-                      <span className="font-medium text-foreground/70 w-12">Root:</span>
+                      <span className="font-medium text-foreground/70 w-12">{t('admin.fieldRoot')}:</span>
                       <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.root as string) || '-'}</code>
                     </div>
                   ) : s.strategy_type === 'kodo' ? (
                     <>
                       <div className="flex items-center gap-2 truncate">
-                        <span className="font-medium text-foreground/70 w-12">Bucket:</span>
+                        <span className="font-medium text-foreground/70 w-12">{t('admin.fieldBucket')}:</span>
                         <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.bucket as string) || '-'}</code>
                       </div>
                       <div className="flex items-center gap-2 truncate">
-                        <span className="font-medium text-foreground/70 w-12">Domain:</span>
+                        <span className="font-medium text-foreground/70 w-12">{t('admin.fieldDomain')}:</span>
                         <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.domain as string) || '-'}</code>
                       </div>
                     </>
                   ) : s.strategy_type === 'cos' ? (
                     <>
                       <div className="flex items-center gap-2 truncate">
-                        <span className="font-medium text-foreground/70 w-20">Bucket URL:</span>
+                        <span className="font-medium text-foreground/70 w-20">{t('admin.fieldBucketUrl')}:</span>
                         <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.bucket_url as string) || '-'}</code>
                       </div>
                       <div className="flex items-center gap-2 truncate">
-                        <span className="font-medium text-foreground/70 w-12">URL:</span>
+                        <span className="font-medium text-foreground/70 w-12">{t('admin.fieldURL')}:</span>
                         <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.url as string) || '-'}</code>
                       </div>
                     </>
                   ) : s.strategy_type === 'webdav' ? (
                     <>
                       <div className="flex items-center gap-2 truncate">
-                        <span className="font-medium text-foreground/70 w-20">Endpoint:</span>
+                        <span className="font-medium text-foreground/70 w-20">{t('admin.fieldEndpoint')}:</span>
                         <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.endpoint as string) || '-'}</code>
                       </div>
                       <div className="flex items-center gap-2 truncate">
-                        <span className="font-medium text-foreground/70 w-12">URL:</span>
+                        <span className="font-medium text-foreground/70 w-12">{t('admin.fieldURL')}:</span>
                         <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.url as string) || '-'}</code>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="flex items-center gap-2 truncate">
-                        <span className="font-medium text-foreground/70 w-12">Bucket:</span>
+                        <span className="font-medium text-foreground/70 w-12">{t('admin.fieldBucket')}:</span>
                         <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.bucket as string) || '-'}</code>
                       </div>
                       <div className="flex items-center gap-2 truncate">
-                        <span className="font-medium text-foreground/70 w-12">URL:</span>
+                        <span className="font-medium text-foreground/70 w-12">{t('admin.fieldURL')}:</span>
                         <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.url as string) || '-'}</code>
                       </div>
                     </>

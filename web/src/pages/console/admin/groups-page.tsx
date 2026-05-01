@@ -13,6 +13,7 @@ import {
   updateAdminGroup,
   type AdminGroup,
 } from '../../../lib/admin-api'
+import { extractErrorMessage } from '../../../lib/error-handler'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
 import {
@@ -149,7 +150,7 @@ export function AdminGroupsPage() {
       setShowModal(false)
       await qc.invalidateQueries({ queryKey: ['admin-groups'] })
     } catch (err: unknown) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
+      toast.error(extractErrorMessage(err, t('admin.saveFailed')))
     } finally {
       setSaving(false)
     }
@@ -167,7 +168,7 @@ export function AdminGroupsPage() {
       setDeleteTarget(null)
       await qc.invalidateQueries({ queryKey: ['admin-groups'] })
     } catch (err: unknown) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
+      toast.error(extractErrorMessage(err, t('admin.deleteFailed')))
     } finally {
       setDeleting(null)
     }

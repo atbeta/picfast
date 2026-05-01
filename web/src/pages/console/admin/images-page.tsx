@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Trash2, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react'
 
 import { deleteAdminImage, listAdminImages } from '../../../lib/admin-api'
+import { extractErrorMessage } from '../../../lib/error-handler'
 import { formatFileSize } from '../../../lib/upload'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
@@ -33,7 +34,7 @@ export function AdminImagesPage() {
       setDeleteTarget(null)
       await qc.invalidateQueries({ queryKey: ['admin-images'] })
     } catch (err: unknown) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
+      toast.error(extractErrorMessage(err, t('admin.deleteFailed')))
     } finally {
       setDeleting(null)
     }
@@ -91,7 +92,7 @@ export function AdminImagesPage() {
               <thead>
                 <tr className="border-b border-border/50 bg-muted/35 text-left text-xs text-muted-foreground">
                   <th className="px-4 py-3 font-medium">{t('admin.colPreview')}</th>
-                  <th className="px-3 py-3 font-medium">Key</th>
+                  <th className="px-3 py-3 font-medium">{t('admin.imageKey')}</th>
                   <th className="px-3 py-3 font-medium">{t('admin.colName')}</th>
                   <th className="px-3 py-3 font-medium">{t('admin.colUploader')}</th>
                   <th className="px-3 py-3 font-medium">{t('admin.colSize')}</th>

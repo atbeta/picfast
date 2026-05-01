@@ -4,6 +4,7 @@ import { AlertCircle } from 'lucide-react'
 
 import { UploadZone } from '../../components/upload-zone'
 import { UploadResultCard } from '../../components/upload-result'
+import { extractErrorMessage } from '../../lib/error-handler'
 import { uploadImage } from '../../lib/upload'
 import type { UploadResult } from '../../lib/upload'
 
@@ -40,9 +41,7 @@ export function GuestUploadPage() {
         })
         newResults.push(result)
       } catch (err: unknown) {
-        const msg =
-          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          t('upload.uploadFailed', { name: files[i].name })
+        const msg = extractErrorMessage(err, t('upload.uploadFailed', { name: files[i].name }))
         newErrors.push(msg)
       }
     }

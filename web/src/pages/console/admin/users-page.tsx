@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Ban, Unlock, Trash2, ChevronLeft, ChevronRight, Users, Pencil } from 'lucide-react'
 
 import { deleteAdminUser, listAdminUsers, updateAdminUser, listAdminGroups, type AdminUser } from '../../../lib/admin-api'
+import { extractErrorMessage } from '../../../lib/error-handler'
 import { formatFileSize } from '../../../lib/upload'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
@@ -65,7 +66,7 @@ export function AdminUsersPage() {
       await qc.invalidateQueries({ queryKey: ['admin-users'] })
       toast.success(t('admin.saveSuccess', { defaultValue: '更新成功' }))
     } catch (err: unknown) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
+      toast.error(extractErrorMessage(err, t('admin.saveFailed')))
     } finally {
       setEditSaving(false)
     }
@@ -78,7 +79,7 @@ export function AdminUsersPage() {
         await updateAdminUser(user.id, { status: user.status === 1 ? 0 : 1 })
         await qc.invalidateQueries({ queryKey: ['admin-users'] })
       } catch (err: unknown) {
-        toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
+        toast.error(extractErrorMessage(err, t('admin.saveFailed')))
       } finally {
         setSaving(null)
       }
@@ -95,7 +96,7 @@ export function AdminUsersPage() {
         setDeleteTarget(null)
         await qc.invalidateQueries({ queryKey: ['admin-users'] })
       } catch (err: unknown) {
-        toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.deleteFailed'))
+        toast.error(extractErrorMessage(err, t('admin.deleteFailed')))
       } finally {
         setDeleting(null)
       }
@@ -177,7 +178,11 @@ export function AdminUsersPage() {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-muted-foreground">{u.image_num}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{formatFileSize(u.used_capacity || 0)} / {formatFileSize(u.capacity_bytes)}</td>
+                    <td className="px-3 py-3 text-muted-foreground">
+                      {formatFileSize(u.used_capacity || 0)} / {u.capacity_bytes <= 0
+                        ? t('settings.unlimitedCapacity')
+                        : formatFileSize(u.capacity_bytes)}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
                         <button

@@ -36,15 +36,25 @@ api.interceptors.request.use((config) => {
 })
 
 let isRefreshing = false
-let subscribers: Array<(token: string) => void> = []
+type RefreshSubscriber = {
+  onSuccess: (token: string) => void
+  onError: (error: unknown) => void
+}
+
+let subscribers: RefreshSubscriber[] = []
 
 function flushSubscribers(token: string) {
-  subscribers.forEach((callback) => callback(token))
+  subscribers.forEach((subscriber) => subscriber.onSuccess(token))
   subscribers = []
 }
 
-function subscribe(callback: (token: string) => void) {
-  subscribers.push(callback)
+function rejectSubscribers(error: unknown) {
+  subscribers.forEach((subscriber) => subscriber.onError(error))
+  subscribers = []
+}
+
+function subscribe(onSuccess: (token: string) => void, onError: (error: unknown) => void) {
+  subscribers.push({ onSuccess, onError })
 }
 
 api.interceptors.response.use(
@@ -63,11 +73,16 @@ api.interceptors.response.use(
 
       originalRequest._retry = true
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          subscribe((nextToken) => {
-            originalRequest.headers.Authorization = `Bearer ${nextToken}`
-            resolve(api(originalRequest))
-          })
+        return new Promise((resolve, reject) => {
+          subscribe(
+            (nextToken) => {
+              originalRequest.headers.Authorization = `Bearer ${nextToken}`
+              resolve(api(originalRequest))
+            },
+            (refreshError) => {
+              reject(refreshError)
+            },
+          )
         })
       }
 
@@ -85,6 +100,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         localStorage.removeItem(ACCESS_TOKEN_KEY)
         localStorage.removeItem(REFRESH_TOKEN_KEY)
+        rejectSubscribers(refreshError)
         window.location.href = '/login'
         return Promise.reject(refreshError)
       } finally {

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { getAdminSettings, updateAdminSettings, type AdminSettings } from '@/lib/admin-api'
+import { extractErrorMessage } from '@/lib/error-handler'
 
 export interface SettingsForm {
   app_name: string
@@ -140,10 +141,7 @@ export function useAdminSettingsForm() {
       await qc.invalidateQueries({ queryKey: ['admin-settings'] })
       await qc.invalidateQueries({ queryKey: ['site-config'] })
     } catch (err: unknown) {
-      setErrorMsg(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        t('admin.saveFailed'),
-      )
+      setErrorMsg(extractErrorMessage(err, t('admin.saveFailed')))
     }
   }
 

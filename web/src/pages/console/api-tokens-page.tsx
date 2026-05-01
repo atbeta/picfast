@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { Calendar, Clock, CheckCircle2, History, Trash2, Copy, KeyRound, Plus } from 'lucide-react'
 import { createApiToken, deleteApiToken, listApiTokens } from '../../lib/console-api'
+import { extractErrorMessage } from '../../lib/error-handler'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -60,10 +61,7 @@ export function ApiTokensPage() {
       setNewScopes(['read', 'write'])
       await qc.invalidateQueries({ queryKey: ['api-tokens'] })
     } catch (err: unknown) {
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        t('tokens.createFailed'),
-      )
+      toast.error(extractErrorMessage(err, t('tokens.createFailed')))
     } finally {
       setCreating(false)
     }
@@ -82,10 +80,7 @@ export function ApiTokensPage() {
         setDeleteTarget(null)
         await qc.invalidateQueries({ queryKey: ['api-tokens'] })
       } catch (err: unknown) {
-        toast.error(
-          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          t('tokens.deleteFailed'),
-        )
+        toast.error(extractErrorMessage(err, t('tokens.deleteFailed')))
       } finally {
         setDeleting(null)
       }

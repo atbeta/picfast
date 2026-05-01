@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { createAlbum, deleteAlbum, listAlbums, updateAlbum } from '../../lib/console-api'
+import { extractErrorMessage } from '../../lib/error-handler'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
 
@@ -36,10 +37,7 @@ export function AlbumsPage() {
       setNewIntro('')
       await qc.invalidateQueries({ queryKey: ['albums'] })
     } catch (err: unknown) {
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        t('albums.createFailed'),
-      )
+      toast.error(extractErrorMessage(err, t('albums.createFailed')))
     } finally {
       setCreating(false)
     }
@@ -65,10 +63,7 @@ export function AlbumsPage() {
       setEditingId(null)
       await qc.invalidateQueries({ queryKey: ['albums'] })
     } catch (err: unknown) {
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        t('albums.updateFailed'),
-      )
+      toast.error(extractErrorMessage(err, t('albums.updateFailed')))
     } finally {
       setSaving(false)
     }
@@ -87,10 +82,7 @@ export function AlbumsPage() {
         setDeleteTarget(null)
         await qc.invalidateQueries({ queryKey: ['albums'] })
       } catch (err: unknown) {
-        toast.error(
-          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          t('albums.deleteFailed'),
-        )
+        toast.error(extractErrorMessage(err, t('albums.deleteFailed')))
       } finally {
         setDeleting(null)
       }

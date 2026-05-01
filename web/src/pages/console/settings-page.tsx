@@ -9,6 +9,7 @@ import { useAuth } from '../../lib/auth-context'
 import { useTheme } from '../../lib/theme'
 import { formatFileSize } from '../../lib/upload'
 import { getStrategies, type Strategy } from '../../lib/console-api'
+import { extractErrorMessage } from '../../lib/error-handler'
 import { storageStrategyLabel } from '../../lib/storage-strategy'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -92,10 +93,7 @@ export function SettingsPage() {
       await updateProfile(payload)
       setSuccess(true)
     } catch (err: unknown) {
-      setErrorMsg(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        t('settings.saveFailed'),
-      )
+      setErrorMsg(extractErrorMessage(err, t('settings.saveFailed')))
     } finally {
       setSaving(false)
     }
