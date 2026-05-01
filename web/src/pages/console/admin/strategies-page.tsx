@@ -13,6 +13,7 @@ import {
 } from '../../../lib/admin-api'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
+import { storageStrategyLabel, storageStrategyTypes, type StorageStrategyType } from '@/lib/storage-strategy'
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface StrategyForm {
   name: string
-  type: string
+  type: StorageStrategyType
   // local
   localRoot: string
   // s3
@@ -33,6 +34,29 @@ interface StrategyForm {
   s3AccessKey: string
   s3SecretKey: string
   s3URL: string
+  // kodo
+  kodoAccessKey: string
+  kodoSecretKey: string
+  kodoBucket: string
+  kodoDomain: string
+  kodoZone: string
+  kodoPrivate: boolean
+  // oss
+  ossEndpoint: string
+  ossBucket: string
+  ossAccessKey: string
+  ossSecretKey: string
+  ossURL: string
+  // cos
+  cosBucketURL: string
+  cosSecretID: string
+  cosSecretKey: string
+  cosURL: string
+  // webdav
+  webdavEndpoint: string
+  webdavUsername: string
+  webdavPassword: string
+  webdavURL: string
 }
 
 function emptyForm(): StrategyForm {
@@ -46,28 +70,82 @@ function emptyForm(): StrategyForm {
     s3AccessKey: '',
     s3SecretKey: '',
     s3URL: '',
+    kodoAccessKey: '',
+    kodoSecretKey: '',
+    kodoBucket: '',
+    kodoDomain: '',
+    kodoZone: 'z0',
+    kodoPrivate: false,
+    ossEndpoint: '',
+    ossBucket: '',
+    ossAccessKey: '',
+    ossSecretKey: '',
+    ossURL: '',
+    cosBucketURL: '',
+    cosSecretID: '',
+    cosSecretKey: '',
+    cosURL: '',
+    webdavEndpoint: '',
+    webdavUsername: '',
+    webdavPassword: '',
+    webdavURL: '',
   }
 }
 
 function formToConfigs(form: StrategyForm): Record<string, unknown> {
-  if (form.type === 'local') {
-    return { root: form.localRoot, url: '/i' }
-  }
-  return {
-    endpoint: form.s3Endpoint,
-    region: form.s3Region,
-    bucket: form.s3Bucket,
-    access_key: form.s3AccessKey,
-    secret_key: form.s3SecretKey,
-    url: form.s3URL,
+  switch (form.type) {
+    case 'local':
+      return { root: form.localRoot, url: '/i' }
+    case 's3':
+      return {
+        endpoint: form.s3Endpoint,
+        region: form.s3Region,
+        bucket: form.s3Bucket,
+        access_key: form.s3AccessKey,
+        secret_key: form.s3SecretKey,
+        url: form.s3URL,
+      }
+    case 'kodo':
+      return {
+        access_key: form.kodoAccessKey,
+        secret_key: form.kodoSecretKey,
+        bucket: form.kodoBucket,
+        domain: form.kodoDomain,
+        zone: form.kodoZone,
+        private: form.kodoPrivate,
+      }
+    case 'oss':
+      return {
+        endpoint: form.ossEndpoint,
+        bucket: form.ossBucket,
+        access_key: form.ossAccessKey,
+        secret_key: form.ossSecretKey,
+        url: form.ossURL,
+      }
+    case 'cos':
+      return {
+        bucket_url: form.cosBucketURL,
+        secret_id: form.cosSecretID,
+        secret_key: form.cosSecretKey,
+        url: form.cosURL,
+      }
+    case 'webdav':
+      return {
+        endpoint: form.webdavEndpoint,
+        username: form.webdavUsername,
+        password: form.webdavPassword,
+        url: form.webdavURL,
+      }
   }
 }
 
 function strategyToForm(s: AdminStrategy): StrategyForm {
+  const base = emptyForm()
   const c = s.configs || {}
   return {
+    ...base,
     name: s.name,
-    type: s.strategy_type,
+    type: isStrategyType(s.strategy_type) ? s.strategy_type : 'local',
     localRoot: (c.root as string) || '',
     s3Endpoint: (c.endpoint as string) || '',
     s3Region: (c.region as string) || 'us-east-1',
@@ -75,6 +153,47 @@ function strategyToForm(s: AdminStrategy): StrategyForm {
     s3AccessKey: (c.access_key as string) || '',
     s3SecretKey: (c.secret_key as string) || '',
     s3URL: (c.url as string) || '',
+    kodoAccessKey: (c.access_key as string) || '',
+    kodoSecretKey: (c.secret_key as string) || '',
+    kodoBucket: (c.bucket as string) || '',
+    kodoDomain: (c.domain as string) || '',
+    kodoZone: (c.zone as string) || 'z0',
+    kodoPrivate: Boolean(c.private),
+    ossEndpoint: (c.endpoint as string) || '',
+    ossBucket: (c.bucket as string) || '',
+    ossAccessKey: (c.access_key as string) || '',
+    ossSecretKey: (c.secret_key as string) || '',
+    ossURL: (c.url as string) || '',
+    cosBucketURL: (c.bucket_url as string) || '',
+    cosSecretID: (c.secret_id as string) || '',
+    cosSecretKey: (c.secret_key as string) || '',
+    cosURL: (c.url as string) || '',
+    webdavEndpoint: (c.endpoint as string) || '',
+    webdavUsername: (c.username as string) || '',
+    webdavPassword: (c.password as string) || '',
+    webdavURL: (c.url as string) || '',
+  }
+}
+
+function isStrategyType(type: string): type is StorageStrategyType {
+  return storageStrategyTypes.includes(type as StorageStrategyType)
+}
+
+function requiredFieldsComplete(form: StrategyForm): boolean {
+  const has = (...values: string[]) => values.every((value) => value.trim().length > 0)
+  switch (form.type) {
+    case 'local':
+      return has(form.localRoot)
+    case 's3':
+      return has(form.s3Endpoint, form.s3Bucket, form.s3AccessKey, form.s3SecretKey)
+    case 'kodo':
+      return has(form.kodoAccessKey, form.kodoSecretKey, form.kodoBucket, form.kodoDomain)
+    case 'oss':
+      return has(form.ossEndpoint, form.ossBucket, form.ossAccessKey, form.ossSecretKey)
+    case 'cos':
+      return has(form.cosBucketURL, form.cosSecretID, form.cosSecretKey)
+    case 'webdav':
+      return has(form.webdavEndpoint, form.webdavUsername, form.webdavPassword)
   }
 }
 
@@ -111,7 +230,7 @@ export function AdminStrategiesPage() {
     try {
       const configs = formToConfigs(form)
       if (editing) {
-        await updateAdminStrategy(editing.id, { name: form.name.trim(), configs })
+        await updateAdminStrategy(editing.id, { name: form.name.trim(), strategy_type: form.type, configs })
       } else {
         await createAdminStrategy({ name: form.name.trim(), strategy_type: form.type, configs })
       }
@@ -178,19 +297,16 @@ export function AdminStrategiesPage() {
               <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.colType', { defaultValue: '类型' })}</label>
               <Select 
           value={form.type} 
-          onValueChange={(val) => val !== null && update('type', val as string)} 
-          disabled={!!editing}
-          items={{
-                  local: t('admin.typeLocal', { defaultValue: '本地存储' }),
-                  s3: t('admin.typeS3', { defaultValue: 'S3 兼容存储' })
-                }}
+          onValueChange={(val) => typeof val === 'string' && isStrategyType(val) && update('type', val)}
+          items={Object.fromEntries(storageStrategyTypes.map((type) => [type, storageStrategyLabel(t, type)]))}
               >
                 <SelectTrigger className="h-10 w-full bg-background border-input">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="local">{t('admin.typeLocal', { defaultValue: '本地存储' })}</SelectItem>
-                  <SelectItem value="s3">{t('admin.typeS3', { defaultValue: 'S3 兼容存储' })}</SelectItem>
+                  {storageStrategyTypes.map((type) => (
+                    <SelectItem key={type} value={type}>{storageStrategyLabel(t, type)}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -211,11 +327,11 @@ export function AdminStrategiesPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <label className="mb-1 block text-sm font-medium text-foreground">Endpoint</label>
-                    <input value={form.s3Endpoint} onChange={(e) => update('s3Endpoint', e.target.value)} placeholder="https://<account-id>.r2.cloudflarestorage.com" className={inputCls} />
+                    <input value={form.s3Endpoint} onChange={(e) => update('s3Endpoint', e.target.value)} placeholder="https://s3.<region>.amazonaws.com 或 https://s3.example.com" className={inputCls} />
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-foreground">Region</label>
-                    <input value={form.s3Region} onChange={(e) => update('s3Region', e.target.value)} placeholder="R2: auto" className={inputCls} />
+                    <input value={form.s3Region} onChange={(e) => update('s3Region', e.target.value)} placeholder="us-east-1 / cn-north-1 / auto" className={inputCls} />
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-foreground">Bucket</label>
@@ -231,10 +347,115 @@ export function AdminStrategiesPage() {
                   </div>
                   <div className="col-span-2">
                     <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.accessURL', { defaultValue: '访问 URL' })}</label>
-                    <input value={form.s3URL} onChange={(e) => update('s3URL', e.target.value)} placeholder="https://pub-xxx.r2.dev" className={inputCls} />
+                    <input value={form.s3URL} onChange={(e) => update('s3URL', e.target.value)} placeholder="https://img.example.com" className={inputCls} />
                   </div>
                 </div>
               </>
+            )}
+
+            {form.type === 'kodo' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
+                  {t('admin.kodoHint', { defaultValue: 'Domain 是七牛融合 CDN 或对象下载域名，Zone 可填 z0/z1/z2/na0/as0。' })}
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Access Key</label>
+                  <input value={form.kodoAccessKey} onChange={(e) => update('kodoAccessKey', e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Secret Key</label>
+                  <input value={form.kodoSecretKey} onChange={(e) => update('kodoSecretKey', e.target.value)} type="password" className={inputCls} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Bucket</label>
+                  <input value={form.kodoBucket} onChange={(e) => update('kodoBucket', e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Zone</label>
+                  <input value={form.kodoZone} onChange={(e) => update('kodoZone', e.target.value)} placeholder="z0 华东 / z1 华北 / z2 华南 / na0 北美 / as0 东南亚" className={inputCls} />
+                </div>
+                <div className="col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-foreground">Domain</label>
+                  <input value={form.kodoDomain} onChange={(e) => update('kodoDomain', e.target.value)} placeholder="https://cdn.example.com 或 https://<bucket-domain>" className={inputCls} />
+                </div>
+                <label className="col-span-2 flex items-center gap-2 text-sm text-foreground">
+                  <input type="checkbox" checked={form.kodoPrivate} onChange={(e) => update('kodoPrivate', e.target.checked)} className="size-4 rounded border-input" />
+                  {t('admin.privateBucket', { defaultValue: '私有空间（读取时生成签名 URL）' })}
+                </label>
+              </div>
+            )}
+
+            {form.type === 'oss' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
+                  {t('admin.ossHint', { defaultValue: 'Endpoint 是 OSS API 访问域名，用于上传读取；访问 URL 是 CDN、自定义域名或公开 Bucket 域名，用于生成图片链接。' })}
+                </div>
+                <div className="col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-foreground">Endpoint</label>
+                  <input value={form.ossEndpoint} onChange={(e) => update('ossEndpoint', e.target.value)} placeholder="https://oss-cn-hongkong.aliyuncs.com" className={inputCls} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Bucket</label>
+                  <input value={form.ossBucket} onChange={(e) => update('ossBucket', e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.accessURL', { defaultValue: '访问 URL' })}</label>
+                  <input value={form.ossURL} onChange={(e) => update('ossURL', e.target.value)} placeholder="https://img.example.com 或 https://<bucket>.oss-cn-hongkong.aliyuncs.com" className={inputCls} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Access Key</label>
+                  <input value={form.ossAccessKey} onChange={(e) => update('ossAccessKey', e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Secret Key</label>
+                  <input value={form.ossSecretKey} onChange={(e) => update('ossSecretKey', e.target.value)} type="password" className={inputCls} />
+                </div>
+              </div>
+            )}
+
+            {form.type === 'cos' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
+                  {t('admin.cosHint', { defaultValue: 'Bucket URL 使用腾讯云 COS 存储桶访问地址，例如 https://bucket-1250000000.cos.ap-guangzhou.myqcloud.com。' })}
+                </div>
+                <div className="col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-foreground">Bucket URL</label>
+                  <input value={form.cosBucketURL} onChange={(e) => update('cosBucketURL', e.target.value)} placeholder="https://bucket-1250000000.cos.ap-guangzhou.myqcloud.com" className={inputCls} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Secret ID</label>
+                  <input value={form.cosSecretID} onChange={(e) => update('cosSecretID', e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Secret Key</label>
+                  <input value={form.cosSecretKey} onChange={(e) => update('cosSecretKey', e.target.value)} type="password" className={inputCls} />
+                </div>
+                <div className="col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.accessURL', { defaultValue: '访问 URL' })}</label>
+                  <input value={form.cosURL} onChange={(e) => update('cosURL', e.target.value)} placeholder="https://img.example.com 或 https://<bucket-appid>.cos.<region>.myqcloud.com" className={inputCls} />
+                </div>
+              </div>
+            )}
+
+            {form.type === 'webdav' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-foreground">Endpoint</label>
+                  <input value={form.webdavEndpoint} onChange={(e) => update('webdavEndpoint', e.target.value)} placeholder="https://dav.example.com/uploads" className={inputCls} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.username', { defaultValue: '用户名' })}</label>
+                  <input value={form.webdavUsername} onChange={(e) => update('webdavUsername', e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('auth.password')}</label>
+                  <input value={form.webdavPassword} onChange={(e) => update('webdavPassword', e.target.value)} type="password" className={inputCls} />
+                </div>
+                <div className="col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.accessURL', { defaultValue: '访问 URL' })}</label>
+                  <input value={form.webdavURL} onChange={(e) => update('webdavURL', e.target.value)} placeholder="https://cdn.example.com" className={inputCls} />
+                </div>
+              </div>
             )}
           </div>
 
@@ -242,7 +463,7 @@ export function AdminStrategiesPage() {
             <button type="button" onClick={() => setShowModal(false)} className="h-10 rounded-lg border border-input bg-background px-4 text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
               {t('admin.cancel')}
             </button>
-            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="h-10 rounded-lg bg-primary px-4 text-sm text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors cursor-pointer disabled:cursor-not-allowed">
+            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim() || !requiredFieldsComplete(form)} className="h-10 rounded-lg bg-primary px-4 text-sm text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors cursor-pointer disabled:cursor-not-allowed">
               {saving ? '…' : t('admin.confirmSave')}
             </button>
           </div>
@@ -266,7 +487,7 @@ export function AdminStrategiesPage() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className={['rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider', s.strategy_type === 'local' ? 'bg-primary/10 text-primary' : 'bg-info/10 text-info'].join(' ')}>
-                    {s.strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: '本地存储' })) : 'S3 API'}
+                    {storageStrategyLabel(t, s.strategy_type)}
                   </span>
                   <span className="text-xs text-muted-foreground/60">{new Date(s.created_at).toLocaleDateString()}</span>
                 </div>
@@ -279,6 +500,39 @@ export function AdminStrategiesPage() {
                       <span className="font-medium text-foreground/70 w-12">Root:</span>
                       <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.root as string) || '-'}</code>
                     </div>
+                  ) : s.strategy_type === 'kodo' ? (
+                    <>
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="font-medium text-foreground/70 w-12">Bucket:</span>
+                        <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.bucket as string) || '-'}</code>
+                      </div>
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="font-medium text-foreground/70 w-12">Domain:</span>
+                        <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.domain as string) || '-'}</code>
+                      </div>
+                    </>
+                  ) : s.strategy_type === 'cos' ? (
+                    <>
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="font-medium text-foreground/70 w-20">Bucket URL:</span>
+                        <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.bucket_url as string) || '-'}</code>
+                      </div>
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="font-medium text-foreground/70 w-12">URL:</span>
+                        <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.url as string) || '-'}</code>
+                      </div>
+                    </>
+                  ) : s.strategy_type === 'webdav' ? (
+                    <>
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="font-medium text-foreground/70 w-20">Endpoint:</span>
+                        <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.endpoint as string) || '-'}</code>
+                      </div>
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="font-medium text-foreground/70 w-12">URL:</span>
+                        <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.url as string) || '-'}</code>
+                      </div>
+                    </>
                   ) : (
                     <>
                       <div className="flex items-center gap-2 truncate">

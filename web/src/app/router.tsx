@@ -130,7 +130,6 @@ function PublicRoutes() {
             <Route path="images" element={<LazyPage><AdminImagesPage /></LazyPage>} />
             <Route path="audit-logs" element={<LazyPage><AdminAuditLogsPage /></LazyPage>} />
             <Route path="settings" element={<LazyPage><AdminSettingsPage /></LazyPage>} />
-            <Route index element={<Navigate to="/console/admin/users" replace />} />
           </Route>
           <Route index element={<Navigate to="/console/upload" replace />} />
         </Route>

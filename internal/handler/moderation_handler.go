@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -32,7 +33,11 @@ func (h *ModerationHandler) ListPending(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	total, _ := h.db.CountPendingImages(r.Context())
+	total, err := h.db.CountPendingImages(r.Context())
+	if err != nil {
+		slog.Warn("failed to count pending images", "error", err)
+		total = 0
+	}
 
 	items := make([]ImageListItem, len(images))
 	for i, img := range images {

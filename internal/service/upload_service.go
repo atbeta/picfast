@@ -29,6 +29,21 @@ type uploadUserSettings struct {
 	DefaultStrategy int64 `json:"default_strategy"`
 }
 
+type uploadIdentity struct {
+	group               sqlc.Group
+	userID              int64
+	groupID             int64
+	isAdmin             bool
+	preferredStrategyID *int64
+}
+
+type processedUploadImage struct {
+	data      []byte
+	width     int
+	height    int
+	processed bool
+}
+
 func NewUploadService(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Config) *UploadService {
 	return &UploadService{db: db, pool: pool, config: cfg}
 }
@@ -55,194 +70,40 @@ type UploadResult struct {
 }
 
 func (s *UploadService) Store(ctx context.Context, params UploadParams) (*UploadResult, error) {
-	// Apply default TTL if none provided
-	if params.ExpiresAt == nil && s.config.App.DefaultImageTTL > 0 {
-		t := time.Now().Add(s.config.App.DefaultImageTTL)
-		params.ExpiresAt = &t
+	params = s.applyDefaultTTL(params)
+
+	identity, err := s.resolveIdentity(ctx, params)
+	if err != nil {
+		return nil, err
 	}
 
-	// Step 1: Resolve identity
-	var group sqlc.Group
-	var userID int64
-	var groupID int64
-	var isAdmin bool
-	var preferredStrategyID *int64
-
-	if params.UserID != nil {
-		userID = *params.UserID
-		user, err := s.db.GetUserByID(ctx, userID)
-		if err != nil {
-			return nil, fmt.Errorf("user not found")
-		}
-		if user.Status != int16(domain.UserStatusActive) {
-			return nil, fmt.Errorf("account is frozen")
-		}
-		if !user.GroupID.Valid {
-			return nil, fmt.Errorf("user has no group")
-		}
-		groupID = user.GroupID.Int64
-		group, err = s.db.GetGroupByID(ctx, groupID)
-		if err != nil {
-			return nil, fmt.Errorf("group not found")
-		}
-		isAdmin = user.Role == string(domain.RoleAdmin)
-		if len(user.Settings) > 0 {
-			var settings uploadUserSettings
-			if err := json.Unmarshal(user.Settings, &settings); err == nil && settings.DefaultStrategy > 0 {
-				preferredStrategyID = &settings.DefaultStrategy
-			}
-		}
-	} else {
-		if !s.config.App.AllowGuestUpload {
-			return nil, fmt.Errorf("guest upload is disabled")
-		}
-		guestGroup, err := s.db.GetGuestGroup(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("no guest group configured")
-		}
-		group = guestGroup
-		groupID = group.ID
+	groupConfig, err := loadUploadGroupConfig(identity.group)
+	if err != nil {
+		return nil, err
 	}
 
-	// Step 2: Load group config
-	var groupConfig domain.GroupConfig
-	if err := json.Unmarshal(group.Configs, &groupConfig); err != nil {
-		return nil, fmt.Errorf("invalid group config")
+	ext, err := validateUploadFile(params, groupConfig)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkCapacity(ctx, params, identity.userID); err != nil {
+		return nil, err
 	}
 
-	// Step 3: Validate file
-	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(params.FileName)), ".")
-	if !groupConfig.IsExtensionAllowed(ext) {
-		return nil, fmt.Errorf("file extension .%s is not allowed", ext)
-	}
-	if params.FileSize > groupConfig.MaximumFileSize {
-		return nil, fmt.Errorf("file size exceeds maximum (%d bytes)", groupConfig.MaximumFileSize)
-	}
-
-	// Capacity check for authenticated users
-	if params.UserID != nil {
-		used, err := s.db.GetUserUsedCapacity(ctx, domain.PgInt8(userID))
-		if err != nil {
-			return nil, fmt.Errorf("failed to check capacity: %w", err)
-		}
-		user, err := s.db.GetUserByID(ctx, userID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get user: %w", err)
-		}
-		if user.CapacityBytes > 0 && used > 0 && used+params.FileSize > user.CapacityBytes {
-			return nil, fmt.Errorf("storage capacity exceeded")
-		}
-	}
-
-	// Step 4: Select strategy
-	var strategy sqlc.Strategy
-	strategies, err := s.db.GetGroupStrategies(ctx, groupID)
-	
-	if err != nil || len(strategies) == 0 {
-		if !isAdmin {
-			return nil, fmt.Errorf("no storage strategy available")
-		}
-		// If admin but group has no strategy, fetch all strategies
-		allStrats, err := s.db.ListStrategies(ctx)
-		if err != nil || len(allStrats) == 0 {
-			return nil, fmt.Errorf("no storage strategy available in system")
-		}
-		strategies = allStrats
-	}
-
-	if params.StrategyID != nil {
-		found := false
-		for _, st := range strategies {
-			if st.ID == *params.StrategyID {
-				strategy = st
-				found = true
-				break
-			}
-		}
-		if !found && isAdmin {
-			// If admin requested a specific strategy not in group, fetch it directly
-			st, err := s.db.GetStrategyByID(ctx, *params.StrategyID)
-			if err == nil {
-				strategy = st
-				found = true
-			}
-		}
-		if !found {
-			return nil, fmt.Errorf("strategy not available for your group")
-		}
-	} else {
-		selected := false
-		if preferredStrategyID != nil {
-			for _, st := range strategies {
-				if st.ID == *preferredStrategyID {
-					strategy = st
-					selected = true
-					break
-				}
-			}
-		}
-		if !selected && groupConfig.DefaultStrategyID > 0 {
-			for _, st := range strategies {
-				if st.ID == groupConfig.DefaultStrategyID {
-					strategy = st
-					selected = true
-					break
-				}
-			}
-		}
-		if !selected {
-			strategy = strategies[0]
-		}
+	strategy, err := s.selectStrategy(ctx, params.StrategyID, identity, groupConfig)
+	if err != nil {
+		return nil, err
 	}
 
 	// Step 5: Rate limiting
-	if err := s.checkRateLimit(ctx, userID, params.ClientIP, &groupConfig); err != nil {
+	if err := s.checkRateLimit(ctx, identity.userID, params.ClientIP, &groupConfig); err != nil {
 		return nil, err
 	}
 
 	// Step 6: Process image
 	originalSize := int64(len(params.FileData))
-	fileData := params.FileData
-	wasProcessed := false
-	var width, height int
-
-	skipExts := map[string]bool{"gif": true, "svg": true, "ico": true}
-	if !skipExts[ext] {
-		needProcess := groupConfig.ImageSaveFormat != "" || groupConfig.ImageSaveQuality < 100 || groupConfig.IsStripExif
-		if needProcess {
-			targetFormat := groupConfig.ImageSaveFormat
-			if targetFormat == "" {
-				targetFormat = ext
-			}
-			processedImg, err := ProcessImage(fileData, targetFormat, groupConfig.ImageSaveQuality, groupConfig.IsStripExif)
-			if err != nil {
-				slog.Warn("image processing failed, using original", "error", err)
-			} else {
-				fileData = processedImg.Data
-				width = processedImg.Width
-				height = processedImg.Height
-				wasProcessed = true
-			}
-		}
-	}
-
-	// Step 6b: Apply watermark if enabled
-	if groupConfig.IsEnableWatermark && !skipExts[ext] {
-		var wmCfg WatermarkConfig
-		if err := json.Unmarshal(groupConfig.WatermarkConfigs, &wmCfg); err == nil && wmCfg.Text != "" {
-			targetFormat := groupConfig.ImageSaveFormat
-			if targetFormat == "" {
-				targetFormat = ext
-			}
-			watermarked, err := ApplyWatermark(fileData, wmCfg, targetFormat, groupConfig.ImageSaveQuality)
-			if err != nil {
-				slog.Warn("watermark failed, using original", "error", err)
-			} else {
-				fileData = watermarked
-				wasProcessed = true
-			}
-		}
-	}
+	processed := processUploadImage(params.FileData, ext, groupConfig)
+	fileData := processed.data
 
 	// Step 7: Generate path and filename
 	pathname := GeneratePathname(
@@ -250,7 +111,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		groupConfig.FileNamingRule,
 		ext,
 		ComputeMD5(params.FileData),
-		userID,
+		identity.userID,
 	)
 
 	// Step 8: Compute hashes
@@ -306,7 +167,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		img, err = qtx.CreateImage(ctx, sqlc.CreateImageParams{
 			UserID:     domain.PgInt8Ptr(params.UserID),
 			AlbumID:    domain.PgInt8Ptr(params.AlbumID),
-			GroupID:    domain.PgInt8(groupID),
+			GroupID:    domain.PgInt8(identity.groupID),
 			StrategyID: domain.PgInt8(strategy.ID),
 			Key:        imageKey,
 			Path:       filepath.Dir(pathname),
@@ -317,8 +178,8 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 			Extension:  ext,
 			Md5:        md5Hash,
 			Sha1:       sha1Hash,
-			Width:      int32(width),
-			Height:     int32(height),
+			Width:      int32(processed.width),
+			Height:     int32(processed.height),
 			Permission: perm,
 			UploadedIp: params.ClientIP,
 			ExpiresAt:  domain.PgTimeWithZonePtr(params.ExpiresAt),
@@ -327,10 +188,14 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 			return err
 		}
 		if params.UserID != nil {
-			qtx.IncrementUserImageNum(ctx, userID)
+			if err := qtx.IncrementUserImageNum(ctx, identity.userID); err != nil {
+				return err
+			}
 		}
 		if params.AlbumID != nil {
-			qtx.IncrementAlbumImageNum(ctx, *params.AlbumID)
+			if err := qtx.IncrementAlbumImageNum(ctx, *params.AlbumID); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -372,16 +237,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	}
 
 	// Step 14: Build response
-	imageURL := s.config.Server.BaseURL + "/i/" + imageKey + "." + ext
-	thumbURL := s.config.Server.BaseURL + "/t/" + md5Hash + ".png"
-
-	links := domain.ImageLinks{
-		URL:          imageURL,
-		HTML:         fmt.Sprintf(`<img src="%s" alt="%s" />`, imageURL, params.FileName),
-		BBCode:       fmt.Sprintf("[img]%s[/img]", imageURL),
-		Markdown:     fmt.Sprintf("![%s](%s)", params.FileName, imageURL),
-		ThumbnailURL: thumbURL,
-	}
+	links := LinkBuilder{BaseURL: s.config.ServerSnapshot().BaseURL}.BuildImageLinks(imageKey, ext, md5Hash, params.FileName)
 
 	// Include moderation info in response so frontend can show pending state
 	resp := &UploadResult{
@@ -390,7 +246,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		GroupConfig:       groupConfig,
 		OriginalSizeBytes: originalSize,
 		StoredSizeBytes:   int64(len(fileData)),
-		Processed:         wasProcessed,
+		Processed:         processed.processed,
 	}
 	// Attach moderation status to the response for frontend awareness
 	_ = modResult
@@ -400,6 +256,187 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 
 func (s *UploadService) getStorage(strategy sqlc.Strategy) (storage.Storage, error) {
 	return GetStorageForStrategy(strategy)
+}
+
+func (s *UploadService) applyDefaultTTL(params UploadParams) UploadParams {
+	app := s.config.AppSnapshot()
+	if params.ExpiresAt == nil && app.DefaultImageTTL > 0 {
+		t := time.Now().Add(app.DefaultImageTTL)
+		params.ExpiresAt = &t
+	}
+	return params
+}
+
+func (s *UploadService) resolveIdentity(ctx context.Context, params UploadParams) (uploadIdentity, error) {
+	if params.UserID == nil {
+		if !s.config.AppSnapshot().AllowGuestUpload {
+			return uploadIdentity{}, fmt.Errorf("guest upload is disabled")
+		}
+		group, err := s.db.GetGuestGroup(ctx)
+		if err != nil {
+			return uploadIdentity{}, fmt.Errorf("no guest group configured")
+		}
+		return uploadIdentity{group: group, groupID: group.ID}, nil
+	}
+
+	userID := *params.UserID
+	user, err := s.db.GetUserByID(ctx, userID)
+	if err != nil {
+		return uploadIdentity{}, fmt.Errorf("user not found")
+	}
+	if user.Status != int16(domain.UserStatusActive) {
+		return uploadIdentity{}, fmt.Errorf("account is frozen")
+	}
+	if !user.GroupID.Valid {
+		return uploadIdentity{}, fmt.Errorf("user has no group")
+	}
+
+	groupID := user.GroupID.Int64
+	group, err := s.db.GetGroupByID(ctx, groupID)
+	if err != nil {
+		return uploadIdentity{}, fmt.Errorf("group not found")
+	}
+
+	var preferredStrategyID *int64
+	if len(user.Settings) > 0 {
+		var settings uploadUserSettings
+		if err := json.Unmarshal(user.Settings, &settings); err == nil && settings.DefaultStrategy > 0 {
+			preferredStrategyID = &settings.DefaultStrategy
+		}
+	}
+
+	return uploadIdentity{
+		group:               group,
+		userID:              userID,
+		groupID:             groupID,
+		isAdmin:             user.Role == string(domain.RoleAdmin),
+		preferredStrategyID: preferredStrategyID,
+	}, nil
+}
+
+func loadUploadGroupConfig(group sqlc.Group) (domain.GroupConfig, error) {
+	var groupConfig domain.GroupConfig
+	if err := json.Unmarshal(group.Configs, &groupConfig); err != nil {
+		return domain.GroupConfig{}, fmt.Errorf("invalid group config")
+	}
+	return groupConfig, nil
+}
+
+func validateUploadFile(params UploadParams, groupConfig domain.GroupConfig) (string, error) {
+	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(params.FileName)), ".")
+	if !groupConfig.IsExtensionAllowed(ext) {
+		return "", fmt.Errorf("file extension .%s is not allowed", ext)
+	}
+	if params.FileSize > groupConfig.MaximumFileSize {
+		return "", fmt.Errorf("file size exceeds maximum (%d bytes)", groupConfig.MaximumFileSize)
+	}
+	return ext, nil
+}
+
+func (s *UploadService) checkCapacity(ctx context.Context, params UploadParams, userID int64) error {
+	if params.UserID == nil {
+		return nil
+	}
+	used, err := s.db.GetUserUsedCapacity(ctx, domain.PgInt8(userID))
+	if err != nil {
+		return fmt.Errorf("failed to check capacity: %w", err)
+	}
+	user, err := s.db.GetUserByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+	if user.CapacityBytes > 0 && used > 0 && used+params.FileSize > user.CapacityBytes {
+		return fmt.Errorf("storage capacity exceeded")
+	}
+	return nil
+}
+
+func (s *UploadService) selectStrategy(ctx context.Context, requestedStrategyID *int64, identity uploadIdentity, groupConfig domain.GroupConfig) (sqlc.Strategy, error) {
+	strategies, err := s.db.GetGroupStrategies(ctx, identity.groupID)
+	if err != nil || len(strategies) == 0 {
+		if !identity.isAdmin {
+			return sqlc.Strategy{}, fmt.Errorf("no storage strategy available")
+		}
+		allStrats, err := s.db.ListStrategies(ctx)
+		if err != nil || len(allStrats) == 0 {
+			return sqlc.Strategy{}, fmt.Errorf("no storage strategy available in system")
+		}
+		strategies = allStrats
+	}
+
+	if requestedStrategyID != nil {
+		if strategy, ok := findStrategyByID(strategies, *requestedStrategyID); ok {
+			return strategy, nil
+		}
+		if identity.isAdmin {
+			if strategy, err := s.db.GetStrategyByID(ctx, *requestedStrategyID); err == nil {
+				return strategy, nil
+			}
+		}
+		return sqlc.Strategy{}, fmt.Errorf("strategy not available for your group")
+	}
+
+	if identity.preferredStrategyID != nil {
+		if strategy, ok := findStrategyByID(strategies, *identity.preferredStrategyID); ok {
+			return strategy, nil
+		}
+	}
+	if groupConfig.DefaultStrategyID > 0 {
+		if strategy, ok := findStrategyByID(strategies, groupConfig.DefaultStrategyID); ok {
+			return strategy, nil
+		}
+	}
+	return strategies[0], nil
+}
+
+func findStrategyByID(strategies []sqlc.Strategy, id int64) (sqlc.Strategy, bool) {
+	for _, strategy := range strategies {
+		if strategy.ID == id {
+			return strategy, true
+		}
+	}
+	return sqlc.Strategy{}, false
+}
+
+func processUploadImage(fileData []byte, ext string, groupConfig domain.GroupConfig) processedUploadImage {
+	result := processedUploadImage{data: fileData}
+	skipExts := map[string]bool{"gif": true, "svg": true, "ico": true}
+	if skipExts[ext] {
+		return result
+	}
+
+	targetFormat := groupConfig.ImageSaveFormat
+	if targetFormat == "" {
+		targetFormat = ext
+	}
+
+	needProcess := groupConfig.ImageSaveFormat != "" || groupConfig.ImageSaveQuality < 100 || groupConfig.IsStripExif
+	if needProcess {
+		processedImg, err := ProcessImage(result.data, targetFormat, groupConfig.ImageSaveQuality, groupConfig.IsStripExif)
+		if err != nil {
+			slog.Warn("image processing failed, using original", "error", err)
+		} else {
+			result.data = processedImg.Data
+			result.width = processedImg.Width
+			result.height = processedImg.Height
+			result.processed = true
+		}
+	}
+
+	if groupConfig.IsEnableWatermark {
+		var wmCfg WatermarkConfig
+		if err := json.Unmarshal(groupConfig.WatermarkConfigs, &wmCfg); err == nil && wmCfg.Text != "" {
+			watermarked, err := ApplyWatermark(result.data, wmCfg, targetFormat, groupConfig.ImageSaveQuality)
+			if err != nil {
+				slog.Warn("watermark failed, using original", "error", err)
+			} else {
+				result.data = watermarked
+				result.processed = true
+			}
+		}
+	}
+
+	return result
 }
 
 func (s *UploadService) checkRateLimit(ctx context.Context, userID int64, clientIP string, cfg *domain.GroupConfig) error {

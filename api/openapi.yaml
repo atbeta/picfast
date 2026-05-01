@@ -1257,6 +1257,7 @@ components:
           type: string
         strategy_type:
           type: string
+          enum: [local, s3, kodo, oss, cos, webdav]
         configs:
           type: object
         created_at:
@@ -1274,7 +1275,7 @@ components:
           type: string
         strategy_type:
           type: string
-          enum: [local, s3]
+          enum: [local, s3, kodo, oss, cos, webdav]
         configs:
           type: object
 

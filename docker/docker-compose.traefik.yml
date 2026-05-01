@@ -17,10 +17,21 @@ services:
     networks:
       - picfast
 
+  init-permissions:
+    image: busybox:latest
+    restart: "no"
+    user: "0:0"
+    command: sh -c "mkdir -p /data/uploads /data/thumbnails && chown -R 10001:10001 /data/uploads /data/thumbnails"
+    volumes:
+      - ./data/uploads:/data/uploads
+      - ./data/thumbnails:/data/thumbnails
+
   app:
     image: ${PICFAST_IMAGE:-xbeta/picfast:latest}
     restart: unless-stopped
     depends_on:
+      init-permissions:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
     environment:

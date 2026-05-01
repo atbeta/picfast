@@ -191,19 +191,24 @@ func (f *MCPServerFactory) listImagesTool(ctx context.Context, req *mcp.CallTool
 		return mcpErrorResult(mcpErrorInternal, "failed to list images: "+err.Error()), nil, nil
 	}
 
-	total, _ := f.DB.CountImagesByUser(ctx, sqlc.CountImagesByUserParams{
+	total, err := f.DB.CountImagesByUser(ctx, sqlc.CountImagesByUserParams{
 		UserID: domain.PgInt8(userID),
 	})
+	if err != nil {
+		return mcpErrorResult(mcpErrorInternal, "failed to count images: "+err.Error()), nil, nil
+	}
 
 	items := make([]map[string]any, len(images))
+	linkBuilder := service.LinkBuilder{BaseURL: f.Config.Server.BaseURL}
 	for i, img := range images {
+		links := linkBuilder.BuildImageLinks(img.Key, img.Extension, img.Md5, img.OriginName)
 		items[i] = map[string]any{
 			"key":         img.Key,
 			"origin_name": img.OriginName,
 			"size_bytes":  img.SizeBytes,
 			"width":       img.Width,
 			"height":      img.Height,
-			"url":         f.Config.Server.BaseURL + "/i/" + img.Key + "." + img.Extension,
+			"url":         links.URL,
 			"permission":  img.Permission,
 			"created_at":  img.CreatedAt,
 		}
@@ -239,8 +244,7 @@ func (f *MCPServerFactory) getImageTool(ctx context.Context, req *mcp.CallToolRe
 		return mcpErrorResult(mcpErrorImageNotFound, "image not found"), nil, nil
 	}
 
-	url := f.Config.Server.BaseURL + "/i/" + img.Key + "." + img.Extension
-	thumbURL := f.Config.Server.BaseURL + "/t/" + img.Md5 + ".png"
+	links := service.LinkBuilder{BaseURL: f.Config.Server.BaseURL}.BuildImageLinks(img.Key, img.Extension, img.Md5, img.OriginName)
 
 	data, _ := json.Marshal(map[string]any{
 		"key":         img.Key,
@@ -250,11 +254,11 @@ func (f *MCPServerFactory) getImageTool(ctx context.Context, req *mcp.CallToolRe
 		"width":       img.Width,
 		"height":      img.Height,
 		"permission":  img.Permission,
-		"url":         url,
-		"thumbnail":   thumbURL,
-		"markdown":    fmt.Sprintf("![%s](%s)", img.OriginName, url),
-		"html":        fmt.Sprintf(`<img src="%s" alt="%s" />`, url, img.OriginName),
-		"bbcode":      fmt.Sprintf("[img]%s[/img]", url),
+		"url":         links.URL,
+		"thumbnail":   links.ThumbnailURL,
+		"markdown":    links.Markdown,
+		"html":        links.HTML,
+		"bbcode":      links.BBCode,
 		"created_at":  img.CreatedAt,
 	})
 
@@ -310,7 +314,10 @@ func (f *MCPServerFactory) getUsageStatsTool(ctx context.Context, req *mcp.CallT
 		return mcpErrorResult(mcpErrorInternal, "failed to get user info"), nil, nil
 	}
 
-	used, _ := f.DB.GetUserUsedCapacity(ctx, domain.PgInt8(userID))
+	used, err := f.DB.GetUserUsedCapacity(ctx, domain.PgInt8(userID))
+	if err != nil {
+		return mcpErrorResult(mcpErrorInternal, "failed to get usage stats"), nil, nil
+	}
 
 	data, _ := json.Marshal(map[string]any{
 		"user_id":        user.ID,
@@ -342,7 +349,10 @@ func (f *MCPServerFactory) userProfileResource(ctx context.Context, req *mcp.Rea
 		return nil, err
 	}
 
-	used, _ := f.DB.GetUserUsedCapacity(ctx, domain.PgInt8(userID))
+	used, err := f.DB.GetUserUsedCapacity(ctx, domain.PgInt8(userID))
+	if err != nil {
+		return nil, err
+	}
 
 	data, _ := json.Marshal(map[string]any{
 		"id":             user.ID,

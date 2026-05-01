@@ -5,12 +5,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/golang-jwt/jwt/v5"
 )
+
+const jwtIssuer = "picfast"
 
 type JWTService struct {
 	cfg *config.JWTConfig
@@ -32,14 +35,22 @@ func (s *JWTService) signingMethod() jwt.SigningMethod {
 }
 
 func (s *JWTService) GenerateAccessToken(userID int64, role domain.UserRole, groupID int64) (string, int64, error) {
-	expiresAt := time.Now().Add(s.cfg.AccessTTL)
+	now := time.Now()
+	expiresAt := now.Add(s.cfg.AccessTTL)
+	jti, _, err := GenerateRefreshToken()
+	if err != nil {
+		return "", 0, err
+	}
 	claims := domain.TokenClaims{
 		UserID:  userID,
 		Role:    role,
 		GroupID: groupID,
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    jwtIssuer,
+			Subject:   strconv.FormatInt(userID, 10),
+			ID:        jti,
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			IssuedAt:  jwt.NewNumericDate(now),
 		},
 	}
 	token := jwt.NewWithClaims(s.signingMethod(), claims)

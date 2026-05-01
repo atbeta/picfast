@@ -22,21 +22,11 @@ func NewAdminSettingHandler(cfg *config.Config, setter *config.Setter, queries *
 }
 
 func (h *AdminSettingHandler) emailVerificationEnabled() bool {
-	return h.config.App.RequireEmailVerification && h.mailReady
+	return h.config.AppSnapshot().RequireEmailVerification && h.mailReady
 }
 
 func (h *AdminSettingHandler) Get(w http.ResponseWriter, r *http.Request) {
-	Success(w, map[string]interface{}{
-		"app_name":                   h.config.App.Name,
-		"app_url":                    h.config.Server.BaseURL,
-		"allow_guest_upload":         h.config.App.AllowGuestUpload,
-		"allow_registration":         h.config.App.AllowRegistration,
-		"require_email_verification": h.emailVerificationEnabled(),
-		"email_verification_ready":   h.mailReady,
-		"user_initial_capacity":      h.config.App.UserInitialCapacity,
-		"default_image_ttl":          h.config.App.DefaultImageTTL.String(),
-		"moderation_mode":            h.config.App.ModerationMode,
-	})
+	Success(w, h.settingsResponse(true))
 }
 
 type updateSettingsRequest struct {
@@ -51,16 +41,7 @@ type updateSettingsRequest struct {
 }
 
 func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
-	before := map[string]any{
-		"app_name":                   h.config.App.Name,
-		"app_url":                    h.config.Server.BaseURL,
-		"allow_guest_upload":         h.config.App.AllowGuestUpload,
-		"allow_registration":         h.config.App.AllowRegistration,
-		"require_email_verification": h.config.App.RequireEmailVerification,
-		"user_initial_capacity":      h.config.App.UserInitialCapacity,
-		"default_image_ttl":          h.config.App.DefaultImageTTL.String(),
-		"moderation_mode":            h.config.App.ModerationMode,
-	}
+	before := h.settingsResponse(false)
 	var req updateSettingsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		Fail(w, http.StatusBadRequest, "invalid request body")
@@ -108,44 +89,46 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, "failed to persist settings")
 		return
 	}
-	after := map[string]any{
-		"app_name":                   h.config.App.Name,
-		"app_url":                    h.config.Server.BaseURL,
-		"allow_guest_upload":         h.config.App.AllowGuestUpload,
-		"allow_registration":         h.config.App.AllowRegistration,
-		"require_email_verification": h.config.App.RequireEmailVerification,
-		"user_initial_capacity":      h.config.App.UserInitialCapacity,
-		"default_image_ttl":          h.config.App.DefaultImageTTL.String(),
-		"moderation_mode":            h.config.App.ModerationMode,
-	}
-	writeAuditLog(h.queries, r, "admin.settings.update", "site_settings", "1", h.config.App.Name, map[string]any{
+	after := h.settingsResponse(false)
+	_, app := h.config.RuntimeSnapshot()
+	writeAuditLog(h.queries, r, "admin.settings.update", "site_settings", "1", app.Name, map[string]any{
 		"before": before,
 		"after":  after,
 	})
 
-	Success(w, map[string]interface{}{
-		"app_name":                   h.config.App.Name,
-		"app_url":                    h.config.Server.BaseURL,
-		"allow_guest_upload":         h.config.App.AllowGuestUpload,
-		"allow_registration":         h.config.App.AllowRegistration,
-		"require_email_verification": h.emailVerificationEnabled(),
-		"email_verification_ready":   h.mailReady,
-		"user_initial_capacity":      h.config.App.UserInitialCapacity,
-		"default_image_ttl":          h.config.App.DefaultImageTTL.String(),
-		"moderation_mode":            h.config.App.ModerationMode,
-	})
+	Success(w, h.settingsResponse(true))
 }
 
 func (h *AdminSettingHandler) persist(ctx context.Context) error {
+	server, app := h.config.RuntimeSnapshot()
 	_, err := h.queries.UpsertSiteSettings(ctx, sqlc.UpsertSiteSettingsParams{
-		AppName:                  h.config.App.Name,
-		AppUrl:                   h.config.Server.BaseURL,
-		AllowGuestUpload:         h.config.App.AllowGuestUpload,
-		AllowRegistration:        h.config.App.AllowRegistration,
-		RequireEmailVerification: h.config.App.RequireEmailVerification,
-		UserInitialCapacity:      h.config.App.UserInitialCapacity,
-		DefaultImageTtl:          h.config.App.DefaultImageTTL.String(),
-		ModerationMode:           h.config.App.ModerationMode,
+		AppName:                  app.Name,
+		AppUrl:                   server.BaseURL,
+		AllowGuestUpload:         app.AllowGuestUpload,
+		AllowRegistration:        app.AllowRegistration,
+		RequireEmailVerification: app.RequireEmailVerification,
+		UserInitialCapacity:      app.UserInitialCapacity,
+		DefaultImageTtl:          app.DefaultImageTTL.String(),
+		ModerationMode:           app.ModerationMode,
 	})
 	return err
+}
+
+func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string]interface{} {
+	server, app := h.config.RuntimeSnapshot()
+	resp := map[string]interface{}{
+		"app_name":                   app.Name,
+		"app_url":                    server.BaseURL,
+		"allow_guest_upload":         app.AllowGuestUpload,
+		"allow_registration":         app.AllowRegistration,
+		"require_email_verification": app.RequireEmailVerification,
+		"user_initial_capacity":      app.UserInitialCapacity,
+		"default_image_ttl":          app.DefaultImageTTL.String(),
+		"moderation_mode":            app.ModerationMode,
+	}
+	if includeMailReady {
+		resp["require_email_verification"] = app.RequireEmailVerification && h.mailReady
+		resp["email_verification_ready"] = h.mailReady
+	}
+	return resp
 }

@@ -35,14 +35,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
+RUN groupadd --system --gid 10001 picfast \
+    && useradd --system --uid 10001 --gid picfast --home-dir /home/picfast --create-home --shell /usr/sbin/nologin picfast \
+    && mkdir -p /app/data/uploads /app/data/thumbnails
+
 COPY --from=backend-builder /picfast /usr/local/bin/picfast
 COPY --from=backend-builder /app/migrations /app/migrations
 COPY --from=frontend-builder /web-dist /web-dist
+
+RUN chown -R picfast:picfast /app /web-dist /home/picfast
 
 WORKDIR /app
 
 EXPOSE 8080
 
 ENV PICFAST_SERVER_WEB_DIR=/web-dist
+
+USER picfast
 
 ENTRYPOINT ["picfast"]

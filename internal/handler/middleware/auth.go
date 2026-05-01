@@ -7,6 +7,7 @@ import (
 
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/handler"
+	"github.com/atbeta/picfast/internal/handler/httputil"
 )
 
 // AuthInfo carries the authenticated user's identity.
@@ -80,7 +81,7 @@ func Auth(authn Authenticator) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			info, err := authn.Authenticate(r)
 			if err != nil {
-				handler.Fail(w, http.StatusUnauthorized, "unauthorized")
+				httputil.Fail(w, http.StatusUnauthorized, "unauthorized")
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(enrichContext(r.Context(), info)))

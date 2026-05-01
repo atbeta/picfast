@@ -1,19 +1,6 @@
-import api from './api'
+import api, { type ApiResponse, type PaginatedData } from './api'
 
 // --- Shared types ---
-
-interface PaginatedData<T> {
-  items: T[]
-  total: number
-  page: number
-  size: number
-}
-
-interface ApiResponse<T> {
-  status: boolean
-  message: string
-  data: T
-}
 
 // ============================================================
 // Images

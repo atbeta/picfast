@@ -65,7 +65,7 @@ func NewS3Storage(cfg json.RawMessage) (*S3Storage, error) {
 }
 
 func (s *S3Storage) Write(ctx context.Context, path string, data []byte, contentType string) error {
-	slog.Info("s3 write starting", "bucket", s.bucket, "key", path, "size", len(data))
+	slog.Debug("s3 write starting", "bucket", s.bucket, "key", path, "size", len(data))
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:        aws.String(s.bucket),
 		Key:           aws.String(path),
@@ -77,7 +77,7 @@ func (s *S3Storage) Write(ctx context.Context, path string, data []byte, content
 		slog.Error("s3 write failed", "bucket", s.bucket, "key", path, "error", err)
 		return err
 	}
-	slog.Info("s3 write completed", "bucket", s.bucket, "key", path)
+	slog.Debug("s3 write completed", "bucket", s.bucket, "key", path)
 	return nil
 }
 
@@ -98,7 +98,7 @@ func (s *S3Storage) Read(ctx context.Context, path string) ([]byte, error) {
 		slog.Error("s3 read body failed", "bucket", s.bucket, "key", path, "error", readErr)
 		return nil, readErr
 	}
-	slog.Info("s3 read completed", "bucket", s.bucket, "key", path, "bytes", n)
+	slog.Debug("s3 read completed", "bucket", s.bucket, "key", path, "bytes", n)
 	return buf.Bytes(), nil
 }
 

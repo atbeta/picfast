@@ -8,6 +8,8 @@ import { UploadResultCard } from '../../components/upload-result'
 import { getStrategies, uploadImageAuth, listAlbums } from '../../lib/console-api'
 import type { ImageItem, Strategy, Album } from '../../lib/console-api'
 import { useAuth } from '../../lib/auth-context'
+import { extractErrorMessage, logError } from '../../lib/error-handler'
+import { storageStrategyLabel } from '../../lib/storage-strategy'
 
 interface UploadingFile {
   file: File
@@ -54,7 +56,7 @@ export function UploadPage() {
         }
         setSelectedStrategyId(initialId)
       })
-      .catch(() => {})
+      .catch((err: unknown) => logError('upload.loadStrategies', err))
 
     listAlbums(1, 100)
       .then((res) => {
@@ -67,21 +69,18 @@ export function UploadPage() {
           if (userDefaultAlbum) setSelectedAlbumId(Number(userDefaultAlbum))
         }
       })
-      .catch(() => {})
+      .catch((err: unknown) => logError('upload.loadAlbums', err))
 
     // Load default permission
     const userDefaultPerm = (user?.settings as Record<string, unknown>)?.default_permission
     const savedPerm = localStorage.getItem('default_permission')
+    let nextPermission = 1
     if (userDefaultPerm !== undefined && userDefaultPerm !== null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedPermission(Number(userDefaultPerm))
+      nextPermission = Number(userDefaultPerm)
     } else if (savedPerm !== null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedPermission(Number(savedPerm))
-    } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedPermission(1) // Default to Public
+      nextPermission = Number(savedPerm)
     }
+    queueMicrotask(() => setSelectedPermission(nextPermission))
   }, [user])
 
   const onStrategyChange = (id: number) => {
@@ -124,8 +123,7 @@ export function UploadPage() {
         })
         newResults.push(result)
       } catch (err: unknown) {
-        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('upload.uploadFailed', { file: files[i].name })
-        newErrors.push(msg)
+        newErrors.push(extractErrorMessage(err, t('upload.uploadFailed', { file: files[i].name })))
       }
     }
 
@@ -150,7 +148,7 @@ export function UploadPage() {
               <Select 
                 value={selectedStrategyId?.toString() ?? ''}
                 onValueChange={(val) => val !== null && onStrategyChange(Number(val))}
-                items={Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${s.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: 'Local' }) : 'S3'})`]))}
+                items={Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${storageStrategyLabel(t, s.strategy_type)})`]))}
               >
                 <SelectTrigger className="h-8 w-[220px] max-w-[42vw] sm:w-[260px] bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
                   <SelectValue />
@@ -158,14 +156,14 @@ export function UploadPage() {
                 <SelectContent>
                   {strategies.map((s) => (
                     <SelectItem key={s.id} value={s.id.toString()}>
-                      {s.name} ({s.strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: 'Local' })) : 'S3'})
+                      {s.name} ({storageStrategyLabel(t, s.strategy_type)})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : strategies.length === 1 ? (
               <span className="font-semibold text-foreground">
-                {strategies[0].name} <span className="text-muted-foreground/70 font-normal">({strategies[0].strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: 'Local' })) : 'S3'})</span>
+                {strategies[0].name} <span className="text-muted-foreground/70 font-normal">({storageStrategyLabel(t, strategies[0].strategy_type)})</span>
               </span>
             ) : (
               <span className="text-muted-foreground/50">...</span>

@@ -3,6 +3,7 @@ package handler_test
 import (
 	"net/http"
 	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -88,6 +89,34 @@ func TestRegister(t *testing.T) {
 			"email":    "short@example.com",
 			"password": "1234567",
 			"name":     "Short",
+		}
+		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/register", body)
+		rec := doReq(env.Router, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d, want 400", rec.Code)
+		}
+	})
+
+	t.Run("invalid email", func(t *testing.T) {
+		body := map[string]string{
+			"email":    "not-an-email",
+			"password": "password123",
+			"name":     "Invalid Email",
+		}
+		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/register", body)
+		rec := doReq(env.Router, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d, want 400", rec.Code)
+		}
+	})
+
+	t.Run("too long password", func(t *testing.T) {
+		body := map[string]string{
+			"email":    "long-password@example.com",
+			"password": strings.Repeat("a", 73),
+			"name":     "Long Password",
 		}
 		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/register", body)
 		rec := doReq(env.Router, req)

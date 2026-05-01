@@ -43,6 +43,18 @@ func TestRateLimiter_WindowReset(t *testing.T) {
 	}
 }
 
+func TestRateLimiter_PrunesExpiredWindows(t *testing.T) {
+	rl := NewRateLimiter(1, time.Minute)
+	rl.windows["expired"] = &slidingWindow{count: 1, resetAt: time.Now().Add(-time.Minute)}
+
+	if !rl.Allow("fresh") {
+		t.Fatal("expected fresh request to be allowed")
+	}
+	if _, exists := rl.windows["expired"]; exists {
+		t.Fatal("expected expired window to be pruned")
+	}
+}
+
 func TestRateLimit_Middleware(t *testing.T) {
 	rl := NewRateLimiter(2, time.Second)
 	mw := RateLimit(rl, func(r *http.Request) string { return r.RemoteAddr })

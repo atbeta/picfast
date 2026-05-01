@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/atbeta/picfast/internal/domain"
@@ -31,7 +32,11 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usedCapacity, _ := h.db.GetUserUsedCapacity(r.Context(), pgtype.Int8{Int64: userID, Valid: true})
+	usedCapacity, err := h.db.GetUserUsedCapacity(r.Context(), pgtype.Int8{Int64: userID, Valid: true})
+	if err != nil {
+		slog.Warn("failed to load user used capacity", "error", err, "user_id", userID)
+		usedCapacity = 0
+	}
 
 	Success(w, map[string]interface{}{
 		"id":             user.ID,

@@ -2,8 +2,8 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -145,10 +145,14 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	total, _ := h.db.CountImagesByUser(r.Context(), sqlc.CountImagesByUserParams{
+	total, err := h.db.CountImagesByUser(r.Context(), sqlc.CountImagesByUserParams{
 		UserID:  domain.PgInt8(userID),
 		AlbumID: domain.PgInt8Ptr(albumID),
 	})
+	if err != nil {
+		slog.Warn("failed to count images", "error", err, "user_id", userID)
+		total = 0
+	}
 
 	items := make([]ImageListItem, len(images))
 	for i, img := range images {
@@ -284,10 +288,14 @@ func (h *ImageHandler) Update(w http.ResponseWriter, r *http.Request) {
 	// Handle album image count updates if album changed
 	if img.AlbumID != updated.AlbumID {
 		if img.AlbumID.Valid {
-			_ = h.db.DecrementAlbumImageNum(r.Context(), img.AlbumID.Int64)
+			if err := h.db.DecrementAlbumImageNum(r.Context(), img.AlbumID.Int64); err != nil {
+				slog.Warn("failed to decrement album image count", "error", err, "album_id", img.AlbumID.Int64)
+			}
 		}
 		if updated.AlbumID.Valid {
-			_ = h.db.IncrementAlbumImageNum(r.Context(), updated.AlbumID.Int64)
+			if err := h.db.IncrementAlbumImageNum(r.Context(), updated.AlbumID.Int64); err != nil {
+				slog.Warn("failed to increment album image count", "error", err, "album_id", updated.AlbumID.Int64)
+			}
 		}
 	}
 	writeAuditLog(h.db, r, "image.update", "image", key, updated.OriginName, map[string]any{
@@ -302,16 +310,7 @@ func (h *ImageHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ImageHandler) buildLinks(key, extension, md5, originName string) domain.ImageLinks {
-	url := h.baseURL + "/i/" + key + "." + extension
-	thumbURL := h.baseURL + "/t/" + md5 + ".png"
-
-	return domain.ImageLinks{
-		URL:          url,
-		HTML:         fmt.Sprintf(`<img src="%s" alt="%s" />`, url, originName),
-		BBCode:       fmt.Sprintf("[img]%s[/img]", url),
-		Markdown:     fmt.Sprintf("![%s](%s)", originName, url),
-		ThumbnailURL: thumbURL,
-	}
+	return service.LinkBuilder{BaseURL: h.baseURL}.BuildImageLinks(key, extension, md5, originName)
 }
 
 func imageResponse(img sqlc.Image, links domain.ImageLinks) ImageResponse {

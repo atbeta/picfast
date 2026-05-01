@@ -26,8 +26,12 @@ const (
 type StrategyType string
 
 const (
-	StrategyTypeLocal StrategyType = "local"
-	StrategyTypeS3    StrategyType = "s3"
+	StrategyTypeLocal  StrategyType = "local"
+	StrategyTypeS3     StrategyType = "s3"
+	StrategyTypeKodo   StrategyType = "kodo"
+	StrategyTypeOSS    StrategyType = "oss"
+	StrategyTypeCOS    StrategyType = "cos"
+	StrategyTypeWebDAV StrategyType = "webdav"
 )
 
 type GroupConfig struct {
@@ -75,6 +79,37 @@ type S3StrategyConfig struct {
 	AccessKeyID     string `json:"access_key"`
 	SecretAccessKey string `json:"secret_key"`
 	URL             string `json:"url"`
+}
+
+type KodoStrategyConfig struct {
+	AccessKey string `json:"access_key"`
+	SecretKey string `json:"secret_key"`
+	Bucket    string `json:"bucket"`
+	Domain    string `json:"domain"`
+	Zone      string `json:"zone"`
+	Private   bool   `json:"private"`
+}
+
+type OSSStrategyConfig struct {
+	Endpoint  string `json:"endpoint"`
+	Bucket    string `json:"bucket"`
+	AccessKey string `json:"access_key"`
+	SecretKey string `json:"secret_key"`
+	URL       string `json:"url"`
+}
+
+type COSStrategyConfig struct {
+	BucketURL string `json:"bucket_url"`
+	SecretID  string `json:"secret_id"`
+	SecretKey string `json:"secret_key"`
+	URL       string `json:"url"`
+}
+
+type WebDAVStrategyConfig struct {
+	Endpoint string `json:"endpoint"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	URL      string `json:"url"`
 }
 
 type WatermarkConfig struct {

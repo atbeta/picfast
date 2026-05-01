@@ -1,67 +1,33 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/atbeta/picfast/internal/handler/httputil"
 )
 
-type Response struct {
-	Status  bool        `json:"status"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
-}
+type Response = httputil.Response
 
 func Success(w http.ResponseWriter, data interface{}) {
-	writeJSON(w, http.StatusOK, Response{
-		Status:  true,
-		Message: "success",
-		Data:    data,
-	})
+	httputil.Success(w, data)
 }
 
 func SuccessMessage(w http.ResponseWriter, message string) {
-	writeJSON(w, http.StatusOK, Response{
-		Status:  true,
-		Message: message,
-		Data:    struct{}{},
-	})
+	httputil.SuccessMessage(w, message)
 }
 
 func Created(w http.ResponseWriter, data interface{}) {
-	writeJSON(w, http.StatusCreated, Response{
-		Status:  true,
-		Message: "created",
-		Data:    data,
-	})
+	httputil.Created(w, data)
 }
 
 func Fail(w http.ResponseWriter, code int, message string) {
-	writeJSON(w, code, Response{
-		Status:  false,
-		Message: message,
-		Data:    struct{}{},
-	})
+	httputil.Fail(w, code, message)
 }
 
 func FailWithErrors(w http.ResponseWriter, code int, message string, errors map[string][]string) {
-	writeJSON(w, code, Response{
-		Status:  false,
-		Message: message,
-		Data:    errors,
-	})
+	httputil.FailWithErrors(w, code, message, errors)
 }
 
 func Paginated(w http.ResponseWriter, data interface{}, total int64, page, pageSize int32) {
-	Success(w, map[string]interface{}{
-		"items": data,
-		"total": total,
-		"page":  page,
-		"size":  pageSize,
-	})
-}
-
-func writeJSON(w http.ResponseWriter, code int, v interface{}) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(v)
+	httputil.Paginated(w, data, total, page, pageSize)
 }

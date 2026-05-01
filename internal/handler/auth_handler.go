@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/mail"
 	"strings"
 	"time"
 
@@ -64,7 +65,8 @@ type RegisterResponse struct {
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	if !h.config.App.AllowRegistration {
+	app := h.config.AppSnapshot()
+	if !app.AllowRegistration {
 		Fail(w, http.StatusForbidden, "registration is disabled")
 		return
 	}
@@ -75,12 +77,18 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.Email = strings.TrimSpace(req.Email)
+	req.Name = strings.TrimSpace(req.Name)
 	if req.Email == "" || req.Password == "" || req.Name == "" {
 		Fail(w, http.StatusBadRequest, "email, password and name are required")
 		return
 	}
-	if len(req.Password) < 8 {
-		Fail(w, http.StatusBadRequest, "password must be at least 8 characters")
+	if !isValidEmail(req.Email) {
+		Fail(w, http.StatusBadRequest, "invalid email format")
+		return
+	}
+	if len(req.Password) < 8 || len(req.Password) > 72 {
+		Fail(w, http.StatusBadRequest, "password must be between 8 and 72 bytes")
 		return
 	}
 
@@ -120,7 +128,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			Password:      string(hash),
 			Name:          req.Name,
 			Role:          string(domain.RoleUser),
-			CapacityBytes: h.config.App.UserInitialCapacity,
+			CapacityBytes: app.UserInitialCapacity,
 			Settings:      settings,
 			Status:        int16(domain.UserStatusActive),
 			EmailVerified: false,
@@ -375,7 +383,12 @@ func (h *AuthHandler) generateTokens(ctx context.Context, qtx *sqlc.Queries, use
 }
 
 func (h *AuthHandler) emailVerificationEnabled() bool {
-	return h.config.App.RequireEmailVerification && h.mail != nil && h.mail.Ready()
+	return h.config.AppSnapshot().RequireEmailVerification && h.mail != nil && h.mail.Ready()
+}
+
+func isValidEmail(email string) bool {
+	addr, err := mail.ParseAddress(email)
+	return err == nil && addr.Address == email
 }
 
 func (h *AuthHandler) issueVerificationToken(ctx context.Context, qtx *sqlc.Queries, userID int64) (string, error) {
@@ -398,16 +411,17 @@ func (h *AuthHandler) issueVerificationToken(ctx context.Context, qtx *sqlc.Quer
 }
 
 func (h *AuthHandler) sendVerificationEmail(ctx context.Context, toEmail, toName, token string) error {
-	verifyURL := strings.TrimRight(h.config.Server.BaseURL, "/") + "/verify-email?token=" + token
+	server, app := h.config.RuntimeSnapshot()
+	verifyURL := strings.TrimRight(server.BaseURL, "/") + "/verify-email?token=" + token
 	body := strings.TrimSpace("Hi " + toName + ",\n\n" +
-		"Welcome to " + h.config.App.Name + ". Please verify your email by opening the link below:\n\n" +
+		"Welcome to " + app.Name + ". Please verify your email by opening the link below:\n\n" +
 		verifyURL + "\n\n" +
 		"This link expires in 24 hours.\n")
 
 	return h.mail.Send(ctx, mailservice.Message{
 		ToEmail: toEmail,
 		ToName:  toName,
-		Subject: "Verify your email for " + h.config.App.Name,
+		Subject: "Verify your email for " + app.Name,
 		Text:    body,
 	})
 }

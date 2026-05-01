@@ -123,6 +123,10 @@ func (h *AdminStrategyHandler) Update(w http.ResponseWriter, r *http.Request) {
 			Fail(w, http.StatusBadRequest, "unknown strategy_type")
 			return
 		}
+		if req.StrategyType != existing.StrategyType && len(req.Configs) == 0 {
+			Fail(w, http.StatusBadRequest, "configs is required when strategy_type changes")
+			return
+		}
 		strategyType = req.StrategyType
 	}
 	if len(req.Configs) > 0 {

@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -55,7 +55,11 @@ func (h *AdminImageHandler) List(w http.ResponseWriter, r *http.Request) {
 		rows = filtered
 	}
 
-	total, _ := h.db.CountAllImages(r.Context())
+	total, err := h.db.CountAllImages(r.Context())
+	if err != nil {
+		slog.Warn("failed to count all images", "error", err)
+		total = 0
+	}
 
 	type imageItem struct {
 		sqlc.ListAllImagesRow
@@ -65,20 +69,14 @@ func (h *AdminImageHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	items := make([]imageItem, len(rows))
+	linkBuilder := service.LinkBuilder{BaseURL: h.baseURL}
 	for i, img := range rows {
-		url := fmt.Sprintf("%s/i/%s.%s", h.baseURL, img.Key, img.Extension)
-		thumbURL := fmt.Sprintf("%s/t/%s.png", h.baseURL, img.Md5)
+		links := linkBuilder.BuildImageLinks(img.Key, img.Extension, img.Md5, img.OriginName)
 		items[i] = imageItem{
 			ListAllImagesRow: img,
-			URL:              url,
-			ThumbnailURL:     thumbURL,
-			Links: domain.ImageLinks{
-				URL:          url,
-				HTML:         fmt.Sprintf(`<img src="%s" alt="%s" />`, url, img.OriginName),
-				BBCode:       fmt.Sprintf("[img]%s[/img]", url),
-				Markdown:     fmt.Sprintf("![%s](%s)", img.OriginName, url),
-				ThumbnailURL: thumbURL,
-			},
+			URL:              links.URL,
+			ThumbnailURL:     links.ThumbnailURL,
+			Links:            links,
 		}
 	}
 
@@ -92,7 +90,10 @@ func (h *AdminImageHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	img, _ := h.db.GetImageByID(r.Context(), id)
+	img, err := h.db.GetImageByID(r.Context(), id)
+	if err != nil {
+		slog.Warn("failed to load image before admin delete", "error", err, "image_id", id)
+	}
 	if err := h.deleter.DeleteImage(r.Context(), id); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to delete image")
 		return

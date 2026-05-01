@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react'
 import type { RegisterResult, UserProfile } from './auth'
 import * as authApi from './auth'
+import { logError } from './error-handler'
 
 interface AuthContextValue {
   user: UserProfile | null
@@ -27,7 +28,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const profile = await authApi.getProfile()
         if (mounted) setUser(profile)
-      } catch {
+      } catch (err: unknown) {
+        logError('auth.fetchProfile', err)
         authApi.clearTokens()
         if (mounted) setUser(null)
       } finally {

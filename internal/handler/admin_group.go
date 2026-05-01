@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -53,7 +54,11 @@ func (h *AdminGroupHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	items := make([]groupRow, 0, len(groups))
 	for _, g := range groups {
-		strategies, _ := h.db.GetGroupStrategies(r.Context(), g.ID)
+		strategies, err := h.db.GetGroupStrategies(r.Context(), g.ID)
+		if err != nil {
+			slog.Warn("failed to list group strategies", "error", err, "group_id", g.ID)
+			strategies = nil
+		}
 		stratIDs := make([]int64, 0, len(strategies))
 		for _, s := range strategies {
 			stratIDs = append(stratIDs, s.ID)
@@ -82,7 +87,11 @@ func (h *AdminGroupHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	strategies, _ := h.db.GetGroupStrategies(r.Context(), group.ID)
+	strategies, err := h.db.GetGroupStrategies(r.Context(), group.ID)
+	if err != nil {
+		slog.Warn("failed to list group strategies", "error", err, "group_id", group.ID)
+		strategies = nil
+	}
 	stratIDs := make([]int64, 0, len(strategies))
 	for _, s := range strategies {
 		stratIDs = append(stratIDs, s.ID)
@@ -174,7 +183,11 @@ func (h *AdminGroupHandler) Update(w http.ResponseWriter, r *http.Request) {
 		req.Configs = existing.Configs
 	}
 
-	before, _ := h.db.GetGroupByID(r.Context(), id)
+	before, err := h.db.GetGroupByID(r.Context(), id)
+	if err != nil {
+		Fail(w, http.StatusNotFound, "group not found")
+		return
+	}
 	var group sqlc.Group
 	if err := sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
 		var err error
@@ -189,10 +202,14 @@ func (h *AdminGroupHandler) Update(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		if group.IsDefault {
-			qtx.UnsetOtherDefault(r.Context(), group.ID)
+			if err := qtx.UnsetOtherDefault(r.Context(), group.ID); err != nil {
+				return err
+			}
 		}
 		if group.IsGuest {
-			qtx.UnsetOtherGuest(r.Context(), group.ID)
+			if err := qtx.UnsetOtherGuest(r.Context(), group.ID); err != nil {
+				return err
+			}
 		}
 		return nil
 	}); err != nil {
@@ -256,7 +273,9 @@ func (h *AdminGroupHandler) SetStrategies(w http.ResponseWriter, r *http.Request
 	}
 
 	err = sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
-		qtx.ReplaceGroupStrategies(r.Context(), id)
+		if err := qtx.ReplaceGroupStrategies(r.Context(), id); err != nil {
+			return err
+		}
 		for _, sid := range req.StrategyIDs {
 			if err := qtx.AddGroupStrategy(r.Context(), sqlc.AddGroupStrategyParams{
 				GroupID: id, StrategyID: sid,
@@ -270,7 +289,10 @@ func (h *AdminGroupHandler) SetStrategies(w http.ResponseWriter, r *http.Request
 		Fail(w, http.StatusInternalServerError, "failed to set strategies")
 		return
 	}
-	group, _ := h.db.GetGroupByID(r.Context(), id)
+	group, err := h.db.GetGroupByID(r.Context(), id)
+	if err != nil {
+		slog.Warn("failed to load group after setting strategies", "error", err, "group_id", id)
+	}
 	writeAuditLog(h.db, r, "admin.group.set_strategies", "group", strconv.FormatInt(id, 10), group.Name, map[string]any{
 		"strategy_ids": req.StrategyIDs,
 	})

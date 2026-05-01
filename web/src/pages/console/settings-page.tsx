@@ -9,6 +9,7 @@ import { useAuth } from '../../lib/auth-context'
 import { useTheme } from '../../lib/theme'
 import { formatFileSize } from '../../lib/upload'
 import { getStrategies, type Strategy } from '../../lib/console-api'
+import { storageStrategyLabel } from '../../lib/storage-strategy'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { HelpHint } from '@/components/help-hint'
@@ -192,7 +193,7 @@ export function SettingsPage() {
                   onValueChange={(val) => val !== null && setDefaultStrategy(Number(val))}
                   items={{
                     '0': t('settings.followGroupDefault', { defaultValue: '跟随分组默认' }),
-                    ...Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${s.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: '本地' }) : 'S3'})`]))
+                    ...Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${storageStrategyLabel(t, s.strategy_type)})`]))
                   }}
                 >
                   <SelectTrigger id="strategy" className="h-11 w-full bg-background border-input md:max-w-md">
@@ -202,7 +203,7 @@ export function SettingsPage() {
                     <SelectItem value="0">{t('settings.followGroupDefault', { defaultValue: '跟随分组默认' })}</SelectItem>
                     {strategies.map((s) => (
                       <SelectItem key={s.id} value={s.id.toString()}>
-                        {s.name} ({s.strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: '本地' })) : 'S3'})
+                        {s.name} ({storageStrategyLabel(t, s.strategy_type)})
                       </SelectItem>
                     ))}
                   </SelectContent>

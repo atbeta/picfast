@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/atbeta/picfast/internal/domain"
-	"github.com/atbeta/picfast/internal/handler"
+	"github.com/atbeta/picfast/internal/handler/httputil"
 	"github.com/atbeta/picfast/internal/sqlc"
 )
 
@@ -25,7 +25,7 @@ func APITokenAuth(db *sqlc.Queries) func(http.Handler) http.Handler {
 			}
 
 			if token == "" {
-				handler.Fail(w, http.StatusUnauthorized, "missing API token")
+				httputil.Fail(w, http.StatusUnauthorized, "missing API token")
 				return
 			}
 
@@ -35,19 +35,19 @@ func APITokenAuth(db *sqlc.Queries) func(http.Handler) http.Handler {
 			ctx := r.Context()
 			row, err := db.GetAPITokenByHash(ctx, tokenHash)
 			if err != nil {
-				handler.Fail(w, http.StatusUnauthorized, "invalid API token")
+				httputil.Fail(w, http.StatusUnauthorized, "invalid API token")
 				return
 			}
 
 			// Check expiration
 			if row.ExpiresAt.Valid && row.ExpiresAt.Time.Before(time.Now()) {
-				handler.Fail(w, http.StatusUnauthorized, "API token expired")
+				httputil.Fail(w, http.StatusUnauthorized, "API token expired")
 				return
 			}
 
 			// Check user status
 			if row.Status != int16(domain.UserStatusActive) {
-				handler.Fail(w, http.StatusForbidden, "account is frozen")
+				httputil.Fail(w, http.StatusForbidden, "account is frozen")
 				return
 			}
 

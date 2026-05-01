@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -39,9 +40,13 @@ func (h *AlbumHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	total, _ := h.db.CountAlbumsByUser(r.Context(), sqlc.CountAlbumsByUserParams{
+	total, err := h.db.CountAlbumsByUser(r.Context(), sqlc.CountAlbumsByUserParams{
 		UserID: userID,
 	})
+	if err != nil {
+		slog.Warn("failed to count albums", "error", err, "user_id", userID)
+		total = 0
+	}
 
 	Paginated(w, albums, total, page, pageSize)
 }

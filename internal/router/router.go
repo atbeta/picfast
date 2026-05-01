@@ -79,7 +79,9 @@ func New(
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(status)
+		if err := json.NewEncoder(w).Encode(status); err != nil {
+			slog.Warn("failed to write health response", "error", err)
+		}
 	})
 
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
@@ -90,11 +92,14 @@ func New(
 			return
 		}
 		w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
-		_, _ = w.Write(spec)
+		if _, err := w.Write(spec); err != nil {
+			slog.Warn("failed to write openapi spec", "error", err)
+		}
 	})
 	r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
+		server := cfg.ServerSnapshot()
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write([]byte(fmt.Sprintf(`<!doctype html>
+		if _, err := w.Write([]byte(fmt.Sprintf(`<!doctype html>
 <html>
   <head>
     <meta charset="UTF-8" />
@@ -105,7 +110,9 @@ func New(
     <script id="api-reference" data-url="%s"></script>
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
   </body>
-</html>`, cfg.Server.BaseURL+"/openapi.yaml")))
+</html>`, server.BaseURL+"/openapi.yaml"))); err != nil {
+			slog.Warn("failed to write docs page", "error", err)
+		}
 	})
 
 	// Services
@@ -147,7 +154,11 @@ func New(
 	}, nil)
 
 	// Content Moderation
-	modMode, _ := moderation.ParseMode(cfg.App.ModerationMode)
+	app := cfg.AppSnapshot()
+	modMode, err := moderation.ParseMode(app.ModerationMode)
+	if err != nil {
+		slog.Warn("invalid moderation mode, disabling moderation", "mode", app.ModerationMode, "error", err)
+	}
 	if modMode == "" {
 		modMode = moderation.ModeDisabled
 	}
@@ -171,17 +182,20 @@ func New(
 	r.With(middleware.OptionalAuth(middleware.NewJWTAuthenticator(jwtSvc))).Get("/t/{hash}.png", fileHandler.ServeThumbnail)
 
 	// Ensure thumbnail directory exists
-	os.MkdirAll(cfg.Storage.ThumbnailDir, 0755)
+	if err := os.MkdirAll(cfg.Storage.ThumbnailDir, 0755); err != nil {
+		slog.Warn("failed to ensure thumbnail directory", "dir", cfg.Storage.ThumbnailDir, "error", err)
+	}
 
 	r.Route("/api/v1", func(r chi.Router) {
 		// Public site config
 		r.Get("/config", func(w http.ResponseWriter, r *http.Request) {
+			server, app := cfg.RuntimeSnapshot()
 			handler.Success(w, map[string]interface{}{
-				"app_name":                   cfg.App.Name,
-				"allow_guest_upload":         cfg.App.AllowGuestUpload,
-				"allow_registration":         cfg.App.AllowRegistration,
-				"require_email_verification": cfg.App.RequireEmailVerification && mailSender != nil && mailSender.Ready(),
-				"base_url":                   cfg.Server.BaseURL,
+				"app_name":                   app.Name,
+				"allow_guest_upload":         app.AllowGuestUpload,
+				"allow_registration":         app.AllowRegistration,
+				"require_email_verification": app.RequireEmailVerification && mailSender != nil && mailSender.Ready(),
+				"base_url":                   server.BaseURL,
 			})
 		})
 
@@ -191,8 +205,8 @@ func New(
 			r.Post("/verify-email", authHandler.VerifyEmail)
 			r.Post("/resend-verification", authHandler.ResendVerification)
 			r.With(middleware.RateLimit(loginLimiter, func(r *http.Request) string {
-				host, _, _ := net.SplitHostPort(r.RemoteAddr)
-				if host == "" {
+				host, _, err := net.SplitHostPort(r.RemoteAddr)
+				if err != nil || host == "" {
 					return r.RemoteAddr
 				}
 				return host
@@ -268,7 +282,12 @@ func New(
 
 			// Strategy health check
 			r.Get("/strategies/health", func(w http.ResponseWriter, r *http.Request) {
-				strategies, _ := queries.ListStrategies(r.Context())
+				strategies, err := queries.ListStrategies(r.Context())
+				if err != nil {
+					slog.Warn("failed to list strategies for health check", "error", err)
+					handler.Fail(w, http.StatusInternalServerError, "failed to list strategies")
+					return
+				}
 				results := make([]map[string]interface{}, 0, len(strategies))
 				for _, st := range strategies {
 					store, err := service.GetStorageForStrategy(st)
@@ -306,30 +325,32 @@ func New(
 			r.Put("/settings", adminSettingHandler.Update)
 			r.Get("/audit-logs", adminAuditHandler.List)
 
-			// Debug / pprof (admin only)
-			r.Route("/debug", func(r chi.Router) {
-				r.Get("/pprof/", func(w http.ResponseWriter, req *http.Request) {
-					pprof.Index(w, req)
+			if cfg.ServerSnapshot().EnablePprof {
+				// Debug / pprof (admin only)
+				r.Route("/debug", func(r chi.Router) {
+					r.Get("/pprof/", func(w http.ResponseWriter, req *http.Request) {
+						pprof.Index(w, req)
+					})
+					r.Get("/pprof/cmdline", func(w http.ResponseWriter, req *http.Request) {
+						pprof.Cmdline(w, req)
+					})
+					r.Get("/pprof/profile", func(w http.ResponseWriter, req *http.Request) {
+						pprof.Profile(w, req)
+					})
+					r.Get("/pprof/symbol", func(w http.ResponseWriter, req *http.Request) {
+						pprof.Symbol(w, req)
+					})
+					r.Get("/pprof/trace", func(w http.ResponseWriter, req *http.Request) {
+						pprof.Trace(w, req)
+					})
+					r.Get("/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
+					r.Get("/pprof/heap", pprof.Handler("heap").ServeHTTP)
+					r.Get("/pprof/allocs", pprof.Handler("allocs").ServeHTTP)
+					r.Get("/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
+					r.Get("/pprof/block", pprof.Handler("block").ServeHTTP)
+					r.Get("/pprof/mutex", pprof.Handler("mutex").ServeHTTP)
 				})
-				r.Get("/pprof/cmdline", func(w http.ResponseWriter, req *http.Request) {
-					pprof.Cmdline(w, req)
-				})
-				r.Get("/pprof/profile", func(w http.ResponseWriter, req *http.Request) {
-					pprof.Profile(w, req)
-				})
-				r.Get("/pprof/symbol", func(w http.ResponseWriter, req *http.Request) {
-					pprof.Symbol(w, req)
-				})
-				r.Get("/pprof/trace", func(w http.ResponseWriter, req *http.Request) {
-					pprof.Trace(w, req)
-				})
-				r.Get("/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
-				r.Get("/pprof/heap", pprof.Handler("heap").ServeHTTP)
-				r.Get("/pprof/allocs", pprof.Handler("allocs").ServeHTTP)
-				r.Get("/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
-				r.Get("/pprof/block", pprof.Handler("block").ServeHTTP)
-				r.Get("/pprof/mutex", pprof.Handler("mutex").ServeHTTP)
-			})
+			}
 		})
 	})
 

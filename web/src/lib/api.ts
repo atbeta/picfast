@@ -3,6 +3,19 @@ import axios from 'axios'
 export const ACCESS_TOKEN_KEY = 'token'
 export const REFRESH_TOKEN_KEY = 'refresh_token'
 
+export interface ApiResponse<T> {
+  status: boolean
+  message: string
+  data: T
+}
+
+export interface PaginatedData<T> {
+  items: T[]
+  total: number
+  page: number
+  size: number
+}
+
 const api = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },

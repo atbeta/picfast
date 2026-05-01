@@ -1,4 +1,5 @@
-import api from './api'
+import api, { type ApiResponse } from './api'
+import { logError } from './error-handler'
 
 // --- Types ---
 
@@ -34,12 +35,6 @@ export interface UserProfile {
   created_at: string
 }
 
-interface ApiResponse<T> {
-  status: boolean
-  message: string
-  data: T
-}
-
 // --- API helpers ---
 
 export async function login(email: string, password: string): Promise<AuthTokens> {
@@ -63,8 +58,8 @@ export async function verifyEmail(token: string): Promise<void> {
 export async function logout(): Promise<void> {
   try {
     await api.post('/auth/logout')
-  } catch {
-    // Swallow — we clear tokens locally regardless
+  } catch (err: unknown) {
+    logError('auth.logout', err)
   }
 }
 

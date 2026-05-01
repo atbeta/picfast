@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -30,14 +31,14 @@ func testDBURL() string {
 func SetupDB(t *testing.T) (*pgxpool.Pool, *sqlc.Queries) {
 	t.Helper()
 
-	url := testDBURL()
-	if err := ensureDatabaseExists(url); err != nil {
+	dbURL := isolatedTestDBURL(t, testDBURL())
+	if err := ensureDatabaseExists(dbURL); err != nil {
 		t.Fatalf("ensure test database: %v", err)
 	}
 
 	// Run migrations
 	migrationsDir := migrationsPath(t)
-	m, err := migrate.New("file://"+migrationsDir, url)
+	m, err := migrate.New("file://"+migrationsDir, dbURL)
 	if err != nil {
 		t.Fatalf("create migrator: %v", err)
 	}
@@ -49,7 +50,7 @@ func SetupDB(t *testing.T) (*pgxpool.Pool, *sqlc.Queries) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	config, err := pgxpool.ParseConfig(url)
+	config, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
 		t.Fatalf("parse db config: %v", err)
 	}
@@ -67,9 +68,44 @@ func SetupDB(t *testing.T) (*pgxpool.Pool, *sqlc.Queries) {
 	t.Cleanup(func() {
 		TruncateAll(t, pool)
 		pool.Close()
+		if err := dropDatabase(dbURL); err != nil {
+			t.Logf("drop test database: %v", err)
+		}
 	})
 
 	return pool, sqlc.New(pool)
+}
+
+func isolatedTestDBURL(t *testing.T, rawURL string) string {
+	t.Helper()
+	parsed, err := url.Parse(rawURL)
+	if err != nil || parsed.Path == "" {
+		return rawURL
+	}
+	baseName := strings.TrimPrefix(parsed.Path, "/")
+	suffix := sanitizeDatabaseSuffix(t.Name())
+	pid := fmt.Sprintf("_%d", os.Getpid())
+	maxSuffixLen := 63 - len(baseName) - len(pid) - 1
+	if maxSuffixLen < 8 {
+		maxSuffixLen = 8
+	}
+	if len(suffix) > maxSuffixLen {
+		suffix = suffix[:maxSuffixLen]
+	}
+	parsed.Path = "/" + baseName + "_" + suffix + pid
+	return parsed.String()
+}
+
+func sanitizeDatabaseSuffix(s string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(s) {
+		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		} else {
+			b.WriteByte('_')
+		}
+	}
+	return strings.Trim(b.String(), "_")
 }
 
 // TruncateAll clears all table data in dependency order.
@@ -147,6 +183,32 @@ func ensureDatabaseExists(dbURL string) error {
 		return fmt.Errorf("create database %q: %w", config.ConnConfig.Database, err)
 	}
 
+	return nil
+}
+
+func dropDatabase(dbURL string) error {
+	config, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		return fmt.Errorf("parse db config: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	adminConfig := config.ConnConfig.Copy()
+	dbName := config.ConnConfig.Database
+	adminConfig.Database = "postgres"
+
+	conn, err := pgx.ConnectConfig(ctx, adminConfig)
+	if err != nil {
+		return fmt.Errorf("connect admin database: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	_, err = conn.Exec(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s WITH (FORCE)", pgx.Identifier{dbName}.Sanitize()))
+	if err != nil {
+		return fmt.Errorf("drop database %q: %w", dbName, err)
+	}
 	return nil
 }
 

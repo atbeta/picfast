@@ -1,4 +1,4 @@
-import api from './api'
+import api, { type ApiResponse } from './api'
 
 // --- Types ---
 
@@ -26,12 +26,6 @@ export interface UploadLinks {
   bbcode: string
   markdown: string
   thumbnail_url: string
-}
-
-interface ApiResponse<T> {
-  status: boolean
-  message: string
-  data: T
 }
 
 // --- API ---

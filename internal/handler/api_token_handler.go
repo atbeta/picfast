@@ -67,16 +67,20 @@ func (h *APITokenHandler) Create(w http.ResponseWriter, r *http.Request) {
 	tokenHash := hex.EncodeToString(hash[:])
 
 	// Parse expiration: supports Go duration strings plus "d" (days) and "y" (years).
-	expiresAt := parseTokenExpiry(req.ExpiresIn)
+	expiresAt, hasExpiry := parseTokenExpiry(req.ExpiresIn)
 
-	scopes, _ := json.Marshal(req.Scopes)
 	if len(req.Scopes) == 0 {
-		scopes = []byte(`["read","write"]`)
+		req.Scopes = []string{"read", "write"}
+	}
+	scopes, err := json.Marshal(req.Scopes)
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to encode token scopes")
+		return
 	}
 
 	var expiresAtTz pgtype.Timestamptz
-	if t, ok := expiresAt.(time.Time); ok {
-		expiresAtTz = pgtype.Timestamptz{Time: t, Valid: true}
+	if hasExpiry {
+		expiresAtTz = pgtype.Timestamptz{Time: expiresAt, Valid: true}
 	}
 
 	token, err := h.db.CreateAPIToken(r.Context(), sqlc.CreateAPITokenParams{
@@ -179,13 +183,13 @@ func (h *APITokenHandler) Delete(w http.ResponseWriter, r *http.Request) {
 // parseTokenExpiry converts an expiry string to an optional time.
 // Supports Go duration strings ("24h", "72h"), compact forms ("30d", "90d", "1y"),
 // and "never" or empty string for no expiry.
-func parseTokenExpiry(s string) interface{} {
+func parseTokenExpiry(s string) (time.Time, bool) {
 	if s == "" || s == "never" {
-		return nil
+		return time.Time{}, false
 	}
 	// Try standard Go duration parsing first
 	if d, err := time.ParseDuration(s); err == nil {
-		return time.Now().Add(d)
+		return time.Now().Add(d), true
 	}
 	// Compact forms with day/year suffix
 	var unit time.Duration
@@ -197,11 +201,11 @@ func parseTokenExpiry(s string) interface{} {
 		s = s[:len(s)-1]
 		unit = 365 * 24 * time.Hour
 	default:
-		return nil
+		return time.Time{}, false
 	}
 	var n int
 	if _, err := fmt.Sscanf(s, "%d", &n); err != nil || n <= 0 {
-		return nil
+		return time.Time{}, false
 	}
-	return time.Now().Add(time.Duration(n) * unit)
+	return time.Now().Add(time.Duration(n) * unit), true
 }

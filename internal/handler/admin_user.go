@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -53,7 +54,11 @@ func (h *AdminUserHandler) List(w http.ResponseWriter, r *http.Request) {
 		users = filtered
 	}
 
-	total, _ := h.db.CountUsers(r.Context())
+	total, err := h.db.CountUsers(r.Context())
+	if err != nil {
+		slog.Warn("failed to count users", "error", err)
+		total = 0
+	}
 
 	items := make([]map[string]interface{}, 0, len(users))
 	for _, u := range users {

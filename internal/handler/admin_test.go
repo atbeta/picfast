@@ -3,6 +3,7 @@ package handler_test
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/atbeta/picfast/internal/domain"
@@ -14,6 +15,34 @@ func makeAdmin(t *testing.T, env *testEnv, userID int64) {
 	_, err := env.Pool.Exec(t.Context(), "UPDATE users SET role = 'admin' WHERE id = $1", userID)
 	if err != nil {
 		t.Fatalf("make admin: %v", err)
+	}
+}
+
+func TestAdminPprofDisabledByDefault(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, admin := env.seedSetup(t)
+	makeAdmin(t, env, admin.ID)
+
+	req := env.authReq(t, http.MethodGet, "/api/v1/admin/debug/pprof/", nil, admin.ID, domain.RoleAdmin, group.ID)
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", rec.Code)
+	}
+}
+
+func TestAdminPprofCanBeEnabled(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, admin := env.seedSetup(t)
+	makeAdmin(t, env, admin.ID)
+	env.Config.Server.EnablePprof = true
+	env.rebuildRouter()
+
+	req := env.authReq(t, http.MethodGet, "/api/v1/admin/debug/pprof/", nil, admin.ID, domain.RoleAdmin, group.ID)
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body: %s", rec.Code, rec.Body.String())
 	}
 }
 
@@ -80,6 +109,27 @@ func TestAdminUpdateStrategy(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAdminUpdateStrategyRequiresConfigsWhenTypeChanges(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, admin := env.seedSetup(t)
+	strategy := testutil.SeedStrategy(t, env.DB, group.ID)
+	makeAdmin(t, env, admin.ID)
+
+	body := map[string]interface{}{
+		"name":          "Updated Strategy",
+		"strategy_type": "webdav",
+	}
+	req := env.authReq(t, http.MethodPut, fmt.Sprintf("/api/v1/admin/strategies/%d", strategy.ID), body, admin.ID, domain.RoleAdmin, group.ID)
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", rec.Code, rec.Body.String())
+	}
+	if got := rec.Body.String(); !strings.Contains(got, "configs is required when strategy_type changes") {
+		t.Fatalf("body = %q, want configs required message", got)
 	}
 }
 

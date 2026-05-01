@@ -9,7 +9,7 @@ PicFast 是一个面向个人与团队的现代化图床/图片托管服务，�
 | 后端 | Go 1.26, Chi Router, pgx/v5, sqlc, JWT |
 | 前端 | React 19, TypeScript, Vite, React Router, Tailwind CSS v4 |
 | 数据库 | PostgreSQL 16 |
-| 存储 | 本地文件系统 / AWS S3 兼容对象存储 |
+| 存储 | 本地文件系统 / S3 兼容对象存储 / 七牛云 Kodo / 阿里云 OSS / 腾讯云 COS / WebDAV |
 | 可观测性 | Prometheus metrics, health check |
 
 ## 当前能力
@@ -19,12 +19,25 @@ PicFast 是一个面向个人与团队的现代化图床/图片托管服务，�
 - 图片列表、权限更新、删除
 - 相册管理
 - 管理后台：用户、分组、存储策略、系统设置、图片管理
-- 本地存储与 S3 兼容存储
+- 本地、S3 兼容、七牛云 Kodo、阿里云 OSS、腾讯云 COS 与 WebDAV 存储策略
 - 图片压缩、水印、同步缩略图生成
 - 审核能力与审核状态回传
 - ShareX 配置下载与上传接口
 - API Token 与 MCP Server 集成
 - 健康检查、Prometheus 指标、pprof 调试端点
+
+## 存储策略
+
+管理后台可创建并绑定多种存储策略。`strategy_type` 支持：
+
+- `local`：本地文件系统，配置 `root` 与 `url`
+- `s3`：S3 兼容对象存储，配置 `endpoint`、`region`、`bucket`、`access_key`、`secret_key`、`url`
+- `kodo`：七牛云 Kodo，配置 `access_key`、`secret_key`、`bucket`、`domain`、`zone`、`private`
+- `oss`：阿里云 OSS，配置 `endpoint`、`bucket`、`access_key`、`secret_key`、`url`
+- `cos`：腾讯云 COS，配置 `bucket_url`、`secret_id`、`secret_key`、`url`
+- `webdav`：WebDAV，配置 `endpoint`、`username`、`password`、`url`
+
+其中 `url` / `domain` 用于生成公开访问地址；未配置公开地址时，部分策略会回退到服务端或存储端点地址。
 
 ## 快速开始
 
@@ -354,6 +367,7 @@ make lint
 ## 部署说明
 
 - Docker 镜像会在构建时编译前端，并通过 `PICFAST_SERVER_WEB_DIR=/web-dist` 交给 Go 服务托管。
+- `docker/docker-compose.traefik.yml` 会通过 `init-permissions` 自动创建并修正 `./data/uploads`、`./data/thumbnails` 的写入权限，应用容器本身仍以非 root 用户运行。
 - `/docs` 会加载 OpenAPI 文档页，`/openapi.yaml` 提供规范文件下载。
-- `/api/v1/admin/debug/pprof/*` 仅管理员可访问。
+- `/api/v1/admin/debug/pprof/*` 默认关闭；调试时可设置 `PICFAST_SERVER_PPROF_ENABLED=true`，启用后仍需管理员权限访问。
 - 如果要在 Docker / 服务器中启用邮箱验证，记得同时传入 `PICFAST_SERVER_BASE_URL`、`PICFAST_MAIL_*` 和 `PICFAST_APP_REQUIRE_EMAIL_VERIFICATION=true`。

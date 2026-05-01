@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -31,7 +32,7 @@ func writeAuditLog(db *sqlc.Queries, r *http.Request, action, resourceType, reso
 
 	ip := realIPFromRequest(r)
 
-	_ = db.CreateAuditLog(r.Context(), sqlc.CreateAuditLogParams{
+	if err := db.CreateAuditLog(r.Context(), sqlc.CreateAuditLogParams{
 		ActorUserID:  pgtype.Int8{Int64: actorUserID, Valid: hasActor},
 		Action:       action,
 		ResourceType: resourceType,
@@ -40,7 +41,13 @@ func writeAuditLog(db *sqlc.Queries, r *http.Request, action, resourceType, reso
 		Details:      detailsJSON,
 		Ip:           ip,
 		UserAgent:    r.UserAgent(),
-	})
+	}); err != nil {
+		slog.Warn("failed to write audit log",
+			"action", action,
+			"resource_type", resourceType,
+			"resource_id", resourceID,
+			"error", err)
+	}
 }
 
 func pgText(v string) pgtype.Text {

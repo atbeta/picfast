@@ -3,12 +3,14 @@ package config
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
+	mu       sync.RWMutex
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
@@ -18,9 +20,10 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port    int    `mapstructure:"port"`
-	BaseURL string `mapstructure:"base_url"`
-	WebDir  string `mapstructure:"web_dir"`
+	Port        int    `mapstructure:"port"`
+	BaseURL     string `mapstructure:"base_url"`
+	WebDir      string `mapstructure:"web_dir"`
+	EnablePprof bool   `mapstructure:"pprof_enabled"`
 }
 
 type DatabaseConfig struct {
@@ -70,14 +73,71 @@ func NewSetter(cfg *Config) *Setter {
 	return &Setter{cfg: cfg}
 }
 
-func (s *Setter) SetAppName(name string)             { s.cfg.App.Name = name }
-func (s *Setter) SetBaseURL(url string)              { s.cfg.Server.BaseURL = url }
-func (s *Setter) SetAllowGuestUpload(v bool)         { s.cfg.App.AllowGuestUpload = v }
-func (s *Setter) SetAllowRegistration(v bool)        { s.cfg.App.AllowRegistration = v }
-func (s *Setter) SetRequireEmailVerification(v bool) { s.cfg.App.RequireEmailVerification = v }
-func (s *Setter) SetUserInitialCapacity(v int64)     { s.cfg.App.UserInitialCapacity = v }
-func (s *Setter) SetDefaultImageTTL(v time.Duration) { s.cfg.App.DefaultImageTTL = v }
-func (s *Setter) SetModerationMode(mode string)      { s.cfg.App.ModerationMode = mode }
+func (s *Setter) SetAppName(name string) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.Name = name
+}
+
+func (s *Setter) SetBaseURL(url string) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.Server.BaseURL = url
+}
+
+func (s *Setter) SetAllowGuestUpload(v bool) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.AllowGuestUpload = v
+}
+
+func (s *Setter) SetAllowRegistration(v bool) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.AllowRegistration = v
+}
+
+func (s *Setter) SetRequireEmailVerification(v bool) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.RequireEmailVerification = v
+}
+
+func (s *Setter) SetUserInitialCapacity(v int64) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.UserInitialCapacity = v
+}
+
+func (s *Setter) SetDefaultImageTTL(v time.Duration) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.DefaultImageTTL = v
+}
+
+func (s *Setter) SetModerationMode(mode string) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.ModerationMode = mode
+}
+
+func (c *Config) AppSnapshot() AppConfig {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.App
+}
+
+func (c *Config) ServerSnapshot() ServerConfig {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.Server
+}
+
+func (c *Config) RuntimeSnapshot() (ServerConfig, AppConfig) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.Server, c.App
+}
 
 func (c MailConfig) IsConfigured() bool {
 	return strings.TrimSpace(c.Host) != "" &&
@@ -121,6 +181,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.port", 8080)
 	v.SetDefault("server.base_url", "http://localhost:8080")
 	v.SetDefault("server.web_dir", "")
+	v.SetDefault("server.pprof_enabled", false)
 
 	v.SetDefault("database.url", "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable")
 
