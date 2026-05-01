@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/atbeta/picfast/compare/v0.2.3...v0.3.0) (2026-05-01)
+
+
+### Features
+
+* **ai-docs:** enrich OpenAPI and MCP semantics for agent usage ([268551d](https://github.com/atbeta/picfast/commit/268551d79082d848695038793edae8daa5a0e9d4))
+* **pagination:** add total_pages and page indicator UI ([f243f4b](https://github.com/atbeta/picfast/commit/f243f4b2a9939528e4e4fb787e107a1eacb00029))
+
 ## [0.2.3](https://github.com/atbeta/picfast/compare/v0.2.2...v0.2.3) (2026-05-01)
 
 
