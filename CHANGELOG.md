@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/atbeta/picfast/compare/v0.2.1...v0.2.2) (2026-05-01)
+
+
+### Bug Fixes
+
+* **docker:** include OpenAPI spec in runtime image ([9062b54](https://github.com/atbeta/picfast/commit/9062b54f6c9a933133c1bc75ed74b9247ea5fdc9))
+
 ## [0.2.1](https://github.com/atbeta/picfast/compare/v0.2.0...v0.2.1) (2026-05-01)
 
 
