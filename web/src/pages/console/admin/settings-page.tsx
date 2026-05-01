@@ -18,10 +18,17 @@ interface SettingsForm {
   allow_registration: boolean
   require_email_verification: boolean
   user_initial_capacity_mb: number
+  default_image_ttl: string
   moderation_mode: string
 }
 
-const fieldInputCls = 'h-11 w-full rounded-lg border border-input bg-background px-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20'
+function normalizeTTL(v?: string): string {
+  const val = (v || '').trim().toLowerCase()
+  if (!val || val === '0' || val === '0s') return '0'
+  return v || '0'
+}
+
+const fieldInputCls = 'h-11 w-full rounded-lg border border-input bg-background px-4 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20'
 
 function SettingField({
   label,
@@ -64,6 +71,7 @@ export function AdminSettingsPage() {
       allow_registration: false,
       require_email_verification: false,
       user_initial_capacity_mb: 500,
+      default_image_ttl: '0',
       moderation_mode: 'disabled',
     },
     values: data
@@ -74,6 +82,7 @@ export function AdminSettingsPage() {
           allow_registration: data.allow_registration,
           require_email_verification: data.require_email_verification,
           user_initial_capacity_mb: Math.round(data.user_initial_capacity / 1024 / 1024),
+          default_image_ttl: normalizeTTL(data.default_image_ttl),
           moderation_mode: data.moderation_mode,
         }
       : undefined,
@@ -90,6 +99,7 @@ export function AdminSettingsPage() {
         allow_registration: Boolean(form.allow_registration),
         require_email_verification: Boolean(form.require_email_verification),
         user_initial_capacity: form.user_initial_capacity_mb * 1024 * 1024,
+        default_image_ttl: form.default_image_ttl,
         moderation_mode: form.moderation_mode,
       })
       setSuccess(true)
@@ -200,8 +210,12 @@ export function AdminSettingsPage() {
                     <AlertCircle className="size-4" />
                   </div>
                   <div className="space-y-1">
-                    <p className="font-medium">SMTP 未配置</p>
-                    <p className="text-xs opacity-80">当前未配置 SMTP 发信参数，无法开启邮箱验证。请在服务器的 <code>.env</code> 文件中配置 <code>PICFAST_MAIL_*</code> 相关变量并重启服务。</p>
+                    <p className="font-medium">{t('admin.smtpNotConfiguredTitle', { defaultValue: 'SMTP 未配置' })}</p>
+                    <p className="text-xs opacity-80">
+                      {t('admin.smtpNotConfiguredDesc', {
+                        defaultValue: '当前未配置 SMTP 发信参数，无法开启邮箱验证。请在服务器的 .env 文件中配置 PICFAST_MAIL_* 相关变量并重启服务。',
+                      })}
+                    </p>
                   </div>
                 </div>
               )}
@@ -223,6 +237,39 @@ export function AdminSettingsPage() {
                   <input type="number" {...register('user_initial_capacity_mb', { valueAsNumber: true })} className={`${fieldInputCls} w-40`} />
                   <span className="text-sm text-muted-foreground">MB</span>
                 </div>
+              </SettingField>
+              <SettingField
+                label={t('admin.defaultImageTTL', { defaultValue: '默认图片生命周期' })}
+                hint={t('admin.defaultImageTTLDesc', { defaultValue: '新上传图片的默认过期时间，0 表示永不过期。' })}
+              >
+                <Controller
+                  name="default_image_ttl"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || '0'}
+                      items={{
+                        '0': t('admin.ttlNever', { defaultValue: '永不过期' }),
+                        '24h': t('admin.ttl1Day', { defaultValue: '1 天' }),
+                        '168h': t('admin.ttl7Days', { defaultValue: '7 天' }),
+                        '720h': t('admin.ttl30Days', { defaultValue: '30 天' }),
+                        '2160h': t('admin.ttl90Days', { defaultValue: '90 天' }),
+                      }}
+                      onValueChange={(val) => field.onChange(String(val))}
+                    >
+                      <SelectTrigger className="h-11 w-full bg-background border-input">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">{t('admin.ttlNever', { defaultValue: '永不过期' })}</SelectItem>
+                        <SelectItem value="24h">{t('admin.ttl1Day', { defaultValue: '1 天' })}</SelectItem>
+                        <SelectItem value="168h">{t('admin.ttl7Days', { defaultValue: '7 天' })}</SelectItem>
+                        <SelectItem value="720h">{t('admin.ttl30Days', { defaultValue: '30 天' })}</SelectItem>
+                        <SelectItem value="2160h">{t('admin.ttl90Days', { defaultValue: '90 天' })}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </SettingField>
             </div>
           </div>

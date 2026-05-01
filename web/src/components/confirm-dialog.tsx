@@ -4,7 +4,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -65,20 +64,22 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
+        <DialogHeader className="border-b border-border/60 bg-muted/15 px-5 py-2.5">
+          <DialogTitle className="text-[15px] leading-6">{finalHeading}</DialogTitle>
+        </DialogHeader>
+        <div className="px-5 py-4">
           <div className="flex items-start gap-3">
             <div className={`mt-0.5 shrink-0 rounded-full p-1.5 ${variant === 'destructive' ? 'bg-destructive/10' : variant === 'warning' ? 'bg-warning/10' : 'bg-info/10'}`}>
               <Icon className={`size-4 ${iconClass}`} />
             </div>
-            <div className="space-y-1">
-              <DialogTitle className="text-base">{finalHeading}</DialogTitle>
+            <div className="space-y-1.5">
               <DialogDescription className="font-medium text-foreground">{title}</DialogDescription>
               {description && <DialogDescription>{description}</DialogDescription>}
             </div>
           </div>
-        </DialogHeader>
-        <DialogFooter className="mt-4">
+        </div>
+        <div className="flex justify-end gap-2 border-t border-border/60 px-5 py-3">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             {finalCancelLabel}
           </Button>
@@ -89,7 +90,7 @@ export function ConfirmDialog({
           >
             {loading ? '...' : finalConfirmLabel}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )

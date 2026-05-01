@@ -33,6 +33,7 @@ const (
 type GroupConfig struct {
 	MaximumFileSize            int64           `json:"maximum_file_size"`
 	AcceptedExtensions         []string        `json:"accepted_extensions"`
+	DefaultStrategyID          int64           `json:"default_strategy_id"`
 	LimitPerMinute             int             `json:"limit_per_minute"`
 	LimitPerHour               int             `json:"limit_per_hour"`
 	LimitPerDay                int             `json:"limit_per_day"`

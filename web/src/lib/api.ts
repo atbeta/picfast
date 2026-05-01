@@ -8,10 +8,16 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+function syncAuthCookie(token: string) {
+  document.cookie = `picfast_token=${token}; path=/; max-age=2592000`
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem(ACCESS_TOKEN_KEY)
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+    // Keep cookie in sync so private image/thumbnail URLs can authenticate.
+    syncAuthCookie(token)
   }
   return config
 })
@@ -58,6 +64,7 @@ api.interceptors.response.use(
         const { access_token, refresh_token } = res.data.data
         localStorage.setItem(ACCESS_TOKEN_KEY, access_token)
         localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token)
+        syncAuthCookie(access_token)
         api.defaults.headers.common.Authorization = `Bearer ${access_token}`
         flushSubscribers(access_token)
         originalRequest.headers.Authorization = `Bearer ${access_token}`

@@ -20,7 +20,7 @@ const profileSchema = z.object({
 })
 type ProfileForm = z.infer<typeof profileSchema>
 
-const fieldInputCls = 'h-11 w-full rounded-lg border border-border/50 bg-background/50 px-4 text-sm outline-none transition-all placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20'
+const fieldInputCls = 'h-11 w-full rounded-lg border border-border/50 bg-background/50 px-4 text-sm outline-none transition-colors duration-150 placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20'
 const fieldDisabledCls = 'h-11 w-full rounded-lg border border-border/50 bg-muted/50 px-4 text-sm text-muted-foreground cursor-not-allowed'
 
 function SettingField({
@@ -103,9 +103,10 @@ export function SettingsPage() {
   if (!user) return null
 
   const usagePercent = user.capacity_bytes > 0 ? Math.round((user.used_bytes / user.capacity_bytes) * 100) : 0
+  const isUnlimitedCapacity = user.capacity_bytes <= 0
 
   return (
-    <section className="space-y-6 animate-in slide-in-from-bottom-4 fade-in duration-500">
+    <section className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">{t('page.settings.title')}</h1>
 
       <div className="max-w-4xl space-y-6 pb-8">
@@ -120,12 +121,12 @@ export function SettingsPage() {
             <div className="flex items-center gap-4">
               <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-primary transition-all duration-1000 ease-out"
+                  className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out"
                   style={{ width: `${Math.min(usagePercent, 100)}%` }}
                 />
               </div>
               <span className="shrink-0 text-sm font-medium text-muted-foreground">
-                {formatFileSize(user.used_bytes)} / {formatFileSize(user.capacity_bytes)}
+                {formatFileSize(user.used_bytes)} / {isUnlimitedCapacity ? t('settings.unlimitedCapacity', { defaultValue: '无限制' }) : formatFileSize(user.capacity_bytes)}
               </span>
             </div>
             <p className="mt-3 text-sm text-muted-foreground/80">
@@ -225,7 +226,7 @@ export function SettingsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-50 active:scale-95 cursor-pointer"
+                  className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-opacity duration-150 hover:opacity-90 disabled:opacity-50 cursor-pointer"
                 >
                   {saving ? t('settings.saving') : t('settings.save')}
                 </button>

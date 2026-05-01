@@ -136,15 +136,15 @@ export function UploadPage() {
   }, [selectedStrategyId, selectedAlbumId, selectedPermission, t])
 
   return (
-    <section className="w-full space-y-6 animate-in slide-in-from-bottom-4 fade-in duration-700">
+    <section className="w-full space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-foreground to-foreground/70 dark:from-white dark:to-white/60">
+        <h1 className="text-2xl font-bold tracking-tight">
           {t('page.upload.title')}
         </h1>
 
         <div className="flex flex-wrap items-center gap-3">
           {/* Strategy Selector */}
-          <div className="flex items-center gap-3 rounded-full border border-border/50 bg-card/50 backdrop-blur-md px-4 py-1.5 shadow-sm text-sm">
+          <div className="flex h-10 items-center gap-3 rounded-lg border border-border/50 bg-card px-3 shadow-sm text-sm">
             <span className="text-muted-foreground font-medium">{t('upload.strategy', { defaultValue: 'Strategy:' })}</span>
             {strategies.length > 1 ? (
               <Select 
@@ -152,7 +152,7 @@ export function UploadPage() {
                 onValueChange={(val) => val !== null && onStrategyChange(Number(val))}
                 items={Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${s.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: 'Local' }) : 'S3'})`]))}
               >
-                <SelectTrigger className="h-7 w-[220px] max-w-[42vw] sm:w-[260px] bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
+                <SelectTrigger className="h-8 w-[220px] max-w-[42vw] sm:w-[260px] bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -174,8 +174,8 @@ export function UploadPage() {
 
           {/* Album Selector */}
           {albums.length > 0 && (
-            <div className="flex items-center gap-3 rounded-full border border-border/50 bg-card/50 backdrop-blur-md px-4 py-1.5 shadow-sm text-sm">
-              <span className="text-muted-foreground font-medium">{t('page.albums.title', { defaultValue: '相册:' })}</span>
+            <div className="flex h-10 items-center gap-3 rounded-lg border border-border/50 bg-card px-3 shadow-sm text-sm">
+              <span className="text-muted-foreground font-medium">{t('images.album', { defaultValue: '相册' })}</span>
               <Select 
                 value={selectedAlbumId?.toString() ?? 'none'}
                 onValueChange={(val) => val !== null && onAlbumChange(val as string)}
@@ -184,7 +184,7 @@ export function UploadPage() {
                   ...Object.fromEntries(albums.map(a => [a.id.toString(), a.name]))
                 }}
               >
-                <SelectTrigger className="h-7 w-[140px] sm:w-[180px] bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
+                <SelectTrigger className="h-8 w-[140px] sm:w-[180px] bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -200,7 +200,7 @@ export function UploadPage() {
           )}
 
           {/* Permission Selector */}
-          <div className="flex items-center gap-3 rounded-full border border-border/50 bg-card/50 backdrop-blur-md px-4 py-1.5 shadow-sm text-sm">
+          <div className="flex h-10 items-center gap-3 rounded-lg border border-border/50 bg-card px-3 shadow-sm text-sm">
             <span className="text-muted-foreground font-medium">{t('images.permission', { defaultValue: '权限:' })}</span>
             <Select 
               value={selectedPermission?.toString() ?? '1'}
@@ -210,7 +210,7 @@ export function UploadPage() {
                 '0': t('images.private', { defaultValue: '私有' })
               }}
             >
-              <SelectTrigger className="w-[80px] h-7 bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
+              <SelectTrigger className="h-8 w-[80px] bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -224,7 +224,7 @@ export function UploadPage() {
 
       {/* New user welcome banner */}
       {isNewUser && !dismissedWelcome && (
-        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 shadow-sm animate-in fade-in zoom-in-95 duration-500">
+        <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-primary/5 p-4 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
               <CheckCircle2 className="h-5 w-5" />
@@ -244,14 +244,14 @@ export function UploadPage() {
         </div>
       )}
 
-      <div className="rounded-3xl border border-border/50 bg-card/30 backdrop-blur-xl p-2 shadow-xl shadow-black/5 dark:shadow-black/20 transition-all hover:bg-card/50">
+      <div className="rounded-2xl border border-border/50 bg-card/70 p-2 shadow-sm">
         <UploadZone onFiles={handleFiles} disabled={busy} />
       </div>
 
       {uploading.length > 0 && (
-        <div className="space-y-4 rounded-3xl border border-border/50 bg-card/50 backdrop-blur-xl p-6 shadow-xl shadow-black/5 dark:shadow-black/20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-4 rounded-2xl border border-border/50 bg-card/80 p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            <div className="h-2 w-2 rounded-full bg-primary/80" />
             <h3 className="text-sm font-semibold text-foreground tracking-tight">{t('upload.uploading', { defaultValue: '正在上传...' })}</h3>
           </div>
           {uploading.map((u) => (
@@ -262,7 +262,7 @@ export function UploadPage() {
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary/50">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-primary/50 to-primary transition-all duration-300 ease-out"
+                  className="h-full rounded-full bg-gradient-to-r from-primary/50 to-primary transition-[width] duration-200 ease-out"
                   style={{ width: `${u.progress}%` }}
                 />
               </div>
@@ -272,7 +272,7 @@ export function UploadPage() {
       )}
 
       {errors.length > 0 && (
-        <div className="space-y-2 animate-in fade-in">
+        <div className="space-y-2">
           {errors.map((msg, i) => (
             <div key={i} className="flex items-center gap-3 rounded-xl bg-destructive/10 px-5 py-4 text-sm text-destructive border border-destructive/20 shadow-sm">
               <AlertCircle className="h-5 w-5 shrink-0" />
@@ -283,7 +283,7 @@ export function UploadPage() {
       )}
 
       {results.length > 0 && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-500 delay-150 fill-mode-both">
+        <div className="space-y-6">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-semibold tracking-tight">{t('upload.results')}</h2>
             <div className="h-px flex-1 bg-border/50" />

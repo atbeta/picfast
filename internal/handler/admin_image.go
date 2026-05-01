@@ -92,10 +92,12 @@ func (h *AdminImageHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	img, _ := h.db.GetImageByID(r.Context(), id)
 	if err := h.deleter.DeleteImage(r.Context(), id); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to delete image")
 		return
 	}
+	writeAuditLog(h.db, r, "admin.image.delete", "image", strconv.FormatInt(id, 10), img.OriginName, nil)
 
 	SuccessMessage(w, "deleted")
 }

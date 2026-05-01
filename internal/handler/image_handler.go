@@ -15,14 +15,15 @@ import (
 )
 
 type ImageHandler struct {
-	db      *sqlc.Queries
-	upload  *service.UploadService
-	deleter *service.DeleteService
-	baseURL string
+	db              *sqlc.Queries
+	upload          *service.UploadService
+	deleter         *service.DeleteService
+	baseURL         string
+	auditUploadLogs bool
 }
 
-func NewImageHandler(db *sqlc.Queries, upload *service.UploadService, deleter *service.DeleteService, baseURL string) *ImageHandler {
-	return &ImageHandler{db: db, upload: upload, deleter: deleter, baseURL: baseURL}
+func NewImageHandler(db *sqlc.Queries, upload *service.UploadService, deleter *service.DeleteService, baseURL string, auditUploadLogs bool) *ImageHandler {
+	return &ImageHandler{db: db, upload: upload, deleter: deleter, baseURL: baseURL, auditUploadLogs: auditUploadLogs}
 }
 
 func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +102,17 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		Fail(w, http.StatusBadRequest, err.Error())
 		return
+	}
+
+	if h.auditUploadLogs {
+		details := map[string]any{
+			"origin_name": result.Image.OriginName,
+			"size_bytes":  result.Image.SizeBytes,
+		}
+		if userID == nil {
+			details["guest"] = true
+		}
+		writeAuditLog(h.db, r, "image.upload", "image", result.Image.Key, result.Image.OriginName, details)
 	}
 
 	Created(w, imageResponse(result.Image, result.Links))
@@ -212,6 +224,9 @@ func (h *ImageHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, "failed to delete image")
 		return
 	}
+	writeAuditLog(h.db, r, "image.delete", "image", key, img.OriginName, map[string]any{
+		"image_id": img.ID,
+	})
 
 	SuccessMessage(w, "deleted")
 }
@@ -275,6 +290,12 @@ func (h *ImageHandler) Update(w http.ResponseWriter, r *http.Request) {
 			_ = h.db.IncrementAlbumImageNum(r.Context(), updated.AlbumID.Int64)
 		}
 	}
+	writeAuditLog(h.db, r, "image.update", "image", key, updated.OriginName, map[string]any{
+		"before_permission": img.Permission,
+		"after_permission":  updated.Permission,
+		"before_album_id":   domain.PgInt8PtrVal(img.AlbumID),
+		"after_album_id":    domain.PgInt8PtrVal(updated.AlbumID),
+	})
 
 	links := h.buildLinks(updated.Key, updated.Extension, updated.Md5, updated.OriginName)
 	Success(w, imageResponse(updated, links))

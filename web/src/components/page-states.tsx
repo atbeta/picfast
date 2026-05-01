@@ -53,9 +53,9 @@ export function EmptyState({
         className,
       ].join(' ')}
     >
-      {icon && <div className="mb-4 rounded-full bg-background/70 p-4 shadow-sm">{icon}</div>}
+      {icon && <div className="mb-3 rounded-full bg-background/70 p-3 shadow-sm">{icon}</div>}
       <p className="text-sm font-semibold text-foreground">{title}</p>
-      {description && <p className="mt-2 max-w-md text-sm text-muted-foreground">{description}</p>}
+      {description && <p className="mt-1.5 max-w-md text-sm text-muted-foreground">{description}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   )

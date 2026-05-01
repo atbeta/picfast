@@ -87,6 +87,9 @@ func (h *AdminStrategyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Created(w, strategyJSON(s))
+	writeAuditLog(h.db, r, "admin.strategy.create", "strategy", strconv.FormatInt(s.ID, 10), s.Name, map[string]any{
+		"strategy_type": s.StrategyType,
+	})
 }
 
 func (h *AdminStrategyHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -142,6 +145,12 @@ func (h *AdminStrategyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Success(w, strategyJSON(s))
+	writeAuditLog(h.db, r, "admin.strategy.update", "strategy", strconv.FormatInt(s.ID, 10), s.Name, map[string]any{
+		"before_name":          existing.Name,
+		"after_name":           s.Name,
+		"before_strategy_type": existing.StrategyType,
+		"after_strategy_type":  s.StrategyType,
+	})
 }
 
 func (h *AdminStrategyHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -151,10 +160,12 @@ func (h *AdminStrategyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	existing, _ := h.db.GetStrategyByID(r.Context(), id)
 	if err := h.db.DeleteStrategy(r.Context(), id); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to delete strategy")
 		return
 	}
+	writeAuditLog(h.db, r, "admin.strategy.delete", "strategy", strconv.FormatInt(id, 10), existing.Name, nil)
 
 	SuccessMessage(w, "deleted")
 }

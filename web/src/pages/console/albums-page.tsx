@@ -109,7 +109,7 @@ export function AlbumsPage() {
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-all hover:bg-primary/90 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+          className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors duration-150 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
         >
           <Plus className="-ms-1 me-2 size-4" />
           {t('albums.create')}
@@ -181,7 +181,7 @@ export function AlbumsPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {data.items.map((album) =>
             editingId === album.id ? (
-              <div key={album.id} className="rounded-xl border border-primary/30 bg-card p-5 shadow-md transition-all">
+              <div key={album.id} className="rounded-xl border border-primary/30 bg-card p-5 shadow-md transition-colors duration-150">
                 <div className="space-y-3">
                   <input
                     value={editName}
@@ -213,7 +213,7 @@ export function AlbumsPage() {
                 </div>
               </div>
             ) : (
-              <div key={album.id} className="group relative flex flex-col justify-between rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-1 hover:border-primary/30">
+              <div key={album.id} className="group relative flex flex-col justify-between rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-colors duration-150 hover:shadow-sm hover:border-primary/30">
                 <div 
                   className="mb-4 aspect-video w-full overflow-hidden rounded-lg bg-muted cursor-pointer relative"
                   onClick={() => viewAlbumImages(album)}
@@ -222,7 +222,7 @@ export function AlbumsPage() {
                     <img 
                       src={`/t/${album.cover_md5}.png`} 
                       alt={album.name} 
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                      className="h-full w-full object-cover" 
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center">

@@ -32,6 +32,19 @@ type ApiToken struct {
 	CreatedAt  time.Time          `json:"created_at"`
 }
 
+type AuditLog struct {
+	ID           int64           `json:"id"`
+	ActorUserID  pgtype.Int8     `json:"actor_user_id"`
+	Action       string          `json:"action"`
+	ResourceType string          `json:"resource_type"`
+	ResourceID   pgtype.Text     `json:"resource_id"`
+	ResourceName pgtype.Text     `json:"resource_name"`
+	Details      json.RawMessage `json:"details"`
+	Ip           string          `json:"ip"`
+	UserAgent    string          `json:"user_agent"`
+	CreatedAt    time.Time       `json:"created_at"`
+}
+
 type EmailVerificationToken struct {
 	ID        int64              `json:"id"`
 	UserID    int64              `json:"user_id"`

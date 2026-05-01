@@ -54,7 +54,7 @@ export function GuestUploadPage() {
   }, [t])
 
   return (
-    <section className="mx-auto max-w-3xl space-y-8 animate-in slide-in-from-bottom-4 fade-in duration-700">
+    <section className="mx-auto max-w-3xl space-y-8">
       <div className="text-center space-y-4">
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/70 dark:from-white dark:to-white/60">
           {t('page.guestUpload.title')}
@@ -75,7 +75,7 @@ export function GuestUploadPage() {
               <span className="min-w-0 flex-1 truncate text-sm font-medium">{u.file.name}</span>
               <div className="h-2 w-32 md:w-48 overflow-hidden rounded-full bg-secondary">
                 <div
-                  className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
+                  className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out"
                   style={{ width: `${u.progress}%` }}
                 />
               </div>
@@ -86,7 +86,7 @@ export function GuestUploadPage() {
       )}
 
       {errors.length > 0 && (
-        <div className="space-y-2 animate-in fade-in">
+        <div className="space-y-2">
           {errors.map((msg, i) => (
             <div key={i} className="flex items-center gap-3 rounded-xl bg-destructive/10 px-5 py-4 text-sm text-destructive border border-destructive/20 shadow-sm">
               <AlertCircle className="w-5 h-5 shrink-0" />
@@ -97,7 +97,7 @@ export function GuestUploadPage() {
       )}
 
       {results.length > 0 && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150 fill-mode-both">
+        <div className="space-y-6">
           <h2 className="text-xl font-semibold tracking-tight">{t('upload.results')}</h2>
           <div className="grid gap-4">
             {results.map((r) => (

@@ -195,6 +195,7 @@ export interface AdminSettings {
   require_email_verification: boolean
   email_verification_ready: boolean
   user_initial_capacity: number
+  default_image_ttl: string
   moderation_mode: string
 }
 
@@ -205,5 +206,29 @@ export async function getAdminSettings(): Promise<AdminSettings> {
 
 export async function updateAdminSettings(data: Partial<AdminSettings>): Promise<AdminSettings> {
   const res = await api.put<ApiResponse<AdminSettings>>('/admin/settings', data)
+  return res.data.data
+}
+
+export interface AdminAuditLog {
+  id: number
+  actor_user_id: number | null
+  actor_email: string | null
+  action: string
+  resource_type: string
+  resource_id: string | null
+  resource_name: string | null
+  details: Record<string, unknown>
+  ip: string
+  user_agent: string
+  created_at: string
+}
+
+export async function listAdminAuditLogs(params?: {
+  page?: number
+  page_size?: number
+  action?: string
+  resource_type?: string
+}): Promise<PaginatedData<AdminAuditLog>> {
+  const res = await api.get<ApiResponse<PaginatedData<AdminAuditLog>>>('/admin/audit-logs', { params })
   return res.data.data
 }

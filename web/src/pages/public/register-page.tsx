@@ -63,7 +63,7 @@ export function RegisterPage() {
             id="name"
             type="text"
             autoComplete="name"
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-1 focus:ring-primary/20"
             {...register('name')}
           />
           {errors.name && <p className="mt-1 text-xs text-destructive">{t('auth.required')}</p>}
@@ -77,7 +77,7 @@ export function RegisterPage() {
             id="email"
             type="email"
             autoComplete="email"
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-1 focus:ring-primary/20"
             {...register('email')}
           />
           {errors.email && <p className="mt-1 text-xs text-destructive">{t('auth.invalidEmail')}</p>}
@@ -91,7 +91,7 @@ export function RegisterPage() {
             id="password"
             type="password"
             autoComplete="new-password"
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-1 focus:ring-primary/20"
             {...register('password')}
           />
           {errors.password && <p className="mt-1 text-xs text-destructive">{t('auth.passwordMin')}</p>}

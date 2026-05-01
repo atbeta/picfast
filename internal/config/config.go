@@ -54,6 +54,7 @@ type AppConfig struct {
 	AllowGuestUpload         bool          `mapstructure:"allow_guest_upload"`
 	AllowRegistration        bool          `mapstructure:"allow_registration"`
 	RequireEmailVerification bool          `mapstructure:"require_email_verification"`
+	AuditUploadLogs          bool          `mapstructure:"audit_upload_logs"`
 	UserInitialCapacity      int64         `mapstructure:"user_initial_capacity"`
 	DefaultImageTTL          time.Duration `mapstructure:"default_image_ttl"`
 	AdminEmail               string        `mapstructure:"admin_email"`
@@ -143,6 +144,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.allow_guest_upload", false)
 	v.SetDefault("app.allow_registration", false)
 	v.SetDefault("app.require_email_verification", false)
+	v.SetDefault("app.audit_upload_logs", false)
 	v.SetDefault("app.user_initial_capacity", int64(524288000))
 	v.SetDefault("app.default_image_ttl", time.Duration(0))
 	v.SetDefault("app.admin_email", "")

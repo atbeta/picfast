@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface GroupForm {
   name: string
@@ -31,6 +32,7 @@ interface GroupForm {
   limit_per_day: number
   limit_per_month: number
   strategy_ids: number[]
+  default_strategy_id: number
 }
 
 const commonExtensions = ['jpeg', 'jpg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico']
@@ -55,6 +57,7 @@ function emptyForm(): GroupForm {
     limit_per_day: 300,
     limit_per_month: 9999,
     strategy_ids: [],
+    default_strategy_id: 0,
   }
 }
 
@@ -68,13 +71,18 @@ function groupToForm(g: AdminGroup): GroupForm {
     limit_per_day: (c.limit_per_day as number) || 300,
     limit_per_month: (c.limit_per_month as number) || 9999,
     strategy_ids: (g.strategy_ids || []).map(Number),
+    default_strategy_id: Number(c.default_strategy_id || 0),
   }
 }
 
 function formToConfigs(form: GroupForm) {
+  const normalizedDefaultStrategyID = form.strategy_ids.includes(form.default_strategy_id)
+    ? form.default_strategy_id
+    : 0
   return {
     maximum_file_size: form.max_size * 1048576,
     accepted_extensions: parseExtensions(form.extensions),
+    default_strategy_id: normalizedDefaultStrategyID,
     limit_per_day: form.limit_per_day,
     limit_per_month: form.limit_per_month,
   }
@@ -169,15 +177,26 @@ export function AdminGroupsPage() {
     setForm((prev) => ({ ...prev, [key]: value }))
 
   const toggleStrategy = (id: number) => {
-    setForm((prev) => ({
-      ...prev,
-      strategy_ids: prev.strategy_ids.includes(id)
+    setForm((prev) => {
+      const exists = prev.strategy_ids.includes(id)
+      const nextStrategyIDs = exists
         ? prev.strategy_ids.filter((x) => x !== id)
-        : [...prev.strategy_ids, id],
-    }))
+        : [...prev.strategy_ids, id]
+      return {
+        ...prev,
+        strategy_ids: nextStrategyIDs,
+        default_strategy_id: exists && prev.default_strategy_id === id ? 0 : prev.default_strategy_id,
+      }
+    })
   }
 
-  const inputCls = 'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all'
+  const inputCls = 'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20'
+  const chipCls = (checked: boolean) =>
+    `h-8 rounded-lg px-3 text-xs font-medium transition-colors border cursor-pointer ${
+      checked
+        ? 'bg-primary/10 text-primary border-primary/40 shadow-sm'
+        : 'bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+    }`
 
   const getStrategyName = (id: number) => {
     const s = allStrategies.find((x) => x.id === id)
@@ -187,8 +206,11 @@ export function AdminGroupsPage() {
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">{t('admin.groupsTitle')}</h1>
-        <button type="button" onClick={openCreate} className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">{t('admin.groupsTitle')}</h1>
+          <p className="text-sm text-muted-foreground">{t('admin.groupsSubtitle', { defaultValue: '配置分组策略、格式限制与上传配额。' })}</p>
+        </div>
+        <button type="button" onClick={openCreate} className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
           {t('admin.create')}
         </button>
       </div>
@@ -202,14 +224,14 @@ export function AdminGroupsPage() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid gap-6 sm:grid-cols-2 pt-4">
+          <div className="grid gap-6 pt-4 sm:grid-cols-2">
             <div className="space-y-4">
               <div className="space-y-3">
                 <label className="text-sm font-medium text-foreground">{t('admin.colName')}</label>
                 <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
               </div>
 
-              <div className="flex items-center justify-between rounded-lg border border-border bg-background p-4 shadow-sm">
+              <div className="flex h-10 items-center justify-between rounded-lg border border-border bg-background px-3">
                 <label htmlFor="isDefault" className="text-sm font-medium text-foreground cursor-pointer">{t('admin.defaultGroup', { defaultValue: '默认分组' })}</label>
                 <Switch id="isDefault" checked={form.is_default} onCheckedChange={(checked) => update('is_default', checked)} />
               </div>
@@ -245,15 +267,11 @@ export function AdminGroupsPage() {
                       update('extensions', newExts.join(','))
                     }
                     return (
-                      <button 
+                      <button
                         key={ext} 
                         type="button"
                         onClick={toggleExt}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors border cursor-pointer ${
-                          checked 
-                            ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
-                            : 'bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
-                        }`}
+                        className={chipCls(checked)}
                       >
                         {ext}
                       </button>
@@ -271,8 +289,8 @@ export function AdminGroupsPage() {
                       const selectedCommon = parseExtensions(form.extensions).filter((ext) => commonExtensions.includes(ext))
                       update('extensions', [...selectedCommon, ...customExtensions].join(','))
                     }}
-                    placeholder="avif,heic,jxl"
-                    className={inputCls}
+                    placeholder={t('admin.extensionsCustomPlaceholder', { defaultValue: '例如：avif,heic,jxl' })}
+                    className={`${inputCls} placeholder:text-muted-foreground/50`}
                   />
                 </div>
               </div>
@@ -291,11 +309,7 @@ export function AdminGroupsPage() {
                           key={s.id}
                           type="button"
                           onClick={() => toggleStrategy(s.id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border cursor-pointer ${
-                            checked 
-                              ? 'bg-primary/10 text-primary border-primary/30' 
-                              : 'bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
-                          }`}
+                          className={chipCls(checked)}
                         >
                           {s.name}
                         </button>
@@ -304,14 +318,50 @@ export function AdminGroupsPage() {
                   </div>
                 )}
               </div>
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-foreground">
+                  {t('admin.groupDefaultStrategy', { defaultValue: '分组默认策略' })}
+                </label>
+                <Select
+                  value={String(form.default_strategy_id || 0)}
+                  items={{
+                    '0': t('admin.groupDefaultStrategyAuto', { defaultValue: '自动（第一个可用策略）' }),
+                    ...Object.fromEntries(
+                      allStrategies
+                        .filter((s) => form.strategy_ids.includes(s.id))
+                        .map((s) => [String(s.id), s.name]),
+                    ),
+                  }}
+                  onValueChange={(val) => update('default_strategy_id', Number(val))}
+                >
+                  <SelectTrigger className="h-10 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">
+                      {t('admin.groupDefaultStrategyAuto', { defaultValue: '自动（第一个可用策略）' })}
+                    </SelectItem>
+                    {allStrategies
+                      .filter((s) => form.strategy_ids.includes(s.id))
+                      .map((s) => (
+                        <SelectItem key={s.id} value={String(s.id)}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {t('admin.groupDefaultStrategyHint', { defaultValue: '当用户设置为“跟随分组默认”且上传未显式指定策略时，将使用这里的策略。' })}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t border-border mt-2">
-            <button type="button" onClick={() => setShowModal(false)} className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+          <div className="mt-2 flex justify-end gap-3 border-t border-border pt-5">
+            <button type="button" onClick={() => setShowModal(false)} className="h-10 rounded-lg border border-input bg-background px-4 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
               {t('admin.cancel')}
             </button>
-            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
+            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
               {saving ? '…' : t('admin.confirmSave')}
             </button>
           </div>
@@ -324,12 +374,12 @@ export function AdminGroupsPage() {
         <EmptyState
           icon={<FolderTree className="size-6 text-muted-foreground" />}
           title={t('admin.empty')}
-          description={t('admin.groupsEmptyDesc', { defaultValue: '创建分组后，可以为不同用户配置容量、格式和策略权限。' })}
+          description={t('admin.groupsEmptyDesc', { defaultValue: '创建分组后，可为不同用户配置容量、格式与策略权限。' })}
         />
       )}
 
       {groups && groups.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card/80 shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground bg-muted/50">

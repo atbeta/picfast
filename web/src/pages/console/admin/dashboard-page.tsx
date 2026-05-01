@@ -61,7 +61,7 @@ export function AdminDashboardPage() {
       </div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="group overflow-hidden rounded-xl border border-border/50 bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-1 hover:border-primary/30">
+          <div key={s.label} className="group overflow-hidden rounded-xl border border-border/50 bg-card p-6 shadow-sm transition-colors duration-150 hover:shadow-sm hover:border-primary/30">
             <div className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">{s.label}</div>
             <div className="text-3xl font-bold tracking-tight text-foreground">{s.value}</div>
           </div>

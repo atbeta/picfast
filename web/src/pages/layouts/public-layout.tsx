@@ -20,7 +20,7 @@ export function PublicLayout() {
 
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-6">
-          <Link to="/" className="flex items-center gap-3 transition-opacity hover:opacity-80 active:scale-95">
+          <Link to="/" className="flex items-center gap-3 transition-opacity duration-150 hover:opacity-80">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
               <ImagePlus className="h-5 w-5" />
             </div>
@@ -53,7 +53,7 @@ export function PublicLayout() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-6xl px-6 py-12 md:py-20 animate-in fade-in duration-500">
+      <main className="relative z-10 mx-auto w-full max-w-6xl px-6 py-12 md:py-20">
         <Outlet />
       </main>
     </div>

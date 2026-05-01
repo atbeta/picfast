@@ -21,6 +21,7 @@ const AdminStrategiesPage = lazy(async () => ({ default: (await import('../pages
 const AdminImagesPage = lazy(async () => ({ default: (await import('../pages/console/admin/images-page')).AdminImagesPage }))
 const AdminSettingsPage = lazy(async () => ({ default: (await import('../pages/console/admin/settings-page')).AdminSettingsPage }))
 const AdminDashboardPage = lazy(async () => ({ default: (await import('../pages/console/admin/dashboard-page')).AdminDashboardPage }))
+const AdminAuditLogsPage = lazy(async () => ({ default: (await import('../pages/console/admin/audit-logs-page')).AdminAuditLogsPage }))
 const GuestUploadPage = lazy(async () => ({ default: (await import('../pages/public/guest-upload-page')).GuestUploadPage }))
 const LoginPage = lazy(async () => ({ default: (await import('../pages/public/login-page')).LoginPage }))
 const RegisterPage = lazy(async () => ({ default: (await import('../pages/public/register-page')).RegisterPage }))
@@ -127,6 +128,7 @@ function PublicRoutes() {
             <Route path="groups" element={<LazyPage><AdminGroupsPage /></LazyPage>} />
             <Route path="strategies" element={<LazyPage><AdminStrategiesPage /></LazyPage>} />
             <Route path="images" element={<LazyPage><AdminImagesPage /></LazyPage>} />
+            <Route path="audit-logs" element={<LazyPage><AdminAuditLogsPage /></LazyPage>} />
             <Route path="settings" element={<LazyPage><AdminSettingsPage /></LazyPage>} />
             <Route index element={<Navigate to="/console/admin/users" replace />} />
           </Route>

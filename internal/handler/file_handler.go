@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 	"path/filepath"
 	"regexp"
@@ -61,6 +62,14 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 			role = rVal
 		}
 		if !ok || (img.UserID.Int64 != userID && role != domain.RoleAdmin) {
+			slog.Info("private image access denied",
+				"key", img.Key,
+				"path", r.URL.Path,
+				"authed", ok,
+				"request_user_id", userID,
+				"owner_user_id", img.UserID.Int64,
+				"role", role,
+			)
 			http.NotFound(w, r)
 			return
 		}
@@ -135,6 +144,11 @@ func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 	if !isPublic {
 		userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)
 		if !ok {
+			slog.Info("private thumbnail access denied",
+				"hash", md5Hash,
+				"path", r.URL.Path,
+				"authed", false,
+			)
 			http.NotFound(w, r)
 			return
 		}
@@ -147,6 +161,13 @@ func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if !ownsOne {
+			slog.Info("private thumbnail access denied",
+				"hash", md5Hash,
+				"path", r.URL.Path,
+				"authed", true,
+				"request_user_id", userID,
+				"reason", "not_owner",
+			)
 			http.NotFound(w, r)
 			return
 		}

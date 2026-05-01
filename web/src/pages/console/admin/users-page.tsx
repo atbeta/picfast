@@ -106,12 +106,15 @@ export function AdminUsersPage() {
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">{t('admin.usersTitle')}</h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">{t('admin.usersTitle')}</h1>
+          <p className="text-sm text-muted-foreground">{t('admin.usersSubtitle', { defaultValue: '集中管理用户账户、状态与容量配额。' })}</p>
+        </div>
         <input
           value={keyword}
           onChange={(e) => { setKeyword(e.target.value); setPage(1) }}
           placeholder={t('admin.searchPlaceholder')}
-          className="h-9 w-full sm:w-72 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+          className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-1 focus:ring-primary/20 sm:w-72"
         />
       </div>
 
@@ -123,43 +126,43 @@ export function AdminUsersPage() {
         <EmptyState
           icon={<Users className="size-6 text-muted-foreground" />}
           title={t('admin.empty')}
-          description={t('admin.usersEmptyDesc', { defaultValue: '等有用户注册或被创建后，这里会显示账户列表。' })}
+          description={t('admin.usersEmptyDesc', { defaultValue: '用户注册或创建后，将在此处显示账户列表。' })}
         />
       )}
 
       {data && data.items.length > 0 && (
         <>
-          <div className="overflow-x-auto rounded-lg border border-border/50 bg-card shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-border/50 bg-card/80 shadow-sm">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border/50 text-left text-xs text-muted-foreground bg-muted/30">
-                  <th className="pb-2 pr-3 pl-4 pt-2 font-medium">ID</th>
-                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colEmail')}</th>
-                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colName')}</th>
-                  <th className="pb-2 pr-3 pt-2 font-medium">
+                <tr className="border-b border-border/50 bg-muted/35 text-left text-xs text-muted-foreground">
+                  <th className="px-4 py-3 font-medium">ID</th>
+                  <th className="px-3 py-3 font-medium">{t('admin.colEmail')}</th>
+                  <th className="px-3 py-3 font-medium">{t('admin.colName')}</th>
+                  <th className="px-3 py-3 font-medium">
                     <div className="flex items-center gap-1">
                       {t('admin.colRole')}
                     </div>
                   </th>
-                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colGroup', { defaultValue: '分组' })}</th>
-                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colStatus')}</th>
-                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colImages')}</th>
-                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.usedCapacity', { defaultValue: '已用容量' })}</th>
-                  <th className="pb-2 pr-4 pt-2 font-medium text-right">{t('admin.colActions')}</th>
+                  <th className="px-3 py-3 font-medium">{t('admin.colGroup', { defaultValue: '分组' })}</th>
+                  <th className="px-3 py-3 font-medium">{t('admin.colStatus')}</th>
+                  <th className="px-3 py-3 font-medium">{t('admin.colImages')}</th>
+                  <th className="px-3 py-3 font-medium">{t('admin.usedCapacity', { defaultValue: '已用容量' })}</th>
+                  <th className="px-4 py-3 font-medium text-right">{t('admin.colActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {data.items.map((u) => (
                   <tr key={u.id} className="group hover:bg-muted/50 transition-colors">
-                    <td className="py-2 pr-3 pl-4 text-muted-foreground">{u.id}</td>
-                    <td className="py-2 pr-3 text-foreground">{u.email}</td>
-                    <td className="py-2 pr-3 text-foreground">{u.name}</td>
-                    <td className="py-2 pr-3">
+                    <td className="px-4 py-3 text-muted-foreground">{u.id}</td>
+                    <td className="px-3 py-3 text-foreground">{u.email}</td>
+                    <td className="px-3 py-3 text-foreground">{u.name}</td>
+                    <td className="px-3 py-3">
                       <span className={['rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider', u.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'].join(' ')}>
                         {u.role}
                       </span>
                     </td>
-                    <td className="py-2 pr-3">
+                    <td className="px-3 py-3">
                       {u.group_id ? (
                         <span className="rounded px-1.5 py-0.5 text-xs font-medium bg-muted/50 text-foreground border border-border/50">
                           {groups.find(g => g.id === u.group_id)?.name || u.group_id}
@@ -168,14 +171,14 @@ export function AdminUsersPage() {
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="py-2 pr-3">
+                    <td className="px-3 py-3">
                       <span className={['rounded px-1.5 py-0.5 text-xs font-medium', u.status === 1 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'].join(' ')}>
                         {u.status === 1 ? t('admin.active') : t('admin.frozen')}
                       </span>
                     </td>
-                    <td className="py-2 pr-3 text-muted-foreground">{u.image_num}</td>
-                    <td className="py-2 pr-3 text-muted-foreground">{formatFileSize(u.used_capacity || 0)} / {formatFileSize(u.capacity_bytes)}</td>
-                    <td className="py-2 pr-4">
+                    <td className="px-3 py-3 text-muted-foreground">{u.image_num}</td>
+                    <td className="px-3 py-3 text-muted-foreground">{formatFileSize(u.used_capacity || 0)} / {formatFileSize(u.capacity_bytes)}</td>
+                    <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
                         <button
                           type="button"
@@ -191,7 +194,7 @@ export function AdminUsersPage() {
                             onClick={() => toggleStatus(u)}
                             disabled={saving === u.id}
                             title={u.status === 1 ? t('admin.freeze') : t('admin.activate')}
-                            className="rounded-lg px-2 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50 transition-colors cursor-pointer"
+                            className="rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 transition-colors cursor-pointer"
                           >
                             {u.status === 1 ? <Ban className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                           </button>
@@ -202,7 +205,7 @@ export function AdminUsersPage() {
                             onClick={() => setDeleteTarget(u.id)}
                             disabled={deleting === u.id}
                             title={t('admin.delete')}
-                            className="transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                            className="rounded-lg p-1.5 text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                           >
                             <Trash2 className="size-4" />
                           </button>
@@ -259,11 +262,11 @@ export function AdminUsersPage() {
           <DialogHeader>
             <DialogTitle>{t('admin.editUser', { defaultValue: '编辑用户' })}</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 sm:grid-cols-2 pt-4">
+          <div className="grid gap-5 pt-4 sm:grid-cols-2">
             
             <div className="space-y-3">
               <label className="text-sm font-medium text-foreground">{t('admin.colEmail')}</label>
-              <input value={editing?.email || ''} disabled className="w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-muted-foreground cursor-not-allowed" />
+              <input value={editing?.email || ''} disabled className="h-10 w-full rounded-lg border border-input bg-muted/50 px-3 text-sm text-muted-foreground cursor-not-allowed" />
             </div>
 
             <div className="space-y-3">
@@ -271,14 +274,14 @@ export function AdminUsersPage() {
               <input 
                 value={editName} 
                 onChange={(e) => setEditName(e.target.value)} 
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" 
+                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20" 
               />
             </div>
 
             <div className="space-y-3">
               <label className="text-sm font-medium text-foreground">{t('admin.colGroup', { defaultValue: '所属分组' })}</label>
               <Select value={editGroup} onValueChange={(val) => val !== null && setEditGroup(val as string)}>
-                <SelectTrigger className="w-full h-9">
+                <SelectTrigger className="h-10 w-full">
                   <SelectValue placeholder={t('admin.noGroup', { defaultValue: '不分配分组' })} />
                 </SelectTrigger>
                 <SelectContent>
@@ -298,7 +301,7 @@ export function AdminUsersPage() {
                   min={0} 
                   value={editCapacity} 
                   onChange={(e) => setEditCapacity(Number(e.target.value))} 
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" 
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20" 
                 />
                 <span className="text-sm text-muted-foreground">MB</span>
               </div>
@@ -311,15 +314,15 @@ export function AdminUsersPage() {
                 value={editPassword} 
                 onChange={(e) => setEditPassword(e.target.value)} 
                 placeholder="******"
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" 
+                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20" 
               />
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-6 mt-2 border-t border-border">
-            <button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent transition-colors cursor-pointer">
+          <div className="mt-3 flex justify-end gap-3 border-t border-border pt-5">
+            <button type="button" onClick={() => setEditing(null)} className="h-10 rounded-lg border border-input bg-background px-4 text-sm font-medium hover:bg-accent transition-colors cursor-pointer">
               {t('admin.cancel')}
             </button>
-            <button type="button" onClick={handleEditSave} disabled={editSaving} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
+            <button type="button" onClick={handleEditSave} disabled={editSaving} className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
               {editSaving ? '…' : t('admin.confirmSave')}
             </button>
           </div>

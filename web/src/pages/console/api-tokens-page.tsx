@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { Calendar, Clock, CheckCircle2, History, Trash2, Copy, KeyRound } from 'lucide-react'
+import { Calendar, Clock, CheckCircle2, History, Trash2, Copy, KeyRound, Plus } from 'lucide-react'
 import { createApiToken, deleteApiToken, listApiTokens } from '../../lib/console-api'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
@@ -115,8 +115,9 @@ export function ApiTokensPage() {
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 active:scale-95"
+          className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition-opacity duration-150 hover:opacity-90"
         >
+          <Plus className="-ms-1 me-2 inline size-4" />
           {t('tokens.create')}
         </button>
       </div>
@@ -133,7 +134,7 @@ export function ApiTokensPage() {
             <button
               type="button"
               onClick={() => onCopy(createdToken.token)}
-              className="shrink-0 flex items-center justify-center rounded-lg bg-success text-success-foreground w-8 h-8 shadow-sm transition-all hover:opacity-90 active:scale-95 cursor-pointer"
+              className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg bg-success text-success-foreground shadow-sm transition-opacity duration-150 hover:opacity-90 cursor-pointer"
               title={t('tokens.copyToken')}
             >
               <Copy className="size-4" />
@@ -150,7 +151,7 @@ export function ApiTokensPage() {
       )}
 
       {showCreate && (
-        <div className="space-y-4 rounded-xl border border-border/50 bg-card p-6 shadow-sm backdrop-blur-sm animate-in slide-in-from-top-2 fade-in duration-300">
+        <div className="space-y-4 rounded-xl border border-border/50 bg-card p-6 shadow-sm backdrop-blur-sm">
           <h2 className="text-lg font-semibold tracking-tight">{t('tokens.create', { defaultValue: '创建令牌' })}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -159,7 +160,7 @@ export function ApiTokensPage() {
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder={t('tokens.namePlaceholder')}
-                className="w-full rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+                className="w-full rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors duration-150"
               />
             </div>
             <div className="space-y-1.5">
@@ -209,14 +210,14 @@ export function ApiTokensPage() {
               type="button"
               onClick={handleCreate}
               disabled={creating || !newName.trim() || newScopes.length === 0}
-              className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-50 active:scale-95"
+              className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-opacity duration-150 hover:opacity-90 disabled:opacity-50"
             >
               {creating ? t('tokens.creating') : t('tokens.confirmCreate')}
             </button>
             <button
               type="button"
               onClick={() => { setShowCreate(false); setNewName(''); setNewExpires(undefined); setNewScopes(['read', 'write']) }}
-              className="rounded-lg border border-border/50 bg-background px-5 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-all hover:bg-muted hover:text-foreground active:scale-95"
+              className="rounded-lg border border-border/50 bg-background px-5 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-colors duration-150 hover:bg-muted hover:text-foreground"
             >
               {t('tokens.cancel')}
             </button>

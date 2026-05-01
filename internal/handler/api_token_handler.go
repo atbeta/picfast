@@ -106,6 +106,10 @@ func (h *APITokenHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if token.ExpiresAt.Valid {
 		resp.ExpiresAt = token.ExpiresAt.Time
 	}
+	writeAuditLog(h.db, r, "api_token.create", "api_token", fmt.Sprintf("%d", token.ID), token.Name, map[string]any{
+		"scopes":     scopeList,
+		"expires_at": token.ExpiresAt.Time,
+	})
 
 	Created(w, resp)
 }
@@ -167,6 +171,7 @@ func (h *APITokenHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, "failed to delete token")
 		return
 	}
+	writeAuditLog(h.db, r, "api_token.delete", "api_token", fmt.Sprintf("%d", id), "", nil)
 
 	SuccessMessage(w, "token deleted")
 }

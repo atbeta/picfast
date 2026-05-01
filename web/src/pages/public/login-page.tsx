@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { TFunction } from 'i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -13,6 +14,18 @@ const loginSchema = z.object({
   password: z.string().min(1),
 })
 type LoginForm = z.infer<typeof loginSchema>
+
+/** Maps known backend English messages to localized strings. */
+function mapLoginApiMessage(raw: string | undefined, t: TFunction): string {
+  if (!raw?.trim()) return t('auth.loginFailed')
+  const key = raw.trim().toLowerCase()
+  const known: Record<string, string> = {
+    'invalid email or password': t('auth.loginFailed'),
+    'account is frozen': t('auth.accountFrozen'),
+    'email verification required': t('auth.emailVerificationRequiredLogin'),
+  }
+  return known[key] ?? raw
+}
 
 export function LoginPage() {
   const { t } = useTranslation()
@@ -56,10 +69,8 @@ export function LoginPage() {
       await login(data.email, data.password)
       navigate('/console', { replace: true })
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        t('auth.loginFailed')
-      setServerError(msg)
+      const raw = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setServerError(mapLoginApiMessage(raw, t))
     }
   }
 
@@ -100,7 +111,7 @@ export function LoginPage() {
             id="email"
             type="email"
             autoComplete="email"
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-1 focus:ring-primary/20"
             {...register('email')}
           />
           {errors.email && <p className="mt-1 text-xs text-destructive">{t('auth.invalidEmail')}</p>}
@@ -114,7 +125,7 @@ export function LoginPage() {
             id="password"
             type="password"
             autoComplete="current-password"
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-1 focus:ring-primary/20"
             {...register('password')}
           />
           {errors.password && <p className="mt-1 text-xs text-destructive">{t('auth.required')}</p>}

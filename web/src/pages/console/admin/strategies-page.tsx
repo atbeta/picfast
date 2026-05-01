@@ -145,13 +145,16 @@ export function AdminStrategiesPage() {
   const update = <K extends keyof StrategyForm>(key: K, value: StrategyForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
-  const inputCls = 'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all'
+  const inputCls = 'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20'
 
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">{t('admin.strategiesTitle')}</h1>
-        <button type="button" onClick={openCreate} className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">{t('admin.strategiesTitle')}</h1>
+          <p className="text-sm text-muted-foreground">{t('admin.strategiesSubtitle', { defaultValue: '维护存储策略配置并统一上传落盘规则。' })}</p>
+        </div>
+        <button type="button" onClick={openCreate} className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
           {t('admin.create')}
         </button>
       </div>
@@ -165,7 +168,7 @@ export function AdminStrategiesPage() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
               <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.colName')}</label>
               <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
@@ -182,7 +185,7 @@ export function AdminStrategiesPage() {
                   s3: t('admin.typeS3', { defaultValue: 'S3 兼容存储' })
                 }}
               >
-                <SelectTrigger className="w-full bg-background border-input">
+                <SelectTrigger className="h-10 w-full bg-background border-input">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -235,11 +238,11 @@ export function AdminStrategiesPage() {
             )}
           </div>
 
-          <div className="flex justify-end gap-2 mt-4">
-            <button type="button" onClick={() => setShowModal(false)} className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+          <div className="mt-5 flex justify-end gap-2 border-t border-border/60 pt-4">
+            <button type="button" onClick={() => setShowModal(false)} className="h-10 rounded-lg border border-input bg-background px-4 text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
               {t('admin.cancel')}
             </button>
-            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors cursor-pointer disabled:cursor-not-allowed">
+            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="h-10 rounded-lg bg-primary px-4 text-sm text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors cursor-pointer disabled:cursor-not-allowed">
               {saving ? '…' : t('admin.confirmSave')}
             </button>
           </div>
@@ -252,14 +255,14 @@ export function AdminStrategiesPage() {
         <EmptyState
           icon={<Database className="size-6 text-muted-foreground" />}
           title={t('admin.empty')}
-          description={t('admin.strategiesEmptyDesc', { defaultValue: '先创建一个本地或 S3 策略，分组和上传才能真正用起来。' })}
+          description={t('admin.strategiesEmptyDesc', { defaultValue: '请先创建本地或 S3 策略，以启用分组绑定与上传能力。' })}
         />
       )}
 
       {strategies && strategies.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {strategies.map((s) => (
-            <div key={s.id} className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md">
+            <div key={s.id} className="group relative flex flex-col justify-between rounded-xl border border-border bg-card/80 p-5 shadow-sm transition-colors duration-150 hover:shadow-sm">
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className={['rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider', s.strategy_type === 'local' ? 'bg-primary/10 text-primary' : 'bg-info/10 text-info'].join(' ')}>
@@ -292,12 +295,12 @@ export function AdminStrategiesPage() {
               </div>
 
               <div className="mt-6 flex items-center justify-end gap-2 border-t border-border/40 pt-4">
-                <button type="button" onClick={() => openEdit(s)} title={t('admin.edit')} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
+                <button type="button" onClick={() => openEdit(s)} title={t('admin.edit')} className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
                   <Pencil className="size-3.5" />
                   {t('admin.edit')}
                 </button>
                 {s.id !== 1 && (
-                  <button type="button" onClick={() => setDeleteTarget(s.id)} disabled={deleting === s.id} title={t('admin.delete')} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-destructive/70 hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
+                  <button type="button" onClick={() => setDeleteTarget(s.id)} disabled={deleting === s.id} title={t('admin.delete')} className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-destructive/70 hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
                     <Trash2 className="size-3.5" />
                     {t('admin.delete')}
                   </button>

@@ -51,6 +51,16 @@ type updateSettingsRequest struct {
 }
 
 func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
+	before := map[string]any{
+		"app_name":                   h.config.App.Name,
+		"app_url":                    h.config.Server.BaseURL,
+		"allow_guest_upload":         h.config.App.AllowGuestUpload,
+		"allow_registration":         h.config.App.AllowRegistration,
+		"require_email_verification": h.config.App.RequireEmailVerification,
+		"user_initial_capacity":      h.config.App.UserInitialCapacity,
+		"default_image_ttl":          h.config.App.DefaultImageTTL.String(),
+		"moderation_mode":            h.config.App.ModerationMode,
+	}
 	var req updateSettingsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		Fail(w, http.StatusBadRequest, "invalid request body")
@@ -98,6 +108,20 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, "failed to persist settings")
 		return
 	}
+	after := map[string]any{
+		"app_name":                   h.config.App.Name,
+		"app_url":                    h.config.Server.BaseURL,
+		"allow_guest_upload":         h.config.App.AllowGuestUpload,
+		"allow_registration":         h.config.App.AllowRegistration,
+		"require_email_verification": h.config.App.RequireEmailVerification,
+		"user_initial_capacity":      h.config.App.UserInitialCapacity,
+		"default_image_ttl":          h.config.App.DefaultImageTTL.String(),
+		"moderation_mode":            h.config.App.ModerationMode,
+	}
+	writeAuditLog(h.queries, r, "admin.settings.update", "site_settings", "1", h.config.App.Name, map[string]any{
+		"before": before,
+		"after":  after,
+	})
 
 	Success(w, map[string]interface{}{
 		"app_name":                   h.config.App.Name,

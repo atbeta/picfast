@@ -128,7 +128,7 @@ func New(
 	// Handlers
 	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg, mailSender)
 	userHandler := handler.NewUserHandler(queries)
-	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL)
+	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL, cfg.App.AuditUploadLogs)
 	albumHandler := handler.NewAlbumHandler(queries, pool)
 	fileHandler := handler.NewFileHandler(queries, cfg.Server.BaseURL, cfg.Storage.ThumbnailDir)
 	adminGroupHandler := handler.NewAdminGroupHandler(queries, pool)
@@ -136,6 +136,7 @@ func New(
 	adminUserHandler := handler.NewAdminUserHandler(queries)
 	adminImageHandler := handler.NewAdminImageHandler(queries, deleteSvc, cfg.Server.BaseURL)
 	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg), queries, mailSender != nil && mailSender.Ready())
+	adminAuditHandler := handler.NewAdminAuditHandler(queries)
 
 	// MCP Server
 	mcpFactory := handler.NewMCPServerFactory(queries, pool, cfg)
@@ -303,6 +304,7 @@ func New(
 
 			r.Get("/settings", adminSettingHandler.Get)
 			r.Put("/settings", adminSettingHandler.Update)
+			r.Get("/audit-logs", adminAuditHandler.List)
 
 			// Debug / pprof (admin only)
 			r.Route("/debug", func(r chi.Router) {

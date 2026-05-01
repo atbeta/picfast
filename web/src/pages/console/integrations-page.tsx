@@ -69,7 +69,7 @@ export function IntegrationsPage() {
   }
 
   return (
-    <section className="space-y-6 animate-in slide-in-from-bottom-4 fade-in duration-700">
+    <section className="space-y-6">
       <div className="flex items-center justify-between border-b border-border/40 pb-3">
         <h1 className="text-2xl font-bold tracking-tight">{t('integrations.title', { defaultValue: '集成与工具' })}</h1>
       </div>
@@ -84,8 +84,8 @@ export function IntegrationsPage() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-xl font-bold">{t('integrations.mcpTitle', { defaultValue: 'MCP 服务器' })}</h2>
-                <span className="inline-flex rounded-full bg-info/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-info">
-                  AI Integration
+                <span className="inline-flex rounded-full bg-info/10 px-2 py-0.5 text-[10px] font-bold tracking-wider text-info">
+                  {t('integrations.mcpBadge', { defaultValue: 'AI 集成' })}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">{t('integrations.mcpDesc', { defaultValue: '通过 MCP 协议连接 AI 助手，直接在对话中上传和管理图片。' })}</p>
@@ -100,7 +100,7 @@ export function IntegrationsPage() {
                 <button
                   type="button"
                   onClick={() => onCopy(mcpEndpoint)}
-                  className="shrink-0 flex items-center justify-center rounded-md bg-background border border-border/50 w-8 h-8 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all cursor-pointer shadow-sm"
+                  className="shrink-0 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background shadow-sm transition-colors duration-150 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer"
                   title={t('upload.copy')}
                 >
                   <Copy className="size-4" />
@@ -114,7 +114,7 @@ export function IntegrationsPage() {
                 <pre className="overflow-x-auto rounded-lg bg-muted/50 border border-border/50 p-4 text-sm leading-relaxed text-muted-foreground">
                   <code>{mcpConfigExample}</code>
                 </pre>
-                <button type="button" onClick={() => onCopy(mcpConfigExample)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-md bg-background backdrop-blur-sm border border-border/50 w-8 h-8 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all cursor-pointer shadow-sm" title={t('upload.copy')}>
+                <button type="button" onClick={() => onCopy(mcpConfigExample)} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
                   <Copy className="size-4" />
                 </button>
               </div>
@@ -146,8 +146,8 @@ export function IntegrationsPage() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-xl font-bold">{t('integrations.sharexTitle', { defaultValue: 'ShareX 集成' })}</h2>
-                <span className="inline-flex rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success">
-                  Desktop Tool
+                <span className="inline-flex rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold tracking-wider text-success">
+                  {t('integrations.sharexBadge', { defaultValue: '桌面工具' })}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">{t('integrations.sharexDesc', { defaultValue: '自动上传截图到 PicFast。下载配置文件并导入 ShareX 即可使用。' })}</p>
@@ -161,12 +161,14 @@ export function IntegrationsPage() {
                 <pre className="overflow-x-auto rounded-lg bg-muted/50 border border-border/50 p-4 text-sm leading-relaxed text-muted-foreground">
                   <code>{sharexConfigExample}</code>
                 </pre>
-                <button type="button" onClick={() => onCopy(sharexConfigExample)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-md bg-background backdrop-blur-sm border border-border/50 w-8 h-8 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all cursor-pointer shadow-sm" title={t('upload.copy')}>
+                <button type="button" onClick={() => onCopy(sharexConfigExample)} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
                   <Copy className="size-4" />
                 </button>
               </div>
               <p className="text-sm text-muted-foreground mt-3">
-                请将 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;YOUR_API_TOKEN&gt;</code> 替换为您创建的 API 令牌，然后您可以直接复制或下载此配置。
+                {t('integrations.sharexTokenHintPrefix', { defaultValue: '请将' })}{' '}
+                <code className="bg-muted px-1.5 py-0.5 rounded text-xs">&lt;YOUR_API_TOKEN&gt;</code>{' '}
+                {t('integrations.sharexTokenHintSuffix', { defaultValue: '替换为已创建的 API 令牌，随后可直接复制或下载该配置。' })}
               </p>
               {feedback === 'sharex' && (
                 <p className="rounded-lg border border-success/20 bg-success/5 px-3 py-2 text-sm text-success mt-3">
@@ -184,9 +186,6 @@ export function IntegrationsPage() {
                 >
                   {t('integrations.downloadConfig', { defaultValue: '下载配置文件' })}
                 </button>
-                <span className="rounded-full bg-muted/50 border border-border/50 px-3 py-1 text-xs font-medium text-muted-foreground">
-                  {t('integrations.sharexFooterTag', { defaultValue: '导入后即可开始截图上传' })}
-                </span>
               </div>
               <p className="mt-4 text-sm text-muted-foreground">
                 {t('integrations.sharexFooterHint', { defaultValue: '下载后在 ShareX 中选择：目标 -> 自定义上传器设置 -> 导入 -> 从文件。' })}

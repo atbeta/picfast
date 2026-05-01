@@ -317,6 +317,28 @@ make docker-logs
 
 管理员端点前缀：`/api/v1/admin/*`
 
+## MCP API（稳定字段约定）
+
+PicFast MCP Server 推荐通过 `Authorization: Bearer <API_TOKEN>` 访问，当前已提供稳定的工具响应约定：
+
+- `upload_image` 成功返回 JSON 文本，核心字段包含：
+  - `key`, `url`, `markdown`, `html`, `bbcode`
+  - `mimetype`
+  - `original_size`（上传前字节数）
+  - `stored_size`（最终落盘字节数）
+  - `processed`（是否经过压缩/转码/水印等处理）
+- 工具调用失败时，统一返回 JSON 错误对象：
+  - `{"error":{"code":"<ERROR_CODE>","message":"<DETAIL>"}}`
+- 当前错误码最小集合：
+  - `UNAUTHORIZED`
+  - `FORBIDDEN_SCOPE`
+  - `INVALID_IMAGE_DATA`
+  - `UPLOAD_FAILED`
+  - `IMAGE_NOT_FOUND`
+  - `INTERNAL_ERROR`
+
+完整 MCP 字段示例、错误码语义与兼容建议请见：[`docs/mcp-api.md`](docs/mcp-api.md)。
+
 ## 测试与校验
 
 ```bash

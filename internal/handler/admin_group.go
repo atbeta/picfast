@@ -141,6 +141,10 @@ func (h *AdminGroupHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Created(w, groupJSON(group))
+	writeAuditLog(h.db, r, "admin.group.create", "group", strconv.FormatInt(group.ID, 10), group.Name, map[string]any{
+		"is_default": group.IsDefault,
+		"is_guest":   group.IsGuest,
+	})
 }
 
 func (h *AdminGroupHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -170,6 +174,7 @@ func (h *AdminGroupHandler) Update(w http.ResponseWriter, r *http.Request) {
 		req.Configs = existing.Configs
 	}
 
+	before, _ := h.db.GetGroupByID(r.Context(), id)
 	var group sqlc.Group
 	if err := sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
 		var err error
@@ -196,6 +201,14 @@ func (h *AdminGroupHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Success(w, groupJSON(group))
+	writeAuditLog(h.db, r, "admin.group.update", "group", strconv.FormatInt(group.ID, 10), group.Name, map[string]any{
+		"before_name":       before.Name,
+		"after_name":        group.Name,
+		"before_is_default": before.IsDefault,
+		"after_is_default":  group.IsDefault,
+		"before_is_guest":   before.IsGuest,
+		"after_is_guest":    group.IsGuest,
+	})
 }
 
 func (h *AdminGroupHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -220,6 +233,7 @@ func (h *AdminGroupHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, "failed to delete group")
 		return
 	}
+	writeAuditLog(h.db, r, "admin.group.delete", "group", strconv.FormatInt(id, 10), group.Name, nil)
 
 	SuccessMessage(w, "deleted")
 }
@@ -256,6 +270,10 @@ func (h *AdminGroupHandler) SetStrategies(w http.ResponseWriter, r *http.Request
 		Fail(w, http.StatusInternalServerError, "failed to set strategies")
 		return
 	}
+	group, _ := h.db.GetGroupByID(r.Context(), id)
+	writeAuditLog(h.db, r, "admin.group.set_strategies", "group", strconv.FormatInt(id, 10), group.Name, map[string]any{
+		"strategy_ids": req.StrategyIDs,
+	})
 
 	SuccessMessage(w, "strategies updated")
 }

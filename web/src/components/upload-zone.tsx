@@ -57,7 +57,7 @@ export function UploadZone({ onFiles, disabled }: UploadZoneProps) {
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       className={[
-        'relative flex cursor-pointer flex-col items-center justify-center rounded-xl p-12 transition-all duration-300 overflow-hidden group',
+        'relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl p-12 transition-colors duration-150 group',
         dragging
           ? 'bg-primary/5 dark:bg-primary/10'
           : 'bg-muted/30 hover:bg-muted/50 dark:bg-muted/10 dark:hover:bg-muted/20',
@@ -66,20 +66,20 @@ export function UploadZone({ onFiles, disabled }: UploadZoneProps) {
     >
       {/* Animated Border */}
       <div className={[
-        "absolute inset-0 rounded-xl border-2 border-dashed transition-colors duration-300",
-        dragging ? "border-primary scale-[0.99]" : "border-border group-hover:border-primary/50"
+        "absolute inset-0 rounded-xl border-2 border-dashed transition-colors duration-150",
+        dragging ? "border-primary" : "border-border group-hover:border-primary/50"
       ].join(' ')} />
 
       {/* Inner Glow Effect */}
       <div className={[
-        "absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-info/10 opacity-0 transition-opacity duration-500",
+        "absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-info/10 opacity-0 transition-opacity duration-150",
         dragging ? "opacity-100" : "group-hover:opacity-100"
       ].join(' ')} />
 
       <div className="relative z-10 flex flex-col items-center">
         <div className={[
-          "mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-300 border border-border/50",
-          dragging ? "scale-110 shadow-primary/20 shadow-lg" : "group-hover:scale-105 group-hover:shadow-md"
+          "mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-border/50 bg-background shadow-sm transition-shadow duration-150",
+          dragging ? "shadow-primary/20 shadow-md" : "group-hover:shadow-sm"
         ].join(' ')}>
           <Upload className={[
             "h-8 w-8 transition-colors duration-300",

@@ -14,7 +14,8 @@ import {
   UsersRound, 
   Database, 
   Files, 
-  Globe
+  Globe,
+  ScrollText
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -85,6 +86,7 @@ export function ConsoleLayout() {
                   <ConsoleNavItem to="/console/admin/groups" label={t('admin.navGroups')} icon={UsersRound} />
                   <ConsoleNavItem to="/console/admin/strategies" label={t('admin.navStrategies')} icon={Database} />
                   <ConsoleNavItem to="/console/admin/images" label={t('admin.navImages')} icon={Files} />
+                  <ConsoleNavItem to="/console/admin/audit-logs" label={t('admin.navAuditLogs', { defaultValue: '审计日志' })} icon={ScrollText} />
                   <ConsoleNavItem to="/console/admin/settings" label={t('admin.navSettings')} icon={Globe} />
                 </MobileNavRail>
               </div>
@@ -120,7 +122,7 @@ function ConsoleNavItem({ to, label, icon: Icon }: { to: string; label: string; 
       end={to === '/console/admin'}
       className={({ isActive }) =>
         [
-          'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 overflow-hidden',
+          'group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors duration-150',
           isActive
             ? 'bg-muted/80 text-foreground'
             : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',

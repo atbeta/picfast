@@ -189,7 +189,7 @@ export function ImagesPage() {
   const batchChangeAlbum = async (val: string) => {
     if (val === 'none') return
     setBatchProcessing(true)
-    const targetAlbumId = val === 'null' ? null : Number(val)
+    const targetAlbumId = Number(val)
     let success = 0
     let failed = 0
     for (const key of selectedKeys) {
@@ -259,7 +259,7 @@ export function ImagesPage() {
 
       {/* Batch bar */}
       {batchMode && (
-        <div className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/[0.08] px-3 py-2.5">
           <button
             type="button"
             onClick={toggleSelectAll}
@@ -270,27 +270,30 @@ export function ImagesPage() {
             </span>
             <span>{t('images.selectAll', { defaultValue: '全选' })} ({selectedKeys.size} / {data?.items.length ?? 0})</span>
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select
               value="none"
+              items={{
+                none: t('images.batchMove', { defaultValue: '批量移动至...' }),
+                ...Object.fromEntries(albums.map((a) => [a.id.toString(), a.name])),
+              }}
               onValueChange={(val) => val !== null && batchChangeAlbum(val as string)}
             >
-              <SelectTrigger className="h-8 w-[140px] text-xs font-medium border-primary/20 bg-background hover:bg-muted" disabled={selectedKeys.size === 0 || batchProcessing}>
+              <SelectTrigger className="h-8 w-[160px] text-xs font-medium border-primary/20 bg-background hover:bg-muted" disabled={selectedKeys.size === 0 || batchProcessing}>
                 <SelectValue placeholder={t('images.batchMove', { defaultValue: '批量移动至...' })} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none" disabled>{t('images.batchMove', { defaultValue: '批量移动至...' })}</SelectItem>
-                <SelectItem value="null">{t('albums.noAlbum', { defaultValue: '移除相册' })}</SelectItem>
                 {albums.map(a => (
                   <SelectItem key={a.id} value={a.id.toString()}>{a.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <button type="button" onClick={batchDownload} disabled={selectedKeys.size === 0 || batchProcessing} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50 cursor-pointer">
+            <button type="button" onClick={batchDownload} disabled={selectedKeys.size === 0 || batchProcessing} className="flex h-8 items-center gap-1.5 rounded-lg border border-primary/20 bg-background px-3 text-xs font-medium text-primary shadow-sm transition-colors hover:bg-primary/10 disabled:opacity-50 cursor-pointer">
               <Download className="size-3.5" />
               {t('images.batchDownload', { defaultValue: '下载' })}
             </button>
-            <button type="button" onClick={() => setShowBatchConfirm(true)} disabled={selectedKeys.size === 0 || batchProcessing} className="flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground shadow-sm transition-colors hover:opacity-90 disabled:opacity-50 cursor-pointer">
+            <button type="button" onClick={() => setShowBatchConfirm(true)} disabled={selectedKeys.size === 0 || batchProcessing} className="flex h-8 items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 text-xs font-medium text-destructive shadow-sm transition-colors hover:bg-destructive/15 disabled:opacity-50 cursor-pointer">
               <Trash2 className="size-3.5" />
               {batchProcessing ? '…' : t('images.delete')}
             </button>
@@ -321,7 +324,7 @@ export function ImagesPage() {
             {data.items.map((img) => (
               <div
                 key={img.id}
-                className={`group cursor-pointer overflow-hidden rounded-xl border bg-card transition-all duration-300 hover:shadow-md hover:-translate-y-1 hover:border-primary/30 ${batchMode && selectedKeys.has(img.key) ? 'border-primary/60 ring-2 ring-primary/20' : 'border-border/50'}`}
+                className={`group cursor-pointer overflow-hidden rounded-xl border bg-card transition-colors duration-150 hover:shadow-sm hover:border-primary/30 ${batchMode && selectedKeys.has(img.key) ? 'border-primary/70 bg-primary/[0.04] ring-2 ring-primary/25' : 'border-border/50'}`}
                 onClick={() => batchMode ? toggleSelect(img.key) : showDetail(img)}
               >
                 <div className="relative aspect-square flex items-center justify-center overflow-hidden bg-muted/30">
@@ -330,19 +333,19 @@ export function ImagesPage() {
                       <img
                         src={toRelative(img.thumbnail_url || img.links?.thumbnail_url || '')}
                         alt=""
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        className="h-full w-full object-cover"
                         loading="lazy"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                       />
-                      <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
+                      <div className="absolute inset-0 bg-black/0 transition-colors duration-150 group-hover:bg-black/10" />
                     </>
                   ) : (
-                    <span className="text-xs font-medium text-muted-foreground transition-transform duration-500 group-hover:scale-110">{img.extension.toUpperCase()}</span>
+                    <span className="text-xs font-medium text-muted-foreground">{img.extension.toUpperCase()}</span>
                   )}
                   {batchMode && (
                     <button
                       type="button"
-                      className={`absolute right-2 top-2 z-10 inline-flex size-7 items-center justify-center rounded-full border shadow-sm backdrop-blur-sm transition-all ${selectedKeys.has(img.key) ? 'border-primary bg-primary text-primary-foreground' : 'border-white/70 bg-black/35 text-transparent hover:border-white hover:bg-black/45'}`}
+                      className={`absolute right-2 top-2 z-10 inline-flex size-7 items-center justify-center rounded-full border shadow-sm backdrop-blur-sm transition-colors duration-150 ${selectedKeys.has(img.key) ? 'border-primary bg-primary text-primary-foreground' : 'border-white/70 bg-black/35 text-transparent hover:border-white hover:bg-black/45'}`}
                       onClick={(e) => {
                         e.stopPropagation()
                         toggleSelect(img.key)
@@ -431,7 +434,7 @@ export function ImagesPage() {
                       </button>
                     </div>
                     <div className="flex flex-col gap-1 items-start">
-                      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('page.albums.title', { defaultValue: '相册' })}</span>
+                      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('images.album', { defaultValue: '相册' })}</span>
                       <Select 
                         value={detail.album_id?.toString() ?? 'none'}
                         onValueChange={(val) => val !== null && changeAlbum(val as string)}
@@ -471,7 +474,7 @@ export function ImagesPage() {
                         <div key={fmt} className="group flex items-center gap-3 rounded-lg bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50 border border-border/40 hover:border-primary/30">
                           <span className="shrink-0 w-14 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">{fmt}</span>
                           <code className="min-w-0 flex-1 truncate text-xs font-medium text-foreground bg-background/50 px-2 py-1 rounded-md border border-border/30">{val}</code>
-                          <button type="button" onClick={() => onCopy(val)} className="shrink-0 flex items-center justify-center h-6 w-6 rounded-md bg-background border border-border/50 text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 shadow-sm cursor-pointer" title={t('upload.copy')}>
+                          <button type="button" onClick={() => onCopy(val)} className="shrink-0 flex h-6 w-6 items-center justify-center rounded-md border border-border/50 bg-background text-muted-foreground shadow-sm transition-colors duration-150 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
                             <Copy className="size-3" />
                           </button>
                         </div>

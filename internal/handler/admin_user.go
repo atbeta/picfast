@@ -151,6 +151,12 @@ func (h *AdminUserHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, "failed to update user")
 		return
 	}
+	writeAuditLog(h.db, r, "admin.user.update", "user", strconv.FormatInt(updated.ID, 10), updated.Email, map[string]any{
+		"before_status": user.Status,
+		"after_status":  updated.Status,
+		"before_group":  user.GroupID.Int64,
+		"after_group":   updated.GroupID.Int64,
+	})
 
 	Success(w, userJSON(updated))
 }
@@ -177,6 +183,7 @@ func (h *AdminUserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, "failed to delete user")
 		return
 	}
+	writeAuditLog(h.db, r, "admin.user.delete", "user", strconv.FormatInt(id, 10), user.Email, nil)
 
 	SuccessMessage(w, "deleted")
 }

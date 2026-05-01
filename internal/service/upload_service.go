@@ -25,6 +25,10 @@ type UploadService struct {
 	config *config.Config
 }
 
+type uploadUserSettings struct {
+	DefaultStrategy int64 `json:"default_strategy"`
+}
+
 func NewUploadService(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Config) *UploadService {
 	return &UploadService{db: db, pool: pool, config: cfg}
 }
@@ -61,6 +65,8 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	var group sqlc.Group
 	var userID int64
 	var groupID int64
+	var isAdmin bool
+	var preferredStrategyID *int64
 
 	if params.UserID != nil {
 		userID = *params.UserID
@@ -78,6 +84,13 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		group, err = s.db.GetGroupByID(ctx, groupID)
 		if err != nil {
 			return nil, fmt.Errorf("group not found")
+		}
+		isAdmin = user.Role == string(domain.RoleAdmin)
+		if len(user.Settings) > 0 {
+			var settings uploadUserSettings
+			if err := json.Unmarshal(user.Settings, &settings); err == nil && settings.DefaultStrategy > 0 {
+				preferredStrategyID = &settings.DefaultStrategy
+			}
 		}
 	} else {
 		if !s.config.App.AllowGuestUpload {
@@ -125,14 +138,6 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	var strategy sqlc.Strategy
 	strategies, err := s.db.GetGroupStrategies(ctx, groupID)
 	
-	// Fast path: if user is admin, allow them to use any strategy regardless of group config
-	isAdmin := false
-	if params.UserID != nil {
-		if user, _ := s.db.GetUserByID(ctx, *params.UserID); user.Role == string(domain.RoleAdmin) {
-			isAdmin = true
-		}
-	}
-
 	if err != nil || len(strategies) == 0 {
 		if !isAdmin {
 			return nil, fmt.Errorf("no storage strategy available")
@@ -166,7 +171,28 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 			return nil, fmt.Errorf("strategy not available for your group")
 		}
 	} else {
-		strategy = strategies[0]
+		selected := false
+		if preferredStrategyID != nil {
+			for _, st := range strategies {
+				if st.ID == *preferredStrategyID {
+					strategy = st
+					selected = true
+					break
+				}
+			}
+		}
+		if !selected && groupConfig.DefaultStrategyID > 0 {
+			for _, st := range strategies {
+				if st.ID == groupConfig.DefaultStrategyID {
+					strategy = st
+					selected = true
+					break
+				}
+			}
+		}
+		if !selected {
+			strategy = strategies[0]
+		}
 	}
 
 	// Step 5: Rate limiting
