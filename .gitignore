@@ -1,4 +1,5 @@
 .ai/
+.DS_Store
 bin/
 data/
 web-dist/

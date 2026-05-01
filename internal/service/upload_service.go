@@ -42,9 +42,12 @@ type UploadParams struct {
 }
 
 type UploadResult struct {
-	Image       sqlc.Image
-	Links       domain.ImageLinks
-	GroupConfig domain.GroupConfig
+	Image             sqlc.Image
+	Links             domain.ImageLinks
+	GroupConfig       domain.GroupConfig
+	OriginalSizeBytes int64
+	StoredSizeBytes   int64
+	Processed         bool
 }
 
 func (s *UploadService) Store(ctx context.Context, params UploadParams) (*UploadResult, error) {
@@ -119,12 +122,29 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	}
 
 	// Step 4: Select strategy
+	var strategy sqlc.Strategy
 	strategies, err := s.db.GetGroupStrategies(ctx, groupID)
-	if err != nil || len(strategies) == 0 {
-		return nil, fmt.Errorf("no storage strategy available")
+	
+	// Fast path: if user is admin, allow them to use any strategy regardless of group config
+	isAdmin := false
+	if params.UserID != nil {
+		if user, _ := s.db.GetUserByID(ctx, *params.UserID); user.Role == string(domain.RoleAdmin) {
+			isAdmin = true
+		}
 	}
 
-	var strategy sqlc.Strategy
+	if err != nil || len(strategies) == 0 {
+		if !isAdmin {
+			return nil, fmt.Errorf("no storage strategy available")
+		}
+		// If admin but group has no strategy, fetch all strategies
+		allStrats, err := s.db.ListStrategies(ctx)
+		if err != nil || len(allStrats) == 0 {
+			return nil, fmt.Errorf("no storage strategy available in system")
+		}
+		strategies = allStrats
+	}
+
 	if params.StrategyID != nil {
 		found := false
 		for _, st := range strategies {
@@ -132,6 +152,14 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 				strategy = st
 				found = true
 				break
+			}
+		}
+		if !found && isAdmin {
+			// If admin requested a specific strategy not in group, fetch it directly
+			st, err := s.db.GetStrategyByID(ctx, *params.StrategyID)
+			if err == nil {
+				strategy = st
+				found = true
 			}
 		}
 		if !found {
@@ -147,7 +175,9 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	}
 
 	// Step 6: Process image
+	originalSize := int64(len(params.FileData))
 	fileData := params.FileData
+	wasProcessed := false
 	var width, height int
 
 	skipExts := map[string]bool{"gif": true, "svg": true, "ico": true}
@@ -158,13 +188,14 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 			if targetFormat == "" {
 				targetFormat = ext
 			}
-			processed, err := ProcessImage(fileData, targetFormat, groupConfig.ImageSaveQuality, groupConfig.IsStripExif)
+			processedImg, err := ProcessImage(fileData, targetFormat, groupConfig.ImageSaveQuality, groupConfig.IsStripExif)
 			if err != nil {
 				slog.Warn("image processing failed, using original", "error", err)
 			} else {
-				fileData = processed.Data
-				width = processed.Width
-				height = processed.Height
+				fileData = processedImg.Data
+				width = processedImg.Width
+				height = processedImg.Height
+				wasProcessed = true
 			}
 		}
 	}
@@ -182,6 +213,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 				slog.Warn("watermark failed, using original", "error", err)
 			} else {
 				fileData = watermarked
+				wasProcessed = true
 			}
 		}
 	}
@@ -327,9 +359,12 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 
 	// Include moderation info in response so frontend can show pending state
 	resp := &UploadResult{
-		Image:       img,
-		Links:       links,
-		GroupConfig: groupConfig,
+		Image:             img,
+		Links:             links,
+		GroupConfig:       groupConfig,
+		OriginalSizeBytes: originalSize,
+		StoredSizeBytes:   int64(len(fileData)),
+		Processed:         wasProcessed,
 	}
 	// Attach moderation status to the response for frontend awareness
 	_ = modResult

@@ -336,6 +336,54 @@ func (q *Queries) GetImageByKey(ctx context.Context, key string) (Image, error) 
 	return i, err
 }
 
+const getImagesByMD5 = `-- name: GetImagesByMD5 :many
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at FROM images WHERE md5 = $1
+`
+
+func (q *Queries) GetImagesByMD5(ctx context.Context, md5 string) ([]Image, error) {
+	rows, err := q.db.Query(ctx, getImagesByMD5, md5)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Image{}
+	for rows.Next() {
+		var i Image
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.AlbumID,
+			&i.GroupID,
+			&i.StrategyID,
+			&i.Key,
+			&i.Path,
+			&i.Name,
+			&i.OriginName,
+			&i.SizeBytes,
+			&i.Mimetype,
+			&i.Extension,
+			&i.Md5,
+			&i.Sha1,
+			&i.Width,
+			&i.Height,
+			&i.Permission,
+			&i.IsUnhealthy,
+			&i.UploadedIp,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ModerationStatus,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllImages = `-- name: ListAllImages :many
 SELECT images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status, images.expires_at, users.email as user_email FROM images
 LEFT JOIN users ON images.user_id = users.id

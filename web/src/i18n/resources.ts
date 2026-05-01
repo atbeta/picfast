@@ -21,6 +21,11 @@ export const resources = {
         actions: '操作',
         createdAt: '创建时间',
       },
+      dialog: {
+        operationTitle: '请确认操作',
+        confirm: '确定',
+        cancel: '取消',
+      },
       auth: {
         email: '邮箱',
         password: '密码',
@@ -335,6 +340,11 @@ export const resources = {
         logout: 'Logout',
         actions: 'Actions',
         createdAt: 'Created',
+      },
+      dialog: {
+        operationTitle: 'Please confirm',
+        confirm: 'Confirm',
+        cancel: 'Cancel',
       },
       auth: {
         email: 'Email',

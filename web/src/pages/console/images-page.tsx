@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
@@ -33,9 +33,12 @@ export function ImagesPage() {
   const pageSize = 20
 
   // Reset page when album changes
-  useEffect(() => {
+  // Remove synchronous setState from useEffect to prevent cascading renders
+  const prevAlbumIdRef = useRef(albumId)
+  if (albumId !== prevAlbumIdRef.current) {
     setPage(1)
-  }, [albumId])
+    prevAlbumIdRef.current = albumId
+  }
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['images', page, albumId],
@@ -215,8 +218,8 @@ export function ImagesPage() {
   const currentAlbum = albumId ? albums.find(a => a.id === albumId) : null
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between">
+    <section className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-1.5">
           <h1 className="text-2xl font-bold tracking-tight">
             {t('page.images.title')}

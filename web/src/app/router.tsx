@@ -1,4 +1,4 @@
-import { Suspense, lazy, type ReactNode } from 'react'
+import { Suspense, lazy, useEffect, type ReactNode } from 'react'
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 
 import { useQuery } from '@tanstack/react-query'
@@ -69,6 +69,10 @@ function PublicRoutes() {
     queryKey: ['site-config'],
     queryFn: getSiteConfig,
   })
+
+  useEffect(() => {
+    document.title = config?.app_name?.trim() || 'PicFast'
+  }, [config?.app_name])
 
   if (isLoading) {
     return (

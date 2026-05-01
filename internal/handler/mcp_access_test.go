@@ -14,6 +14,7 @@ import (
 	"github.com/atbeta/picfast/internal/testutil"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/modelcontextprotocol/go-sdk/auth"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func TestDefaultMCScopes(t *testing.T) {
@@ -128,6 +129,40 @@ func TestMCPAuthVerifyTokenParsesScopes(t *testing.T) {
 	}
 	if len(info.Scopes) != 1 || info.Scopes[0] != mcpScopeRead {
 		t.Fatalf("scopes = %#v, want [%q]", info.Scopes, mcpScopeRead)
+	}
+	if info.Expiration.IsZero() {
+		t.Fatalf("expiration should not be zero for non-expiring token")
+	}
+}
+
+func TestMCPErrorResultFormat(t *testing.T) {
+	res := mcpErrorResult(mcpErrorUploadFailed, "upload failed: invalid format")
+	if !res.IsError {
+		t.Fatalf("expected IsError=true")
+	}
+	if len(res.Content) != 1 {
+		t.Fatalf("expected single content entry, got %d", len(res.Content))
+	}
+
+	text, ok := res.Content[0].(*mcp.TextContent)
+	if !ok {
+		t.Fatalf("expected text content")
+	}
+
+	var payload struct {
+		Error struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(text.Text), &payload); err != nil {
+		t.Fatalf("expected JSON payload, got error: %v", err)
+	}
+	if payload.Error.Code != mcpErrorUploadFailed {
+		t.Fatalf("unexpected error code %q", payload.Error.Code)
+	}
+	if payload.Error.Message == "" {
+		t.Fatalf("error message should not be empty")
 	}
 }
 

@@ -56,7 +56,11 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	// Permission check
 	if img.Permission == int16(domain.PermissionPrivate) {
 		userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)
-		if !ok || img.UserID.Int64 != userID {
+		role := domain.RoleUser
+		if rVal, rOk := r.Context().Value(domain.ContextKeyRole).(domain.UserRole); rOk {
+			role = rVal
+		}
+		if !ok || (img.UserID.Int64 != userID && role != domain.RoleAdmin) {
 			http.NotFound(w, r)
 			return
 		}
@@ -88,7 +92,11 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 
 	// Cache headers: 30 days
 	w.Header().Set("Content-Type", img.Mimetype)
-	w.Header().Set("Cache-Control", "public, max-age=2592000")
+	if img.Permission == int16(domain.PermissionPrivate) {
+		w.Header().Set("Cache-Control", "private, no-cache, no-store, must-revalidate")
+	} else {
+		w.Header().Set("Cache-Control", "public, max-age=2592000, s-maxage=60")
+	}
 	w.Header().Set("ETag", `"`+img.Md5+`"`)
 
 	// Handle conditional request
@@ -107,6 +115,47 @@ func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 	if !md5HashRegex.MatchString(md5Hash) {
 		http.NotFound(w, r)
 		return
+	}
+
+	images, err := h.db.GetImagesByMD5(r.Context(), md5Hash)
+	if err != nil || len(images) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Permission check: if ALL images with this MD5 are private, check if user owns at least one
+	isPublic := false
+	for _, img := range images {
+		if img.Permission == int16(domain.PermissionPublic) {
+			isPublic = true
+			break
+		}
+	}
+
+	if !isPublic {
+		userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+
+		ownsOne := false
+		for _, img := range images {
+			if img.UserID.Int64 == userID {
+				ownsOne = true
+				break
+			}
+		}
+		if !ownsOne {
+			http.NotFound(w, r)
+			return
+		}
+	}
+
+	if !isPublic {
+		w.Header().Set("Cache-Control", "private, no-cache, no-store, must-revalidate")
+	} else {
+		w.Header().Set("Cache-Control", "public, max-age=2592000, s-maxage=60")
 	}
 
 	filePath := filepath.Join(h.thumbDir, md5Hash+".png")

@@ -33,7 +33,13 @@ func NewJWTAuthenticator(jwtSvc *handler.JWTService) *JWTAuthenticator {
 func (a *JWTAuthenticator) Authenticate(r *http.Request) (*AuthInfo, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		return nil, errMissingCredentials
+		if cookie, err := r.Cookie("picfast_token"); err == nil {
+			authHeader = "Bearer " + cookie.Value
+		} else if token := r.URL.Query().Get("token"); token != "" {
+			authHeader = "Bearer " + token
+		} else {
+			return nil, errMissingCredentials
+		}
 	}
 
 	parts := strings.SplitN(authHeader, " ", 2)

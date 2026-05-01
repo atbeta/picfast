@@ -72,3 +72,6 @@ LIMIT $1;
 
 -- name: UpdateImageExpiration :exec
 UPDATE images SET expires_at = $2, updated_at = NOW() WHERE id = $1;
+
+-- name: GetImagesByMD5 :many
+SELECT * FROM images WHERE md5 = $1;

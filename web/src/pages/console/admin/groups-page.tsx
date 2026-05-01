@@ -186,111 +186,128 @@ export function AdminGroupsPage() {
 
   return (
     <section className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">{t('admin.groupsTitle')}</h1>
-        <button type="button" onClick={openCreate} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
+        <button type="button" onClick={openCreate} className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
           {t('admin.create')}
         </button>
       </div>
 
       {/* Group create/edit dialog */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px] border-border bg-card">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px] border-border bg-card">
           <DialogHeader>
             <DialogTitle className="text-xl">
               {editing ? t('admin.edit') : t('admin.create')}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('admin.colName')}</label>
-              <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg border border-border bg-background p-4 shadow-sm">
-              <label htmlFor="isDefault" className="text-sm font-medium text-foreground cursor-pointer">{t('admin.defaultGroup', { defaultValue: '默认分组' })}</label>
-              <Switch id="isDefault" checked={form.is_default} onCheckedChange={(checked) => update('is_default', checked)} />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</label>
-              <div className="flex items-center gap-2">
-                <input type="number" min={1} value={form.max_size} onChange={(e) => update('max_size', Number(e.target.value))} className={`${inputCls} w-32`} />
-                <span className="text-sm text-muted-foreground">MB</span>
+          <div className="grid gap-6 sm:grid-cols-2 pt-4">
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">{t('admin.colName')}</label>
+                <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder={t('admin.namePlaceholder')} className={inputCls} />
               </div>
-            </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-foreground">{t('admin.extensions', { defaultValue: '允许格式' })}</label>
-              <div className="flex flex-wrap gap-4">
-                {commonExtensions.map((ext) => {
-                  const exts = parseExtensions(form.extensions)
-                  const checked = exts.includes(ext)
-                  const toggleExt = () => {
-                    const newExts = checked ? exts.filter(e => e !== ext) : [...exts, ext]
-                    update('extensions', newExts.join(','))
-                  }
-                  return (
-                    <label key={ext} className="flex items-center gap-2 cursor-pointer group">
-                      <Switch checked={checked} onCheckedChange={toggleExt} />
-                      <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors uppercase">{ext}</span>
-                    </label>
-                  )
-                })}
+              <div className="flex items-center justify-between rounded-lg border border-border bg-background p-4 shadow-sm">
+                <label htmlFor="isDefault" className="text-sm font-medium text-foreground cursor-pointer">{t('admin.defaultGroup', { defaultValue: '默认分组' })}</label>
+                <Switch id="isDefault" checked={form.is_default} onCheckedChange={(checked) => update('is_default', checked)} />
               </div>
-              <div className="space-y-2 rounded-lg border border-dashed border-border/70 bg-muted/20 px-3 py-3">
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {t('admin.extensionsCustom', { defaultValue: '自定义格式' })}
-                </label>
-                <input
-                  value={parseExtensions(form.extensions).filter((ext) => !commonExtensions.includes(ext)).join(', ')}
-                  onChange={(e) => {
-                    const customExtensions = parseExtensions(e.target.value)
-                    const selectedCommon = parseExtensions(form.extensions).filter((ext) => commonExtensions.includes(ext))
-                    update('extensions', [...selectedCommon, ...customExtensions].join(','))
-                  }}
-                  placeholder="avif,heic,jxl"
-                  className={inputCls}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t('admin.extensionsCustomHint', { defaultValue: '常用格式可直接开关，自定义格式继续用逗号补充。' })}
-                </p>
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</label>
-              <input type="number" min={0} value={form.limit_per_day} onChange={(e) => update('limit_per_day', Number(e.target.value))} className={inputCls} />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('admin.limitPerMonth', { defaultValue: '每月上限' })}</label>
-              <input type="number" min={0} value={form.limit_per_month} onChange={(e) => update('limit_per_month', Number(e.target.value))} className={inputCls} />
-            </div>
-
-            {/* Strategy binding */}
-            <div className="border-t border-border pt-4">
-              <label className="mb-3 block text-sm font-medium text-foreground">{t('admin.availableStrategies', { defaultValue: '可用策略' })}</label>
-              {allStrategies.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t('admin.noStrategies', { defaultValue: '暂无策略，请先创建策略' })}</p>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {allStrategies.map((s) => (
-                    <label key={s.id} className="flex items-center justify-between rounded-lg border border-border bg-background p-3 shadow-sm cursor-pointer hover:bg-accent transition-colors">
-                      <span className="text-sm font-medium text-foreground">{s.name}</span>
-                      <Switch
-                        checked={form.strategy_ids.includes(s.id)}
-                        onCheckedChange={() => toggleStrategy(s.id)}
-                      />
-                    </label>
-                  ))}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</label>
+                <div className="flex items-center gap-2">
+                  <input type="number" min={1} value={form.max_size} onChange={(e) => update('max_size', Number(e.target.value))} className={`${inputCls} w-32`} />
+                  <span className="text-sm text-muted-foreground">MB</span>
                 </div>
-              )}
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</label>
+                <input type="number" min={0} value={form.limit_per_day} onChange={(e) => update('limit_per_day', Number(e.target.value))} className={inputCls} />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">{t('admin.limitPerMonth', { defaultValue: '每月上限' })}</label>
+                <input type="number" min={0} value={form.limit_per_month} onChange={(e) => update('limit_per_month', Number(e.target.value))} className={inputCls} />
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">{t('admin.extensions', { defaultValue: '允许格式' })}</label>
+                <div className="flex flex-wrap gap-2">
+                  {commonExtensions.map((ext) => {
+                    const exts = parseExtensions(form.extensions)
+                    const checked = exts.includes(ext)
+                    const toggleExt = () => {
+                      const newExts = checked ? exts.filter(e => e !== ext) : [...exts, ext]
+                      update('extensions', newExts.join(','))
+                    }
+                    return (
+                      <button 
+                        key={ext} 
+                        type="button"
+                        onClick={toggleExt}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors border cursor-pointer ${
+                          checked 
+                            ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
+                            : 'bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                        }`}
+                      >
+                        {ext}
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="space-y-2 rounded-lg border border-dashed border-border/70 bg-muted/20 px-3 py-3 mt-2">
+                  <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {t('admin.extensionsCustom', { defaultValue: '自定义格式' })}
+                  </label>
+                  <input
+                    value={parseExtensions(form.extensions).filter((ext) => !commonExtensions.includes(ext)).join(', ')}
+                    onChange={(e) => {
+                      const customExtensions = parseExtensions(e.target.value)
+                      const selectedCommon = parseExtensions(form.extensions).filter((ext) => commonExtensions.includes(ext))
+                      update('extensions', [...selectedCommon, ...customExtensions].join(','))
+                    }}
+                    placeholder="avif,heic,jxl"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              {/* Strategy binding */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-foreground">{t('admin.availableStrategies', { defaultValue: '可用策略' })}</label>
+                {allStrategies.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t('admin.noStrategies', { defaultValue: '暂无策略，请先创建策略' })}</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {allStrategies.map((s) => {
+                      const checked = form.strategy_ids.includes(s.id)
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => toggleStrategy(s.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border cursor-pointer ${
+                            checked 
+                              ? 'bg-primary/10 text-primary border-primary/30' 
+                              : 'bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                          }`}
+                        >
+                          {s.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t border-border mt-6">
+          <div className="flex justify-end gap-3 pt-6 border-t border-border mt-2">
             <button type="button" onClick={() => setShowModal(false)} className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
               {t('admin.cancel')}
             </button>

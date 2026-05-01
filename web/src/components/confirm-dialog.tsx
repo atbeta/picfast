@@ -1,4 +1,5 @@
 import { InfoIcon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/button'
 interface ConfirmDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  heading?: string
   title: string
   description?: string
   variant?: 'info' | 'warning' | 'destructive'
@@ -43,42 +45,49 @@ const variantConfig = {
 export function ConfirmDialog({
   open,
   onOpenChange,
+  heading,
   title,
   description,
   variant: variantProp,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   destructive,
   onConfirm,
   loading,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation()
   const variant = variantProp ?? (destructive ? 'destructive' : 'info')
   const { Icon, iconClass, buttonVariant } = variantConfig[variant]
 
+  const finalConfirmLabel = confirmLabel ?? t('dialog.confirm', { defaultValue: '确定' })
+  const finalCancelLabel = cancelLabel ?? t('dialog.cancel', { defaultValue: '取消' })
+  const finalHeading = heading ?? t('dialog.operationTitle', { defaultValue: '请确认操作' })
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-start gap-3">
             <div className={`mt-0.5 shrink-0 rounded-full p-1.5 ${variant === 'destructive' ? 'bg-destructive/10' : variant === 'warning' ? 'bg-warning/10' : 'bg-info/10'}`}>
               <Icon className={`size-4 ${iconClass}`} />
             </div>
-            <div>
-              <DialogTitle>{title}</DialogTitle>
-              {description && <DialogDescription className="mt-1.5">{description}</DialogDescription>}
+            <div className="space-y-1">
+              <DialogTitle className="text-base">{finalHeading}</DialogTitle>
+              <DialogDescription className="font-medium text-foreground">{title}</DialogDescription>
+              {description && <DialogDescription>{description}</DialogDescription>}
             </div>
           </div>
         </DialogHeader>
-        <DialogFooter>
+        <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            {cancelLabel}
+            {finalCancelLabel}
           </Button>
           <Button
             variant={buttonVariant}
             onClick={onConfirm}
             disabled={loading}
           >
-            {loading ? '...' : confirmLabel}
+            {loading ? '...' : finalConfirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

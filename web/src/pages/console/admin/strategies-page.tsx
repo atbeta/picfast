@@ -148,10 +148,10 @@ export function AdminStrategiesPage() {
   const inputCls = 'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all'
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between">
+    <section className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">{t('admin.strategiesTitle')}</h1>
-        <button type="button" onClick={openCreate} className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
+        <button type="button" onClick={openCreate} className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
           {t('admin.create')}
         </button>
       </div>
@@ -257,25 +257,49 @@ export function AdminStrategiesPage() {
       )}
 
       {strategies && strategies.length > 0 && (
-        <div className="divide-y divide-border/50">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {strategies.map((s) => (
-            <div key={s.id} className="flex items-center justify-between py-3">
+            <div key={s.id} className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md">
               <div>
-                <p className="font-medium">{s.name}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  <span className={['rounded px-1.5 py-0.5', s.strategy_type === 'local' ? 'bg-primary/10 text-primary' : 'bg-secondary/50 text-secondary-foreground'].join(' ')}>
-                    {s.strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: '本地存储' })) : 'S3'}
+                <div className="flex items-center justify-between mb-3">
+                  <span className={['rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider', s.strategy_type === 'local' ? 'bg-primary/10 text-primary' : 'bg-info/10 text-info'].join(' ')}>
+                    {s.strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: '本地存储' })) : 'S3 API'}
                   </span>
-                  <span className="ml-2">{new Date(s.created_at).toLocaleDateString()}</span>
-                </p>
+                  <span className="text-xs text-muted-foreground/60">{new Date(s.created_at).toLocaleDateString()}</span>
+                </div>
+                <h3 className="text-lg font-bold tracking-tight text-foreground truncate">{s.name}</h3>
+                
+                {/* Preview configs */}
+                <div className="mt-4 space-y-2 text-xs text-muted-foreground">
+                  {s.strategy_type === 'local' ? (
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="font-medium text-foreground/70 w-12">Root:</span>
+                      <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.root as string) || '-'}</code>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="font-medium text-foreground/70 w-12">Bucket:</span>
+                        <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.bucket as string) || '-'}</code>
+                      </div>
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="font-medium text-foreground/70 w-12">URL:</span>
+                        <code className="truncate rounded bg-muted/50 px-1.5 py-0.5">{(s.configs?.url as string) || '-'}</code>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-1">
-                <button type="button" onClick={() => openEdit(s)} title={t('admin.edit')} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
-                  <Pencil className="size-4" />
+
+              <div className="mt-6 flex items-center justify-end gap-2 border-t border-border/40 pt-4">
+                <button type="button" onClick={() => openEdit(s)} title={t('admin.edit')} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
+                  <Pencil className="size-3.5" />
+                  {t('admin.edit')}
                 </button>
                 {s.id !== 1 && (
-                  <button type="button" onClick={() => setDeleteTarget(s.id)} disabled={deleting === s.id} title={t('admin.delete')} className="rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
-                    <Trash2 className="size-4" />
+                  <button type="button" onClick={() => setDeleteTarget(s.id)} disabled={deleting === s.id} title={t('admin.delete')} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-destructive/70 hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
+                    <Trash2 className="size-3.5" />
+                    {t('admin.delete')}
                   </button>
                 )}
               </div>

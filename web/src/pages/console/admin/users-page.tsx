@@ -2,12 +2,19 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Ban, Unlock, Trash2, ChevronLeft, ChevronRight, Users } from 'lucide-react'
+import { Ban, Unlock, Trash2, ChevronLeft, ChevronRight, Users, Pencil } from 'lucide-react'
 
-import { deleteAdminUser, listAdminUsers, updateAdminUser } from '../../../lib/admin-api'
+import { deleteAdminUser, listAdminUsers, updateAdminUser, listAdminGroups, type AdminUser } from '../../../lib/admin-api'
 import { formatFileSize } from '../../../lib/upload'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export function AdminUsersPage() {
   const { t } = useTranslation()
@@ -20,9 +27,49 @@ export function AdminUsersPage() {
     queryFn: () => listAdminUsers({ page, page_size: 20, keyword: keyword || undefined }),
   })
 
+  const { data: groups = [] } = useQuery({
+    queryKey: ['admin-groups'],
+    queryFn: listAdminGroups,
+  })
+
   const [saving, setSaving] = useState<number | null>(null)
   const [deleting, setDeleting] = useState<number | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+
+  const [editing, setEditing] = useState<AdminUser | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editPassword, setEditPassword] = useState('')
+  const [editGroup, setEditGroup] = useState<string>('none')
+  const [editCapacity, setEditCapacity] = useState<number>(0)
+  const [editSaving, setEditSaving] = useState(false)
+
+  const openEdit = (u: AdminUser) => {
+    setEditing(u)
+    setEditName(u.name)
+    setEditPassword('')
+    setEditGroup(u.group_id ? u.group_id.toString() : 'none')
+    setEditCapacity(Math.round(u.capacity_bytes / 1048576))
+  }
+
+  const handleEditSave = async () => {
+    if (!editing) return
+    setEditSaving(true)
+    try {
+      await updateAdminUser(editing.id, {
+        name: editName.trim() || undefined,
+        password: editPassword.trim() || undefined,
+        group_id: editGroup === 'none' ? null : Number(editGroup),
+        capacity_bytes: editCapacity * 1048576,
+      })
+      setEditing(null)
+      await qc.invalidateQueries({ queryKey: ['admin-users'] })
+      toast.success(t('admin.saveSuccess', { defaultValue: '更新成功' }))
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('admin.saveFailed'))
+    } finally {
+      setEditSaving(false)
+    }
+  }
 
   const toggleStatus = useCallback(
     async (user: { id: number; status: number }) => {
@@ -57,15 +104,16 @@ export function AdminUsersPage() {
   )
 
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-bold tracking-tight">{t('admin.usersTitle')}</h1>
-
-      <input
-        value={keyword}
-        onChange={(e) => { setKeyword(e.target.value); setPage(1) }}
-        placeholder={t('admin.searchPlaceholder')}
-        className="w-full max-w-xs rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
-      />
+    <section className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">{t('admin.usersTitle')}</h1>
+        <input
+          value={keyword}
+          onChange={(e) => { setKeyword(e.target.value); setPage(1) }}
+          placeholder={t('admin.searchPlaceholder')}
+          className="h-9 w-full sm:w-72 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+        />
+      </div>
 
       {isLoading && (
         <LoadingState />
@@ -88,7 +136,12 @@ export function AdminUsersPage() {
                   <th className="pb-2 pr-3 pl-4 pt-2 font-medium">ID</th>
                   <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colEmail')}</th>
                   <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colName')}</th>
-                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colRole')}</th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">
+                    <div className="flex items-center gap-1">
+                      {t('admin.colRole')}
+                    </div>
+                  </th>
+                  <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colGroup', { defaultValue: '分组' })}</th>
                   <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colStatus')}</th>
                   <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.colImages')}</th>
                   <th className="pb-2 pr-3 pt-2 font-medium">{t('admin.usedCapacity', { defaultValue: '已用容量' })}</th>
@@ -102,9 +155,18 @@ export function AdminUsersPage() {
                     <td className="py-2 pr-3 text-foreground">{u.email}</td>
                     <td className="py-2 pr-3 text-foreground">{u.name}</td>
                     <td className="py-2 pr-3">
-                      <span className={['rounded px-1.5 py-0.5 text-xs font-medium', u.role === 'admin' ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground'].join(' ')}>
+                      <span className={['rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider', u.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'].join(' ')}>
                         {u.role}
                       </span>
+                    </td>
+                    <td className="py-2 pr-3">
+                      {u.group_id ? (
+                        <span className="rounded px-1.5 py-0.5 text-xs font-medium bg-muted/50 text-foreground border border-border/50">
+                          {groups.find(g => g.id === u.group_id)?.name || u.group_id}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="py-2 pr-3">
                       <span className={['rounded px-1.5 py-0.5 text-xs font-medium', u.status === 1 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'].join(' ')}>
@@ -115,6 +177,14 @@ export function AdminUsersPage() {
                     <td className="py-2 pr-3 text-muted-foreground">{formatFileSize(u.used_capacity || 0)} / {formatFileSize(u.capacity_bytes)}</td>
                     <td className="py-2 pr-4">
                       <div className="flex justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(u)}
+                          title={t('admin.edit')}
+                          className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+                        >
+                          <Pencil className="size-4" />
+                        </button>
                         {u.role !== 'admin' && (
                           <button
                             type="button"
@@ -182,6 +252,79 @@ export function AdminUsersPage() {
         onConfirm={onDelete}
         loading={!!deleting}
       />
+
+      {/* Edit User Dialog */}
+      <Dialog open={!!editing} onOpenChange={(open) => { if (!open) setEditing(null) }}>
+        <DialogContent className="sm:max-w-[500px] border-border bg-card">
+          <DialogHeader>
+            <DialogTitle>{t('admin.editUser', { defaultValue: '编辑用户' })}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 sm:grid-cols-2 pt-4">
+            
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">{t('admin.colEmail')}</label>
+              <input value={editing?.email || ''} disabled className="w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-muted-foreground cursor-not-allowed" />
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">{t('admin.colName')}</label>
+              <input 
+                value={editName} 
+                onChange={(e) => setEditName(e.target.value)} 
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" 
+              />
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">{t('admin.colGroup', { defaultValue: '所属分组' })}</label>
+              <Select value={editGroup} onValueChange={(val) => val !== null && setEditGroup(val as string)}>
+                <SelectTrigger className="w-full h-9">
+                  <SelectValue placeholder={t('admin.noGroup', { defaultValue: '不分配分组' })} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('admin.noGroup', { defaultValue: '不分配分组' })}</SelectItem>
+                  {groups.map(g => (
+                    <SelectItem key={g.id} value={g.id.toString()}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">{t('admin.capacity', { defaultValue: '存储容量' })}</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  min={0} 
+                  value={editCapacity} 
+                  onChange={(e) => setEditCapacity(Number(e.target.value))} 
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" 
+                />
+                <span className="text-sm text-muted-foreground">MB</span>
+              </div>
+            </div>
+
+            <div className="space-y-3 sm:col-span-2">
+              <label className="text-sm font-medium text-foreground">{t('admin.passwordReset', { defaultValue: '重置密码 (留空则不修改)' })}</label>
+              <input 
+                type="password"
+                value={editPassword} 
+                onChange={(e) => setEditPassword(e.target.value)} 
+                placeholder="******"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" 
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-6 mt-2 border-t border-border">
+            <button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent transition-colors cursor-pointer">
+              {t('admin.cancel')}
+            </button>
+            <button type="button" onClick={handleEditSave} disabled={editSaving} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
+              {editSaving ? '…' : t('admin.confirmSave')}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

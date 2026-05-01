@@ -167,7 +167,7 @@ func New(
 	r.With(middleware.OptionalAuth(middleware.NewJWTAuthenticator(jwtSvc))).Get("/i/{key}.{ext}", fileHandler.ServeImage)
 
 	// Thumbnail serving: /t/{hash}.png
-	r.Get("/t/{hash}.png", fileHandler.ServeThumbnail)
+	r.With(middleware.OptionalAuth(middleware.NewJWTAuthenticator(jwtSvc))).Get("/t/{hash}.png", fileHandler.ServeThumbnail)
 
 	// Ensure thumbnail directory exists
 	os.MkdirAll(cfg.Storage.ThumbnailDir, 0755)

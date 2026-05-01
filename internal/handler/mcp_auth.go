@@ -19,6 +19,8 @@ type MCPAuth struct {
 	DB *sqlc.Queries
 }
 
+const nonExpiringTokenTTL = 100 * 365 * 24 * time.Hour
+
 func NewMCPAuth(db *sqlc.Queries) *MCPAuth {
 	return &MCPAuth{DB: db}
 }
@@ -51,9 +53,14 @@ func (a *MCPAuth) VerifyToken(ctx context.Context, token string, req *http.Reque
 	}
 	scopes = defaultMCScopes(scopes)
 
+	expiration := time.Now().Add(nonExpiringTokenTTL)
+	if row.ExpiresAt.Valid {
+		expiration = row.ExpiresAt.Time
+	}
+
 	return &auth.TokenInfo{
 		UserID:     strconv.FormatInt(row.UserID, 10),
 		Scopes:     scopes,
-		Expiration: row.ExpiresAt.Time,
+		Expiration: expiration,
 	}, nil
 }

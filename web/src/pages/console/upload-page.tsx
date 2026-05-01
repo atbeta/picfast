@@ -33,6 +33,9 @@ export function UploadPage() {
   const [albums, setAlbums] = useState<Album[]>([])
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null)
 
+  // Permission selector
+  const [selectedPermission, setSelectedPermission] = useState<number | null>(null)
+
   useEffect(() => {
     getStrategies()
       .then((list) => {
@@ -59,9 +62,26 @@ export function UploadPage() {
         const saved = localStorage.getItem('default_album_id')
         if (saved && res.items.some((a) => a.id === Number(saved))) {
           setSelectedAlbumId(Number(saved))
+        } else if (user?.settings) {
+          const userDefaultAlbum = (user.settings as Record<string, unknown>).default_album
+          if (userDefaultAlbum) setSelectedAlbumId(Number(userDefaultAlbum))
         }
       })
       .catch(() => {})
+
+    // Load default permission
+    const userDefaultPerm = (user?.settings as Record<string, unknown>)?.default_permission
+    const savedPerm = localStorage.getItem('default_permission')
+    if (userDefaultPerm !== undefined && userDefaultPerm !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedPermission(Number(userDefaultPerm))
+    } else if (savedPerm !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedPermission(Number(savedPerm))
+    } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedPermission(1) // Default to Public
+    }
   }, [user])
 
   const onStrategyChange = (id: number) => {
@@ -79,6 +99,12 @@ export function UploadPage() {
     }
   }
 
+  const onPermissionChange = (val: string) => {
+    const perm = Number(val)
+    setSelectedPermission(perm)
+    localStorage.setItem('default_permission', String(perm))
+  }
+
   const handleFiles = useCallback(async (files: File[]) => {
     setErrors([])
     setBusy(true)
@@ -92,6 +118,7 @@ export function UploadPage() {
         const result = await uploadImageAuth(files[i], {
           strategy_id: selectedStrategyId ?? undefined,
           album_id: selectedAlbumId ?? undefined,
+          permission: selectedPermission !== null ? selectedPermission : undefined,
           onProgress: (p) =>
             setUploading((prev) => prev.map((u, j) => (j === i ? { ...u, progress: p } : u))),
         })
@@ -106,16 +133,16 @@ export function UploadPage() {
     setErrors(newErrors)
     setUploading([])
     setBusy(false)
-  }, [selectedStrategyId, selectedAlbumId, t])
+  }, [selectedStrategyId, selectedAlbumId, selectedPermission, t])
 
   return (
-    <section className="mx-auto max-w-4xl space-y-8 animate-in slide-in-from-bottom-4 fade-in duration-700">
+    <section className="w-full space-y-6 animate-in slide-in-from-bottom-4 fade-in duration-700">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-foreground to-foreground/70 dark:from-white dark:to-white/60">
           {t('page.upload.title')}
         </h1>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Strategy Selector */}
           <div className="flex items-center gap-3 rounded-full border border-border/50 bg-card/50 backdrop-blur-md px-4 py-1.5 shadow-sm text-sm">
             <span className="text-muted-foreground font-medium">{t('upload.strategy', { defaultValue: 'Strategy:' })}</span>
@@ -125,7 +152,7 @@ export function UploadPage() {
                 onValueChange={(val) => val !== null && onStrategyChange(Number(val))}
                 items={Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${s.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: 'Local' }) : 'S3'})`]))}
               >
-                <SelectTrigger className="w-[140px] h-7 bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
+                <SelectTrigger className="h-7 w-[220px] max-w-[42vw] sm:w-[260px] bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -157,7 +184,7 @@ export function UploadPage() {
                   ...Object.fromEntries(albums.map(a => [a.id.toString(), a.name]))
                 }}
               >
-                <SelectTrigger className="w-[140px] h-7 bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
+                <SelectTrigger className="h-7 w-[140px] sm:w-[180px] bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -171,6 +198,27 @@ export function UploadPage() {
               </Select>
             </div>
           )}
+
+          {/* Permission Selector */}
+          <div className="flex items-center gap-3 rounded-full border border-border/50 bg-card/50 backdrop-blur-md px-4 py-1.5 shadow-sm text-sm">
+            <span className="text-muted-foreground font-medium">{t('images.permission', { defaultValue: '权限:' })}</span>
+            <Select 
+              value={selectedPermission?.toString() ?? '1'}
+              onValueChange={(val) => val !== null && onPermissionChange(val as string)}
+              items={{
+                '1': t('images.public', { defaultValue: '公开' }),
+                '0': t('images.private', { defaultValue: '私有' })
+              }}
+            >
+              <SelectTrigger className="w-[80px] h-7 bg-transparent border-none shadow-none font-semibold text-foreground hover:bg-accent/50 focus:ring-0 px-2 py-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">{t('images.public', { defaultValue: '公开' })}</SelectItem>
+                <SelectItem value="0">{t('images.private', { defaultValue: '私有' })}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 

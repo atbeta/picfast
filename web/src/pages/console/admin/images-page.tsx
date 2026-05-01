@@ -40,11 +40,11 @@ export function AdminImagesPage() {
   }, [deleteTarget, qc, t])
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+    <section className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">{t('admin.imagesTitle', { defaultValue: '图片管理' })}</h1>
         
-        <div className="flex items-center rounded-lg border border-input bg-background shadow-sm focus-within:ring-1 focus-within:ring-primary/20 focus-within:border-primary transition-all overflow-hidden h-9">
+        <div className="flex h-9 items-center overflow-hidden rounded-lg border border-input bg-background shadow-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
           <select 
             className="h-full bg-muted/30 px-3 py-1 text-sm outline-none border-r border-input cursor-pointer"
             value={searchType}

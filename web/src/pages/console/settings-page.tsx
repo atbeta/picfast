@@ -105,133 +105,148 @@ export function SettingsPage() {
   const usagePercent = user.capacity_bytes > 0 ? Math.round((user.used_bytes / user.capacity_bytes) * 100) : 0
 
   return (
-    <section className="space-y-8 animate-in slide-in-from-bottom-4 fade-in duration-500">
+    <section className="space-y-6 animate-in slide-in-from-bottom-4 fade-in duration-500">
       <h1 className="text-2xl font-bold tracking-tight">{t('page.settings.title')}</h1>
 
-      <div className="max-w-4xl space-y-8">
-        {/* Storage usage */}
-        <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">{t('settings.storage')}</h2>
-        <div className="mt-4 flex items-center gap-4">
-          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-1000 ease-out"
-              style={{ width: `${Math.min(usagePercent, 100)}%` }}
-            />
-          </div>
-          <span className="shrink-0 text-sm font-medium text-muted-foreground">
-            {formatFileSize(user.used_bytes)} / {formatFileSize(user.capacity_bytes)}
-          </span>
-        </div>
-        <p className="mt-3 text-sm text-muted-foreground/80">
-          {t('settings.stats', { images: user.image_num, albums: user.album_num })}
-        </p>
-      </div>
-
-      {/* Profile form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 rounded-xl border border-border/50 bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">{t('settings.profile', { defaultValue: '个人资料' })}</h2>
+      <div className="max-w-4xl space-y-6 pb-8">
+        
+        {/* Section 1: Storage usage */}
         <div className="space-y-6">
-          <SettingField
-            label={t('settings.email')}
-            hint={t('settings.emailDesc', { defaultValue: '当前登录邮箱，暂不支持在这里直接修改。' })}
-          >
-            <input
-              id="email"
-              type="email"
-              value={user.email}
-              disabled
-              className={fieldDisabledCls}
-            />
-          </SettingField>
-
-          <SettingField
-            label={t('settings.name')}
-          >
-            <input
-              id="name"
-              type="text"
-              placeholder={t('settings.profileNamePlaceholder', { defaultValue: '输入您的昵称' })}
-              className={fieldInputCls}
-              {...register('name')}
-            />
-            {errors.name && <p className="mt-1.5 text-xs text-destructive">{t('auth.required')}</p>}
-          </SettingField>
-
-          <SettingField
-            label={t('settings.newPassword')}
-            hint={t('settings.passwordHint')}
-          >
-            <input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              placeholder={t('settings.profilePasswordPlaceholder', { defaultValue: '留空表示不修改' })}
-              className={fieldInputCls}
-              {...register('password')}
-            />
-            {errors.password && <p className="mt-1.5 text-xs text-destructive">{t('auth.passwordMin')}</p>}
-          </SettingField>
-
-          <SettingField
-            label={t('settings.defaultStrategy', { defaultValue: '默认策略' })}
-            hint={t('settings.defaultStrategyDesc', { defaultValue: '上传时默认选中的存储策略；不设置时跟随分组默认。' })}
-          >
-            <Select
-              value={defaultStrategy.toString()}
-              onValueChange={(val) => val !== null && setDefaultStrategy(Number(val))}
-              items={{
-                '0': t('settings.followGroupDefault', { defaultValue: '跟随分组默认' }),
-                ...Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${s.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: '本地' }) : 'S3'})`]))
-              }}
-            >
-              <SelectTrigger id="strategy" className="h-11 w-full bg-background/50 border-border/50 md:max-w-md">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">{t('settings.followGroupDefault', { defaultValue: '跟随分组默认' })}</SelectItem>
-                {strategies.map((s) => (
-                  <SelectItem key={s.id} value={s.id.toString()}>
-                    {s.name} ({s.strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: '本地' })) : 'S3'})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </SettingField>
-        </div>
-
-        <div className="pt-2">
-          {success && (
-            <p className="mb-4 rounded-lg bg-success/10 px-4 py-2.5 text-sm font-medium text-success-foreground border border-success/20">
-              {t('settings.saved')}
+          <div>
+            <h2 className="text-base font-semibold tracking-tight text-foreground">{t('settings.storage', { defaultValue: '存储用量' })}</h2>
+            <p className="text-sm text-muted-foreground">{t('settings.storageDesc', { defaultValue: '查看您当前账号的可用空间和已使用情况。' })}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-1000 ease-out"
+                  style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                />
+              </div>
+              <span className="shrink-0 text-sm font-medium text-muted-foreground">
+                {formatFileSize(user.used_bytes)} / {formatFileSize(user.capacity_bytes)}
+              </span>
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground/80">
+              {t('settings.stats', { images: user.image_num, albums: user.album_num })}
             </p>
-          )}
-          {errorMsg && (
-            <p className="mb-4 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm font-medium text-destructive border border-destructive/20">
-              {errorMsg}
-            </p>
-          )}
-
-          <div className="flex justify-end mt-6">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-50 active:scale-95 cursor-pointer"
-            >
-              {saving ? t('settings.saving') : t('settings.save')}
-            </button>
           </div>
         </div>
-      </form>
 
-      {/* Preferences */}
-      <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
-        <h2 className="mb-5 text-lg font-semibold tracking-tight text-foreground">{t('settings.preferences')}</h2>
-        <div className="flex flex-wrap gap-8">
-          <LanguageSelector />
-          <ThemeSelector />
+        {/* Section 2: Profile form */}
+        <div className="space-y-6">
+          <div className="pt-4 border-t border-border/40">
+            <h2 className="text-base font-semibold tracking-tight text-foreground">{t('settings.profile', { defaultValue: '个人资料' })}</h2>
+            <p className="text-sm text-muted-foreground">{t('settings.profileDesc', { defaultValue: '管理您的基础信息与上传偏好。' })}</p>
+          </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <div className="space-y-6">
+              <SettingField
+                label={t('settings.email')}
+              >
+                <input
+                  id="email"
+                  type="email"
+                  value={user.email}
+                  disabled
+                  className={fieldDisabledCls}
+                />
+              </SettingField>
+
+              <SettingField
+                label={t('settings.name')}
+              >
+                <input
+                  id="name"
+                  type="text"
+                  placeholder={t('settings.profileNamePlaceholder', { defaultValue: '输入您的昵称' })}
+                  className={fieldInputCls}
+                  {...register('name')}
+                />
+                {errors.name && <p className="mt-1.5 text-xs text-destructive">{t('auth.required')}</p>}
+              </SettingField>
+
+              <SettingField
+                label={t('settings.newPassword')}
+                hint={t('settings.passwordHint', { defaultValue: '不修改请留空' })}
+              >
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={t('settings.profilePasswordPlaceholder', { defaultValue: '留空表示不修改' })}
+                  className={fieldInputCls}
+                  {...register('password')}
+                />
+                {errors.password && <p className="mt-1.5 text-xs text-destructive">{t('auth.passwordMin')}</p>}
+              </SettingField>
+
+              <SettingField
+                label={t('settings.defaultStrategy', { defaultValue: '默认策略' })}
+                hint={t('settings.defaultStrategyDesc', { defaultValue: '上传时默认选中的存储策略。' })}
+              >
+                <Select
+                  value={defaultStrategy.toString()}
+                  onValueChange={(val) => val !== null && setDefaultStrategy(Number(val))}
+                  items={{
+                    '0': t('settings.followGroupDefault', { defaultValue: '跟随分组默认' }),
+                    ...Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${s.strategy_type === 'local' ? t('admin.typeLocal', { defaultValue: '本地' }) : 'S3'})`]))
+                  }}
+                >
+                  <SelectTrigger id="strategy" className="h-11 w-full bg-background border-input md:max-w-md">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">{t('settings.followGroupDefault', { defaultValue: '跟随分组默认' })}</SelectItem>
+                    {strategies.map((s) => (
+                      <SelectItem key={s.id} value={s.id.toString()}>
+                        {s.name} ({s.strategy_type === 'local' ? (t('admin.typeLocal', { defaultValue: '本地' })) : 'S3'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SettingField>
+            </div>
+
+            <div className="pt-2">
+              {success && (
+                <p className="mt-6 mb-2 rounded-lg bg-success/10 px-4 py-2.5 text-sm font-medium text-success-foreground border border-success/20">
+                  {t('settings.saved')}
+                </p>
+              )}
+              {errorMsg && (
+                <p className="mt-6 mb-2 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm font-medium text-destructive border border-destructive/20">
+                  {errorMsg}
+                </p>
+              )}
+
+              <div className="flex justify-end mt-6">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:opacity-90 disabled:opacity-50 active:scale-95 cursor-pointer"
+                >
+                  {saving ? t('settings.saving') : t('settings.save')}
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
-      </div>
+
+        {/* Section 3: Preferences */}
+        <div className="space-y-6">
+          <div className="pt-4 border-t border-border/40">
+            <h2 className="text-base font-semibold tracking-tight text-foreground">{t('settings.preferences', { defaultValue: '偏好设置' })}</h2>
+            <p className="text-sm text-muted-foreground">{t('settings.preferencesDesc', { defaultValue: '自定义您在控制台的显示语言和主题外观。' })}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:gap-12">
+              <LanguageSelector />
+              <ThemeSelector />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   )

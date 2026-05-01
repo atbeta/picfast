@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { AlertCircle } from 'lucide-react'
 
 import { getAdminSettings, updateAdminSettings } from '../../../lib/admin-api'
-import { useState } from 'react'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingState } from '@/components/page-states'
@@ -56,6 +57,15 @@ export function AdminSettingsPage() {
   })
 
   const { register, control, handleSubmit, formState: { isSubmitting } } = useForm<SettingsForm>({
+    defaultValues: {
+      app_name: '',
+      app_url: '',
+      allow_guest_upload: false,
+      allow_registration: false,
+      require_email_verification: false,
+      user_initial_capacity_mb: 500,
+      moderation_mode: 'disabled',
+    },
     values: data
       ? {
           app_name: data.app_name,
@@ -76,9 +86,9 @@ export function AdminSettingsPage() {
       await updateAdminSettings({
         app_name: form.app_name,
         app_url: form.app_url,
-        allow_guest_upload: form.allow_guest_upload,
-        allow_registration: form.allow_registration,
-        require_email_verification: form.require_email_verification,
+        allow_guest_upload: Boolean(form.allow_guest_upload),
+        allow_registration: Boolean(form.allow_registration),
+        require_email_verification: Boolean(form.require_email_verification),
         user_initial_capacity: form.user_initial_capacity_mb * 1024 * 1024,
         moderation_mode: form.moderation_mode,
       })
@@ -101,58 +111,73 @@ export function AdminSettingsPage() {
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
 
       {data && (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl">
-          <div className="space-y-6 rounded-xl border border-border bg-card p-6 shadow-sm">
-            <SettingField
-              label={t('admin.appName')}
-            >
-              <input {...register('app_name')} className={fieldInputCls} />
-            </SettingField>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl pb-8">
+          
+          {/* Section 1: Basic Info */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-base font-semibold tracking-tight">{t('admin.sectionBasic', { defaultValue: '基本信息' })}</h2>
+              <p className="text-sm text-muted-foreground">{t('admin.sectionBasicDesc', { defaultValue: '配置站点的基础信息和访问地址。' })}</p>
+            </div>
+            <div className="space-y-6 rounded-xl border border-border bg-card p-6 shadow-sm">
+              <SettingField
+                label={t('admin.appName')}
+              >
+                <input {...register('app_name')} className={fieldInputCls} />
+              </SettingField>
 
-            <SettingField
-              label={t('admin.appUrl', { defaultValue: '站点地址' })}
-              hint={t('admin.appUrlDesc', { defaultValue: '用于生成回调链接、ShareX 配置和邮箱验证链接。' })}
-            >
-              <input {...register('app_url')} placeholder="https://your-domain.com" className={fieldInputCls} />
-            </SettingField>
+              <SettingField
+                label={t('admin.appUrl', { defaultValue: '站点地址' })}
+                hint={t('admin.appUrlDesc', { defaultValue: '用于生成回调链接、ShareX 配置和邮箱验证链接。' })}
+              >
+                <input {...register('app_url')} placeholder="https://your-domain.com" className={fieldInputCls} />
+              </SettingField>
+            </div>
+          </div>
 
-            <SettingField label={t('admin.allowGuestUpload')}>
-              <div className="flex h-11 items-center justify-end">
-                <Controller
-                  name="allow_guest_upload"
-                  control={control}
-                  render={({ field }) => (
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      id="guestUpload"
-                    />
-                  )}
-                />
-              </div>
-            </SettingField>
+          {/* Section 2: Access Control */}
+          <div className="space-y-6">
+            <div className="pt-4 border-t border-border/40">
+              <h2 className="text-base font-semibold tracking-tight">{t('admin.sectionAccess', { defaultValue: '访问控制' })}</h2>
+              <p className="text-sm text-muted-foreground">{t('admin.sectionAccessDesc', { defaultValue: '管理用户的注册、上传权限及验证要求。' })}</p>
+            </div>
+            <div className="space-y-6 rounded-xl border border-border bg-card p-6 shadow-sm">
+              <SettingField label={t('admin.allowGuestUpload')}>
+                <div className="flex h-11 items-center justify-end">
+                  <Controller
+                    name="allow_guest_upload"
+                    control={control}
+                    render={({ field }) => (
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        id="guestUpload"
+                      />
+                    )}
+                  />
+                </div>
+              </SettingField>
 
-            <SettingField label={t('admin.allowRegistration')}>
-              <div className="flex h-11 items-center justify-end">
-                <Controller
-                  name="allow_registration"
-                  control={control}
-                  render={({ field }) => (
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      id="registration"
-                    />
-                  )}
-                />
-              </div>
-            </SettingField>
+              <SettingField label={t('admin.allowRegistration')}>
+                <div className="flex h-11 items-center justify-end">
+                  <Controller
+                    name="allow_registration"
+                    control={control}
+                    render={({ field }) => (
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        id="registration"
+                      />
+                    )}
+                  />
+                </div>
+              </SettingField>
 
-            <SettingField
-              label={t('admin.requireEmailVerification')}
-              hint={t('admin.requireEmailVerificationDesc')}
-            >
-              <div className="space-y-3">
+              <SettingField
+                label={t('admin.requireEmailVerification')}
+                hint={t('admin.requireEmailVerificationDesc')}
+              >
                 <div className="flex h-11 items-center justify-end">
                   <Controller
                     name="require_email_verification"
@@ -167,53 +192,78 @@ export function AdminSettingsPage() {
                     )}
                   />
                 </div>
-                <div className={`rounded-lg border px-4 py-3 text-xs ${data.email_verification_ready ? 'border-success/20 bg-success/5 text-success dark:border-success/30 dark:bg-success/10' : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300'}`}>
-                  {data.email_verification_ready
-                    ? t('admin.emailVerificationReady')
-                    : t('admin.emailVerificationPending')}
+              </SettingField>
+
+              {!data.email_verification_ready && (
+                <div className="flex items-start gap-3 rounded-xl bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+                  <div className="mt-0.5 shrink-0">
+                    <AlertCircle className="size-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium">SMTP 未配置</p>
+                    <p className="text-xs opacity-80">当前未配置 SMTP 发信参数，无法开启邮箱验证。请在服务器的 <code>.env</code> 文件中配置 <code>PICFAST_MAIL_*</code> 相关变量并重启服务。</p>
+                  </div>
                 </div>
-              </div>
-            </SettingField>
+              )}
+            </div>
+          </div>
 
-            <SettingField
-              label={t('admin.initialCapacity')}
-              hint={t('admin.initialCapacityDesc', { defaultValue: '新注册用户默认可用的总容量。' })}
-            >
-              <div className="flex items-center gap-3">
-                <input type="number" {...register('user_initial_capacity_mb', { valueAsNumber: true })} className={`${fieldInputCls} w-40`} />
-                <span className="text-sm text-muted-foreground">MB</span>
-              </div>
-            </SettingField>
+          {/* Section 3: User Config */}
+          <div className="space-y-6">
+            <div className="pt-4 border-t border-border/40">
+              <h2 className="text-base font-semibold tracking-tight">{t('admin.sectionUser', { defaultValue: '用户配置' })}</h2>
+              <p className="text-sm text-muted-foreground">{t('admin.sectionUserDesc', { defaultValue: '设置新注册用户的默认资源配额。' })}</p>
+            </div>
+            <div className="space-y-6 rounded-xl border border-border bg-card p-6 shadow-sm">
+              <SettingField
+                label={t('admin.initialCapacity')}
+                hint={t('admin.initialCapacityDesc', { defaultValue: '新注册用户默认可用的总容量。' })}
+              >
+                <div className="flex items-center gap-3">
+                  <input type="number" {...register('user_initial_capacity_mb', { valueAsNumber: true })} className={`${fieldInputCls} w-40`} />
+                  <span className="text-sm text-muted-foreground">MB</span>
+                </div>
+              </SettingField>
+            </div>
+          </div>
 
-            <SettingField
-              label={t('admin.moderationMode')}
-              hint={t('admin.moderationModeDesc', { defaultValue: '控制上传内容是直接通过还是进入审核流程。' })}
-            >
-              <Controller
-                name="moderation_mode"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value || 'disabled'}
-                    onValueChange={(val) => field.onChange(String(val))}
-                    items={{
-                      disabled: t('admin.modDisabled'),
-                      manual: t('admin.modManual'),
-                      auto: t('admin.modAuto'),
-                    }}
-                  >
-                    <SelectTrigger className="h-11 w-full bg-background border-input">
-                      <SelectValue placeholder={t('admin.modDisabled')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="disabled">{t('admin.modDisabled')}</SelectItem>
-                      <SelectItem value="manual">{t('admin.modManual')}</SelectItem>
-                      <SelectItem value="auto">{t('admin.modAuto')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </SettingField>
+          {/* Section 4: Advanced */}
+          <div className="space-y-6">
+            <div className="pt-4 border-t border-border/40">
+              <h2 className="text-base font-semibold tracking-tight">{t('admin.sectionAdvanced', { defaultValue: '高级设置' })}</h2>
+              <p className="text-sm text-muted-foreground">{t('admin.sectionAdvancedDesc', { defaultValue: '系统级别的高级功能与安全控制。' })}</p>
+            </div>
+            <div className="space-y-6 rounded-xl border border-border bg-card p-6 shadow-sm">
+              <SettingField
+                label={t('admin.moderationMode')}
+                hint={t('admin.moderationModeDesc', { defaultValue: '控制上传内容是直接通过还是进入审核流程。' })}
+              >
+                <Controller
+                  name="moderation_mode"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || 'disabled'}
+                      onValueChange={(val) => field.onChange(String(val))}
+                      items={{
+                        disabled: t('admin.modDisabled'),
+                        manual: t('admin.modManual'),
+                        auto: t('admin.modAuto'),
+                      }}
+                    >
+                      <SelectTrigger className="h-11 w-full bg-background border-input">
+                        <SelectValue placeholder={t('admin.modDisabled')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="disabled">{t('admin.modDisabled')}</SelectItem>
+                        <SelectItem value="manual">{t('admin.modManual')}</SelectItem>
+                        <SelectItem value="auto">{t('admin.modAuto')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </SettingField>
+            </div>
           </div>
 
           {success && <p className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">{t('admin.saved')}</p>}

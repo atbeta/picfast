@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
@@ -103,18 +104,27 @@ type uploadImageArgs struct {
 	Permission *int16 `json:"permission,omitempty"`
 }
 
+const (
+	mcpErrorUnauthorized  = "UNAUTHORIZED"
+	mcpErrorForbidden     = "FORBIDDEN_SCOPE"
+	mcpErrorInvalidInput  = "INVALID_IMAGE_DATA"
+	mcpErrorUploadFailed  = "UPLOAD_FAILED"
+	mcpErrorImageNotFound = "IMAGE_NOT_FOUND"
+	mcpErrorInternal      = "INTERNAL_ERROR"
+)
+
 func (f *MCPServerFactory) uploadImageTool(ctx context.Context, req *mcp.CallToolRequest, args uploadImageArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireMCPScope(ctx, mcpScopeWrite); err != nil {
-		return errorResult(err.Error()), nil, nil
+		return scopedErrorResult(err), nil, nil
 	}
 	userID, ok := userIDFromContext(ctx)
 	if !ok {
-		return errorResult("unauthorized: no user context"), nil, nil
+		return mcpErrorResult(mcpErrorUnauthorized, "unauthorized: no user context"), nil, nil
 	}
 
 	fileData, err := base64.StdEncoding.DecodeString(args.FileData)
 	if err != nil {
-		return errorResult("invalid base64 file_data: " + err.Error()), nil, nil
+		return mcpErrorResult(mcpErrorInvalidInput, "invalid base64 file_data: "+err.Error()), nil, nil
 	}
 
 	uploadSvc := service.NewUploadService(f.DB, f.Pool, f.Config)
@@ -128,23 +138,25 @@ func (f *MCPServerFactory) uploadImageTool(ctx context.Context, req *mcp.CallToo
 		ClientIP:   "mcp-client",
 	})
 	if err != nil {
-		return errorResult("upload failed: " + err.Error()), nil, nil
+		return mcpErrorResult(mcpErrorUploadFailed, "upload failed: "+err.Error()), nil, nil
 	}
+
+	response := map[string]any{
+		"key":           result.Image.Key,
+		"url":           result.Links.URL,
+		"markdown":      result.Links.Markdown,
+		"html":          result.Links.HTML,
+		"bbcode":        result.Links.BBCode,
+		"mimetype":      result.Image.Mimetype,
+		"original_size": result.OriginalSizeBytes,
+		"stored_size":   result.StoredSizeBytes,
+		"processed":     result.Processed,
+	}
+	data, _ := json.Marshal(response)
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
-			&mcp.TextContent{Text: fmt.Sprintf(`Image uploaded successfully!
-Key: %s
-URL: %s
-Markdown: %s
-HTML: %s
-BBCode: %s`,
-				result.Image.Key,
-				result.Links.URL,
-				result.Links.Markdown,
-				result.Links.HTML,
-				result.Links.BBCode,
-			)},
+			&mcp.TextContent{Text: string(data)},
 		},
 	}, nil, nil
 }
@@ -156,11 +168,11 @@ type listImagesArgs struct {
 
 func (f *MCPServerFactory) listImagesTool(ctx context.Context, req *mcp.CallToolRequest, args listImagesArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireMCPScope(ctx, mcpScopeRead); err != nil {
-		return errorResult(err.Error()), nil, nil
+		return scopedErrorResult(err), nil, nil
 	}
 	userID, ok := userIDFromContext(ctx)
 	if !ok {
-		return errorResult("unauthorized"), nil, nil
+		return mcpErrorResult(mcpErrorUnauthorized, "unauthorized"), nil, nil
 	}
 
 	if args.Page <= 0 {
@@ -176,7 +188,7 @@ func (f *MCPServerFactory) listImagesTool(ctx context.Context, req *mcp.CallTool
 		Offset: (args.Page - 1) * args.PageSize,
 	})
 	if err != nil {
-		return errorResult("failed to list images: " + err.Error()), nil, nil
+		return mcpErrorResult(mcpErrorInternal, "failed to list images: "+err.Error()), nil, nil
 	}
 
 	total, _ := f.DB.CountImagesByUser(ctx, sqlc.CountImagesByUserParams{
@@ -215,16 +227,16 @@ type getImageArgs struct {
 
 func (f *MCPServerFactory) getImageTool(ctx context.Context, req *mcp.CallToolRequest, args getImageArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireMCPScope(ctx, mcpScopeRead); err != nil {
-		return errorResult(err.Error()), nil, nil
+		return scopedErrorResult(err), nil, nil
 	}
 	userID, ok := userIDFromContext(ctx)
 	if !ok {
-		return errorResult("unauthorized"), nil, nil
+		return mcpErrorResult(mcpErrorUnauthorized, "unauthorized"), nil, nil
 	}
 
 	img, err := loadOwnedImageByKey(ctx, f.DB, userID, args.Key)
 	if err != nil {
-		return errorResult("image not found"), nil, nil
+		return mcpErrorResult(mcpErrorImageNotFound, "image not found"), nil, nil
 	}
 
 	url := f.Config.Server.BaseURL + "/i/" + img.Key + "." + img.Extension
@@ -257,26 +269,26 @@ type deleteImageArgs struct {
 
 func (f *MCPServerFactory) deleteImageTool(ctx context.Context, req *mcp.CallToolRequest, args deleteImageArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireMCPScope(ctx, mcpScopeWrite); err != nil {
-		return errorResult(err.Error()), nil, nil
+		return scopedErrorResult(err), nil, nil
 	}
 	userID, ok := userIDFromContext(ctx)
 	if !ok {
-		return errorResult("unauthorized"), nil, nil
+		return mcpErrorResult(mcpErrorUnauthorized, "unauthorized"), nil, nil
 	}
 
 	img, err := f.DB.GetImageByKey(ctx, args.Key)
 	if err != nil {
-		return errorResult("image not found"), nil, nil
+		return mcpErrorResult(mcpErrorImageNotFound, "image not found"), nil, nil
 	}
 
 	// Permission check
 	if !imageOwnedByUser(img, userID) {
-		return errorResult("permission denied: not your image"), nil, nil
+		return mcpErrorResult(mcpErrorForbidden, "permission denied: not your image"), nil, nil
 	}
 
 	deleteSvc := service.NewDeleteService(f.DB, f.Pool, f.Config.Storage.ThumbnailDir)
 	if err := deleteSvc.DeleteImage(ctx, img.ID); err != nil {
-		return errorResult("delete failed: " + err.Error()), nil, nil
+		return mcpErrorResult(mcpErrorInternal, "delete failed: "+err.Error()), nil, nil
 	}
 
 	return &mcp.CallToolResult{
@@ -286,16 +298,16 @@ func (f *MCPServerFactory) deleteImageTool(ctx context.Context, req *mcp.CallToo
 
 func (f *MCPServerFactory) getUsageStatsTool(ctx context.Context, req *mcp.CallToolRequest, args struct{}) (*mcp.CallToolResult, any, error) {
 	if err := requireMCPScope(ctx, mcpScopeRead); err != nil {
-		return errorResult(err.Error()), nil, nil
+		return scopedErrorResult(err), nil, nil
 	}
 	userID, ok := userIDFromContext(ctx)
 	if !ok {
-		return errorResult("unauthorized"), nil, nil
+		return mcpErrorResult(mcpErrorUnauthorized, "unauthorized"), nil, nil
 	}
 
 	user, err := f.DB.GetUserByID(ctx, userID)
 	if err != nil {
-		return errorResult("failed to get user info"), nil, nil
+		return mcpErrorResult(mcpErrorInternal, "failed to get user info"), nil, nil
 	}
 
 	used, _ := f.DB.GetUserUsedCapacity(ctx, domain.PgInt8(userID))
@@ -419,9 +431,33 @@ func userIDFromContext(ctx context.Context) (int64, bool) {
 	return userID, true
 }
 
-func errorResult(msg string) *mcp.CallToolResult {
+func scopedErrorResult(err error) *mcp.CallToolResult {
+	if err == nil {
+		return mcpErrorResult(mcpErrorInternal, "unknown error")
+	}
+	msg := err.Error()
+	if strings.HasPrefix(msg, "forbidden:") {
+		return mcpErrorResult(mcpErrorForbidden, msg)
+	}
+	if strings.HasPrefix(msg, "unauthorized") {
+		return mcpErrorResult(mcpErrorUnauthorized, msg)
+	}
+	return mcpErrorResult(mcpErrorInternal, msg)
+}
+
+func mcpErrorResult(code, msg string) *mcp.CallToolResult {
+	payload, err := json.Marshal(map[string]any{
+		"error": map[string]string{
+			"code":    code,
+			"message": msg,
+		},
+	})
+	if err != nil {
+		payload = []byte(fmt.Sprintf(`{"error":{"code":"%s","message":"%s"}}`, code, msg))
+	}
+
 	return &mcp.CallToolResult{
 		IsError: true,
-		Content: []mcp.Content{&mcp.TextContent{Text: msg}},
+		Content: []mcp.Content{&mcp.TextContent{Text: string(payload)}},
 	}
 }

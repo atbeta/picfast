@@ -1,7 +1,21 @@
 import type { ReactNode } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ImagePlus } from 'lucide-react'
+import { 
+  ImagePlus, 
+  UploadCloud, 
+  Image as ImageIcon, 
+  FolderOpen, 
+  KeySquare, 
+  Blocks, 
+  Settings, 
+  LayoutDashboard, 
+  Users, 
+  UsersRound, 
+  Database, 
+  Files, 
+  Globe
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { LanguageSwitcher } from '../../components/language-switcher'
@@ -53,23 +67,25 @@ export function ConsoleLayout() {
         <aside className="w-full md:block">
           <div className="md:sticky md:top-24 space-y-1">
             <MobileNavRail>
-              <ConsoleNavItem to="/console/upload" label={t('nav.upload')} />
-              <ConsoleNavItem to="/console/images" label={t('nav.images')} />
-              <ConsoleNavItem to="/console/albums" label={t('nav.albums')} />
-              <ConsoleNavItem to="/console/api-tokens" label={t('nav.apiTokens')} />
-              <ConsoleNavItem to="/console/integrations" label={t('integrations.title', { defaultValue: '集成与工具' })} />
-              <ConsoleNavItem to="/console/settings" label={t('nav.settings')} />
+              <ConsoleNavItem to="/console/upload" label={t('nav.upload')} icon={UploadCloud} />
+              <ConsoleNavItem to="/console/images" label={t('nav.images')} icon={ImageIcon} />
+              <ConsoleNavItem to="/console/albums" label={t('nav.albums')} icon={FolderOpen} />
+              <ConsoleNavItem to="/console/api-tokens" label={t('nav.apiTokens')} icon={KeySquare} />
+              <ConsoleNavItem to="/console/integrations" label={t('integrations.title', { defaultValue: '集成与工具' })} icon={Blocks} />
+              <ConsoleNavItem to="/console/settings" label={t('nav.settings')} icon={Settings} />
             </MobileNavRail>
             {user?.role === 'admin' && (
               <div className="mt-4 pt-4 border-t border-border/50">
-                <p className="px-4 pb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/50 hidden md:block">{t('nav.admin')}</p>
+                <p className="px-4 pb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/50 hidden md:block">
+                  {t('nav.admin')}
+                </p>
                 <MobileNavRail>
-                  <ConsoleNavItem to="/console/admin" label={t('admin.navDashboard', { defaultValue: '概览' })} />
-                  <ConsoleNavItem to="/console/admin/users" label={t('admin.navUsers')} />
-                  <ConsoleNavItem to="/console/admin/groups" label={t('admin.navGroups')} />
-                  <ConsoleNavItem to="/console/admin/strategies" label={t('admin.navStrategies')} />
-                  <ConsoleNavItem to="/console/admin/images" label={t('admin.navImages')} />
-                  <ConsoleNavItem to="/console/admin/settings" label={t('admin.navSettings')} />
+                  <ConsoleNavItem to="/console/admin" label={t('admin.navDashboard', { defaultValue: '概览' })} icon={LayoutDashboard} />
+                  <ConsoleNavItem to="/console/admin/users" label={t('admin.navUsers')} icon={Users} />
+                  <ConsoleNavItem to="/console/admin/groups" label={t('admin.navGroups')} icon={UsersRound} />
+                  <ConsoleNavItem to="/console/admin/strategies" label={t('admin.navStrategies')} icon={Database} />
+                  <ConsoleNavItem to="/console/admin/images" label={t('admin.navImages')} icon={Files} />
+                  <ConsoleNavItem to="/console/admin/settings" label={t('admin.navSettings')} icon={Globe} />
                 </MobileNavRail>
               </div>
             )}
@@ -97,28 +113,22 @@ function MobileNavRail({ children }: { children: ReactNode }) {
   )
 }
 
-function ConsoleNavItem({ to, label }: { to: string; label: string }) {
+function ConsoleNavItem({ to, label, icon: Icon }: { to: string; label: string; icon: React.ElementType }) {
   return (
     <NavLink
       to={to}
       end={to === '/console/admin'}
       className={({ isActive }) =>
         [
-          'group relative flex items-center rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 overflow-hidden',
+          'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 overflow-hidden',
           isActive
-            ? 'bg-primary/10 text-primary'
+            ? 'bg-muted/80 text-foreground'
             : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
         ].join(' ')
       }
     >
-      {({ isActive }) => (
-        <>
-          {isActive && (
-            <span className="absolute left-0 top-1/2 h-1/2 w-1 -translate-y-1/2 rounded-r-full bg-primary" />
-          )}
-          <span className="relative z-10">{label}</span>
-        </>
-      )}
+      <Icon className="size-4 shrink-0" />
+      <span className="relative z-10">{label}</span>
     </NavLink>
   )
 }
