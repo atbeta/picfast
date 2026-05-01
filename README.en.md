@@ -118,22 +118,27 @@ Common tags:
 ### 3-Minute Local Start
 
 ```bash
+# 0) Create a dedicated network (once)
+docker network create picfast-net
+
 # 1) Start PostgreSQL
 docker run -d \
   --name picfast-db \
+  --network picfast-net \
   -e POSTGRES_USER=picfast \
   -e POSTGRES_PASSWORD=picfast \
   -e POSTGRES_DB=picfast \
-  -p 5432:5432 \
+  -v picfast-pgdata:/var/lib/postgresql/data \
   postgres:16-alpine
 
 # 2) Start PicFast
 docker run -d \
   --name picfast \
-  -p 8080:8080 \
-  -e PICFAST_DATABASE_URL='postgres://picfast:picfast@host.docker.internal:5432/picfast?sslmode=disable' \
+  --network picfast-net \
+  -p 18080:8080 \
+  -e PICFAST_DATABASE_URL='postgres://picfast:picfast@picfast-db:5432/picfast?sslmode=disable' \
   -e PICFAST_JWT_SECRET='replace-with-a-strong-secret' \
-  -e PICFAST_SERVER_BASE_URL='http://localhost:8080' \
+  -e PICFAST_SERVER_BASE_URL='http://localhost:18080' \
   -e PICFAST_APP_ADMIN_EMAIL='admin@example.com' \
   -e PICFAST_APP_ADMIN_PASSWORD='change-this-password' \
   -v picfast-uploads:/app/data/uploads \
@@ -141,7 +146,15 @@ docker run -d \
   xbeta/picfast:latest
 ```
 
-Open `http://localhost:8080`.
+Open `http://localhost:18080`.
+
+Cleanup (remove containers, volumes, and network):
+
+```bash
+docker rm -f picfast picfast-db 2>/dev/null || true
+docker volume rm picfast-pgdata picfast-uploads picfast-thumbnails 2>/dev/null || true
+docker network rm picfast-net 2>/dev/null || true
+```
 
 ### Pull Image
 

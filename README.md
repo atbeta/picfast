@@ -240,22 +240,27 @@ PicFast 现在可以直接发布到 Docker Hub。当前推荐镜像仓库：
 如果你只想快速验证可用性，可以按下面步骤先在本机启动：
 
 ```bash
+# 0) 创建独立网络（只需一次）
+docker network create picfast-net
+
 # 1) 启动 PostgreSQL
 docker run -d \
   --name picfast-db \
+  --network picfast-net \
   -e POSTGRES_USER=picfast \
   -e POSTGRES_PASSWORD=picfast \
   -e POSTGRES_DB=picfast \
-  -p 5432:5432 \
+  -v picfast-pgdata:/var/lib/postgresql/data \
   postgres:16-alpine
 
 # 2) 启动 PicFast
 docker run -d \
   --name picfast \
-  -p 8080:8080 \
-  -e PICFAST_DATABASE_URL='postgres://picfast:picfast@host.docker.internal:5432/picfast?sslmode=disable' \
+  --network picfast-net \
+  -p 18080:8080 \
+  -e PICFAST_DATABASE_URL='postgres://picfast:picfast@picfast-db:5432/picfast?sslmode=disable' \
   -e PICFAST_JWT_SECRET='replace-with-a-strong-secret' \
-  -e PICFAST_SERVER_BASE_URL='http://localhost:8080' \
+  -e PICFAST_SERVER_BASE_URL='http://localhost:18080' \
   -e PICFAST_APP_ADMIN_EMAIL='admin@example.com' \
   -e PICFAST_APP_ADMIN_PASSWORD='change-this-password' \
   -v picfast-uploads:/app/data/uploads \
@@ -263,7 +268,15 @@ docker run -d \
   xbeta/picfast:latest
 ```
 
-启动后访问 `http://localhost:8080`。线上建议保持应用监听 `8080`，由反向代理统一处理域名与 HTTPS。
+启动后访问 `http://localhost:18080`。线上建议保持应用监听容器内 `8080`，由反向代理统一处理域名与 HTTPS。
+
+清理（删除容器 + 数据卷 + 网络）：
+
+```bash
+docker rm -f picfast picfast-db 2>/dev/null || true
+docker volume rm picfast-pgdata picfast-uploads picfast-thumbnails 2>/dev/null || true
+docker network rm picfast-net 2>/dev/null || true
+```
 
 ### 拉取镜像
 
@@ -274,10 +287,11 @@ docker pull xbeta/picfast:latest
 ### 运行示例
 
 ```bash
+# 如果使用你自己的 PostgreSQL，请将 HOST/USER/PASSWORD/DB 替换为实际值
 docker run -d \
   --name picfast \
-  -p 8080:8080 \
-  -e PICFAST_DATABASE_URL='postgres://picfast:picfast@host.docker.internal:5432/picfast?sslmode=disable' \
+  -p 18080:8080 \
+  -e PICFAST_DATABASE_URL='postgres://USER:PASSWORD@HOST:5432/DB?sslmode=disable' \
   -e PICFAST_JWT_SECRET='replace-with-a-strong-secret' \
   -e PICFAST_SERVER_BASE_URL='https://picfast.example.com' \
   -e PICFAST_APP_ADMIN_EMAIL='admin@example.com' \
