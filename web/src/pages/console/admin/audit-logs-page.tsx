@@ -82,6 +82,7 @@ export function AdminAuditLogsPage() {
     queryKey: ['admin-audit-logs', page, action, resourceType],
     queryFn: () => listAdminAuditLogs({ page, page_size: pageSize, action, resource_type: resourceType }),
   })
+  const totalPages = data ? (data.total_pages > 0 ? data.total_pages : Math.max(1, Math.ceil(data.total / pageSize))) : 1
 
   return (
     <section className="space-y-6">
@@ -245,7 +246,10 @@ export function AdminAuditLogsPage() {
                 <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="h-8 rounded-lg border border-input px-3 text-xs disabled:opacity-50">
                   {t('admin.prev')}
                 </button>
-                <button type="button" disabled={page * pageSize >= data.total} onClick={() => setPage((p) => p + 1)} className="h-8 rounded-lg border border-input px-3 text-xs disabled:opacity-50">
+                <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-lg border border-input bg-background px-2 text-xs text-muted-foreground">
+                  {page} / {totalPages}
+                </span>
+                <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="h-8 rounded-lg border border-input px-3 text-xs disabled:opacity-50">
                   {t('admin.next')}
                 </button>
               </div>

@@ -22,11 +22,13 @@ export function AdminUsersPage() {
   const qc = useQueryClient()
   const [page, setPage] = useState(1)
   const [keyword, setKeyword] = useState('')
+  const pageSize = 20
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-users', page, keyword],
-    queryFn: () => listAdminUsers({ page, page_size: 20, keyword: keyword || undefined }),
+    queryFn: () => listAdminUsers({ page, page_size: pageSize, keyword: keyword || undefined }),
   })
+  const totalPages = data ? (data.total_pages > 0 ? data.total_pages : Math.max(1, Math.ceil(data.total / pageSize))) : 1
 
   const { data: groups = [] } = useQuery({
     queryKey: ['admin-groups'],
@@ -223,7 +225,7 @@ export function AdminUsersPage() {
             </table>
           </div>
 
-          {data.total > 20 && (
+          {data.total > pageSize && (
             <div className="flex items-center justify-between pt-4">
               <span className="text-xs text-muted-foreground">{t('admin.pagination', { total: data.total })}</span>
               <div className="flex gap-2">
@@ -236,9 +238,12 @@ export function AdminUsersPage() {
                 >
                   <ChevronLeft className="size-4" />
                 </button>
+                <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-lg border border-input bg-background px-2 text-xs text-muted-foreground">
+                  {page} / {totalPages}
+                </span>
                 <button 
                   type="button" 
-                  disabled={page * 20 >= data.total} 
+                  disabled={page >= totalPages} 
                   onClick={() => setPage((p) => p + 1)} 
                   title={t('admin.next')}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"

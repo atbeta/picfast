@@ -1101,6 +1101,9 @@ components:
         size:
           type: integer
           format: int32
+        total_pages:
+          type: integer
+          format: int32
 
     AuthResponse:
       type: object

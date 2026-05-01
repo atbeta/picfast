@@ -15,11 +15,13 @@ export function AlbumsPage() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
+  const pageSize = 20
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['albums', page],
-    queryFn: () => listAlbums(page, 20),
+    queryFn: () => listAlbums(page, pageSize),
   })
+  const totalPages = data ? (data.total_pages > 0 ? data.total_pages : Math.max(1, Math.ceil(data.total / pageSize))) : 1
 
   // Create
   const [showCreate, setShowCreate] = useState(false)
@@ -270,7 +272,7 @@ export function AlbumsPage() {
         </div>
       )}
 
-      {data && data.total > 20 && (
+      {data && data.total > pageSize && (
         <div className="flex items-center justify-between border-t border-border/50 pt-4">
           <span className="text-sm text-muted-foreground">{t('albums.pagination', { total: data.total })}</span>
           <div className="flex gap-2">
@@ -283,9 +285,12 @@ export function AlbumsPage() {
             >
               <ChevronLeft className="size-4" />
             </button>
+            <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-lg border border-input bg-background px-2 text-xs text-muted-foreground">
+              {page} / {totalPages}
+            </span>
             <button 
               type="button" 
-              disabled={page * 20 >= data.total} 
+              disabled={page >= totalPages} 
               onClick={() => setPage((p) => p + 1)} 
               title={t('albums.next')}
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"

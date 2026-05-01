@@ -40,6 +40,7 @@ export function ImagesPage() {
     queryKey: ['images', page, albumId],
     queryFn: () => listImages(page, pageSize, albumId),
   })
+  const totalPages = data ? (data.total_pages > 0 ? data.total_pages : Math.max(1, Math.ceil(data.total / pageSize))) : 1
 
   // Detail modal
   const [detail, setDetail] = useState<ImageItem | null>(null)
@@ -389,7 +390,10 @@ export function ImagesPage() {
                 <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} title={t('images.prev')} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background text-xs font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
                   <ChevronLeft className="size-4" />
                 </button>
-                <button type="button" disabled={page * pageSize >= data.total} onClick={() => setPage((p) => p + 1)} title={t('images.next')} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background text-xs font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
+                <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-lg border border-input bg-background px-2 text-xs text-muted-foreground">
+                  {page} / {totalPages}
+                </span>
+                <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} title={t('images.next')} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background text-xs font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
                   <ChevronRight className="size-4" />
                 </button>
               </div>

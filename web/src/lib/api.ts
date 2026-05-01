@@ -14,6 +14,7 @@ export interface PaginatedData<T> {
   total: number
   page: number
   size: number
+  total_pages: number
 }
 
 const api = axios.create({
