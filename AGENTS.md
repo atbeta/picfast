@@ -1,0 +1,105 @@
+# AGENTS.md
+
+本文件定义本仓库中 AI/协作者的工作约定，目标是：减少沟通成本、统一提交质量、降低回归风险。
+
+## 1) 项目速览（来自 README 的必要信息）
+
+- 项目：`PicFast`，图床/图片托管服务（Go 后端 + React 前端）
+- 后端：`Go 1.26`、`Chi`、`pgx/v5`、`sqlc`、`JWT`
+- 前端：`React 19`、`TypeScript`、`Vite`、`Tailwind CSS v4`
+- 数据库：`PostgreSQL 16`
+- 常见模块：
+  - `internal/handler`：HTTP handlers 与 middleware
+  - `internal/service`：核心业务逻辑
+  - `internal/sqlc`：sqlc 生成代码
+  - `migrations`：数据库迁移
+  - `web`：前端应用
+
+## 2) 本地开发与验证命令（最小必备）
+
+- 启动依赖：`make docker-up`
+- 迁移与种子：`make migrate-up && make seed`
+- 启动服务：`make dev`（或分别启动前后端）
+- 质量检查：`make test && make lint`
+
+说明：除非任务明确只改文档，否则在结束前应至少执行与改动范围匹配的测试/检查。
+
+## 3) 代码变更原则
+
+- 优先做最小必要改动，避免顺手重构无关代码。
+- 涉及接口/行为变更时，补充或更新对应测试。
+- 不提交密钥、凭据、`.env` 等敏感信息。
+- 若改动包含生成文件（如 sqlc 产物），应在提交说明中明确“为何需要生成更新”。
+- 新增或修改前端用户可见文案时，必须同步更新中英文资源（例如 `web/src/i18n/resources.ts` 对应键）。
+- 不允许只更新单语文案后直接合入；如确有例外，需要在提交说明写明补齐计划。
+
+## 4) 提交信息规范（Commit Composer，Changelog-first 的精简版）
+
+> 目标：每个提交表达**单一意图**，并清楚交代 why/impact。
+
+### 4.1 前置输入槽位（必须先补齐）
+
+在写 commit message 前，先提炼以下 5 个槽位：
+
+```text
+scope: <module>
+changed: <key files or changes>
+why: <reason>
+impact: <user-visible behavior>
+risk: <compat / rollback / migration>
+```
+
+### 4.2 type 白名单（必须）
+
+- `feat`: 新增用户能力
+- `fix`: 修复错误行为
+- `perf`: 用户可感知性能改善
+- `refactor`: 内部重构，无对外行为变化
+- `style`: 纯视觉/格式/排版
+- `docs`: 文档
+- `chore`: 工具链/流程/依赖/发布杂项
+
+### 4.3 固定输出格式
+
+```text
+<type(scope): subject <=72 chars, single intent>
+
+- <why>
+- <impact>
+[- <risk or technical note>]
+[- <extra impact>]
+```
+
+约束：
+
+- subject 必须单一意图，避免使用 `and/with/consolidate` 拼接多目标。
+- `feat/fix/perf` 的 subject 应使用“用户结果表达”，不要写实现细节。
+- 当 staged 文件数 `>= 4` 时，body 必须包含 `2-4` 条 bullet。
+- `risk` 可按需出现；本仓库不强制每次都写 changelog/release note 行。
+
+### 4.4 失败回退策略
+
+- 信息不全：先给出 `2-3` 个候选 subject（可含不同 type），并标注缺失槽位。
+- type 不明确：默认 `fix` 或 `chore`，并提示人工确认。
+
+### 4.5 提交前自检清单
+
+- [ ] subject 单一意图，且 `<=72` 字符
+- [ ] type 在白名单内
+- [ ] 多文件提交时，body 满足 `2-4` 条 bullet
+- [ ] 第一条解释 why，第二条解释 impact
+- [ ] 无敏感信息或无关噪音文件
+
+## 5) 发布与版本流（release-please）
+
+- 本仓库使用 `release-please` 驱动版本与 Release PR（见 `.github/workflows/release-please.yml`）。
+- 合入 `main` 的提交应尽量遵循 Conventional Commits，以便正确生成版本与变更日志。
+- 影响发布语义的改动优先使用 `feat`/`fix`/`perf`；纯维护项使用 `chore`/`docs`/`refactor`。
+- 需要触发明确版本说明时，在提交 body 中写清用户可感知影响，避免仅描述实现细节。
+
+## 6) 建议工作流
+
+1. 先看改动范围（按模块理解影响面）。
+2. 完成代码与测试后，再组织 commit message（不要倒序）。
+3. 一次提交只解决一个发布意图；复杂任务拆成多个提交。
+
