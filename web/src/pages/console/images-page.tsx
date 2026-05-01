@@ -8,6 +8,7 @@ import { deleteImage, getImage, listImages, updateImage } from '../../lib/consol
 import type { ImageItem } from '../../lib/console-api'
 import { formatFileSize } from '../../lib/upload'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { EmptyState, LoadingState } from '@/components/page-states'
 import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
@@ -165,9 +166,7 @@ export function ImagesPage() {
       )}
 
       {isLoading && (
-        <div className="flex justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        </div>
+        <LoadingState />
       )}
       {error && (
         <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -175,12 +174,11 @@ export function ImagesPage() {
         </p>
       )}
       {data && data.items.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="mb-3 rounded-full bg-muted p-3">
-            <ImageIcon className="size-6 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-medium text-muted-foreground">{t('images.empty')}</p>
-        </div>
+        <EmptyState
+          icon={<ImageIcon className="size-6 text-muted-foreground" />}
+          title={t('images.empty')}
+          description={t('images.emptyDesc', { defaultValue: '上传后的图片会出现在这里。' })}
+        />
       )}
 
       {data && data.items.length > 0 && (
@@ -257,7 +255,7 @@ export function ImagesPage() {
             <DialogTitle>{t('images.detailTitle', { defaultValue: '图片详情' })}</DialogTitle>
           </DialogHeader>
 
-          {detailLoading && <div className="flex justify-center py-4"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}
+          {detailLoading && <LoadingState compact className="py-6" />}
 
           {detail && (
             <>

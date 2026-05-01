@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Database } from 'lucide-react'
 
 import {
   createAdminStrategy,
@@ -12,6 +12,7 @@ import {
   type AdminStrategy,
 } from '../../../lib/admin-api'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { EmptyState, LoadingState } from '@/components/page-states'
 import {
   Dialog,
   DialogContent,
@@ -245,9 +246,15 @@ export function AdminStrategiesPage() {
         </DialogContent>
       </Dialog>
 
-      {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}
+      {isLoading && <LoadingState />}
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
-      {strategies && strategies.length === 0 && <p className="py-12 text-center text-sm text-muted-foreground">{t('admin.empty')}</p>}
+      {strategies && strategies.length === 0 && (
+        <EmptyState
+          icon={<Database className="size-6 text-muted-foreground" />}
+          title={t('admin.empty')}
+          description={t('admin.strategiesEmptyDesc', { defaultValue: '先创建一个本地或 S3 策略，分组和上传才能真正用起来。' })}
+        />
+      )}
 
       {strategies && strategies.length > 0 && (
         <div className="divide-y divide-border/50">

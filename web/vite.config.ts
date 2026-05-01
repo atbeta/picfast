@@ -11,6 +11,41 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return undefined
+          }
+
+          if (id.includes('react') || id.includes('scheduler')) {
+            return 'react-vendor'
+          }
+          if (id.includes('react-router')) {
+            return 'router-vendor'
+          }
+          if (id.includes('@tanstack/react-query')) {
+            return 'query-vendor'
+          }
+          if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform/resolvers')) {
+            return 'form-vendor'
+          }
+          if (id.includes('i18next') || id.includes('react-i18next')) {
+            return 'i18n-vendor'
+          }
+          if (id.includes('lucide-react')) {
+            return 'icon-vendor'
+          }
+          if (id.includes('sonner')) {
+            return 'toast-vendor'
+          }
+
+          return 'vendor'
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/api': 'http://localhost:8080',

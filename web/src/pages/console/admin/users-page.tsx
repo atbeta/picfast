@@ -2,11 +2,12 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Ban, Unlock, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Ban, Unlock, Trash2, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 
 import { deleteAdminUser, listAdminUsers, updateAdminUser } from '../../../lib/admin-api'
 import { formatFileSize } from '../../../lib/upload'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { EmptyState, LoadingState } from '@/components/page-states'
 
 export function AdminUsersPage() {
   const { t } = useTranslation()
@@ -67,10 +68,16 @@ export function AdminUsersPage() {
       />
 
       {isLoading && (
-        <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+        <LoadingState />
       )}
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
-      {data && data.items.length === 0 && <p className="py-12 text-center text-sm text-muted-foreground">{t('admin.empty')}</p>}
+      {data && data.items.length === 0 && (
+        <EmptyState
+          icon={<Users className="size-6 text-muted-foreground" />}
+          title={t('admin.empty')}
+          description={t('admin.usersEmptyDesc', { defaultValue: '等有用户注册或被创建后，这里会显示账户列表。' })}
+        />
+      )}
 
       {data && data.items.length > 0 && (
         <>

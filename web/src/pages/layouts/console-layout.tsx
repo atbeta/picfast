@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ImagePlus } from 'lucide-react'
@@ -49,24 +50,25 @@ export function ConsoleLayout() {
       <div className="relative z-10 mx-auto flex flex-col md:grid w-full max-w-[1400px] md:grid-cols-[240px_1fr] gap-6 md:gap-8 px-4 md:px-6 py-6 md:py-8">
         <aside className="w-full md:block">
           <div className="md:sticky md:top-24 space-y-1">
-            <div className="flex overflow-x-auto md:flex-col gap-2 pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+            <MobileNavRail>
               <ConsoleNavItem to="/console/upload" label={t('nav.upload')} />
               <ConsoleNavItem to="/console/images" label={t('nav.images')} />
               <ConsoleNavItem to="/console/albums" label={t('nav.albums')} />
               <ConsoleNavItem to="/console/api-tokens" label={t('nav.apiTokens')} />
+              <ConsoleNavItem to="/console/integrations" label={t('integrations.title', { defaultValue: '集成与工具' })} />
               <ConsoleNavItem to="/console/settings" label={t('nav.settings')} />
-            </div>
+            </MobileNavRail>
             {user?.role === 'admin' && (
               <div className="pt-2 md:pt-4">
                 <p className="px-4 pb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/70 hidden md:block">{t('nav.admin')}</p>
-                <div className="flex overflow-x-auto md:flex-col gap-2 pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+                <MobileNavRail>
                   <ConsoleNavItem to="/console/admin" label={t('admin.navDashboard', { defaultValue: '概览' })} />
                   <ConsoleNavItem to="/console/admin/users" label={t('admin.navUsers')} />
                   <ConsoleNavItem to="/console/admin/groups" label={t('admin.navGroups')} />
                   <ConsoleNavItem to="/console/admin/strategies" label={t('admin.navStrategies')} />
                   <ConsoleNavItem to="/console/admin/images" label={t('admin.navImages')} />
                   <ConsoleNavItem to="/console/admin/settings" label={t('admin.navSettings')} />
-                </div>
+                </MobileNavRail>
               </div>
             )}
           </div>
@@ -77,6 +79,18 @@ export function ConsoleLayout() {
           </div>
         </main>
       </div>
+    </div>
+  )
+}
+
+function MobileNavRail({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative">
+      <div className="flex overflow-x-auto md:flex-col gap-2 pb-2 md:pb-0 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+        {children}
+      </div>
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-linear-to-r from-background via-background/80 to-transparent md:hidden" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-linear-to-l from-background via-background/80 to-transparent md:hidden" />
     </div>
   )
 }

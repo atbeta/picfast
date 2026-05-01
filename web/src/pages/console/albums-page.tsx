@@ -7,6 +7,7 @@ import { Plus, Pencil, Trash2, Image as ImageIcon, ChevronLeft, ChevronRight } f
 import { createAlbum, deleteAlbum, listAlbums, listImages, updateAlbum } from '../../lib/console-api'
 import type { ImageItem } from '../../lib/console-api'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { EmptyState, LoadingState } from '@/components/page-states'
 import {
   Dialog,
   DialogContent,
@@ -184,9 +185,7 @@ export function AlbumsPage() {
       )}
 
       {isLoading && (
-        <div className="flex justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        </div>
+        <LoadingState />
       )}
       {error && (
         <p className="rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
@@ -194,12 +193,12 @@ export function AlbumsPage() {
         </p>
       )}
       {data && data.items.length === 0 && (
-        <div className="flex min-h-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 py-16 text-center">
-          <div className="mb-4 rounded-full bg-muted/50 p-4">
-            <ImageIcon className="size-8 text-muted-foreground/60" />
-          </div>
-          <p className="text-sm font-medium text-muted-foreground">{t('albums.empty')}</p>
-        </div>
+        <EmptyState
+          icon={<ImageIcon className="size-8 text-muted-foreground/60" />}
+          title={t('albums.empty')}
+          description={t('albums.emptyDesc', { defaultValue: '创建相册后，就可以更轻松地整理图片。' })}
+          className="min-h-[300px]"
+        />
       )}
 
       {/* Album card grid */}
@@ -320,18 +319,16 @@ export function AlbumsPage() {
           </DialogHeader>
 
           {albumImagesLoading && (
-            <div className="flex justify-center py-12">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            </div>
+            <LoadingState compact className="py-10" />
           )}
 
           {!albumImagesLoading && albumImages.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="mb-3 rounded-full bg-muted/50 p-3">
-                <ImageIcon className="size-6 text-muted-foreground/60" />
-              </div>
-              <p className="text-sm font-medium text-muted-foreground">{t('albums.noImages', { defaultValue: '相册内暂无图片' })}</p>
-            </div>
+            <EmptyState
+              icon={<ImageIcon className="size-6 text-muted-foreground/60" />}
+              title={t('albums.noImages', { defaultValue: '相册内暂无图片' })}
+              description={t('albums.noImagesDesc', { defaultValue: '给图片设置相册后，就会在这里展示。' })}
+              compact
+            />
           )}
 
           {!albumImagesLoading && albumImages.length > 0 && (

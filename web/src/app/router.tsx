@@ -1,25 +1,38 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, type ReactNode } from 'react'
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 
+import { useQuery } from '@tanstack/react-query'
+
+import { LoadingState } from '../components/page-states'
 import { useAuth } from '../lib/auth-context'
 import { getSiteConfig, type SiteConfig } from '../lib/site-config'
 import { ConsoleLayout } from '../pages/layouts/console-layout'
 import { PublicLayout } from '../pages/layouts/public-layout'
-import { AlbumsPage } from '../pages/console/albums-page'
-import { ApiTokensPage } from '../pages/console/api-tokens-page'
-import { ImagesPage } from '../pages/console/images-page'
-import { SettingsPage } from '../pages/console/settings-page'
-import { UploadPage } from '../pages/console/upload-page'
-import { AdminUsersPage } from '../pages/console/admin/users-page'
-import { AdminGroupsPage } from '../pages/console/admin/groups-page'
-import { AdminStrategiesPage } from '../pages/console/admin/strategies-page'
-import { AdminImagesPage } from '../pages/console/admin/images-page'
-import { AdminSettingsPage } from '../pages/console/admin/settings-page'
-import { AdminDashboardPage } from '../pages/console/admin/dashboard-page'
-import { GuestUploadPage } from '../pages/public/guest-upload-page'
-import { LoginPage } from '../pages/public/login-page'
-import { RegisterPage } from '../pages/public/register-page'
-import { VerifyEmailPage } from '../pages/public/verify-email-page'
+
+const AlbumsPage = lazy(async () => ({ default: (await import('../pages/console/albums-page')).AlbumsPage }))
+const ApiTokensPage = lazy(async () => ({ default: (await import('../pages/console/api-tokens-page')).ApiTokensPage }))
+const ImagesPage = lazy(async () => ({ default: (await import('../pages/console/images-page')).ImagesPage }))
+const SettingsPage = lazy(async () => ({ default: (await import('../pages/console/settings-page')).SettingsPage }))
+const IntegrationsPage = lazy(async () => ({ default: (await import('../pages/console/integrations-page')).IntegrationsPage }))
+const UploadPage = lazy(async () => ({ default: (await import('../pages/console/upload-page')).UploadPage }))
+const AdminUsersPage = lazy(async () => ({ default: (await import('../pages/console/admin/users-page')).AdminUsersPage }))
+const AdminGroupsPage = lazy(async () => ({ default: (await import('../pages/console/admin/groups-page')).AdminGroupsPage }))
+const AdminStrategiesPage = lazy(async () => ({ default: (await import('../pages/console/admin/strategies-page')).AdminStrategiesPage }))
+const AdminImagesPage = lazy(async () => ({ default: (await import('../pages/console/admin/images-page')).AdminImagesPage }))
+const AdminSettingsPage = lazy(async () => ({ default: (await import('../pages/console/admin/settings-page')).AdminSettingsPage }))
+const AdminDashboardPage = lazy(async () => ({ default: (await import('../pages/console/admin/dashboard-page')).AdminDashboardPage }))
+const GuestUploadPage = lazy(async () => ({ default: (await import('../pages/public/guest-upload-page')).GuestUploadPage }))
+const LoginPage = lazy(async () => ({ default: (await import('../pages/public/login-page')).LoginPage }))
+const RegisterPage = lazy(async () => ({ default: (await import('../pages/public/register-page')).RegisterPage }))
+const VerifyEmailPage = lazy(async () => ({ default: (await import('../pages/public/verify-email-page')).VerifyEmailPage }))
+
+function PageLoader() {
+  return <LoadingState className="min-h-[40vh]" compact />
+}
+
+function LazyPage({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>
+}
 
 function RequireAuth() {
   const { isAuthenticated, isLoading } = useAuth()
@@ -52,17 +65,12 @@ function RequireAdmin() {
 }
 
 function PublicRoutes() {
-  const [config, setConfig] = useState<SiteConfig | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data: config, isLoading } = useQuery<SiteConfig>({
+    queryKey: ['site-config'],
+    queryFn: getSiteConfig,
+  })
 
-  useEffect(() => {
-    getSiteConfig()
-      .then(setConfig)
-      .catch(() => setConfig(null))
-      .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -77,19 +85,23 @@ function PublicRoutes() {
           path="/"
           element={
             config?.allow_guest_upload ? (
-              <GuestUploadPage />
+              <LazyPage>
+                <GuestUploadPage />
+              </LazyPage>
             ) : (
               <Navigate to="/login" replace />
             )
           }
         />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/login" element={<LazyPage><LoginPage /></LazyPage>} />
+        <Route path="/verify-email" element={<LazyPage><VerifyEmailPage /></LazyPage>} />
         <Route
           path="/register"
           element={
             config?.allow_registration ? (
-              <RegisterPage />
+              <LazyPage>
+                <RegisterPage />
+              </LazyPage>
             ) : (
               <Navigate to="/login" replace />
             )
@@ -99,18 +111,19 @@ function PublicRoutes() {
 
       <Route element={<RequireAuth />}>
         <Route path="/console" element={<ConsoleLayout />}>
-          <Route path="upload" element={<UploadPage />} />
-          <Route path="images" element={<ImagesPage />} />
-          <Route path="albums" element={<AlbumsPage />} />
-          <Route path="api-tokens" element={<ApiTokensPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route path="upload" element={<LazyPage><UploadPage /></LazyPage>} />
+          <Route path="images" element={<LazyPage><ImagesPage /></LazyPage>} />
+          <Route path="albums" element={<LazyPage><AlbumsPage /></LazyPage>} />
+          <Route path="api-tokens" element={<LazyPage><ApiTokensPage /></LazyPage>} />
+          <Route path="integrations" element={<LazyPage><IntegrationsPage /></LazyPage>} />
+          <Route path="settings" element={<LazyPage><SettingsPage /></LazyPage>} />
           <Route path="admin" element={<RequireAdmin />}>
-            <Route index element={<AdminDashboardPage />} />
-            <Route path="users" element={<AdminUsersPage />} />
-            <Route path="groups" element={<AdminGroupsPage />} />
-            <Route path="strategies" element={<AdminStrategiesPage />} />
-            <Route path="images" element={<AdminImagesPage />} />
-            <Route path="settings" element={<AdminSettingsPage />} />
+            <Route index element={<LazyPage><AdminDashboardPage /></LazyPage>} />
+            <Route path="users" element={<LazyPage><AdminUsersPage /></LazyPage>} />
+            <Route path="groups" element={<LazyPage><AdminGroupsPage /></LazyPage>} />
+            <Route path="strategies" element={<LazyPage><AdminStrategiesPage /></LazyPage>} />
+            <Route path="images" element={<LazyPage><AdminImagesPage /></LazyPage>} />
+            <Route path="settings" element={<LazyPage><AdminSettingsPage /></LazyPage>} />
             <Route index element={<Navigate to="/console/admin/users" replace />} />
           </Route>
           <Route index element={<Navigate to="/console/upload" replace />} />

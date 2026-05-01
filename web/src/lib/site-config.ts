@@ -8,15 +8,7 @@ export interface SiteConfig {
   base_url: string
 }
 
-let cachedConfig: SiteConfig | null = null
-
 export async function getSiteConfig(): Promise<SiteConfig> {
-  if (cachedConfig) return cachedConfig
   const res = await api.get<{ status: boolean; data: SiteConfig }>('/config')
-  cachedConfig = res.data.data
-  return cachedConfig
-}
-
-export function clearSiteConfigCache() {
-  cachedConfig = null
+  return res.data.data
 }

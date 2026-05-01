@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, FolderTree } from 'lucide-react'
 
 import {
   createAdminGroup,
@@ -14,6 +14,7 @@ import {
   type AdminGroup,
 } from '../../../lib/admin-api'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { EmptyState, LoadingState } from '@/components/page-states'
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,19 @@ interface GroupForm {
   limit_per_day: number
   limit_per_month: number
   strategy_ids: number[]
+}
+
+const commonExtensions = ['jpeg', 'jpg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico']
+
+function parseExtensions(value: string): string[] {
+  return Array.from(
+    new Set(
+      value
+        .split(',')
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  )
 }
 
 function emptyForm(): GroupForm {
@@ -60,7 +74,7 @@ function groupToForm(g: AdminGroup): GroupForm {
 function formToConfigs(form: GroupForm) {
   return {
     maximum_file_size: form.max_size * 1048576,
-    accepted_extensions: form.extensions.split(',').map((s) => s.trim()).filter(Boolean),
+    accepted_extensions: parseExtensions(form.extensions),
     limit_per_day: form.limit_per_day,
     limit_per_month: form.limit_per_month,
   }
@@ -207,9 +221,42 @@ export function AdminGroupsPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-medium text-foreground">{t('admin.extensions', { defaultValue: '允许格式' })}</label>
-              <input value={form.extensions} onChange={(e) => update('extensions', e.target.value)} placeholder="jpg,png,gif,webp" className={inputCls} />
+              <div className="flex flex-wrap gap-4">
+                {commonExtensions.map((ext) => {
+                  const exts = parseExtensions(form.extensions)
+                  const checked = exts.includes(ext)
+                  const toggleExt = () => {
+                    const newExts = checked ? exts.filter(e => e !== ext) : [...exts, ext]
+                    update('extensions', newExts.join(','))
+                  }
+                  return (
+                    <label key={ext} className="flex items-center gap-2 cursor-pointer group">
+                      <Switch checked={checked} onCheckedChange={toggleExt} />
+                      <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors uppercase">{ext}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <div className="space-y-2 rounded-lg border border-dashed border-border/70 bg-muted/20 px-3 py-3">
+                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  {t('admin.extensionsCustom', { defaultValue: '自定义格式' })}
+                </label>
+                <input
+                  value={parseExtensions(form.extensions).filter((ext) => !commonExtensions.includes(ext)).join(', ')}
+                  onChange={(e) => {
+                    const customExtensions = parseExtensions(e.target.value)
+                    const selectedCommon = parseExtensions(form.extensions).filter((ext) => commonExtensions.includes(ext))
+                    update('extensions', [...selectedCommon, ...customExtensions].join(','))
+                  }}
+                  placeholder="avif,heic,jxl"
+                  className={inputCls}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t('admin.extensionsCustomHint', { defaultValue: '常用格式可直接开关，自定义格式继续用逗号补充。' })}
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -254,9 +301,15 @@ export function AdminGroupsPage() {
         </DialogContent>
       </Dialog>
 
-      {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}
+      {isLoading && <LoadingState />}
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
-      {groups && groups.length === 0 && <p className="py-12 text-center text-sm text-muted-foreground">{t('admin.empty')}</p>}
+      {groups && groups.length === 0 && (
+        <EmptyState
+          icon={<FolderTree className="size-6 text-muted-foreground" />}
+          title={t('admin.empty')}
+          description={t('admin.groupsEmptyDesc', { defaultValue: '创建分组后，可以为不同用户配置容量、格式和策略权限。' })}
+        />
+      )}
 
       {groups && groups.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">

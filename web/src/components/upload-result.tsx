@@ -36,7 +36,7 @@ function CopyButton({ text }: { text: string }) {
           type="button"
           onClick={copy}
           title={copied ? t('upload.copied') : t('upload.copy')}
-          className="shrink-0 flex items-center justify-center h-8 w-8 rounded-md bg-background/50 border border-border/50 text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 shadow-sm cursor-pointer active:scale-95 hover:scale-105"
+          className="shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-background/50 border border-border/50 text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 shadow-sm cursor-pointer active:scale-95 hover:scale-105"
         >
       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
     </button>
@@ -47,7 +47,7 @@ function CopyRow({ item }: { item: CopyItem }) {
   return (
     <div className="group flex items-center gap-3 rounded-lg bg-muted/30 px-4 py-2.5 transition-all duration-300 hover:bg-muted/50 border border-border/40 hover:border-primary/30 hover:shadow-sm">
       <span className="shrink-0 w-20 text-xs font-semibold tracking-wider text-muted-foreground uppercase">{item.label}</span>
-      <code className="min-w-0 flex-1 truncate text-sm font-medium text-foreground bg-background/50 px-2.5 py-1 rounded-md border border-border/40 shadow-inner">{item.value}</code>
+      <code className="min-w-0 flex-1 truncate text-sm font-medium text-foreground bg-background/50 px-2.5 py-1 rounded-lg border border-border/40 shadow-inner">{item.value}</code>
       <CopyButton text={item.value} />
     </div>
   )

@@ -70,6 +70,7 @@ func NewSetter(cfg *Config) *Setter {
 }
 
 func (s *Setter) SetAppName(name string)             { s.cfg.App.Name = name }
+func (s *Setter) SetBaseURL(url string)              { s.cfg.Server.BaseURL = url }
 func (s *Setter) SetAllowGuestUpload(v bool)         { s.cfg.App.AllowGuestUpload = v }
 func (s *Setter) SetAllowRegistration(v bool)        { s.cfg.App.AllowRegistration = v }
 func (s *Setter) SetRequireEmailVerification(v bool) { s.cfg.App.RequireEmailVerification = v }
@@ -146,5 +147,5 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.default_image_ttl", time.Duration(0))
 	v.SetDefault("app.admin_email", "")
 	v.SetDefault("app.admin_password", "")
-	v.SetDefault("app.moderation_mode", "disabled")
+	v.SetDefault("app.moderation_mode", "")
 }

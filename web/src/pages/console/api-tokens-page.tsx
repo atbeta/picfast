@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { PlugIcon, MonitorIcon, Copy, Trash2, KeyRound, Calendar, Clock, CheckCircle2, History } from 'lucide-react'
+import { Calendar, Clock, CheckCircle2, History, Trash2, Copy, KeyRound } from 'lucide-react'
 import { createApiToken, deleteApiToken, listApiTokens } from '../../lib/console-api'
-import { getSiteConfig } from '../../lib/site-config'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { EmptyState, LoadingState } from '@/components/page-states'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 
@@ -21,8 +21,9 @@ function formatDate(s?: string): string {
   return new Date(s).toLocaleString()
 }
 
-function trimTrailingSlash(value: string): string {
-  return value.replace(/\/+$/, '')
+function isExpiringSoon(s?: string): boolean {
+  if (!s || !isRealDate(s)) return false
+  return new Date(s).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000
 }
 
 export function ApiTokensPage() {
@@ -33,15 +34,10 @@ export function ApiTokensPage() {
     queryKey: ['api-tokens'],
     queryFn: listApiTokens,
   })
-  const { data: siteConfig } = useQuery({
-    queryKey: ['site-config'],
-    queryFn: getSiteConfig,
-  })
-
   // Create
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
-  const [newExpires, setNewExpires] = useState('')
+  const [newExpires, setNewExpires] = useState<string | undefined>(undefined)
   const [newScopes, setNewScopes] = useState<string[]>(['read', 'write'])
   const [creating, setCreating] = useState(false)
   const [createdToken, setCreatedToken] = useState<{ name: string; token: string } | null>(null)
@@ -52,7 +48,7 @@ export function ApiTokensPage() {
     try {
       const result = await createApiToken(
         newName.trim(),
-        newExpires || undefined,
+        newExpires,
         newScopes,
       )
       if (result.token) {
@@ -60,7 +56,7 @@ export function ApiTokensPage() {
       }
       setShowCreate(false)
       setNewName('')
-      setNewExpires('')
+      setNewExpires(undefined)
       setNewScopes(['read', 'write'])
       await qc.invalidateQueries({ queryKey: ['api-tokens'] })
     } catch (err: unknown) {
@@ -98,8 +94,12 @@ export function ApiTokensPage() {
   )
 
   const onCopy = async (text: string) => {
-    await navigator.clipboard.writeText(text)
-    toast.success(t('upload.copied'))
+    try {
+      await navigator.clipboard.writeText(text)
+      toast.success(t('upload.copied'))
+    } catch {
+      toast.error(t('upload.copyError'))
+    }
   }
 
   const toggleScope = (scope: string) => {
@@ -107,20 +107,6 @@ export function ApiTokensPage() {
       prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope],
     )
   }
-
-  const baseURL = trimTrailingSlash(siteConfig?.base_url || window.location.origin)
-  const mcpEndpoint = `${baseURL}/mcp`
-  const sharexConfigURL = `${baseURL}/api/v1/sharex/config`
-  const mcpConfigExample = `{
-  "mcpServers": {
-    "picfast": {
-      "url": "${mcpEndpoint}",
-      "headers": {
-        "Authorization": "Bearer ${createdToken?.token || '<YOUR_API_TOKEN>'}"
-      }
-    }
-  }
-}`
 
   return (
     <section className="space-y-6">
@@ -178,21 +164,23 @@ export function ApiTokensPage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">{t('tokens.expires', { defaultValue: '过期时间' }).replace('{{date}}', '')}</label>
-              <Select 
-                value={newExpires} 
-                onValueChange={(val) => val !== null && setNewExpires(val as string)}
+              <Select
+                value={newExpires ?? 'never'}
+                onValueChange={(val) =>
+                  setNewExpires(val === 'never' ? undefined : String(val))
+                }
                 items={{
-                  '': t('tokens.noExpiry'),
+                  never: t('tokens.noExpiry'),
                   '30d': `30 ${t('tokens.days')}`,
                   '90d': `90 ${t('tokens.days')}`,
-                  '1y': `1 ${t('tokens.year')}`
+                  '1y': `1 ${t('tokens.year')}`,
                 }}
               >
                 <SelectTrigger className="w-full bg-background/50 border-border/50">
                   <SelectValue placeholder={t('tokens.noExpiry')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('tokens.noExpiry')}</SelectItem>
+                  <SelectItem value="never">{t('tokens.noExpiry')}</SelectItem>
                   <SelectItem value="30d">30 {t('tokens.days')}</SelectItem>
                   <SelectItem value="90d">90 {t('tokens.days')}</SelectItem>
                   <SelectItem value="1y">1 {t('tokens.year')}</SelectItem>
@@ -227,7 +215,7 @@ export function ApiTokensPage() {
             </button>
             <button
               type="button"
-              onClick={() => { setShowCreate(false); setNewName(''); setNewExpires(''); setNewScopes(['read', 'write']) }}
+              onClick={() => { setShowCreate(false); setNewName(''); setNewExpires(undefined); setNewScopes(['read', 'write']) }}
               className="rounded-lg border border-border/50 bg-background px-5 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-all hover:bg-muted hover:text-foreground active:scale-95"
             >
               {t('tokens.cancel')}
@@ -237,9 +225,7 @@ export function ApiTokensPage() {
       )}
 
       {isLoading && (
-        <div className="flex justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        </div>
+        <LoadingState />
       )}
       {error && (
         <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -247,133 +233,184 @@ export function ApiTokensPage() {
         </p>
       )}
       {tokens && tokens.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="mb-3 rounded-full bg-muted p-3">
-            <KeyRound className="size-6 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-medium text-muted-foreground">{t('tokens.empty')}</p>
-        </div>
+        <EmptyState
+          icon={<KeyRound className="size-6 text-muted-foreground" />}
+          title={t('tokens.empty')}
+          description={t('tokens.emptyDesc', { defaultValue: '创建令牌后，就可以连接 MCP、ShareX 或其他自动化工具。' })}
+        />
       )}
 
       {tokens && tokens.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {tokens.map((tk) => (
-            <div key={tk.id} className="group relative flex flex-col justify-between rounded-xl border border-border/50 bg-card p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-1 hover:border-primary/30">
-              <div>
-                <div className="flex items-start justify-between">
-                  <p className="font-semibold text-foreground">{tk.name}</p>
+        <>
+          <div className="space-y-3 md:hidden">
+            {tokens.map((tk) => (
+              <div
+                key={tk.id}
+                className="rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-colors hover:border-primary/20"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="rounded-lg bg-muted/60 p-2">
+                        <KeyRound className="size-4 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">{tk.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {t('tokens.namePlaceholder', { defaultValue: '名称' })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {tk.scopes.map((scope) => (
+                        <span
+                          key={scope}
+                          className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary"
+                        >
+                          {scope}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setDeleteTarget(tk.id)}
                     disabled={deleting === tk.id}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer"
+                    className="shrink-0 rounded-lg p-2 text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
                     title={t('tokens.delete')}
                   >
                     <Trash2 className="size-4" />
                   </button>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="size-3.5" />
-                    <span>{formatDate(tk.created_at)}</span>
+
+                <div className="mt-4 grid gap-3 rounded-lg border border-border/40 bg-muted/20 p-3 text-xs sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <p className="font-medium text-muted-foreground">
+                      {t('tokens.lastUsedAt', { defaultValue: '上次使用' }).replace('{{date}}', '')}
+                    </p>
+                    {isRealDate(tk.last_used_at) ? (
+                      <div className="flex items-center gap-1.5 text-foreground">
+                        <History className="size-3.5 text-muted-foreground" />
+                        <span>{formatDate(tk.last_used_at)}</span>
+                      </div>
+                    ) : (
+                      <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        {t('tokens.neverUsed', { defaultValue: '从未使用' })}
+                      </span>
+                    )}
                   </div>
-                  {isRealDate(tk.expires_at) ? (
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="size-3.5 text-amber-500/70" />
-                      <span className="text-amber-500/90">{t('tokens.expires', { date: formatDate(tk.expires_at) })}</span>
+                  <div className="space-y-1">
+                    <p className="font-medium text-muted-foreground">
+                      {t('tokens.expires', { defaultValue: '过期时间' }).replace('{{date}}', '')}
+                    </p>
+                    {isRealDate(tk.expires_at) ? (
+                      <div className={`flex items-center gap-1.5 ${isExpiringSoon(tk.expires_at) ? 'text-destructive/90' : 'text-amber-500/90'}`}>
+                        <Clock className="size-3.5" />
+                        <span>{formatDate(tk.expires_at)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-success/90">
+                        <CheckCircle2 className="size-3.5" />
+                        <span>{t('tokens.noExpiry')}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <p className="font-medium text-muted-foreground">
+                      {t('common.createdAt', { defaultValue: '创建时间' })}
+                    </p>
+                    <div className="flex items-center gap-1.5 text-foreground">
+                      <Calendar className="size-3.5 text-muted-foreground" />
+                      <span>{formatDate(tk.created_at)}</span>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      <CheckCircle2 className="size-3.5 text-success/70" />
-                      <span className="text-success/90">{t('tokens.noExpiry')}</span>
-                    </div>
-                  )}
-                  {isRealDate(tk.last_used_at) && (
-                    <div className="flex items-center gap-1.5 w-full mt-1">
-                      <History className="size-3.5" />
-                      <span>{t('tokens.lastUsedAt', { defaultValue: '上次使用' })} {formatDate(tk.last_used_at)}</span>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
-              <div className="mt-5 flex gap-2">
-                {tk.scopes.map((scope) => (
-                  <span key={scope} className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-primary">
-                    {scope}
-                  </span>
+            ))}
+          </div>
+
+          <div className="hidden overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm md:block">
+            <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border/50 bg-muted/50 text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 font-medium">{t('tokens.namePlaceholder', { defaultValue: '名称' })}</th>
+                  <th className="px-4 py-3 font-medium">{t('tokens.scopes', { defaultValue: '权限' })}</th>
+                  <th className="px-4 py-3 font-medium">{t('tokens.lastUsedAt', { defaultValue: '上次使用' }).replace('{{date}}', '')}</th>
+                  <th className="px-4 py-3 font-medium">创建 / 过期</th>
+                  <th className="px-4 py-3 font-medium text-right">{t('common.actions', { defaultValue: '操作' })}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {tokens.map((tk) => (
+                  <tr key={tk.id} className="group hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      <div className="flex items-center gap-2">
+                        <KeyRound className="size-4 text-muted-foreground" />
+                        {tk.name}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1.5 flex-wrap">
+                        {tk.scopes.map((scope) => (
+                          <span key={scope} className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                            {scope}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {isRealDate(tk.last_used_at) ? (
+                        <div className="flex items-center gap-1.5">
+                          <History className="size-3.5" />
+                          {formatDate(tk.last_used_at)}
+                        </div>
+                      ) : (
+                        <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                          {t('tokens.neverUsed', { defaultValue: '从未使用' })}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Calendar className="size-3.5" />
+                          {formatDate(tk.created_at)}
+                        </div>
+                        {isRealDate(tk.expires_at) ? (
+                          <div className={`flex items-center gap-1.5 ${isExpiringSoon(tk.expires_at) ? 'text-destructive/90' : 'text-amber-500/90'}`}>
+                            <Clock className="size-3.5" />
+                            {formatDate(tk.expires_at)}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-success/90">
+                            <CheckCircle2 className="size-3.5" />
+                            {t('tokens.noExpiry')}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(tk.id)}
+                        disabled={deleting === tk.id}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed inline-flex"
+                        title={t('tokens.delete')}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </td>
+                  </tr>
                 ))}
-              </div>
-            </div>
-          ))}
-        </div>
+              </tbody>
+            </table>
+          </div>
+          </div>
+        </>
       )}
 
-      {/* Integration cards */}
-      <div className="border-t border-border/50 pt-6 mt-8">
-        <h2 className="mb-5 text-lg font-semibold tracking-tight">{t('integrations.title')}</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* MCP Server card */}
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="rounded-lg bg-info/10 p-1.5">
-                <PlugIcon className="size-4 text-info" />
-              </div>
-              <h3 className="text-sm font-medium">{t('integrations.mcpTitle')}</h3>
-            </div>
-            <p className="text-xs text-muted-foreground">{t('integrations.mcpDesc')}</p>
-            <div className="mt-3 space-y-2">
-              <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t('integrations.mcpEndpoint')}</label>
-              <div className="flex items-center gap-1.5">
-                <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs">{mcpEndpoint}</code>
-                <button type="button" onClick={() => onCopy(mcpEndpoint)} className="shrink-0 flex items-center justify-center rounded bg-muted w-7 h-7 hover:bg-muted/80 hover:text-foreground text-muted-foreground transition-colors cursor-pointer" title={t('upload.copy')}>
-                  <Copy className="size-3.5" />
-                </button>
-              </div>
-            </div>
-            <div className="mt-3 space-y-2">
-              <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t('integrations.mcpConfigExample')}</label>
-              <pre className="overflow-x-auto rounded bg-muted px-3 py-2 text-[11px] leading-5 text-muted-foreground">
-                <code>{mcpConfigExample}</code>
-              </pre>
-              <p className="text-[11px] text-muted-foreground">{t('integrations.mcpConfigHint')}</p>
-            </div>
-            <div className="mt-3">
-              <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t('integrations.quickStart')}</label>
-              <ol className="mt-1 list-inside list-decimal text-xs text-muted-foreground space-y-0.5">
-                <li>{t('integrations.step1')}</li>
-                <li>{t('integrations.step2')}</li>
-                <li>{t('integrations.step3')}</li>
-              </ol>
-            </div>
-          </div>
 
-          {/* ShareX card */}
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="rounded-lg bg-success/10 p-1.5">
-                <MonitorIcon className="size-4 text-success" />
-              </div>
-              <h3 className="text-sm font-medium">{t('integrations.sharexTitle')}</h3>
-            </div>
-            <p className="text-xs text-muted-foreground">{t('integrations.sharexDesc')}</p>
-            <div className="mt-3 space-y-2">
-              <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t('integrations.sharexEndpoint')}</label>
-              <div className="flex items-center gap-1.5">
-                <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs">{sharexConfigURL}</code>
-                <button type="button" onClick={() => onCopy(sharexConfigURL)} className="shrink-0 flex items-center justify-center rounded bg-muted w-7 h-7 hover:bg-muted/80 hover:text-foreground text-muted-foreground transition-colors cursor-pointer" title={t('upload.copy')}>
-                  <Copy className="size-3.5" />
-                </button>
-              </div>
-            </div>
-            <a
-              href={sharexConfigURL}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
-            >
-              {t('integrations.downloadConfig')}
-            </a>
-          </div>
-        </div>
-      </div>
 
       <ConfirmDialog
         open={deleteTarget !== null}

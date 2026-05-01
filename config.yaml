@@ -32,4 +32,4 @@ app:
   default_image_ttl: "0"       # 0 = no default expiration; e.g. "24h", "7d"
   admin_email: ""
   admin_password: ""
-  moderation_mode: "disabled"  # disabled | manual | auto (future)
+  moderation_mode: ""  # disabled | manual | auto (future)

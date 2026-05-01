@@ -92,7 +92,9 @@ func (h *APITokenHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var scopeList []string
-	_ = json.Unmarshal(token.Scopes, &scopeList)
+	if err := json.Unmarshal(token.Scopes, &scopeList); err != nil || scopeList == nil {
+		scopeList = []string{"read", "write"}
+	}
 
 	resp := apiTokenResponse{
 		ID:        token.ID,
@@ -124,7 +126,9 @@ func (h *APITokenHandler) List(w http.ResponseWriter, r *http.Request) {
 	items := make([]apiTokenResponse, len(tokens))
 	for i, t := range tokens {
 		var scopeList []string
-		_ = json.Unmarshal(t.Scopes, &scopeList)
+		if err := json.Unmarshal(t.Scopes, &scopeList); err != nil || scopeList == nil {
+			scopeList = []string{"read", "write"}
+		}
 		items[i] = apiTokenResponse{
 			ID:        t.ID,
 			Name:      t.Name,

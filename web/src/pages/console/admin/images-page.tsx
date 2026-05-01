@@ -2,11 +2,12 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Trash2, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react'
 
 import { deleteAdminImage, listAdminImages } from '../../../lib/admin-api'
 import { formatFileSize } from '../../../lib/upload'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { EmptyState, LoadingState } from '@/components/page-states'
 
 export function AdminImagesPage() {
   const { t } = useTranslation()
@@ -46,9 +47,15 @@ export function AdminImagesPage() {
     <input value={emailFilter} onChange={(e) => { setEmailFilter(e.target.value); setPage(1) }} placeholder={t('admin.searchEmail')} className="w-48 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
       </div>
 
-      {isLoading && <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}
+      {isLoading && <LoadingState />}
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
-      {data && data.items.length === 0 && <p className="py-12 text-center text-sm text-muted-foreground">{t('admin.empty')}</p>}
+      {data && data.items.length === 0 && (
+        <EmptyState
+          icon={<ImageIcon className="size-6 text-muted-foreground" />}
+          title={t('admin.empty')}
+          description={t('admin.imagesEmptyDesc', { defaultValue: '站点产生图片后，这里会汇总显示所有上传内容。' })}
+        />
+      )}
 
       {data && data.items.length > 0 && (
         <>
