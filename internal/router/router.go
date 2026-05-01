@@ -86,7 +86,14 @@ func New(
 	})
 
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
-	r.Get("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+	serveOpenAPISpec := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		spec, err := os.ReadFile("api/openapi.yaml")
 		if err != nil {
 			http.Error(w, "openapi spec not found", http.StatusNotFound)
@@ -96,7 +103,10 @@ func New(
 		if _, err := w.Write(spec); err != nil {
 			slog.Warn("failed to write openapi spec", "error", err)
 		}
-	})
+	}
+	r.Get("/openapi.yaml", serveOpenAPISpec)
+	r.Head("/openapi.yaml", serveOpenAPISpec)
+	r.Options("/openapi.yaml", serveOpenAPISpec)
 	r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
 		server := cfg.ServerSnapshot()
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
