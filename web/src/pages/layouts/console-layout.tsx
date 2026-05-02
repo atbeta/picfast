@@ -17,7 +17,8 @@ import {
   Globe,
   ScrollText,
   ShieldCheck,
-  BarChart3
+  BarChart3,
+  ShieldAlert
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -98,6 +99,7 @@ export function ConsoleLayout() {
                   <ConsoleNavItem to="/console/admin/groups" label={t('admin.navGroups')} icon={UsersRound} />
                   <ConsoleNavItem to="/console/admin/strategies" label={t('admin.navStrategies')} icon={Database} />
                   <ConsoleNavItem to="/console/admin/images" label={t('admin.navImages')} icon={Files} />
+                  <ConsoleNavItem to="/console/admin/moderation" label={t('admin.navModeration', { defaultValue: '审核管理' })} icon={ShieldAlert} />
                   <ConsoleNavItem to="/console/admin/audit-logs" label={t('admin.navAuditLogs', { defaultValue: '审计日志' })} icon={ScrollText} />
                   <ConsoleNavItem to="/console/admin/site" label={t('admin.navSiteSettings')} icon={Globe} />
                   <ConsoleNavItem to="/console/admin/access" label={t('admin.navAccessSettings')} icon={ShieldCheck} />

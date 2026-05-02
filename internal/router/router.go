@@ -376,7 +376,7 @@ func New(
 			r.Delete("/images/{id}", adminImageHandler.Delete)
 
 			// Content moderation (admin only)
-			modHandler := handler.NewModerationHandler(queries)
+			modHandler := handler.NewModerationHandler(queries, cfg.ServerSnapshot().BaseURL)
 			r.Get("/moderation/pending", modHandler.ListPending)
 			r.Post("/moderation/{id}/approve", modHandler.Approve)
 			r.Post("/moderation/{id}/reject", modHandler.Reject)

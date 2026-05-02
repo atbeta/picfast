@@ -7,17 +7,19 @@ import (
 	"strconv"
 
 	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
 )
 
 type ModerationHandler struct {
-	db *sqlc.Queries
+	db      *sqlc.Queries
+	baseURL string
 }
 
-func NewModerationHandler(db *sqlc.Queries) *ModerationHandler {
-	return &ModerationHandler{db: db}
+func NewModerationHandler(db *sqlc.Queries, baseURL string) *ModerationHandler {
+	return &ModerationHandler{db: db, baseURL: baseURL}
 }
 
 // ListPending returns images awaiting moderation review.
@@ -40,19 +42,25 @@ func (h *ModerationHandler) ListPending(w http.ResponseWriter, r *http.Request) 
 	}
 
 	items := make([]ImageListItem, len(images))
+	linkBuilder := service.LinkBuilder{BaseURL: h.baseURL}
 	for i, img := range images {
+		links := linkBuilder.BuildImageLinks(img.Key, img.Extension, img.Md5, img.OriginName)
 		items[i] = ImageListItem{
-			ID:         img.ID,
-			Key:        img.Key,
-			OriginName: img.OriginName,
-			SizeBytes:  img.SizeBytes,
-			Mimetype:   img.Mimetype,
-			Extension:  img.Extension,
-			Width:      img.Width,
-			Height:     img.Height,
-			Permission: img.Permission,
-			AlbumID:    domain.PgInt8PtrVal(img.AlbumID),
-			CreatedAt:  img.CreatedAt,
+			ID:               img.ID,
+			Key:              img.Key,
+			OriginName:       img.OriginName,
+			SizeBytes:        img.SizeBytes,
+			Mimetype:         img.Mimetype,
+			Extension:        img.Extension,
+			Width:            img.Width,
+			Height:           img.Height,
+			Permission:       img.Permission,
+			AlbumID:          domain.PgInt8PtrVal(img.AlbumID),
+			URL:              links.URL,
+			ThumbnailURL:     links.ThumbnailURL,
+			Links:            links,
+			ModerationStatus: img.ModerationStatus,
+			CreatedAt:        img.CreatedAt,
 		}
 	}
 

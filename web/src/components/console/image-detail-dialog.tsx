@@ -92,6 +92,16 @@ export function ImageDetailDialog({
                     </button>
                   </div>
                   <div className="flex flex-col gap-1 items-start">
+                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('images.moderationStatus', { defaultValue: '审核状态' })}</span>
+                    <span className={['rounded-lg px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase', image.moderation_status === 'approved' ? 'bg-success/10 text-success' : image.moderation_status === 'pending' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'].join(' ')}>
+                      {image.moderation_status === 'approved'
+                        ? t('images.moderationApproved', { defaultValue: '已通过' })
+                        : image.moderation_status === 'pending'
+                          ? t('images.moderationPending', { defaultValue: '待审核' })
+                          : t('images.moderationRejected', { defaultValue: '审核拒绝' })}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 items-start">
                     <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('images.album', { defaultValue: '相册' })}</span>
                     <Select
                       value={image.album_id?.toString() ?? 'none'}

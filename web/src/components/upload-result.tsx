@@ -4,6 +4,8 @@ import { formatFileSize } from '../lib/upload'
 import { Copy, Check, ExternalLink } from 'lucide-react'
 
 interface UploadResultLike {
+  permission?: number
+  moderation_status?: string
   origin_name: string
   size_bytes: number
   extension: string
@@ -54,6 +56,7 @@ function CopyRow({ item }: { item: CopyItem }) {
 }
 
 export function UploadResultCard({ result }: UploadResultCardProps) {
+  const { t } = useTranslation()
   const items: CopyItem[] = [
     { label: 'URL', value: result.links.url },
     { label: 'Markdown', value: result.links.markdown },
@@ -94,6 +97,21 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
                 <span className="bg-muted px-2 py-0.5 rounded-full border border-border/50">{result.width}×{result.height}</span>
                 <span className="bg-muted px-2 py-0.5 rounded-full border border-border/50">{formatFileSize(result.size_bytes)}</span>
                 <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider">{result.extension}</span>
+                {result.permission !== undefined && (
+                  <span className={['px-2 py-0.5 rounded-full border', result.permission === 1 ? 'bg-primary/10 text-primary border-primary/20' : 'bg-warning/10 text-warning border-warning/20'].join(' ')}>
+                    {result.permission === 1 ? t('images.public', { defaultValue: '公开' }) : t('images.private', { defaultValue: '私有' })}
+                  </span>
+                )}
+                {result.moderation_status === 'pending' && (
+                  <span className="bg-warning/10 text-warning px-2 py-0.5 rounded-full border border-warning/20">
+                    {t('images.moderationPending', { defaultValue: '待审核' })}
+                  </span>
+                )}
+                {result.moderation_status === 'rejected' && (
+                  <span className="bg-destructive/10 text-destructive px-2 py-0.5 rounded-full border border-destructive/20">
+                    {t('images.moderationRejected', { defaultValue: '审核拒绝' })}
+                  </span>
+                )}
               </div>
             </div>
             <a 

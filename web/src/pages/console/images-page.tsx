@@ -373,6 +373,16 @@ export function ImagesPage() {
                       {t('images.private', { defaultValue: '私有' })}
                     </div>
                   )}
+                  {img.moderation_status === 'pending' && (
+                    <div className="absolute left-2 top-2 rounded-lg bg-warning/90 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm shadow-sm">
+                      {t('images.moderationPending', { defaultValue: '待审核' })}
+                    </div>
+                  )}
+                  {img.moderation_status === 'rejected' && (
+                    <div className="absolute left-2 top-2 rounded-lg bg-destructive/90 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm shadow-sm">
+                      {t('images.moderationRejected', { defaultValue: '审核拒绝' })}
+                    </div>
+                  )}
                   {!batchMode && (
                     <button
                       type="button"

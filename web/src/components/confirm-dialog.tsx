@@ -79,11 +79,12 @@ export function ConfirmDialog({
             </div>
           </div>
         </div>
-        <div className="flex justify-end gap-2 border-t border-border/60 px-5 py-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+        <div className="flex justify-end gap-3 border-t border-border/60 px-5 py-3.5">
+          <Button className="h-10 min-w-20 px-4 text-sm" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             {finalCancelLabel}
           </Button>
           <Button
+            className="h-10 min-w-20 px-4 text-sm"
             variant={buttonVariant}
             onClick={onConfirm}
             disabled={loading}

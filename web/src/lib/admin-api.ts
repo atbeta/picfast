@@ -171,6 +171,42 @@ export async function deleteAdminImage(id: number): Promise<void> {
 }
 
 // ============================================================
+// Moderation (admin)
+// ============================================================
+
+export interface AdminModerationImage {
+  id: number
+  key: string
+  origin_name: string
+  size_bytes: number
+  mimetype: string
+  extension: string
+  width: number
+  height: number
+  permission: number
+  moderation_status: string
+  url: string
+  thumbnail_url: string
+  created_at: string
+}
+
+export async function listPendingModerationImages(params?: {
+  page?: number
+  page_size?: number
+}): Promise<PaginatedData<AdminModerationImage>> {
+  const res = await api.get<ApiResponse<PaginatedData<AdminModerationImage>>>('/admin/moderation/pending', { params })
+  return res.data.data
+}
+
+export async function approveModerationImage(id: number): Promise<void> {
+  await api.post(`/admin/moderation/${id}/approve`)
+}
+
+export async function rejectModerationImage(id: number, reason?: string): Promise<void> {
+  await api.post(`/admin/moderation/${id}/reject`, reason ? { reason } : {})
+}
+
+// ============================================================
 // Settings
 // ============================================================
 

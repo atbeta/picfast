@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 
 import {
   getAdminObservabilitySummary,
@@ -231,7 +232,11 @@ export function AdminDashboardPage() {
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityPendingModeration', { defaultValue: '待审核' })}</dt>
-                  <dd className="font-medium text-foreground">{observability.usage.pending_moderation}</dd>
+                  <dd className="font-medium text-foreground">
+                    <Link to="/console/admin/moderation" className="hover:text-primary transition-colors">
+                      {observability.usage.pending_moderation}
+                    </Link>
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityAudit24h', { defaultValue: '24h 审计' })}</dt>
