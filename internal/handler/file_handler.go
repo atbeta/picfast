@@ -182,6 +182,10 @@ func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 
 	if !isPublic {
 		userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)
+		role := domain.RoleUser
+		if rVal, rOk := r.Context().Value(domain.ContextKeyRole).(domain.UserRole); rOk {
+			role = rVal
+		}
 		if !ok {
 			slog.Info("private thumbnail access denied",
 				"hash", md5Hash,
@@ -199,12 +203,13 @@ func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-		if !ownsOne {
+		if !ownsOne && role != domain.RoleAdmin {
 			slog.Info("private thumbnail access denied",
 				"hash", md5Hash,
 				"path", r.URL.Path,
 				"authed", true,
 				"request_user_id", userID,
+				"role", role,
 				"reason", "not_owner",
 			)
 			http.NotFound(w, r)
