@@ -26,13 +26,53 @@ func TestComputeMD5(t *testing.T) {
 }
 
 func TestGenerateImageKey(t *testing.T) {
-	key1 := GenerateImageKey()
-	key2 := GenerateImageKey()
-	if len(key1) != 6 {
-		t.Fatalf("expected key length 6, got %d", len(key1))
+	tests := []struct {
+		name   string
+		length int
+	}{
+		{"length 4", 4},
+		{"length 6", 6},
+		{"length 8", 8},
+		{"length 12", 12},
 	}
-	if key1 == key2 {
-		t.Fatal("expected unique keys")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			key1 := GenerateImageKey(tt.length)
+			key2 := GenerateImageKey(tt.length)
+			if len(key1) != tt.length {
+				t.Fatalf("expected key length %d, got %d", tt.length, len(key1))
+			}
+			if key1 == key2 {
+				t.Fatal("expected unique keys")
+			}
+		})
+	}
+}
+
+func TestBaseKeyLength(t *testing.T) {
+	tests := []struct {
+		name        string
+		totalImages int64
+		want        int
+	}{
+		{"empty", 0, 4},
+		{"small", 100, 4},
+		{"near 4-5 boundary", 1679, 4},
+		{"at 4-5 boundary", 1680, 5},
+		{"mid 5", 30000, 5},
+		{"near 5-6 boundary", 60465, 5},
+		{"at 5-6 boundary", 60466, 6},
+		{"mid 6", 1000000, 6},
+		{"near 6-7 boundary", 2176781, 6},
+		{"at 6-7 boundary", 2176782, 7},
+		{"large", 100000000, 8},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := BaseKeyLength(tt.totalImages); got != tt.want {
+				t.Errorf("BaseKeyLength(%d) = %d, want %d", tt.totalImages, got, tt.want)
+			}
+		})
 	}
 }
 

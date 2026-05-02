@@ -4,11 +4,14 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/atbeta/picfast/internal/config"
@@ -16,6 +19,7 @@ import (
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -23,6 +27,9 @@ type UploadService struct {
 	db     *sqlc.Queries
 	pool   *pgxpool.Pool
 	config *config.Config
+
+	totalImages atomic.Int64
+	countInit   sync.Once
 }
 
 type uploadUserSettings struct {
@@ -46,6 +53,21 @@ type processedUploadImage struct {
 
 func NewUploadService(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Config) *UploadService {
 	return &UploadService{db: db, pool: pool, config: cfg}
+}
+
+// totalImagesCount lazily seeds the atomic counter from the database,
+// then returns the in-memory count. The count is incremented locally after
+// each successful insert, so it stays accurate without per-upload queries.
+func (s *UploadService) totalImagesCount(ctx context.Context) int64 {
+	s.countInit.Do(func() {
+		count, err := s.db.CountAllImages(ctx)
+		if err != nil {
+			slog.Warn("failed to seed image count, starting from zero", "error", err)
+			return
+		}
+		s.totalImages.Store(count)
+	})
+	return s.totalImages.Load()
 }
 
 type UploadParams struct {
@@ -146,14 +168,21 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	}
 
 	// Step 11: Save DB record
-	imageKey := GenerateImageKey()
+	keyLen := BaseKeyLength(s.totalImagesCount(ctx))
+	imageKey := GenerateImageKey(keyLen)
 	// Ensure key uniqueness
 	for {
 		_, err := s.db.GetImageByKey(ctx, imageKey)
-		if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
 			break // key is unique
 		}
-		imageKey = GenerateImageKey()
+		if err != nil {
+			return nil, fmt.Errorf("failed to check key uniqueness: %w", err)
+		}
+		// Collision is rare at our occupancy thresholds, but check whether
+		// the local count has passed the next tier since we last looked.
+		keyLen = BaseKeyLength(s.totalImagesCount(ctx))
+		imageKey = GenerateImageKey(keyLen)
 	}
 
 	perm := int16(domain.PermissionPublic)
@@ -213,6 +242,8 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		}
 		return nil, fmt.Errorf("failed to save image record: %w", err)
 	}
+
+	s.totalImages.Add(1)
 
 	// Step 12: Content moderation (best effort, does not fail upload)
 	modResult := &moderation.Result{Status: moderation.StatusApproved, Provider: "noop"}

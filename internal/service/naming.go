@@ -61,8 +61,25 @@ func generateRandomString(length int) string {
 	return string(b)
 }
 
-func GenerateImageKey() string {
-	return generateRandomString(6)
+func GenerateImageKey(length int) string {
+	return generateRandomString(length)
+}
+
+// BaseKeyLength returns the recommended key length for the given total image count,
+// targeting <0.1% collision probability per generation (<1 retry per 1000 uploads).
+func BaseKeyLength(totalImages int64) int {
+	switch {
+	case totalImages < 1680:
+		return 4
+	case totalImages < 60466:
+		return 5
+	case totalImages < 2176782:
+		return 6
+	case totalImages < 78364164:
+		return 7
+	default:
+		return 8
+	}
 }
 
 func ComputeMD5(data []byte) string {
