@@ -64,6 +64,9 @@ LIMIT $1 OFFSET $2;
 -- name: CountAllImages :one
 SELECT COUNT(*) FROM images;
 
+-- name: GetGuestUsedCapacity :one
+SELECT COALESCE(SUM(size_bytes), 0)::bigint FROM images WHERE user_id IS NULL;
+
 -- name: GetExpiredImages :many
 SELECT * FROM images
 WHERE expires_at IS NOT NULL AND expires_at <= NOW()

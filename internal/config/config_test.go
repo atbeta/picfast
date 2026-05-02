@@ -80,6 +80,7 @@ func TestRuntimeSnapshotsFollowSetterUpdates(t *testing.T) {
 	setter.SetAppName("PicFast Pro")
 	setter.SetBaseURL("https://img.example.com")
 	setter.SetAllowGuestUpload(true)
+	setter.SetGuestCapacityBytes(2048)
 	setter.SetDefaultImageTTL(time.Hour)
 
 	server, app := cfg.RuntimeSnapshot()
@@ -91,6 +92,9 @@ func TestRuntimeSnapshotsFollowSetterUpdates(t *testing.T) {
 	}
 	if !app.AllowGuestUpload {
 		t.Fatalf("AllowGuestUpload = false")
+	}
+	if app.GuestCapacityBytes != 2048 {
+		t.Fatalf("GuestCapacityBytes = %d", app.GuestCapacityBytes)
 	}
 	if app.DefaultImageTTL != time.Hour {
 		t.Fatalf("DefaultImageTTL = %s", app.DefaultImageTTL)

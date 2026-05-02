@@ -3,8 +3,8 @@ package middleware
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -57,19 +57,14 @@ func apiTokenAuth(r *http.Request, db *sqlc.Queries) (context.Context, []string,
 	return ctx, scopes, true
 }
 
-func enrichWithScopes(ctx context.Context, info *AuthInfo, scopes []string) context.Context {
-	ctx = enrichContext(ctx, info)
-	ctx = context.WithValue(ctx, domain.ContextKeyScopes, scopes)
-	return ctx
-}
-
 // DualAuth accepts either a JWT access token or an API token (img_...).
 // It tries JWT first; if that fails it falls back to API token lookup.
 func DualAuth(jwtAuth *JWTAuthenticator, db *sqlc.Queries) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if info, err := jwtAuth.Authenticate(r); err == nil {
-				next.ServeHTTP(w, r.WithContext(enrichWithScopes(r.Context(), info, nil)))
+				// JWT sessions are not scope-limited, so do not set ContextKeyScopes.
+				next.ServeHTTP(w, r.WithContext(enrichContext(r.Context(), info)))
 				return
 			}
 
@@ -88,7 +83,8 @@ func OptionalDualAuth(jwtAuth *JWTAuthenticator, db *sqlc.Queries) func(http.Han
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if info, err := jwtAuth.Authenticate(r); err == nil {
-				r = r.WithContext(enrichWithScopes(r.Context(), info, nil))
+				// JWT sessions are not scope-limited, so do not set ContextKeyScopes.
+				r = r.WithContext(enrichContext(r.Context(), info))
 			} else if ctx, _, ok := apiTokenAuth(r, db); ok {
 				r = r.WithContext(ctx)
 			}

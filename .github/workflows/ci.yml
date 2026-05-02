@@ -42,6 +42,9 @@ jobs:
       - name: Install libvips
         run: sudo apt-get update && sudo apt-get install -y libvips-dev
 
+      - name: Check sqlc generated files
+        run: make check-generated
+
       - name: Run backend tests
         run: go test ./...
 

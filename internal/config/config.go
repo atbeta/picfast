@@ -58,6 +58,7 @@ type AppConfig struct {
 	SiteDescription          string          `mapstructure:"site_description"`
 	FaviconURL               string          `mapstructure:"favicon_url"`
 	AllowGuestUpload         bool            `mapstructure:"allow_guest_upload"`
+	GuestCapacityBytes       int64           `mapstructure:"guest_capacity_bytes"`
 	AllowRegistration        bool            `mapstructure:"allow_registration"`
 	RequireEmailVerification bool            `mapstructure:"require_email_verification"`
 	AuditUploadLogs          bool            `mapstructure:"audit_upload_logs"`
@@ -110,6 +111,12 @@ func (s *Setter) SetAllowGuestUpload(v bool) {
 	s.cfg.mu.Lock()
 	defer s.cfg.mu.Unlock()
 	s.cfg.App.AllowGuestUpload = v
+}
+
+func (s *Setter) SetGuestCapacityBytes(v int64) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.GuestCapacityBytes = v
 }
 
 func (s *Setter) SetAllowRegistration(v bool) {
@@ -247,6 +254,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.site_description", "PicFast is a modern self-hosted image hosting service.")
 	v.SetDefault("app.favicon_url", "")
 	v.SetDefault("app.allow_guest_upload", false)
+	v.SetDefault("app.guest_capacity_bytes", int64(10737418240))
 	v.SetDefault("app.allow_registration", false)
 	v.SetDefault("app.require_email_verification", false)
 	v.SetDefault("app.audit_upload_logs", false)

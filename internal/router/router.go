@@ -228,6 +228,7 @@ func New(
 				"site_description":           app.SiteDescription,
 				"favicon_url":                app.FaviconURL,
 				"allow_guest_upload":         app.AllowGuestUpload,
+				"guest_capacity_bytes":       app.GuestCapacityBytes,
 				"allow_registration":         app.AllowRegistration,
 				"require_email_verification": app.RequireEmailVerification && mailSender != nil && mailSender.Ready(),
 				"base_url":                   server.BaseURL,

@@ -38,6 +38,7 @@ type updateSettingsRequest struct {
 	SiteDescription          *string          `json:"site_description"`
 	FaviconURL               *string          `json:"favicon_url"`
 	AllowGuestUpload         *bool            `json:"allow_guest_upload"`
+	GuestCapacityBytes       *int64           `json:"guest_capacity_bytes"`
 	AllowRegistration        *bool            `json:"allow_registration"`
 	RequireEmailVerification *bool            `json:"require_email_verification"`
 	UserInitialCapacity      *int64           `json:"user_initial_capacity"`
@@ -81,6 +82,13 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.AllowGuestUpload != nil {
 		h.setter.SetAllowGuestUpload(*req.AllowGuestUpload)
+	}
+	if req.GuestCapacityBytes != nil {
+		if *req.GuestCapacityBytes < 0 {
+			Fail(w, http.StatusBadRequest, "guest_capacity_bytes must be >= 0")
+			return
+		}
+		h.setter.SetGuestCapacityBytes(*req.GuestCapacityBytes)
 	}
 	if req.AllowRegistration != nil {
 		h.setter.SetAllowRegistration(*req.AllowRegistration)
@@ -181,6 +189,7 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 		AppName:                  app.Name,
 		AppUrl:                   server.BaseURL,
 		AllowGuestUpload:         app.AllowGuestUpload,
+		GuestCapacityBytes:       app.GuestCapacityBytes,
 		AllowRegistration:        app.AllowRegistration,
 		RequireEmailVerification: app.RequireEmailVerification,
 		UserInitialCapacity:      app.UserInitialCapacity,
@@ -206,6 +215,7 @@ func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string
 		"site_description":           app.SiteDescription,
 		"favicon_url":                app.FaviconURL,
 		"allow_guest_upload":         app.AllowGuestUpload,
+		"guest_capacity_bytes":       app.GuestCapacityBytes,
 		"allow_registration":         app.AllowRegistration,
 		"require_email_verification": app.RequireEmailVerification,
 		"user_initial_capacity":      app.UserInitialCapacity,

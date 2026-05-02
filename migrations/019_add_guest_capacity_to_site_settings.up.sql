@@ -1,0 +1,2 @@
+ALTER TABLE site_settings
+    ADD COLUMN guest_capacity_bytes BIGINT NOT NULL DEFAULT 10737418240;

@@ -82,6 +82,7 @@ func TestAdminSettingsPersistSiteSettings(t *testing.T) {
 
 	body := map[string]interface{}{
 		"allow_guest_upload":    true,
+		"guest_capacity_bytes":  int64(2048),
 		"allow_registration":    true,
 		"user_initial_capacity": int64(1024),
 		"moderation_mode":       "manual",
@@ -103,8 +104,27 @@ func TestAdminSettingsPersistSiteSettings(t *testing.T) {
 	if settings.UserInitialCapacity != 1024 {
 		t.Fatalf("persisted user_initial_capacity = %d, want 1024", settings.UserInitialCapacity)
 	}
+	if settings.GuestCapacityBytes != 2048 {
+		t.Fatalf("persisted guest_capacity_bytes = %d, want 2048", settings.GuestCapacityBytes)
+	}
 	if settings.ModerationMode != "manual" {
 		t.Fatalf("persisted moderation_mode = %q, want manual", settings.ModerationMode)
+	}
+}
+
+func TestAdminSettingsRejectsNegativeGuestCapacity(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, admin := env.seedSetup(t)
+	makeAdmin(t, env, admin.ID)
+
+	body := map[string]interface{}{
+		"guest_capacity_bytes": int64(-1),
+	}
+	req := env.authReq(t, http.MethodPut, "/api/v1/admin/settings", body, admin.ID, domain.RoleAdmin, group.ID)
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", rec.Code, rec.Body.String())
 	}
 }
 

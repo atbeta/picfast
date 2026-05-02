@@ -18,6 +18,7 @@ export function AdminAccessSettingsPage() {
 
   const onSubmit = handleSubmit((values) => state.saveSettings({
     allow_guest_upload: Boolean(values.allow_guest_upload),
+    guest_capacity_bytes: values.guest_capacity_mb * 1024 * 1024,
     allow_registration: Boolean(values.allow_registration),
     require_email_verification: Boolean(values.require_email_verification),
     user_initial_capacity: values.user_initial_capacity_mb * 1024 * 1024,
@@ -41,6 +42,19 @@ export function AdminAccessSettingsPage() {
               <Switch checked={field.value} onCheckedChange={field.onChange} id="guestUpload" />
             )}
           />
+        </div>
+      </SettingField>
+
+      <SettingField label={t('admin.guestCapacity')} hint={t('admin.guestCapacityDesc')}>
+        <div className="flex items-center gap-3">
+          <input
+            type="number"
+            min={0}
+            step={1}
+            {...register('guest_capacity_mb', { valueAsNumber: true, min: 0 })}
+            className={`${fieldInputCls} w-40`}
+          />
+          <span className="text-sm text-muted-foreground">MB</span>
         </div>
       </SettingField>
 

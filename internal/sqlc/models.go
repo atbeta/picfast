@@ -129,13 +129,14 @@ type SiteSetting struct {
 	CreatedAt                time.Time       `json:"created_at"`
 	UpdatedAt                time.Time       `json:"updated_at"`
 	SiteDescription          string          `json:"site_description"`
-	FaviconUrl               string          `json:"favicon_url"`
 	IcpNumber                string          `json:"icp_number"`
 	IcpLink                  string          `json:"icp_link"`
 	PsbNumber                string          `json:"psb_number"`
 	PsbLink                  string          `json:"psb_link"`
 	AnalyticsProvider        string          `json:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `json:"analytics_config"`
+	FaviconUrl               string          `json:"favicon_url"`
+	GuestCapacityBytes       int64           `json:"guest_capacity_bytes"`
 }
 
 type Strategy struct {

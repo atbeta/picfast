@@ -5,6 +5,7 @@ export interface SiteConfig {
   site_description: string
   favicon_url: string
   allow_guest_upload: boolean
+  guest_capacity_bytes: number
   allow_registration: boolean
   require_email_verification: boolean
   base_url: string

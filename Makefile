@@ -1,4 +1,4 @@
-.PHONY: build run dev generate migrate-up migrate-down docker-up docker-down tidy frontend test format lint openapi-lint seed clean
+.PHONY: build run dev generate check-generated migrate-up migrate-down docker-up docker-down tidy frontend test format lint openapi-lint seed clean
 
 GOPATH := $(shell go env GOPATH)
 SQLC := $(GOPATH)/bin/sqlc
@@ -37,6 +37,9 @@ run: build
 
 generate: $(SQLC)
 	$(SQLC) generate
+
+check-generated: generate
+	git diff --exit-code -- internal/sqlc
 
 $(SQLC):
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest

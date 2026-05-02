@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/atbeta/picfast/internal/domain"
@@ -64,6 +65,22 @@ func TestImageUpload(t *testing.T) {
 			t.Fatalf("status = %d, want 201; body: %s", rec.Code, rec.Body.String())
 		}
 	})
+}
+
+func TestGuestUploadCapacityLimit(t *testing.T) {
+	env := newTestEnv(t)
+	env.seedSetup(t)
+	env.Config.App.GuestCapacityBytes = int64(len(pngBytes()) - 1)
+
+	req := uploadReq(t, "/api/v1/upload", "guest-limit.png", pngBytes(), "")
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "guest storage capacity exceeded") {
+		t.Fatalf("body = %s, want guest storage capacity exceeded", rec.Body.String())
+	}
 }
 
 func TestImageList(t *testing.T) {

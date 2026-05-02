@@ -7,6 +7,7 @@ INSERT INTO site_settings (
     app_name,
     app_url,
     allow_guest_upload,
+    guest_capacity_bytes,
     allow_registration,
     require_email_verification,
     user_initial_capacity,
@@ -21,11 +22,12 @@ INSERT INTO site_settings (
     analytics_provider,
     analytics_config
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
     allow_guest_upload = EXCLUDED.allow_guest_upload,
+    guest_capacity_bytes = EXCLUDED.guest_capacity_bytes,
     allow_registration = EXCLUDED.allow_registration,
     require_email_verification = EXCLUDED.require_email_verification,
     user_initial_capacity = EXCLUDED.user_initial_capacity,

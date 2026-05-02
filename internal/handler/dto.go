@@ -145,6 +145,7 @@ type AdminStrategyResponse struct {
 type SettingsResponse struct {
 	AppName             string `json:"app_name"`
 	AllowGuestUpload    bool   `json:"allow_guest_upload"`
+	GuestCapacityBytes  int64  `json:"guest_capacity_bytes"`
 	AllowRegistration   bool   `json:"allow_registration"`
 	UserInitialCapacity int64  `json:"user_initial_capacity"`
 }

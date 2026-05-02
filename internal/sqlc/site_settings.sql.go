@@ -11,7 +11,7 @@ import (
 )
 
 const getSiteSettings = `-- name: GetSiteSettings :one
-SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, favicon_url, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config FROM site_settings WHERE id = 1
+SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes FROM site_settings WHERE id = 1
 `
 
 func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
@@ -30,13 +30,14 @@ func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SiteDescription,
-		&i.FaviconUrl,
 		&i.IcpNumber,
 		&i.IcpLink,
 		&i.PsbNumber,
 		&i.PsbLink,
 		&i.AnalyticsProvider,
 		&i.AnalyticsConfig,
+		&i.FaviconUrl,
+		&i.GuestCapacityBytes,
 	)
 	return i, err
 }
@@ -47,6 +48,7 @@ INSERT INTO site_settings (
     app_name,
     app_url,
     allow_guest_upload,
+    guest_capacity_bytes,
     allow_registration,
     require_email_verification,
     user_initial_capacity,
@@ -61,11 +63,12 @@ INSERT INTO site_settings (
     analytics_provider,
     analytics_config
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
     allow_guest_upload = EXCLUDED.allow_guest_upload,
+    guest_capacity_bytes = EXCLUDED.guest_capacity_bytes,
     allow_registration = EXCLUDED.allow_registration,
     require_email_verification = EXCLUDED.require_email_verification,
     user_initial_capacity = EXCLUDED.user_initial_capacity,
@@ -80,13 +83,14 @@ ON CONFLICT (id) DO UPDATE SET
     analytics_provider = EXCLUDED.analytics_provider,
     analytics_config = EXCLUDED.analytics_config,
     updated_at = NOW()
-RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, favicon_url, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config
+RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes
 `
 
 type UpsertSiteSettingsParams struct {
 	AppName                  string          `json:"app_name"`
 	AppUrl                   string          `json:"app_url"`
 	AllowGuestUpload         bool            `json:"allow_guest_upload"`
+	GuestCapacityBytes       int64           `json:"guest_capacity_bytes"`
 	AllowRegistration        bool            `json:"allow_registration"`
 	RequireEmailVerification bool            `json:"require_email_verification"`
 	UserInitialCapacity      int64           `json:"user_initial_capacity"`
@@ -107,6 +111,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		arg.AppName,
 		arg.AppUrl,
 		arg.AllowGuestUpload,
+		arg.GuestCapacityBytes,
 		arg.AllowRegistration,
 		arg.RequireEmailVerification,
 		arg.UserInitialCapacity,
@@ -135,13 +140,14 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SiteDescription,
-		&i.FaviconUrl,
 		&i.IcpNumber,
 		&i.IcpLink,
 		&i.PsbNumber,
 		&i.PsbLink,
 		&i.AnalyticsProvider,
 		&i.AnalyticsConfig,
+		&i.FaviconUrl,
+		&i.GuestCapacityBytes,
 	)
 	return i, err
 }

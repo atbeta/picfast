@@ -180,6 +180,7 @@ export interface AdminSettings {
   site_description: string
   favicon_url: string
   allow_guest_upload: boolean
+  guest_capacity_bytes: number
   allow_registration: boolean
   require_email_verification: boolean
   email_verification_ready: boolean

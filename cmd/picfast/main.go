@@ -189,6 +189,7 @@ func applyPersistedSiteSettings(ctx context.Context, queries *sqlc.Queries, cfg 
 	cfg.App.SiteDescription = settings.SiteDescription
 	cfg.App.FaviconURL = settings.FaviconUrl
 	cfg.App.AllowGuestUpload = settings.AllowGuestUpload
+	cfg.App.GuestCapacityBytes = settings.GuestCapacityBytes
 	cfg.App.AllowRegistration = settings.AllowRegistration
 	cfg.App.RequireEmailVerification = settings.RequireEmailVerification
 	cfg.App.UserInitialCapacity = settings.UserInitialCapacity

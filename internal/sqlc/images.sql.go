@@ -266,6 +266,17 @@ func (q *Queries) GetExpiredImages(ctx context.Context, limit int32) ([]Image, e
 	return items, nil
 }
 
+const getGuestUsedCapacity = `-- name: GetGuestUsedCapacity :one
+SELECT COALESCE(SUM(size_bytes), 0)::bigint FROM images WHERE user_id IS NULL
+`
+
+func (q *Queries) GetGuestUsedCapacity(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, getGuestUsedCapacity)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const getImageByID = `-- name: GetImageByID :one
 SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at FROM images WHERE id = $1
 `

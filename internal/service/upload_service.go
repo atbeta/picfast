@@ -366,6 +366,17 @@ func validateUploadFile(params UploadParams, groupConfig domain.GroupConfig) (st
 
 func (s *UploadService) checkCapacity(ctx context.Context, params UploadParams, userID int64) error {
 	if params.UserID == nil {
+		capacity := s.config.AppSnapshot().GuestCapacityBytes
+		if capacity <= 0 {
+			return nil
+		}
+		used, err := s.db.GetGuestUsedCapacity(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to check guest capacity: %w", err)
+		}
+		if used+params.FileSize > capacity {
+			return fmt.Errorf("guest storage capacity exceeded")
+		}
 		return nil
 	}
 	used, err := s.db.GetUserUsedCapacity(ctx, domain.PgInt8(userID))
@@ -376,7 +387,7 @@ func (s *UploadService) checkCapacity(ctx context.Context, params UploadParams, 
 	if err != nil {
 		return fmt.Errorf("failed to get user: %w", err)
 	}
-	if user.CapacityBytes > 0 && used > 0 && used+params.FileSize > user.CapacityBytes {
+	if user.CapacityBytes > 0 && used+params.FileSize > user.CapacityBytes {
 		return fmt.Errorf("storage capacity exceeded")
 	}
 	return nil

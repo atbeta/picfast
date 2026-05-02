@@ -12,6 +12,7 @@ export interface SettingsForm {
   site_description: string
   favicon_url: string
   allow_guest_upload: boolean
+  guest_capacity_mb: number
   allow_registration: boolean
   require_email_verification: boolean
   user_initial_capacity_mb: number
@@ -39,6 +40,7 @@ const defaultValues: SettingsForm = {
   site_description: '',
   favicon_url: '',
   allow_guest_upload: false,
+  guest_capacity_mb: 10240,
   allow_registration: false,
   require_email_verification: false,
   user_initial_capacity_mb: 500,
@@ -74,6 +76,7 @@ function settingsToForm(data: AdminSettings): SettingsForm {
     site_description: data.site_description || '',
     favicon_url: data.favicon_url || '',
     allow_guest_upload: data.allow_guest_upload,
+    guest_capacity_mb: Math.round(data.guest_capacity_bytes / 1024 / 1024),
     allow_registration: data.allow_registration,
     require_email_verification: data.require_email_verification,
     user_initial_capacity_mb: Math.round(data.user_initial_capacity / 1024 / 1024),
