@@ -22,6 +22,7 @@ type Config struct {
 
 type ServerConfig struct {
 	Port        int    `mapstructure:"port"`
+	MetricsPort int    `mapstructure:"metrics_port"`
 	BaseURL     string `mapstructure:"base_url"`
 	WebDir      string `mapstructure:"web_dir"`
 	EnablePprof bool   `mapstructure:"pprof_enabled"`
@@ -235,6 +236,7 @@ func Load() (*Config, error) {
 
 func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.port", 8080)
+	v.SetDefault("server.metrics_port", 9090)
 	v.SetDefault("server.base_url", "http://localhost:8080")
 	v.SetDefault("server.web_dir", "")
 	v.SetDefault("server.pprof_enabled", false)

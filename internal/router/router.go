@@ -23,7 +23,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -85,7 +84,6 @@ func New(
 		}
 	})
 
-	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 	serveOpenAPISpec := func(format string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")

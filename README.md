@@ -38,7 +38,7 @@ PicFast 是一个面向个人与团队的现代化图床与图片托管服务，
 - 审核能力与审核状态回传
 - ShareX 配置下载与上传接口
 - API Token 与 MCP Server 集成
-- 健康检查、Prometheus 指标、pprof 调试端点
+- 健康检查、Prometheus 指标（内部端口）、pprof 调试端点
 
 ## 存储策略
 
@@ -439,7 +439,6 @@ make docker-logs
 | `GET /i/{key}.{ext}` | 访问图片 |
 | `GET /t/{hash}.png` | 访问缩略图 |
 | `GET /health` | 健康检查 |
-| `GET /metrics` | Prometheus 指标 |
 
 管理员端点前缀：`/api/v1/admin/*`
 

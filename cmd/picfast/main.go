@@ -24,6 +24,8 @@ import (
 	"github.com/atbeta/picfast/internal/router"
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/sqlc"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -81,6 +83,17 @@ func main() {
 
 	r := router.New(queries, pool, cfg, jwtSvc, spaHandler, mailSender)
 
+	metricsMux := http.NewServeMux()
+	metricsMux.Handle("/metrics", promhttp.Handler())
+
+	metricsSrv := &http.Server{
+		Addr:         fmt.Sprintf("127.0.0.1:%d", cfg.Server.MetricsPort),
+		Handler:      metricsMux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:      r,
@@ -97,6 +110,13 @@ func main() {
 		}
 	}()
 
+	go func() {
+		slog.Info("metrics server listening", "addr", metricsSrv.Addr)
+		if err := metricsSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("metrics server error", "error", err)
+		}
+	}()
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -105,6 +125,9 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	if err := metricsSrv.Shutdown(ctx); err != nil {
+		slog.Error("metrics server forced to shutdown", "error", err)
+	}
 	if err := srv.Shutdown(ctx); err != nil {
 		slog.Error("server forced to shutdown", "error", err)
 	}

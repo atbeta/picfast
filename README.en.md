@@ -38,7 +38,7 @@ PicFast is a modern self-hosted image hosting platform for individuals and teams
 - Moderation and moderation callbacks
 - ShareX config endpoint and upload integration
 - API token and MCP server integration
-- Health check, Prometheus metrics, pprof endpoints
+- Health check, Prometheus metrics (internal port), pprof endpoints
 
 ## Quick Start
 
@@ -182,7 +182,6 @@ docker pull xbeta/picfast:latest
 | `GET /i/{key}.{ext}` | Access image |
 | `GET /t/{hash}.png` | Access thumbnail |
 | `GET /health` | Health check |
-| `GET /metrics` | Prometheus metrics |
 
 Admin endpoints prefix: `/api/v1/admin/*`.
 
