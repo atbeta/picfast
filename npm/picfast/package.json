@@ -1,0 +1,22 @@
+{
+  "name": "picfast",
+  "version": "0.0.1",
+  "description": "Placeholder package name for the PicFast project. See repository and @picfast/mcp for integrations.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atbeta/picfast.git"
+  },
+  "homepage": "https://github.com/atbeta/picfast#readme",
+  "bugs": {
+    "url": "https://github.com/atbeta/picfast/issues"
+  },
+  "keywords": [
+    "picfast",
+    "image-hosting",
+    "placeholder"
+  ],
+  "files": [
+    "README.md"
+  ]
+}

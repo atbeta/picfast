@@ -6,6 +6,9 @@ web-dist/
 web/dist/
 *.exe
 .env
-web/node_modules/
+
+# JavaScript — any package dir (web/, mcp/, tools/, …)
+node_modules/
+mcp/dist/
 /picfast
 imgapi

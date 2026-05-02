@@ -18,7 +18,6 @@ export function IntegrationsPage() {
   })
 
   const apiURL = siteConfig?.base_url ? trimTrailingSlash(siteConfig.base_url) : window.location.origin
-  const mcpEndpoint = `${apiURL}/mcp`
   const sharexConfigExample = `{
   "Version": "15.0.0",
   "Name": "PicFast",
@@ -50,9 +49,11 @@ export function IntegrationsPage() {
   const mcpConfigExample = `{
   "mcpServers": {
     "picfast": {
-      "url": "${mcpEndpoint}",
-      "headers": {
-        "Authorization": "Bearer <YOUR_API_TOKEN>"
+      "command": "npx",
+      "args": ["-y", "@picfast/mcp"],
+      "env": {
+        "PICFAST_BASE_URL": "${apiURL}",
+        "PICFAST_API_TOKEN": "<YOUR_API_TOKEN>"
       }
     }
   }
@@ -62,7 +63,7 @@ export function IntegrationsPage() {
     try {
       await navigator.clipboard.writeText(text)
       toast.success(t('upload.copySuccess'))
-      setFeedback(text === mcpConfigExample ? 'mcp' : 'sharex')
+      setFeedback(text === sharexConfigExample ? 'sharex' : 'mcp')
     } catch {
       toast.error(t('upload.copyError'))
     }
@@ -88,26 +89,11 @@ export function IntegrationsPage() {
                   {t('integrations.mcpBadge', { defaultValue: 'AI 集成' })}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">{t('integrations.mcpDesc', { defaultValue: '通过 MCP 协议连接 AI 助手，直接在对话中上传和管理图片。' })}</p>
+              <p className="text-sm text-muted-foreground">{t('integrations.mcpDesc', { defaultValue: '通过 MCP 协议连接 AI 助手，直接在对话中上传和管理图片。本地运行，零 token 开销。' })}</p>
             </div>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-5">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('integrations.mcpEndpoint')}</label>
-              <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5">
-                <code className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{mcpEndpoint}</code>
-                <button
-                  type="button"
-                  onClick={() => onCopy(mcpEndpoint)}
-                  className="shrink-0 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background shadow-sm transition-colors duration-150 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer"
-                  title={t('upload.copy')}
-                >
-                  <Copy className="size-4" />
-                </button>
-              </div>
-            </div>
-
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('integrations.mcpConfigExample', { defaultValue: '配置示例' })}</label>
               <div className="relative group">
@@ -119,10 +105,10 @@ export function IntegrationsPage() {
                 </button>
               </div>
               <p className="text-sm text-muted-foreground mt-3">
-                {t('integrations.mcpConfigHint', { defaultValue: '这是通用 MCP JSON 示例。把 Bearer 后面的令牌替换成你刚创建的 API Token，客户端字段名如果有差异，只保留 URL 和 Authorization 头即可。' })}
+                {t('integrations.mcpLocalHint', { defaultValue: '将 <YOUR_API_TOKEN> 替换为你创建的 API 令牌，然后将配置粘贴到 Cursor、Claude Desktop 或其他 MCP 客户端。' })}
               </p>
               {feedback === 'mcp' && (
-                <p className="rounded-lg border border-info/20 bg-info/5 px-3 py-2 text-sm text-info mt-3">
+                <p className="rounded-lg border border-info/20 bg-info/5 px-3 py-2 text-sm text-info">
                   {t('integrations.mcpCopied', { defaultValue: 'MCP 配置已复制，可以直接粘贴到客户端。' })}
                 </p>
               )}
@@ -131,7 +117,7 @@ export function IntegrationsPage() {
             <div className="rounded-lg border border-info/20 bg-info/5 px-4 py-3 text-sm text-muted-foreground">
               <p className="font-semibold text-foreground">{t('integrations.mcpFooterTitle', { defaultValue: '推荐流程' })}</p>
               <p className="mt-1">
-                {t('integrations.mcpFooterHint', { defaultValue: '先创建 API 令牌，再复制 MCP 配置到 Cursor、Claude Desktop 或其他支持远程 MCP 的客户端。' })}
+                {t('integrations.mcpFooterHint', { defaultValue: '先创建 API 令牌，再复制 MCP 配置到 Cursor、Claude Desktop 或其他支持 MCP 的客户端。' })}
               </p>
             </div>
           </div>

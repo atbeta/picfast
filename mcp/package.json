@@ -1,0 +1,38 @@
+{
+  "name": "@picfast/mcp",
+  "version": "0.2.0",
+  "description": "PicFast MCP Server — upload images and manage your image hosting via AI with local file access",
+  "type": "module",
+  "bin": {
+    "picfast-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "pnpm run build"
+  },
+  "keywords": [
+    "picfast",
+    "mcp",
+    "image-hosting",
+    "ai"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
