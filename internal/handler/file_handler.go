@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/atbeta/picfast/internal/domain"
@@ -27,7 +28,7 @@ func NewFileHandler(db *sqlc.Queries, baseURL, thumbDir string) *FileHandler {
 
 func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "key")
-	ext := strings.TrimPrefix(filepath.Ext(r.URL.Path), ".")
+	ext, resizeWidth, _ := parseImageVariant(chi.URLParam(r, "ext"))
 
 	img, err := h.db.GetImageByKey(r.Context(), key)
 	if err != nil {
@@ -98,6 +99,14 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if resizeWidth > 0 {
+		// Optional best-effort variant; any processing failure falls back to original.
+		if resized, resizeErr := service.ResizeImageToWidth(data, img.Extension, resizeWidth); resizeErr != nil {
+			slog.Warn("image variant resize failed", "key", key, "width", resizeWidth, "error", resizeErr)
+		} else {
+			data = resized
+		}
+	}
 
 	// Cache headers: 30 days
 	w.Header().Set("Content-Type", img.Mimetype)
@@ -106,17 +115,47 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Header().Set("Cache-Control", "public, max-age=2592000, s-maxage=60")
 	}
-	w.Header().Set("ETag", `"`+img.Md5+`"`)
+	if resizeWidth <= 0 {
+		w.Header().Set("ETag", `"`+img.Md5+`"`)
+	}
 
 	// Handle conditional request
-	if match := r.Header.Get("If-None-Match"); match != "" {
-		if strings.Contains(match, img.Md5) {
-			w.WriteHeader(http.StatusNotModified)
-			return
+	if resizeWidth <= 0 {
+		if match := r.Header.Get("If-None-Match"); match != "" {
+			if strings.Contains(match, img.Md5) {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
 		}
 	}
 
 	w.Write(data)
+}
+
+func parseImageVariant(extParam string) (ext string, resizeWidth int, hasVariant bool) {
+	baseExt, variant, hasVariant := strings.Cut(strings.ToLower(strings.TrimSpace(extParam)), "@")
+	ext = strings.TrimPrefix(baseExt, ".")
+	if !hasVariant {
+		return ext, 0, false
+	}
+
+	width, ok := parseWidthVariant(variant)
+	if !ok {
+		return ext, 0, true
+	}
+	return ext, width, true
+}
+
+func parseWidthVariant(variant string) (int, bool) {
+	if !strings.HasPrefix(variant, "w_") {
+		return 0, false
+	}
+	raw := strings.TrimSpace(strings.TrimPrefix(variant, "w_"))
+	width, err := strconv.Atoi(raw)
+	if err != nil || width <= 0 || width > 10000 {
+		return 0, false
+	}
+	return width, true
 }
 
 func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {

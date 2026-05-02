@@ -46,10 +46,7 @@ func ProcessImage(data []byte, saveFormat string, quality int, stripExif bool) (
 		return &ProcessedImage{Data: data, Width: width, Height: height}, nil
 	}
 
-	format := saveFormat
-	if format == "" {
-		format = "jpeg"
-	}
+	format := normalizeExportFormat(saveFormat)
 
 	exporter, ok := exportRegistry[format]
 	if !ok {
@@ -62,6 +59,56 @@ func ProcessImage(data []byte, saveFormat string, quality int, stripExif bool) (
 	}
 
 	return &ProcessedImage{Data: out, Width: width, Height: height}, nil
+}
+
+// ResizeImageToWidth resizes an image to the target width while keeping aspect ratio.
+// Unsupported or no-op cases return the original bytes.
+func ResizeImageToWidth(data []byte, formatHint string, width int) ([]byte, error) {
+	if width <= 0 {
+		return data, nil
+	}
+
+	format := normalizeExportFormat(formatHint)
+	if format == "gif" {
+		return data, nil // keep animated/static gif behavior unchanged for now
+	}
+
+	params := vips.NewImportParams()
+	params.AutoRotate.Set(true)
+	params.FailOnError.Set(true)
+
+	img, err := vips.LoadImageFromBuffer(data, params)
+	if err != nil {
+		return nil, err
+	}
+	defer img.Close()
+
+	origW := img.Width()
+	if origW <= 0 || width >= origW {
+		return data, nil
+	}
+
+	scale := float64(width) / float64(origW)
+	if err := img.Resize(scale, vips.KernelAuto); err != nil {
+		return nil, err
+	}
+
+	exporter, ok := exportRegistry[format]
+	if !ok {
+		exporter = exportRegistry["jpeg"]
+	}
+	return exporter.Export(img, 100, false)
+}
+
+func normalizeExportFormat(format string) string {
+	switch format {
+	case "", "jpg":
+		return "jpeg"
+	case "tif":
+		return "tiff"
+	default:
+		return format
+	}
 }
 
 func DecodeImageDimensions(r io.Reader) (int, int, error) {

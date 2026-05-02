@@ -181,8 +181,11 @@ func defaultGroupConfig() []byte {
 		LimitPerMonth:      50000,
 		PathNamingRule:     "{Y}/{m}/{d}",
 		FileNamingRule:     "{uniqid}",
-		ImageSaveQuality:   100,
+		ImageSaveQuality:   85,
 		ImageSaveFormat:    "",
+		IsEnableWatermark:  false,
+		WatermarkConfigs:   json.RawMessage(`{}`),
+		IsStripExif:        true,
 	}
 	b, _ := json.Marshal(cfg)
 	return b

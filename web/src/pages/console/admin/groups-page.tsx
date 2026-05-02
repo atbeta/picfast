@@ -34,6 +34,16 @@ interface GroupForm {
   limit_per_month: number
   strategy_ids: number[]
   default_strategy_id: number
+  image_save_quality: number
+  image_save_format: string
+  is_strip_exif: boolean
+  is_enable_watermark: boolean
+  watermark_text: string
+  watermark_position: string
+  watermark_font_size: number
+  watermark_color: string
+  watermark_opacity: number
+  raw_configs: Record<string, unknown>
 }
 
 const commonExtensions = ['jpeg', 'jpg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico']
@@ -59,11 +69,34 @@ function emptyForm(): GroupForm {
     limit_per_month: 9999,
     strategy_ids: [],
     default_strategy_id: 0,
+    image_save_quality: 85,
+    image_save_format: '',
+    is_strip_exif: true,
+    is_enable_watermark: false,
+    watermark_text: '',
+    watermark_position: 'bottom-right',
+    watermark_font_size: 28,
+    watermark_color: '#FFFFFF',
+    watermark_opacity: 0.6,
+    raw_configs: {},
   }
+}
+
+function parseWatermarkConfig(raw: unknown): Record<string, unknown> {
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {}
+    } catch {
+      return {}
+    }
+  }
+  return typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {}
 }
 
 function groupToForm(g: AdminGroup): GroupForm {
   const c = g.configs || {}
+  const watermark = parseWatermarkConfig(c.watermark_configs)
   return {
     name: g.name,
     is_default: g.is_default,
@@ -73,6 +106,16 @@ function groupToForm(g: AdminGroup): GroupForm {
     limit_per_month: (c.limit_per_month as number) || 9999,
     strategy_ids: (g.strategy_ids || []).map(Number),
     default_strategy_id: Number(c.default_strategy_id || 0),
+    image_save_quality: Number(c.image_save_quality ?? 100),
+    image_save_format: (c.image_save_format as string) || '',
+    is_strip_exif: Boolean(c.is_strip_exif),
+    is_enable_watermark: Boolean(c.is_enable_watermark),
+    watermark_text: (watermark.text as string) || '',
+    watermark_position: (watermark.position as string) || 'bottom-right',
+    watermark_font_size: Number(watermark.font_size ?? 28),
+    watermark_color: (watermark.color as string) || '#FFFFFF',
+    watermark_opacity: Number(watermark.opacity ?? 0.6),
+    raw_configs: c,
   }
 }
 
@@ -80,12 +123,28 @@ function formToConfigs(form: GroupForm) {
   const normalizedDefaultStrategyID = form.strategy_ids.includes(form.default_strategy_id)
     ? form.default_strategy_id
     : 0
+  const quality = Number.isFinite(form.image_save_quality) ? Math.max(1, Math.min(100, form.image_save_quality)) : 100
+  const watermarkOpacity = Number.isFinite(form.watermark_opacity) ? Math.max(0, Math.min(1, form.watermark_opacity)) : 0.6
+  const watermarkFontSize = Number.isFinite(form.watermark_font_size) ? Math.max(8, Math.min(200, form.watermark_font_size)) : 28
+
   return {
+    ...(form.raw_configs || {}),
     maximum_file_size: form.max_size * 1048576,
     accepted_extensions: parseExtensions(form.extensions),
     default_strategy_id: normalizedDefaultStrategyID,
     limit_per_day: form.limit_per_day,
     limit_per_month: form.limit_per_month,
+    image_save_quality: quality,
+    image_save_format: form.image_save_format || '',
+    is_strip_exif: form.is_strip_exif,
+    is_enable_watermark: form.is_enable_watermark,
+    watermark_configs: {
+      text: form.watermark_text,
+      position: form.watermark_position,
+      font_size: watermarkFontSize,
+      color: form.watermark_color,
+      opacity: watermarkOpacity,
+    },
   }
 }
 
@@ -254,6 +313,56 @@ export function AdminGroupsPage() {
                 <label className="text-sm font-medium text-foreground">{t('admin.limitPerMonth', { defaultValue: '每月上限' })}</label>
                 <input type="number" min={0} value={form.limit_per_month} onChange={(e) => update('limit_per_month', Number(e.target.value))} className={inputCls} />
               </div>
+
+              <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+                <label className="text-sm font-medium text-foreground">{t('admin.imageProcessing', { defaultValue: '图片处理' })}</label>
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-sm text-muted-foreground">{t('admin.imageSaveQuality', { defaultValue: '压缩质量' })}</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={form.image_save_quality}
+                        onChange={(e) => update('image_save_quality', Number(e.target.value))}
+                        className={`${inputCls} w-24`}
+                      />
+                      <span className="text-sm text-muted-foreground">1 - 100</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm text-muted-foreground">{t('admin.imageSaveFormat', { defaultValue: '转码格式' })}</label>
+                    <Select
+                      value={form.image_save_format || 'origin'}
+                      onValueChange={(val) => {
+                        const next = String(val)
+                        update('image_save_format', next === 'origin' ? '' : next)
+                      }}
+                      items={{
+                        origin: t('admin.keepOriginalFormat', { defaultValue: '保持原格式' }),
+                        jpeg: 'JPEG',
+                        png: 'PNG',
+                        webp: 'WebP',
+                      }}
+                    >
+                      <SelectTrigger className="h-10 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="origin">{t('admin.keepOriginalFormat', { defaultValue: '保持原格式' })}</SelectItem>
+                        <SelectItem value="jpeg">JPEG</SelectItem>
+                        <SelectItem value="png">PNG</SelectItem>
+                        <SelectItem value="webp">WebP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex h-10 items-center justify-between rounded-lg border border-border bg-background px-3">
+                    <label className="text-sm text-foreground cursor-pointer">{t('admin.stripExif', { defaultValue: '去除 EXIF 元数据' })}</label>
+                    <Switch checked={form.is_strip_exif} onCheckedChange={(checked) => update('is_strip_exif', checked)} />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-6">
@@ -354,6 +463,86 @@ export function AdminGroupsPage() {
                 <p className="text-xs text-muted-foreground">
                   {t('admin.groupDefaultStrategyHint', { defaultValue: '当用户设置为“跟随分组默认”且上传未显式指定策略时，将使用这里的策略。' })}
                 </p>
+              </div>
+
+              <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+                <div className="flex h-10 items-center justify-between rounded-lg border border-border bg-background px-3">
+                  <label className="text-sm font-medium text-foreground cursor-pointer">{t('admin.enableWatermark', { defaultValue: '启用文字水印' })}</label>
+                  <Switch checked={form.is_enable_watermark} onCheckedChange={(checked) => update('is_enable_watermark', checked)} />
+                </div>
+
+                {form.is_enable_watermark && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-sm text-muted-foreground">{t('admin.watermarkText', { defaultValue: '水印文本' })}</label>
+                      <input
+                        value={form.watermark_text}
+                        onChange={(e) => update('watermark_text', e.target.value)}
+                        placeholder={t('admin.watermarkTextPlaceholder', { defaultValue: '例如：© PicFast' })}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm text-muted-foreground">{t('admin.watermarkPosition', { defaultValue: '位置' })}</label>
+                      <Select
+                        value={form.watermark_position}
+                        onValueChange={(val) => update('watermark_position', String(val))}
+                        items={{
+                          'bottom-right': t('admin.watermarkBottomRight', { defaultValue: '右下角' }),
+                          'bottom-left': t('admin.watermarkBottomLeft', { defaultValue: '左下角' }),
+                          'top-right': t('admin.watermarkTopRight', { defaultValue: '右上角' }),
+                          'top-left': t('admin.watermarkTopLeft', { defaultValue: '左上角' }),
+                          center: t('admin.watermarkCenter', { defaultValue: '居中' }),
+                        }}
+                      >
+                        <SelectTrigger className="h-10 w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bottom-right">{t('admin.watermarkBottomRight', { defaultValue: '右下角' })}</SelectItem>
+                          <SelectItem value="bottom-left">{t('admin.watermarkBottomLeft', { defaultValue: '左下角' })}</SelectItem>
+                          <SelectItem value="top-right">{t('admin.watermarkTopRight', { defaultValue: '右上角' })}</SelectItem>
+                          <SelectItem value="top-left">{t('admin.watermarkTopLeft', { defaultValue: '左上角' })}</SelectItem>
+                          <SelectItem value="center">{t('admin.watermarkCenter', { defaultValue: '居中' })}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-sm text-muted-foreground">{t('admin.watermarkFontSize', { defaultValue: '字号' })}</label>
+                        <input
+                          type="number"
+                          min={8}
+                          max={200}
+                          value={form.watermark_font_size}
+                          onChange={(e) => update('watermark_font_size', Number(e.target.value))}
+                          className={inputCls}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm text-muted-foreground">{t('admin.watermarkOpacity', { defaultValue: '透明度' })}</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={1}
+                          step={0.1}
+                          value={form.watermark_opacity}
+                          onChange={(e) => update('watermark_opacity', Number(e.target.value))}
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm text-muted-foreground">{t('admin.watermarkColor', { defaultValue: '颜色' })}</label>
+                      <input
+                        value={form.watermark_color}
+                        onChange={(e) => update('watermark_color', e.target.value)}
+                        placeholder="#FFFFFF"
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

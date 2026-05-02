@@ -90,6 +90,25 @@ func TestProcessImageInvalidData(t *testing.T) {
 	}
 }
 
+func TestResizeImageToWidth(t *testing.T) {
+	data := createTestImage("jpeg", 400, 200)
+	out, err := ResizeImageToWidth(data, "jpeg", 200)
+	if err != nil {
+		t.Fatalf("resize image failed: %v", err)
+	}
+	if len(out) == 0 {
+		t.Fatal("resized image is empty")
+	}
+
+	w, h, err := DecodeImageDimensions(bytes.NewReader(out))
+	if err != nil {
+		t.Fatalf("decode resized dimensions failed: %v", err)
+	}
+	if w != 200 || h != 100 {
+		t.Fatalf("unexpected resized dimensions: %dx%d", w, h)
+	}
+}
+
 func TestDecodeImageDimensions(t *testing.T) {
 	data := createTestImage("png", 300, 200)
 	w, h, err := DecodeImageDimensions(bytes.NewReader(data))
