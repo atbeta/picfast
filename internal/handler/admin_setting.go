@@ -40,6 +40,7 @@ type updateSettingsRequest struct {
 	AllowGuestUpload         *bool            `json:"allow_guest_upload"`
 	GuestCapacityBytes       *int64           `json:"guest_capacity_bytes"`
 	AllowRegistration        *bool            `json:"allow_registration"`
+	AllowUserImageProcessing *bool            `json:"allow_user_image_processing"`
 	RequireEmailVerification *bool            `json:"require_email_verification"`
 	UserInitialCapacity      *int64           `json:"user_initial_capacity"`
 	DefaultImageTTL          *string          `json:"default_image_ttl"`
@@ -92,6 +93,9 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.AllowRegistration != nil {
 		h.setter.SetAllowRegistration(*req.AllowRegistration)
+	}
+	if req.AllowUserImageProcessing != nil {
+		h.setter.SetAllowUserImageProcessing(*req.AllowUserImageProcessing)
 	}
 	if req.RequireEmailVerification != nil {
 		if *req.RequireEmailVerification && !h.mailReady {
@@ -191,6 +195,7 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 		AllowGuestUpload:         app.AllowGuestUpload,
 		GuestCapacityBytes:       app.GuestCapacityBytes,
 		AllowRegistration:        app.AllowRegistration,
+		AllowUserImageProcessing: app.AllowUserImageProcessing,
 		RequireEmailVerification: app.RequireEmailVerification,
 		UserInitialCapacity:      app.UserInitialCapacity,
 		DefaultImageTtl:          app.DefaultImageTTL.String(),
@@ -210,23 +215,24 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string]interface{} {
 	server, app := h.config.RuntimeSnapshot()
 	resp := map[string]interface{}{
-		"app_name":                   app.Name,
-		"app_url":                    server.BaseURL,
-		"site_description":           app.SiteDescription,
-		"favicon_url":                app.FaviconURL,
-		"allow_guest_upload":         app.AllowGuestUpload,
-		"guest_capacity_bytes":       app.GuestCapacityBytes,
-		"allow_registration":         app.AllowRegistration,
-		"require_email_verification": app.RequireEmailVerification,
-		"user_initial_capacity":      app.UserInitialCapacity,
-		"default_image_ttl":          app.DefaultImageTTL.String(),
-		"moderation_mode":            app.ModerationMode,
-		"icp_number":                 app.ICPNumber,
-		"icp_link":                   app.ICPLink,
-		"psb_number":                 app.PSBNumber,
-		"psb_link":                   app.PSBLink,
-		"analytics_provider":         app.AnalyticsProvider,
-		"analytics_config":           normalizedRawMessage(app.AnalyticsConfig),
+		"app_name":                    app.Name,
+		"app_url":                     server.BaseURL,
+		"site_description":            app.SiteDescription,
+		"favicon_url":                 app.FaviconURL,
+		"allow_guest_upload":          app.AllowGuestUpload,
+		"guest_capacity_bytes":        app.GuestCapacityBytes,
+		"allow_registration":          app.AllowRegistration,
+		"allow_user_image_processing": app.AllowUserImageProcessing,
+		"require_email_verification":  app.RequireEmailVerification,
+		"user_initial_capacity":       app.UserInitialCapacity,
+		"default_image_ttl":           app.DefaultImageTTL.String(),
+		"moderation_mode":             app.ModerationMode,
+		"icp_number":                  app.ICPNumber,
+		"icp_link":                    app.ICPLink,
+		"psb_number":                  app.PSBNumber,
+		"psb_link":                    app.PSBLink,
+		"analytics_provider":          app.AnalyticsProvider,
+		"analytics_config":            normalizedRawMessage(app.AnalyticsConfig),
 	}
 	if includeMailReady {
 		resp["require_email_verification"] = app.RequireEmailVerification && h.mailReady

@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"html"
 	"strconv"
 	"strings"
 
@@ -85,9 +86,11 @@ func ApplyWatermark(data []byte, cfg WatermarkConfig, formatHint string, quality
 	if len(aHex) == 1 {
 		aHex = "0" + aHex
 	}
+	// Use a CJK-friendly font fallback chain and escape text to keep Pango markup valid.
+	fontDesc := fmt.Sprintf("Noto Sans CJK SC, Noto Sans CJK, Sans %.0f", cfg.FontSize)
 	pangoText := fmt.Sprintf(
-		"<span font='%.0f' foreground='#%02X%02X%02X%s'>%s</span>",
-		cfg.FontSize, r, g, b, aHex, cfg.Text,
+		"<span font_desc='%s' foreground='#%02X%02X%02X%s'>%s</span>",
+		fontDesc, r, g, b, aHex, html.EscapeString(cfg.Text),
 	)
 
 	// Create text image

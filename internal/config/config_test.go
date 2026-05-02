@@ -81,6 +81,7 @@ func TestRuntimeSnapshotsFollowSetterUpdates(t *testing.T) {
 	setter.SetBaseURL("https://img.example.com")
 	setter.SetAllowGuestUpload(true)
 	setter.SetGuestCapacityBytes(2048)
+	setter.SetAllowUserImageProcessing(false)
 	setter.SetDefaultImageTTL(time.Hour)
 
 	server, app := cfg.RuntimeSnapshot()
@@ -95,6 +96,9 @@ func TestRuntimeSnapshotsFollowSetterUpdates(t *testing.T) {
 	}
 	if app.GuestCapacityBytes != 2048 {
 		t.Fatalf("GuestCapacityBytes = %d", app.GuestCapacityBytes)
+	}
+	if app.AllowUserImageProcessing {
+		t.Fatalf("AllowUserImageProcessing = true")
 	}
 	if app.DefaultImageTTL != time.Hour {
 		t.Fatalf("DefaultImageTTL = %s", app.DefaultImageTTL)

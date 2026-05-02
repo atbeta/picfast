@@ -81,11 +81,12 @@ func TestAdminSettingsPersistSiteSettings(t *testing.T) {
 	makeAdmin(t, env, admin.ID)
 
 	body := map[string]interface{}{
-		"allow_guest_upload":    true,
-		"guest_capacity_bytes":  int64(2048),
-		"allow_registration":    true,
-		"user_initial_capacity": int64(1024),
-		"moderation_mode":       "manual",
+		"allow_guest_upload":          true,
+		"guest_capacity_bytes":        int64(2048),
+		"allow_registration":          true,
+		"allow_user_image_processing": false,
+		"user_initial_capacity":       int64(1024),
+		"moderation_mode":             "manual",
 	}
 	req := env.authReq(t, http.MethodPut, "/api/v1/admin/settings", body, admin.ID, domain.RoleAdmin, group.ID)
 	rec := doReq(env.Router, req)
@@ -106,6 +107,9 @@ func TestAdminSettingsPersistSiteSettings(t *testing.T) {
 	}
 	if settings.GuestCapacityBytes != 2048 {
 		t.Fatalf("persisted guest_capacity_bytes = %d, want 2048", settings.GuestCapacityBytes)
+	}
+	if settings.AllowUserImageProcessing {
+		t.Fatalf("persisted allow_user_image_processing = %v, want false", settings.AllowUserImageProcessing)
 	}
 	if settings.ModerationMode != "manual" {
 		t.Fatalf("persisted moderation_mode = %q, want manual", settings.ModerationMode)

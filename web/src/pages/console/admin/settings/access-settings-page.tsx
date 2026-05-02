@@ -20,6 +20,7 @@ export function AdminAccessSettingsPage() {
     allow_guest_upload: Boolean(values.allow_guest_upload),
     guest_capacity_bytes: values.guest_capacity_mb * 1024 * 1024,
     allow_registration: Boolean(values.allow_registration),
+    allow_user_image_processing: Boolean(values.allow_user_image_processing),
     require_email_verification: Boolean(values.require_email_verification),
     user_initial_capacity: values.user_initial_capacity_mb * 1024 * 1024,
     default_image_ttl: values.default_image_ttl,
@@ -65,6 +66,21 @@ export function AdminAccessSettingsPage() {
             control={control}
             render={({ field }) => (
               <Switch checked={field.value} onCheckedChange={field.onChange} id="registration" />
+            )}
+          />
+        </div>
+      </SettingField>
+
+      <SettingField
+        label={t('admin.allowUserImageProcessing', { defaultValue: '允许用户自定义图片处理' })}
+        hint={t('admin.allowUserImageProcessingDesc', { defaultValue: '关闭后用户侧上传统一使用系统默认处理（质量85、去EXIF、保持原格式、水印关闭）。' })}
+      >
+        <div className="flex h-11 items-center justify-end">
+          <Controller
+            name="allow_user_image_processing"
+            control={control}
+            render={({ field }) => (
+              <Switch checked={field.value} onCheckedChange={field.onChange} id="allowUserImageProcessing" />
             )}
           />
         </div>

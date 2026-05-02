@@ -27,9 +27,22 @@ export interface UserProfile {
   image_num: number
   album_num: number
   settings: {
-    default_album: number
-    default_strategy: number
-    default_permission: number
+    default_album?: number
+    default_strategy?: number
+    default_permission?: number
+    image_processing?: {
+      image_save_quality?: number
+      image_save_format?: string
+      is_strip_exif?: boolean
+      is_enable_watermark?: boolean
+      watermark_configs?: {
+        text?: string
+        position?: string
+        font_size?: number
+        color?: string
+        opacity?: number
+      }
+    }
   }
   email_verified: boolean
   created_at: string

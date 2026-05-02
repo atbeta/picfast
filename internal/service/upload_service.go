@@ -33,7 +33,8 @@ type UploadService struct {
 }
 
 type uploadUserSettings struct {
-	DefaultStrategy int64 `json:"default_strategy"`
+	DefaultStrategy int64                               `json:"default_strategy"`
+	ImageProcessing *domain.UserImageProcessingSettings `json:"image_processing"`
 }
 
 type uploadIdentity struct {
@@ -42,6 +43,15 @@ type uploadIdentity struct {
 	groupID             int64
 	isAdmin             bool
 	preferredStrategyID *int64
+	processing          imageProcessingConfig
+}
+
+type imageProcessingConfig struct {
+	Quality          int
+	Format           string
+	StripExif        bool
+	EnableWatermark  bool
+	WatermarkConfigs *domain.WatermarkConfig
 }
 
 type processedUploadImage struct {
@@ -124,7 +134,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 
 	// Step 6: Process image
 	originalSize := int64(len(params.FileData))
-	processed := processUploadImage(params.FileData, ext, groupConfig)
+	processed := processUploadImage(params.FileData, ext, identity.processing)
 	fileData := processed.data
 
 	// Step 7: Generate path and filename
@@ -307,7 +317,11 @@ func (s *UploadService) resolveIdentity(ctx context.Context, params UploadParams
 		if err != nil {
 			return uploadIdentity{}, fmt.Errorf("no guest group configured")
 		}
-		return uploadIdentity{group: group, groupID: group.ID}, nil
+		return uploadIdentity{
+			group:      group,
+			groupID:    group.ID,
+			processing: resolveImageProcessingConfig(s.config.AppSnapshot(), nil),
+		}, nil
 	}
 
 	userID := *params.UserID
@@ -328,9 +342,11 @@ func (s *UploadService) resolveIdentity(ctx context.Context, params UploadParams
 		return uploadIdentity{}, fmt.Errorf("group not found")
 	}
 
-	var preferredStrategyID *int64
+	var (
+		preferredStrategyID *int64
+		settings            uploadUserSettings
+	)
 	if len(user.Settings) > 0 {
-		var settings uploadUserSettings
 		if err := json.Unmarshal(user.Settings, &settings); err == nil && settings.DefaultStrategy > 0 {
 			preferredStrategyID = &settings.DefaultStrategy
 		}
@@ -342,6 +358,7 @@ func (s *UploadService) resolveIdentity(ctx context.Context, params UploadParams
 		groupID:             groupID,
 		isAdmin:             user.Role == string(domain.RoleAdmin),
 		preferredStrategyID: preferredStrategyID,
+		processing:          resolveImageProcessingConfig(s.config.AppSnapshot(), settings.ImageProcessing),
 	}, nil
 }
 
@@ -440,21 +457,21 @@ func findStrategyByID(strategies []sqlc.Strategy, id int64) (sqlc.Strategy, bool
 	return sqlc.Strategy{}, false
 }
 
-func processUploadImage(fileData []byte, ext string, groupConfig domain.GroupConfig) processedUploadImage {
+func processUploadImage(fileData []byte, ext string, cfg imageProcessingConfig) processedUploadImage {
 	result := processedUploadImage{data: fileData}
 	skipExts := map[string]bool{"gif": true, "svg": true, "ico": true}
 	if skipExts[ext] {
 		return result
 	}
 
-	targetFormat := groupConfig.ImageSaveFormat
+	targetFormat := cfg.Format
 	if targetFormat == "" {
 		targetFormat = ext
 	}
 
-	needProcess := groupConfig.ImageSaveFormat != "" || groupConfig.ImageSaveQuality < 100 || groupConfig.IsStripExif
+	needProcess := cfg.Format != "" || cfg.Quality < 100 || cfg.StripExif
 	if needProcess {
-		processedImg, err := ProcessImage(result.data, targetFormat, groupConfig.ImageSaveQuality, groupConfig.IsStripExif)
+		processedImg, err := ProcessImage(result.data, targetFormat, cfg.Quality, cfg.StripExif)
 		if err != nil {
 			slog.Warn("image processing failed, using original", "error", err)
 		} else {
@@ -465,20 +482,73 @@ func processUploadImage(fileData []byte, ext string, groupConfig domain.GroupCon
 		}
 	}
 
-	if groupConfig.IsEnableWatermark {
-		var wmCfg WatermarkConfig
-		if err := json.Unmarshal(groupConfig.WatermarkConfigs, &wmCfg); err == nil && wmCfg.Text != "" {
-			watermarked, err := ApplyWatermark(result.data, wmCfg, targetFormat, groupConfig.ImageSaveQuality)
-			if err != nil {
-				slog.Warn("watermark failed, using original", "error", err)
-			} else {
-				result.data = watermarked
-				result.processed = true
-			}
+	if cfg.EnableWatermark && cfg.WatermarkConfigs != nil && cfg.WatermarkConfigs.Text != "" {
+		wmCfg := WatermarkConfig(*cfg.WatermarkConfigs)
+		watermarked, err := ApplyWatermark(result.data, wmCfg, targetFormat, cfg.Quality)
+		if err != nil {
+			slog.Warn("watermark failed, using original", "error", err)
+		} else {
+			result.data = watermarked
+			result.processed = true
 		}
 	}
 
 	return result
+}
+
+func resolveImageProcessingConfig(appCfg config.AppConfig, userCfg *domain.UserImageProcessingSettings) imageProcessingConfig {
+	cfg := imageProcessingConfig{
+		Quality:          85,
+		Format:           "",
+		StripExif:        true,
+		EnableWatermark:  false,
+		WatermarkConfigs: nil,
+	}
+
+	if !appCfg.AllowUserImageProcessing || userCfg == nil {
+		return cfg
+	}
+	if userCfg.ImageSaveQuality != nil {
+		cfg.Quality = clampInt(*userCfg.ImageSaveQuality, 1, 100)
+	}
+	if userCfg.ImageSaveFormat != nil {
+		cfg.Format = normalizeImageFormat(*userCfg.ImageSaveFormat)
+	}
+	if userCfg.IsStripExif != nil {
+		cfg.StripExif = *userCfg.IsStripExif
+	}
+	if userCfg.IsEnableWatermark != nil {
+		cfg.EnableWatermark = *userCfg.IsEnableWatermark
+	}
+	if userCfg.WatermarkConfigs != nil {
+		cfg.WatermarkConfigs = userCfg.WatermarkConfigs
+	}
+	return cfg
+}
+
+func clampInt(value, minValue, maxValue int) int {
+	if value < minValue {
+		return minValue
+	}
+	if value > maxValue {
+		return maxValue
+	}
+	return value
+}
+
+func normalizeImageFormat(value string) string {
+	switch strings.TrimSpace(strings.ToLower(value)) {
+	case "", "origin":
+		return ""
+	case "jpg", "jpeg":
+		return "jpeg"
+	case "png":
+		return "png"
+	case "webp":
+		return "webp"
+	default:
+		return ""
+	}
 }
 
 func (s *UploadService) checkRateLimit(ctx context.Context, userID int64, clientIP string, cfg *domain.GroupConfig) error {

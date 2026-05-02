@@ -290,7 +290,14 @@ export function AdminUsersPage() {
 
             <div className="space-y-3">
               <label className="text-sm font-medium text-foreground">{t('admin.colGroup', { defaultValue: '所属分组' })}</label>
-              <Select value={editGroup} onValueChange={(val) => val !== null && setEditGroup(val as string)}>
+              <Select
+                value={editGroup}
+                onValueChange={(val) => val !== null && setEditGroup(val as string)}
+                items={{
+                  none: t('admin.noGroup', { defaultValue: '不分配分组' }),
+                  ...Object.fromEntries(groups.map((g) => [g.id.toString(), g.name])),
+                }}
+              >
                 <SelectTrigger className="h-10 w-full">
                   <SelectValue placeholder={t('admin.noGroup', { defaultValue: '不分配分组' })} />
                 </SelectTrigger>

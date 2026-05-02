@@ -224,21 +224,22 @@ func New(
 		r.Get("/config", func(w http.ResponseWriter, r *http.Request) {
 			server, app := cfg.RuntimeSnapshot()
 			handler.Success(w, map[string]interface{}{
-				"app_name":                   app.Name,
-				"site_description":           app.SiteDescription,
-				"favicon_url":                app.FaviconURL,
-				"allow_guest_upload":         app.AllowGuestUpload,
-				"guest_capacity_bytes":       app.GuestCapacityBytes,
-				"allow_registration":         app.AllowRegistration,
-				"require_email_verification": app.RequireEmailVerification && mailSender != nil && mailSender.Ready(),
-				"base_url":                   server.BaseURL,
-				"icp_number":                 app.ICPNumber,
-				"icp_link":                   app.ICPLink,
-				"psb_number":                 app.PSBNumber,
-				"psb_link":                   app.PSBLink,
-				"analytics_provider":         app.AnalyticsProvider,
-				"analytics_config":           normalizeJSON(app.AnalyticsConfig),
-				"github_url":                 version.DefaultGitHubURL(),
+				"app_name":                    app.Name,
+				"site_description":            app.SiteDescription,
+				"favicon_url":                 app.FaviconURL,
+				"allow_guest_upload":          app.AllowGuestUpload,
+				"guest_capacity_bytes":        app.GuestCapacityBytes,
+				"allow_registration":          app.AllowRegistration,
+				"allow_user_image_processing": app.AllowUserImageProcessing,
+				"require_email_verification":  app.RequireEmailVerification && mailSender != nil && mailSender.Ready(),
+				"base_url":                    server.BaseURL,
+				"icp_number":                  app.ICPNumber,
+				"icp_link":                    app.ICPLink,
+				"psb_number":                  app.PSBNumber,
+				"psb_link":                    app.PSBLink,
+				"analytics_provider":          app.AnalyticsProvider,
+				"analytics_config":            normalizeJSON(app.AnalyticsConfig),
+				"github_url":                  version.DefaultGitHubURL(),
 			})
 		})
 		r.Get("/version", func(w http.ResponseWriter, r *http.Request) {
@@ -306,14 +307,14 @@ func New(
 		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries)).
 			Post("/upload", imageHandler.Upload)
 
-// ShareX endpoints
-	sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL)
-	r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
-	r.Get("/sharex/config", sharexHandler.Config)
+			// ShareX endpoints
+		sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL)
+		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
+		r.Get("/sharex/config", sharexHandler.Config)
 
-	// Flat upload endpoints (PicGo, uPic, Dropshare, etc.)
-	flatHandler := handler.NewFlatUploadHandler(uploadSvc, cfg.Server.BaseURL)
-	r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/flat/upload", flatHandler.Upload)
+		// Flat upload endpoints (PicGo, uPic, Dropshare, etc.)
+		flatHandler := handler.NewFlatUploadHandler(uploadSvc, cfg.Server.BaseURL)
+		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/flat/upload", flatHandler.Upload)
 
 		// Admin routes
 		r.Route("/admin", func(r chi.Router) {

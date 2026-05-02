@@ -62,9 +62,18 @@ func (c *GroupConfig) IsExtensionAllowed(ext string) bool {
 }
 
 type UserSettings struct {
-	DefaultAlbum      int64 `json:"default_album"`
-	DefaultStrategy   int64 `json:"default_strategy"`
-	DefaultPermission int16 `json:"default_permission"`
+	DefaultAlbum      int64                        `json:"default_album"`
+	DefaultStrategy   int64                        `json:"default_strategy"`
+	DefaultPermission int16                        `json:"default_permission"`
+	ImageProcessing   *UserImageProcessingSettings `json:"image_processing,omitempty"`
+}
+
+type UserImageProcessingSettings struct {
+	ImageSaveQuality  *int             `json:"image_save_quality,omitempty"`
+	ImageSaveFormat   *string          `json:"image_save_format,omitempty"`
+	IsStripExif       *bool            `json:"is_strip_exif,omitempty"`
+	IsEnableWatermark *bool            `json:"is_enable_watermark,omitempty"`
+	WatermarkConfigs  *WatermarkConfig `json:"watermark_configs,omitempty"`
 }
 
 type LocalStrategyConfig struct {

@@ -7,6 +7,7 @@ export interface SiteConfig {
   allow_guest_upload: boolean
   guest_capacity_bytes: number
   allow_registration: boolean
+  allow_user_image_processing: boolean
   require_email_verification: boolean
   base_url: string
   icp_number: string

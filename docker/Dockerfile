@@ -33,6 +33,8 @@ FROM debian:12-slim
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libvips \
+    fontconfig \
+    fonts-noto-cjk \
     ca-certificates \
     tzdata \
     wget \

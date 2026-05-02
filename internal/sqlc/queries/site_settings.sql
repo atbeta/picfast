@@ -20,9 +20,10 @@ INSERT INTO site_settings (
     psb_number,
     psb_link,
     analytics_provider,
-    analytics_config
+    analytics_config,
+    allow_user_image_processing
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
@@ -41,5 +42,6 @@ ON CONFLICT (id) DO UPDATE SET
     psb_link = EXCLUDED.psb_link,
     analytics_provider = EXCLUDED.analytics_provider,
     analytics_config = EXCLUDED.analytics_config,
+    allow_user_image_processing = EXCLUDED.allow_user_image_processing,
     updated_at = NOW()
 RETURNING *;

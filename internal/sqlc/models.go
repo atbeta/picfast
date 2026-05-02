@@ -137,6 +137,7 @@ type SiteSetting struct {
 	AnalyticsConfig          json.RawMessage `json:"analytics_config"`
 	FaviconUrl               string          `json:"favicon_url"`
 	GuestCapacityBytes       int64           `json:"guest_capacity_bytes"`
+	AllowUserImageProcessing bool            `json:"allow_user_image_processing"`
 }
 
 type Strategy struct {

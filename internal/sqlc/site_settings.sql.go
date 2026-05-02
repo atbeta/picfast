@@ -11,7 +11,7 @@ import (
 )
 
 const getSiteSettings = `-- name: GetSiteSettings :one
-SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes FROM site_settings WHERE id = 1
+SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing FROM site_settings WHERE id = 1
 `
 
 func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
@@ -38,6 +38,7 @@ func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
 		&i.AnalyticsConfig,
 		&i.FaviconUrl,
 		&i.GuestCapacityBytes,
+		&i.AllowUserImageProcessing,
 	)
 	return i, err
 }
@@ -61,9 +62,10 @@ INSERT INTO site_settings (
     psb_number,
     psb_link,
     analytics_provider,
-    analytics_config
+    analytics_config,
+    allow_user_image_processing
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
@@ -82,8 +84,9 @@ ON CONFLICT (id) DO UPDATE SET
     psb_link = EXCLUDED.psb_link,
     analytics_provider = EXCLUDED.analytics_provider,
     analytics_config = EXCLUDED.analytics_config,
+    allow_user_image_processing = EXCLUDED.allow_user_image_processing,
     updated_at = NOW()
-RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes
+RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing
 `
 
 type UpsertSiteSettingsParams struct {
@@ -104,6 +107,7 @@ type UpsertSiteSettingsParams struct {
 	PsbLink                  string          `json:"psb_link"`
 	AnalyticsProvider        string          `json:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `json:"analytics_config"`
+	AllowUserImageProcessing bool            `json:"allow_user_image_processing"`
 }
 
 func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettingsParams) (SiteSetting, error) {
@@ -125,6 +129,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		arg.PsbLink,
 		arg.AnalyticsProvider,
 		arg.AnalyticsConfig,
+		arg.AllowUserImageProcessing,
 	)
 	var i SiteSetting
 	err := row.Scan(
@@ -148,6 +153,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		&i.AnalyticsConfig,
 		&i.FaviconUrl,
 		&i.GuestCapacityBytes,
+		&i.AllowUserImageProcessing,
 	)
 	return i, err
 }
