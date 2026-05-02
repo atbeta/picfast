@@ -306,10 +306,14 @@ func New(
 		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries)).
 			Post("/upload", imageHandler.Upload)
 
-		// ShareX endpoints
-		sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL)
-		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
-		r.Get("/sharex/config", sharexHandler.Config)
+// ShareX endpoints
+	sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL)
+	r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
+	r.Get("/sharex/config", sharexHandler.Config)
+
+	// Flat upload endpoints (PicGo, uPic, Dropshare, etc.)
+	flatHandler := handler.NewFlatUploadHandler(uploadSvc, cfg.Server.BaseURL)
+	r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/flat/upload", flatHandler.Upload)
 
 		// Admin routes
 		r.Route("/admin", func(r chi.Router) {

@@ -628,6 +628,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/ShareXConfigResponse"
 
+  /flat/upload:
+    post:
+      tags: [flat]
+      summary: Flat-format upload for third-party clients
+      description: |
+        Multipart upload endpoint that returns a flat JSON with url, thumbnail_url, markdown, bbcode, and html fields.
+        Compatible with PicGo/PicList (web-uploader plugin), uPic (custom host), Dropshare (Custom API), and any client that accepts a simple URL response.
+        Supports optional authentication via Bearer token or X-API-Token header.
+      security: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlatUploadResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
   /admin/groups:
     get:
       tags: [admin]
@@ -1781,6 +1811,25 @@ components:
           type: string
         deletion_url:
           type: string
+
+    FlatUploadResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Direct image URL
+        thumbnail_url:
+          type: string
+          description: Thumbnail image URL
+        markdown:
+          type: string
+          description: Markdown-formatted image embed
+        bbcode:
+          type: string
+          description: BBCode-formatted image embed
+        html:
+          type: string
+          description: HTML image tag
 
     ShareXConfigResponse:
       type: object
