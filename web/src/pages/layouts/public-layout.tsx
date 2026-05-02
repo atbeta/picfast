@@ -15,7 +15,7 @@ export function PublicLayout() {
   const logoSrc = config?.favicon_url?.trim() || '/favicon-default.svg'
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
+    <div className="relative flex-1 flex flex-col overflow-hidden">
       {/* Premium Background Glow Effect */}
       <div className="pointer-events-none fixed inset-0 z-0">
         <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-primary/20 blur-[120px]" />

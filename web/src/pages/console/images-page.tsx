@@ -26,7 +26,7 @@ export function ImagesPage() {
   const albumIdParam = searchParams.get('album_id')
   const albumId = albumIdParam ? Number(albumIdParam) : null
   const [page, setPage] = useState(1)
-  const pageSize = 20
+  const pageSize = 60
 
   // Reset page when album changes
   // Remove synchronous setState from useEffect to prevent cascading renders
@@ -253,11 +253,11 @@ export function ImagesPage() {
               </button>
             )}
             {!batchMode ? (
-            <button type="button" onClick={() => setBatchMode(true)} className="rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-medium shadow-sm transition-colors hover:bg-muted hover:text-foreground">
+            <button type="button" onClick={() => setBatchMode(true)} className="rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-medium shadow-sm transition-colors hover:bg-muted hover:text-foreground cursor-pointer">
               {t('images.batchManage', { defaultValue: '批量管理' })}
             </button>
           ) : (
-            <button type="button" onClick={exitBatch} className="rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-medium shadow-sm transition-colors hover:bg-muted hover:text-foreground">
+            <button type="button" onClick={exitBatch} className="rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-medium shadow-sm transition-colors hover:bg-muted hover:text-foreground cursor-pointer">
               {t('images.exitBatch', { defaultValue: '退出管理' })}
             </button>
           )}
@@ -331,10 +331,10 @@ export function ImagesPage() {
             {data.items.map((img) => (
               <div
                 key={img.id}
-                className={`group cursor-pointer overflow-hidden rounded-xl border bg-card transition-colors duration-150 hover:shadow-sm hover:border-primary/30 ${batchMode && selectedKeys.has(img.key) ? 'border-primary/70 bg-primary/[0.04] ring-2 ring-primary/25' : 'border-border/50'}`}
+                className={`group cursor-pointer overflow-hidden rounded-xl border bg-card transition-colors duration-150 hover:shadow-sm hover:border-primary/30 flex flex-col ${batchMode && selectedKeys.has(img.key) ? 'border-primary/70 bg-primary/[0.04] ring-2 ring-primary/25' : 'border-border/50'}`}
                 onClick={() => batchMode ? toggleSelect(img.key) : showDetail(img)}
               >
-                <div className="relative aspect-square flex items-center justify-center overflow-hidden bg-muted/30">
+                <div className="relative aspect-[4/3] flex items-center justify-center overflow-hidden bg-muted/30">
                   {img.thumbnail_url || img.links?.thumbnail_url ? (
                     <>
                       <img
@@ -350,22 +350,41 @@ export function ImagesPage() {
                     <span className="text-xs font-medium text-muted-foreground">{img.extension.toUpperCase()}</span>
                   )}
                   {batchMode && (
-                    <button
-                      type="button"
-                      className={`absolute right-2 top-2 z-10 inline-flex size-7 items-center justify-center rounded-full border shadow-sm backdrop-blur-sm transition-colors duration-150 ${selectedKeys.has(img.key) ? 'border-primary bg-primary text-primary-foreground' : 'border-white/70 bg-black/35 text-transparent hover:border-white hover:bg-black/45'}`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleSelect(img.key)
-                      }}
-                      aria-label={selectedKeys.has(img.key) ? t('images.exitBatch', { defaultValue: '取消选中' }) : t('images.selectAll', { defaultValue: '选中' })}
-                    >
-                      <Check className="size-4" />
-                    </button>
+                    <div className="absolute right-2 top-2 z-10">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleSelect(img.key)
+                        }}
+                        aria-label={selectedKeys.has(img.key) ? t('images.exitBatch', { defaultValue: '取消选中' }) : t('images.selectAll', { defaultValue: '选中' })}
+                        className={`flex size-5 items-center justify-center rounded-full border shadow-sm transition-all ${
+                          selectedKeys.has(img.key)
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-white/50 bg-black/20 text-white backdrop-blur-md hover:bg-black/40'
+                        }`}
+                      >
+                        <Check className={`size-3.5 ${!selectedKeys.has(img.key) ? 'opacity-0' : ''}`} />
+                      </button>
+                    </div>
                   )}
                   {img.permission === 0 && (
                     <div className="absolute right-2 top-2 rounded-lg bg-amber-500/90 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm shadow-sm">
                       {t('images.private', { defaultValue: '私有' })}
                     </div>
+                  )}
+                  {!batchMode && (
+                    <button
+                      type="button"
+                      className="absolute right-2 top-2 z-10 inline-flex size-7 items-center justify-center rounded-full bg-black/40 text-white/80 opacity-0 backdrop-blur-sm transition-all duration-200 hover:bg-destructive hover:text-white group-hover:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setDeleteTarget(img.key)
+                      }}
+                      title={t('images.delete', { defaultValue: '删除' })}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
                   )}
                 </div>
                 <div className="p-3">

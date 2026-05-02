@@ -40,39 +40,43 @@ export function ConsoleLayout() {
   }
 
   return (
-    <div className="relative min-h-screen bg-background overflow-x-hidden text-foreground">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+    <div className="relative flex-1 flex flex-col overflow-x-hidden">
+      <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-card/80 backdrop-blur-xl supports-[backdrop-filter]:bg-card/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
         <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center justify-between px-6">
           <Link to="/console/upload" className="flex items-center gap-2 text-lg font-bold tracking-tight transition-opacity hover:opacity-80">
-            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg shadow-sm">
+            <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-md shadow-sm border border-border/50 bg-background">
               <img
                 src={logoSrc}
                 alt="logo"
-                className="h-full w-full object-contain"
+                className="h-4/5 w-4/5 object-contain"
                 onError={(e) => {
                   e.currentTarget.src = '/favicon-default.svg'
                 }}
               />
             </div>
-            <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            <span className="text-[15px] font-semibold text-foreground">
               {appName}
             </span>
           </Link>
-          <div className="flex items-center gap-4">
-            <LanguageSwitcher />
-            <ThemeSwitcher />
-            <div className="h-4 w-px bg-border/50 hidden sm:block" />
-            {user && (
-              <span className="text-sm font-medium text-muted-foreground">{user.name || user.email}</span>
-            )}
-            <Button variant="outline" size="sm" onClick={onLogout} className="rounded-full shadow-sm hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors">
-              {t('common.logout')}
-            </Button>
+          <div className="flex items-center gap-3 md:gap-5">
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <ThemeSwitcher />
+            </div>
+            <div className="h-4 w-px bg-border/80 hidden sm:block" />
+            <div className="flex items-center gap-3">
+              {user && (
+                <span className="text-[13px] font-medium text-foreground">{user.name || user.email}</span>
+              )}
+              <Button variant="outline" size="sm" onClick={onLogout} className="h-8 px-3 text-xs rounded-md shadow-sm hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors">
+                {t('common.logout')}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto flex flex-col md:grid w-full max-w-[1400px] md:grid-cols-[220px_1fr] lg:grid-cols-[240px_1fr] gap-6 md:gap-10 px-4 md:px-6 py-6 md:py-8">
+      <div className="relative z-10 mx-auto flex flex-col md:grid w-full max-w-[1400px] md:grid-cols-[200px_1fr] gap-6 md:gap-8 px-4 md:px-6 py-6 md:py-8 flex-1">
         <aside className="w-full md:block">
           <div className="md:sticky md:top-24 space-y-1">
             <MobileNavRail>
@@ -85,7 +89,7 @@ export function ConsoleLayout() {
             </MobileNavRail>
             {user?.role === 'admin' && (
               <div className="mt-4 pt-4 border-t border-border/40">
-                <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60 hidden md:block">
+                <p className="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/80 hidden md:block">
                   {t('nav.admin')}
                 </p>
                 <MobileNavRail>
@@ -104,8 +108,8 @@ export function ConsoleLayout() {
             )}
           </div>
         </aside>
-        <main className="min-w-0">
-          <div className="min-h-[calc(100vh-8rem)] pt-2 md:pt-0">
+        <main className="min-w-0 flex flex-col">
+          <div className="rounded-2xl border border-border/40 bg-card p-4 sm:p-6 md:p-8 shadow-sm flex-1">
             <Outlet />
           </div>
         </main>
@@ -133,7 +137,7 @@ function ConsoleNavItem({ to, label, icon: Icon }: { to: string; label: string; 
       end={to === '/console/admin'}
       className={({ isActive }) =>
         [
-          'group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2 text-[14px] font-medium transition-colors duration-200',
+          'group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2 text-[13px] font-medium transition-colors duration-200',
           isActive
             ? 'text-foreground bg-muted/50 font-semibold'
             : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground',

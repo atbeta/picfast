@@ -5,6 +5,7 @@ import { Upload } from 'lucide-react'
 interface UploadZoneProps {
   onFiles: (files: File[]) => void
   disabled?: boolean
+  className?: string
 }
 
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'tif', 'tiff'])
@@ -14,7 +15,7 @@ function isImageFile(file: File): boolean {
   return IMAGE_EXTENSIONS.has(ext) || file.type.startsWith('image/')
 }
 
-export function UploadZone({ onFiles, disabled }: UploadZoneProps) {
+export function UploadZone({ onFiles, disabled, className = '' }: UploadZoneProps) {
   const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
@@ -62,6 +63,7 @@ export function UploadZone({ onFiles, disabled }: UploadZoneProps) {
           ? 'bg-primary/5 dark:bg-primary/10'
           : 'bg-muted/30 hover:bg-muted/50 dark:bg-muted/10 dark:hover:bg-muted/20',
         disabled && 'pointer-events-none opacity-50',
+        className
       ].join(' ')}
     >
       {/* Animated Border */}

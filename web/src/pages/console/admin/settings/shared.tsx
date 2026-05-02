@@ -18,7 +18,7 @@ export function SettingField({
 }) {
   return (
     <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:gap-6">
-      <div className="pt-1">
+      <div className="pt-2">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-foreground">{label}</p>
           {hint ? <HelpHint text={hint} /> : null}
@@ -57,8 +57,8 @@ export function SettingsPageLayout({
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
 
       {data && (
-        <form onSubmit={onSubmit} className="space-y-6 max-w-4xl pb-8">
-          <div className="space-y-6 rounded-xl border border-border bg-card p-6 shadow-sm">
+        <form onSubmit={onSubmit} className="space-y-6 pb-8">
+          <div className="space-y-6 rounded-xl border border-border/40 bg-card/60 p-6 shadow-sm">
             {children}
           </div>
 

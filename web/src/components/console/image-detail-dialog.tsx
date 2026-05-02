@@ -46,7 +46,7 @@ export function ImageDetailDialog({
 
   return (
     <Dialog open={!!image} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-h-[90vh] flex flex-col sm:max-w-2xl p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-h-[90vh] flex flex-col sm:max-w-3xl p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b border-border/50 bg-muted/10 shrink-0">
           <DialogTitle>{t('images.detailTitle', { defaultValue: '图片详情' })}</DialogTitle>
         </DialogHeader>
@@ -55,7 +55,15 @@ export function ImageDetailDialog({
 
         {image && (
           <div className="flex-1 overflow-y-auto p-6 space-y-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border/50 hover:[&::-webkit-scrollbar-thumb]:bg-border">
-            <div className="flex justify-center rounded-xl bg-muted/20 border border-border/40 p-4">
+            <div className="flex justify-center rounded-xl bg-muted/20 border border-border/40 p-4 relative group">
+              <button
+                type="button"
+                onClick={() => onDelete(image.key)}
+                className="absolute top-2 right-2 p-2 rounded-md text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                title={t('images.delete', { defaultValue: '删除' })}
+              >
+                <Trash2 className="size-4" />
+              </button>
               <img
                 src={toRelative(image.links?.url ?? image.url ?? '')}
                 alt={image.key}
@@ -131,13 +139,6 @@ export function ImageDetailDialog({
                   </div>
                 )}
               </div>
-            </div>
-
-            <div className="flex justify-end pt-4 mt-6">
-              <button type="button" onClick={() => onDelete(image.key)} className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-destructive bg-destructive/10 transition-colors hover:bg-destructive/20 cursor-pointer">
-                <Trash2 className="size-4" />
-                {t('images.delete')}
-              </button>
             </div>
           </div>
         )}

@@ -85,68 +85,70 @@ function PublicRoutes() {
   }
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       {config && <SiteMetadata config={config} />}
-      <Routes>
-        <Route element={<PublicLayout />}>
-          <Route
-            path="/"
-            element={
-              config?.allow_guest_upload ? (
-                <LazyPage>
-                  <GuestUploadPage />
-                </LazyPage>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route path="/login" element={<LazyPage><LoginPage /></LazyPage>} />
-          <Route path="/verify-email" element={<LazyPage><VerifyEmailPage /></LazyPage>} />
-          <Route
-            path="/register"
-            element={
-              config?.allow_registration ? (
-                <LazyPage>
-                  <RegisterPage />
-                </LazyPage>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-        </Route>
-
-        <Route element={<RequireAuth />}>
-          <Route path="/console" element={<ConsoleLayout />}>
-            <Route path="upload" element={<LazyPage><UploadPage /></LazyPage>} />
-            <Route path="images" element={<LazyPage><ImagesPage /></LazyPage>} />
-            <Route path="albums" element={<LazyPage><AlbumsPage /></LazyPage>} />
-            <Route path="api-tokens" element={<LazyPage><ApiTokensPage /></LazyPage>} />
-            <Route path="integrations" element={<LazyPage><IntegrationsPage /></LazyPage>} />
-            <Route path="settings" element={<LazyPage><SettingsPage /></LazyPage>} />
-            <Route path="admin" element={<RequireAdmin />}>
-              <Route index element={<LazyPage><AdminDashboardPage /></LazyPage>} />
-              <Route path="users" element={<LazyPage><AdminUsersPage /></LazyPage>} />
-              <Route path="groups" element={<LazyPage><AdminGroupsPage /></LazyPage>} />
-              <Route path="strategies" element={<LazyPage><AdminStrategiesPage /></LazyPage>} />
-              <Route path="images" element={<LazyPage><AdminImagesPage /></LazyPage>} />
-              <Route path="audit-logs" element={<LazyPage><AdminAuditLogsPage /></LazyPage>} />
-              <Route path="settings" element={<Navigate to="/console/admin/site" replace />} />
-              <Route path="site" element={<LazyPage><AdminSiteSettingsPage /></LazyPage>} />
-              <Route path="access" element={<LazyPage><AdminAccessSettingsPage /></LazyPage>} />
-              <Route path="seo" element={<Navigate to="/console/admin/compliance" replace />} />
-              <Route path="compliance" element={<LazyPage><AdminComplianceSettingsPage /></LazyPage>} />
-              <Route path="analytics" element={<LazyPage><AdminAnalyticsSettingsPage /></LazyPage>} />
-            </Route>
-            <Route index element={<Navigate to="/console/upload" replace />} />
+      <div className="flex flex-1 flex-col">
+        <Routes>
+          <Route element={<PublicLayout />}>
+            <Route
+              path="/"
+              element={
+                config?.allow_guest_upload ? (
+                  <LazyPage>
+                    <GuestUploadPage />
+                  </LazyPage>
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route path="/login" element={<LazyPage><LoginPage /></LazyPage>} />
+            <Route path="/verify-email" element={<LazyPage><VerifyEmailPage /></LazyPage>} />
+            <Route
+              path="/register"
+              element={
+                config?.allow_registration ? (
+                  <LazyPage>
+                    <RegisterPage />
+                  </LazyPage>
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
           </Route>
-        </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route element={<RequireAuth />}>
+            <Route path="/console" element={<ConsoleLayout />}>
+              <Route path="upload" element={<LazyPage><UploadPage /></LazyPage>} />
+              <Route path="images" element={<LazyPage><ImagesPage /></LazyPage>} />
+              <Route path="albums" element={<LazyPage><AlbumsPage /></LazyPage>} />
+              <Route path="api-tokens" element={<LazyPage><ApiTokensPage /></LazyPage>} />
+              <Route path="integrations" element={<LazyPage><IntegrationsPage /></LazyPage>} />
+              <Route path="settings" element={<LazyPage><SettingsPage /></LazyPage>} />
+              <Route path="admin" element={<RequireAdmin />}>
+                <Route index element={<LazyPage><AdminDashboardPage /></LazyPage>} />
+                <Route path="users" element={<LazyPage><AdminUsersPage /></LazyPage>} />
+                <Route path="groups" element={<LazyPage><AdminGroupsPage /></LazyPage>} />
+                <Route path="strategies" element={<LazyPage><AdminStrategiesPage /></LazyPage>} />
+                <Route path="images" element={<LazyPage><AdminImagesPage /></LazyPage>} />
+                <Route path="audit-logs" element={<LazyPage><AdminAuditLogsPage /></LazyPage>} />
+                <Route path="settings" element={<Navigate to="/console/admin/site" replace />} />
+                <Route path="site" element={<LazyPage><AdminSiteSettingsPage /></LazyPage>} />
+                <Route path="access" element={<LazyPage><AdminAccessSettingsPage /></LazyPage>} />
+                <Route path="seo" element={<Navigate to="/console/admin/compliance" replace />} />
+                <Route path="compliance" element={<LazyPage><AdminComplianceSettingsPage /></LazyPage>} />
+                <Route path="analytics" element={<LazyPage><AdminAnalyticsSettingsPage /></LazyPage>} />
+              </Route>
+              <Route index element={<Navigate to="/console/upload" replace />} />
+            </Route>
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
       {config && <SiteFooter config={config} />}
-    </>
+    </div>
   )
 }
 

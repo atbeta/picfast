@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Pencil, Trash2, FolderTree } from 'lucide-react'
+import { Pencil, Plus, Trash2, FolderTree, UsersRound } from 'lucide-react'
 
 import {
   createAdminGroup,
@@ -562,7 +562,7 @@ export function AdminGroupsPage() {
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{t('admin.loadFailed')}</p>}
       {groups && groups.length === 0 && (
         <EmptyState
-          icon={<FolderTree className="size-6 text-muted-foreground" />}
+          icon={<UsersRound className="size-6 text-muted-foreground" />}
           title={t('admin.empty')}
           description={t('admin.groupsEmptyDesc', { defaultValue: '创建分组后，可为不同用户配置容量、格式与策略权限。' })}
         />

@@ -22,8 +22,8 @@ const profileSchema = z.object({
 })
 type ProfileForm = z.infer<typeof profileSchema>
 
-const fieldInputCls = 'h-11 w-full rounded-lg border border-border/50 bg-background/50 px-4 text-sm outline-none transition-colors duration-150 placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20'
-const fieldDisabledCls = 'h-11 w-full rounded-lg border border-border/50 bg-muted/50 px-4 text-sm text-muted-foreground cursor-not-allowed'
+const fieldInputCls = 'h-10 w-full rounded-lg border border-border/50 bg-background/50 px-4 text-sm outline-none transition-colors duration-150 placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20'
+const fieldDisabledCls = 'h-10 w-full rounded-lg border border-border/50 bg-muted/50 px-4 text-sm text-muted-foreground cursor-not-allowed'
 
 function SettingField({
   label,
@@ -108,7 +108,7 @@ export function SettingsPage() {
     <section className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">{t('page.settings.title')}</h1>
 
-      <div className="max-w-4xl space-y-6 pb-8">
+      <div className="space-y-6 pb-8">
         
         {/* Section 1: Storage usage */}
         <div className="space-y-6">
@@ -194,7 +194,7 @@ export function SettingsPage() {
                     ...Object.fromEntries(strategies.map(s => [s.id.toString(), `${s.name} (${storageStrategyLabel(t, s.strategy_type)})`]))
                   }}
                 >
-                  <SelectTrigger id="strategy" className="h-11 w-full bg-background border-input md:max-w-md">
+                  <SelectTrigger id="strategy" className="h-10 w-full bg-background border-input">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -233,74 +233,7 @@ export function SettingsPage() {
             </div>
           </form>
         </div>
-
-        {/* Section 3: Preferences */}
-        <div className="space-y-6">
-          <div className="pt-4 border-t border-border/40">
-            <h2 className="text-base font-semibold tracking-tight text-foreground">{t('settings.preferences', { defaultValue: '偏好设置' })}</h2>
-            <p className="text-sm text-muted-foreground">{t('settings.preferencesDesc', { defaultValue: '自定义您在控制台的显示语言和主题外观。' })}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-            <div className="flex flex-col gap-6 md:flex-row md:items-center md:gap-12">
-              <LanguageSelector />
-              <ThemeSelector />
-            </div>
-          </div>
-        </div>
       </div>
     </section>
-  )
-}
-
-function LanguageSelector() {
-  const { i18n, t } = useTranslation()
-  return (
-    <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="font-medium text-foreground">{t('common.language')}</span>
-      <Select
-          value={i18n.language}
-          onValueChange={(val) => val !== null && void i18n.changeLanguage(val as string)}
-          items={{
-            'zh-CN': '中文',
-          'en-US': 'English'
-        }}
-      >
-        <SelectTrigger className="w-[120px] bg-background/50 border-border/50">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="zh-CN">中文</SelectItem>
-          <SelectItem value="en-US">English</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  )
-}
-
-function ThemeSelector() {
-  const { t } = useTranslation()
-  const { theme, setTheme } = useTheme()
-  return (
-    <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="font-medium text-foreground">{t('common.theme')}</span>
-      <Select
-          value={theme}
-          onValueChange={(val) => val !== null && setTheme(val as 'light' | 'dark' | 'system')}
-          items={{
-            light: t('settings.themeLight'),
-          dark: t('settings.themeDark'),
-          system: t('settings.themeSystem')
-        }}
-      >
-        <SelectTrigger className="w-[140px] bg-background/50 border-border/50">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="light">{t('settings.themeLight')}</SelectItem>
-          <SelectItem value="dark">{t('settings.themeDark')}</SelectItem>
-          <SelectItem value="system">{t('settings.themeSystem')}</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
   )
 }

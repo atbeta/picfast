@@ -93,17 +93,17 @@ export function AdminImagesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/50 bg-muted/35 text-left text-xs text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">{t('admin.colPreview')}</th>
-                  <th className="px-3 py-3 font-medium">{t('admin.imageKey')}</th>
-                  <th className="px-3 py-3 font-medium">{t('admin.colName')}</th>
-                  <th className="px-3 py-3 font-medium">{t('admin.colUploader')}</th>
-                  <th className="px-3 py-3 font-medium">{t('admin.colSize')}</th>
-                  <th className="px-3 py-3 font-medium">{t('images.permission', { defaultValue: '权限' })}</th>
-                  <th className="px-3 py-3 font-medium">{t('admin.colDate')}</th>
-                  <th className="px-4 py-3 font-medium text-right">{t('admin.colActions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
+                    <th className="px-4 py-3 font-medium whitespace-nowrap">{t('admin.colPreview')}</th>
+                    <th className="px-3 py-3 font-medium whitespace-nowrap">{t('admin.imageKey')}</th>
+                    <th className="px-3 py-3 font-medium whitespace-nowrap">{t('admin.colName')}</th>
+                    <th className="px-3 py-3 font-medium whitespace-nowrap">{t('admin.colUploader')}</th>
+                    <th className="px-3 py-3 font-medium whitespace-nowrap">{t('admin.colSize')}</th>
+                    <th className="px-3 py-3 font-medium whitespace-nowrap">{t('images.permission', { defaultValue: '权限' })}</th>
+                    <th className="px-3 py-3 font-medium whitespace-nowrap">{t('admin.colDate')}</th>
+                    <th className="px-4 py-3 font-medium text-right whitespace-nowrap">{t('admin.colActions')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
                 {data.items.map((img) => (
                   <tr key={img.id} className="group hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3">

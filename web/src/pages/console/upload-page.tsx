@@ -134,7 +134,7 @@ export function UploadPage() {
   }, [selectedStrategyId, selectedAlbumId, selectedPermission, t])
 
   return (
-    <section className="w-full space-y-6">
+    <section className="flex flex-col flex-1 h-full w-full space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold tracking-tight">
           {t('page.upload.title')}
@@ -242,8 +242,8 @@ export function UploadPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-border/50 bg-card/70 p-2 shadow-sm">
-        <UploadZone onFiles={handleFiles} disabled={busy} />
+      <div className="flex-1 rounded-2xl border border-border/50 bg-card/70 p-2 shadow-sm min-h-[300px]">
+        <UploadZone onFiles={handleFiles} disabled={busy} className="h-full" />
       </div>
 
       {uploading.length > 0 && (

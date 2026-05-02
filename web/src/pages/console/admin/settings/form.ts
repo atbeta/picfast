@@ -31,8 +31,8 @@ export interface SettingsForm {
   analytics_custom_script: string
 }
 
-export const fieldInputCls = 'h-11 w-full rounded-lg border border-input bg-background px-4 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20'
-export const fieldTextareaCls = 'min-h-28 w-full rounded-lg border border-input bg-background px-4 py-3 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20'
+export const fieldInputCls = 'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20'
+export const fieldTextareaCls = 'min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20'
 
 const defaultValues: SettingsForm = {
   app_name: '',

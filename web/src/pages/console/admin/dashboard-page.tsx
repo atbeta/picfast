@@ -107,31 +107,34 @@ export function AdminDashboardPage() {
     : []
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">{t('admin.dashboardTitle', { defaultValue: '概览' })}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('admin.dashboardTitle', { defaultValue: '概览' })}</h1>
       </div>
+
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="group overflow-hidden rounded-xl border border-border/50 bg-card p-6 shadow-sm transition-colors duration-150 hover:shadow-sm hover:border-primary/30">
-            <div className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">{s.label}</div>
-            <div className="text-3xl font-bold tracking-tight text-foreground">{s.value}</div>
+          <div key={s.label} className="group flex flex-col justify-between overflow-hidden rounded-xl border border-border/40 bg-card/60 p-5 shadow-sm transition-all duration-200 hover:border-primary/40 hover:bg-card/80">
+            <div className="text-sm font-medium text-muted-foreground">{s.label}</div>
+            <div className="mt-3 text-4xl font-bold tracking-tight text-foreground">{s.value}</div>
           </div>
         ))}
       </div>
 
       {siteModes.length > 0 && (
-        <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
-          <div className="mb-5">
+        <div className="rounded-xl border border-border/40 bg-card/40 overflow-hidden shadow-sm">
+          <div className="border-b border-border/40 bg-muted/20 px-6 py-4">
             <h2 className="text-lg font-semibold tracking-tight text-foreground">{t('admin.dashboardSiteState', { defaultValue: '站点状态' })}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t('admin.dashboardSiteStateDesc', { defaultValue: '快速确认当前注册、游客上传、邮箱验证与审核策略。' })}</p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-px bg-border/40 sm:grid-cols-2 xl:grid-cols-4">
             {siteModes.map((item) => (
-              <div key={item.label} className="rounded-lg border border-border/50 bg-background/50 p-4">
-                <div className="text-sm font-medium text-foreground">{item.label}</div>
-                <div className={`mt-3 inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${item.tone}`}>
-                  {item.value}
+              <div key={item.label} className="bg-card/60 p-6 flex flex-col justify-between">
+                <div className="text-sm font-medium text-muted-foreground">{item.label}</div>
+                <div className="mt-4 flex items-center">
+                  <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium ${item.tone}`}>
+                    {item.value}
+                  </span>
                 </div>
               </div>
             ))}
@@ -140,23 +143,26 @@ export function AdminDashboardPage() {
       )}
 
       {observability && (
-        <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="rounded-xl border border-border/40 bg-card/40 overflow-hidden shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/40 bg-muted/20 px-6 py-4">
             <div>
               <h2 className="text-lg font-semibold tracking-tight text-foreground">{t('admin.observabilityTitle', { defaultValue: '系统状态' })}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t('admin.observabilityDesc', { defaultValue: '轻量展示服务健康、运行时和最近使用情况，详细指标仍建议接入 Prometheus / Grafana。' })}
               </p>
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-[11px] font-medium tracking-wider uppercase text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-md">
               {t('admin.observabilityUpdatedAt', { defaultValue: '更新于' })} {new Date(observability.generated_at).toLocaleTimeString()}
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="rounded-lg border border-border/50 bg-background/50 p-4">
-              <div className="mb-3 text-sm font-medium text-foreground">{t('admin.observabilityHealth', { defaultValue: '健康检查' })}</div>
-              <div className="space-y-3 text-sm">
+          <div className="grid gap-px bg-border/40 lg:grid-cols-3">
+            <div className="bg-card/60 p-6">
+              <div className="mb-5 text-sm font-semibold text-foreground flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/70"></span>
+                {t('admin.observabilityHealth', { defaultValue: '健康检查' })}
+              </div>
+              <div className="space-y-4 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">{t('admin.observabilityDatabase', { defaultValue: '数据库' })}</span>
                   <HealthBadge item={observability.health.database} />
@@ -176,78 +182,87 @@ export function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-border/50 bg-background/50 p-4">
-              <div className="mb-3 text-sm font-medium text-foreground">{t('admin.observabilityRuntime', { defaultValue: '运行时' })}</div>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <div className="bg-card/60 p-6">
+              <div className="mb-5 text-sm font-semibold text-foreground flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/70"></span>
+                {t('admin.observabilityRuntime', { defaultValue: '运行时' })}
+              </div>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
                 <div>
-                  <dt className="text-xs text-muted-foreground">{t('admin.observabilityUptime', { defaultValue: '运行时间' })}</dt>
-                  <dd className="mt-1 font-medium">{formatDuration(observability.uptime_seconds)}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityUptime', { defaultValue: '运行时间' })}</dt>
+                  <dd className="font-medium text-foreground">{formatDuration(observability.uptime_seconds)}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">{t('admin.observabilitySystem', { defaultValue: '系统' })}</dt>
-                  <dd className="mt-1 font-medium">{observability.runtime.goos}/{observability.runtime.goarch}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilitySystem', { defaultValue: '系统' })}</dt>
+                  <dd className="font-medium text-foreground">{observability.runtime.goos}/{observability.runtime.goarch}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">{t('admin.observabilityCpu', { defaultValue: 'CPU' })}</dt>
-                  <dd className="mt-1 font-medium">{observability.runtime.num_cpu}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityCpu', { defaultValue: 'CPU' })}</dt>
+                  <dd className="font-medium text-foreground">{observability.runtime.num_cpu}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">{t('admin.observabilityGoroutines', { defaultValue: 'Goroutines' })}</dt>
-                  <dd className="mt-1 font-medium">{observability.runtime.goroutines}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityGoroutines', { defaultValue: 'Goroutines' })}</dt>
+                  <dd className="font-medium text-foreground">{observability.runtime.goroutines}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">{t('admin.observabilityMemory', { defaultValue: '进程内存' })}</dt>
-                  <dd className="mt-1 font-medium">{formatBytes(observability.runtime.memory_alloc_bytes)}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityMemory', { defaultValue: '进程内存' })}</dt>
+                  <dd className="font-medium text-foreground">{formatBytes(observability.runtime.memory_alloc_bytes)}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">Go</dt>
-                  <dd className="mt-1 font-medium">{observability.runtime.go_version}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">Go</dt>
+                  <dd className="font-medium text-foreground">{observability.runtime.go_version}</dd>
                 </div>
               </dl>
             </div>
 
-            <div className="rounded-lg border border-border/50 bg-background/50 p-4">
-              <div className="mb-3 text-sm font-medium text-foreground">{t('admin.observabilityUsage', { defaultValue: '最近使用' })}</div>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <div className="bg-card/60 p-6">
+              <div className="mb-5 text-sm font-semibold text-foreground flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/70"></span>
+                {t('admin.observabilityUsage', { defaultValue: '最近使用' })}
+              </div>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
                 <div>
-                  <dt className="text-xs text-muted-foreground">{t('admin.observabilityStorageBytes', { defaultValue: '存储用量' })}</dt>
-                  <dd className="mt-1 font-medium">{formatBytes(observability.usage.storage_bytes)}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityStorageBytes', { defaultValue: '存储用量' })}</dt>
+                  <dd className="font-medium text-foreground">{formatBytes(observability.usage.storage_bytes)}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">{t('admin.observabilityUploads24h', { defaultValue: '24h 上传' })}</dt>
-                  <dd className="mt-1 font-medium">{observability.usage.uploads_24h}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityUploads24h', { defaultValue: '24h 上传' })}</dt>
+                  <dd className="font-medium text-foreground">{observability.usage.uploads_24h}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">{t('admin.observabilityPendingModeration', { defaultValue: '待审核' })}</dt>
-                  <dd className="mt-1 font-medium">{observability.usage.pending_moderation}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityPendingModeration', { defaultValue: '待审核' })}</dt>
+                  <dd className="font-medium text-foreground">{observability.usage.pending_moderation}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">{t('admin.observabilityAudit24h', { defaultValue: '24h 审计' })}</dt>
-                  <dd className="mt-1 font-medium">{observability.usage.audit_logs_24h}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityAudit24h', { defaultValue: '24h 审计' })}</dt>
+                  <dd className="font-medium text-foreground">{observability.usage.audit_logs_24h}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">{t('admin.observabilityDbPool', { defaultValue: 'DB 连接' })}</dt>
-                  <dd className="mt-1 font-medium">{observability.database.acquired_connections}/{observability.database.max_connections}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityDbPool', { defaultValue: 'DB 连接' })}</dt>
+                  <dd className="font-medium text-foreground">{observability.database.acquired_connections}/{observability.database.max_connections}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">{t('admin.observabilityPprof', { defaultValue: 'pprof' })}</dt>
-                  <dd className="mt-1 font-medium">{observability.config.pprof_enabled ? t('admin.statusEnabled', { defaultValue: '已开启' }) : t('admin.statusDisabled', { defaultValue: '已关闭' })}</dd>
+                  <dt className="text-xs text-muted-foreground mb-1">{t('admin.observabilityPprof', { defaultValue: 'pprof' })}</dt>
+                  <dd className="font-medium text-foreground">{observability.config.pprof_enabled ? t('admin.statusEnabled', { defaultValue: '已开启' }) : t('admin.statusDisabled', { defaultValue: '已关闭' })}</dd>
                 </div>
               </dl>
             </div>
           </div>
 
-          <div className="mt-4 rounded-lg border border-border/50 bg-background/50 p-4">
-            <div className="mb-3 text-sm font-medium text-foreground">{t('admin.observabilityStorageStrategies', { defaultValue: '存储策略健康' })}</div>
+          <div className="border-t border-border/40 bg-card/60 p-6">
+            <div className="mb-4 text-sm font-semibold text-foreground flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/70"></span>
+              {t('admin.observabilityStorageStrategies', { defaultValue: '存储策略健康' })}
+            </div>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {observability.storage_strategies.map((strategy) => (
-                <div key={strategy.id} className="rounded-lg border border-border/40 bg-card/60 p-3">
+                <div key={strategy.id} className="rounded-lg border border-border/40 bg-card/40 p-4 transition-colors hover:border-primary/30">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-medium">{strategy.name}</div>
-                      <div className="text-xs text-muted-foreground">{strategy.type}</div>
+                      <div className="truncate text-sm font-medium text-foreground">{strategy.name}</div>
+                      <div className="mt-0.5 text-xs text-muted-foreground font-mono">{strategy.type}</div>
                     </div>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${strategy.healthy ? 'bg-success text-white' : 'bg-destructive/10 text-destructive'}`}>
+                    <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${strategy.healthy ? 'bg-success/15 text-success border border-success/20' : 'bg-destructive/15 text-destructive border border-destructive/20'}`}>
                       {strategy.healthy
                         ? strategy.warning
                           ? t('admin.statusLimited', { defaultValue: '受限' })
@@ -255,8 +270,8 @@ export function AdminDashboardPage() {
                         : t('admin.statusUnhealthy', { defaultValue: '异常' })}
                     </span>
                   </div>
-                  {strategy.warning && <div className="mt-2 truncate text-xs text-amber-500" title={strategy.warning}>{strategy.warning}</div>}
-                  {strategy.error && <div className="mt-2 truncate text-xs text-destructive" title={strategy.error}>{strategy.error}</div>}
+                  {strategy.warning && <div className="mt-3 truncate text-xs text-amber-500/90" title={strategy.warning}>{strategy.warning}</div>}
+                  {strategy.error && <div className="mt-3 truncate text-xs text-destructive/90" title={strategy.error}>{strategy.error}</div>}
                 </div>
               ))}
             </div>

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, Image as ImageIcon, ChevronLeft, ChevronRight, FolderOpen } from 'lucide-react'
 
 import { createAlbum, deleteAlbum, listAlbums, updateAlbum } from '../../lib/console-api'
 import { extractErrorMessage } from '../../lib/error-handler'
@@ -15,7 +15,7 @@ export function AlbumsPage() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
-  const pageSize = 20
+  const pageSize = 24
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['albums', page],
@@ -163,7 +163,7 @@ export function AlbumsPage() {
       )}
       {data && data.items.length === 0 && (
         <EmptyState
-          icon={<ImageIcon className="size-8 text-muted-foreground/60" />}
+          icon={<FolderOpen className="size-6 text-muted-foreground/60" />}
           title={t('albums.empty')}
           description={t('albums.emptyDesc', { defaultValue: '创建相册后，就可以更轻松地整理图片。' })}
           className="min-h-[300px]"

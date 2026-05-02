@@ -48,15 +48,19 @@ export function EmptyState({
   return (
     <div
       className={[
-        'flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/15 text-center',
-        compact ? 'px-5 py-8' : 'px-6 py-14',
+        'flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 text-center',
+        compact ? 'px-6 py-12' : 'px-8 py-24',
         className,
       ].join(' ')}
     >
-      {icon && <div className="mb-3 rounded-full bg-background/70 p-3 shadow-sm">{icon}</div>}
-      <p className="text-sm font-semibold text-foreground">{title}</p>
-      {description && <p className="mt-1.5 max-w-md text-sm text-muted-foreground">{description}</p>}
-      {action && <div className="mt-5">{action}</div>}
+      {icon && (
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-muted/30 border border-border/40 shadow-sm">
+          <div className="text-muted-foreground/70 scale-[1.3]">{icon}</div>
+        </div>
+      )}
+      <p className="text-[15px] font-semibold text-foreground tracking-tight">{title}</p>
+      {description && <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-muted-foreground">{description}</p>}
+      {action && <div className="mt-6">{action}</div>}
     </div>
   )
 }
