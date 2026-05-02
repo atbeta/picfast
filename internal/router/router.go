@@ -23,9 +23,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/modelcontextprotocol/go-sdk/auth"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.yaml.in/yaml/v3"
 )
 
 func New(
@@ -87,36 +86,56 @@ func New(
 	})
 
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
-	serveOpenAPISpec := func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		spec, err := os.ReadFile("api/openapi.yaml")
-		if err != nil {
-			http.Error(w, "openapi spec not found", http.StatusNotFound)
-			return
-		}
-		// Keep the server URL in docs aligned with runtime base URL.
-		server := cfg.ServerSnapshot()
-		baseURL := strings.TrimRight(server.BaseURL, "/")
-		if baseURL != "" {
-			spec = []byte(strings.ReplaceAll(string(spec), "http://localhost:8080/api/v1", baseURL+"/api/v1"))
-		}
-		if v := strings.TrimSpace(version.Version); v != "" {
-			spec = []byte(strings.ReplaceAll(string(spec), `version: "1.0"`, fmt.Sprintf(`version: "%s"`, v)))
-		}
-		w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
-		if _, err := w.Write(spec); err != nil {
-			slog.Warn("failed to write openapi spec", "error", err)
+	serveOpenAPISpec := func(format string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			raw, err := os.ReadFile("api/openapi.yaml")
+			if err != nil {
+				http.Error(w, "openapi spec not found", http.StatusNotFound)
+				return
+			}
+			server := cfg.ServerSnapshot()
+			baseURL := strings.TrimRight(server.BaseURL, "/")
+			if baseURL != "" {
+				raw = []byte(strings.ReplaceAll(string(raw), "http://localhost:8080/api/v1", baseURL+"/api/v1"))
+			}
+			if v := strings.TrimSpace(version.Version); v != "" {
+				raw = []byte(strings.ReplaceAll(string(raw), `version: "1.0"`, fmt.Sprintf(`version: "%s"`, v)))
+			}
+
+			if format == "json" {
+				var spec any
+				if err := yaml.Unmarshal(raw, &spec); err != nil {
+					http.Error(w, "failed to parse openapi spec", http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				enc := json.NewEncoder(w)
+				enc.SetIndent("", "  ")
+				if err := enc.Encode(spec); err != nil {
+					slog.Warn("failed to write openapi json spec", "error", err)
+				}
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
+			if _, err := w.Write(raw); err != nil {
+				slog.Warn("failed to write openapi spec", "error", err)
+			}
 		}
 	}
-	r.Get("/openapi.yaml", serveOpenAPISpec)
-	r.Head("/openapi.yaml", serveOpenAPISpec)
-	r.Options("/openapi.yaml", serveOpenAPISpec)
+	r.Get("/openapi.yaml", serveOpenAPISpec("yaml"))
+	r.Head("/openapi.yaml", serveOpenAPISpec("yaml"))
+	r.Options("/openapi.yaml", serveOpenAPISpec("yaml"))
+	r.Get("/openapi.json", serveOpenAPISpec("json"))
+	r.Head("/openapi.json", serveOpenAPISpec("json"))
+	r.Options("/openapi.json", serveOpenAPISpec("json"))
 	r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
 		server := cfg.ServerSnapshot()
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -166,14 +185,6 @@ func New(
 	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg), queries, mailSender != nil && mailSender.Ready())
 	adminAuditHandler := handler.NewAdminAuditHandler(queries)
 	adminObservabilityHandler := handler.NewAdminObservabilityHandler(queries, pool, cfg, mailSender != nil && mailSender.Ready())
-
-	// MCP Server
-	mcpFactory := handler.NewMCPServerFactory(queries, pool, cfg)
-	mcpServer := mcpFactory.CreateServer()
-	mcpAuth := handler.NewMCPAuth(queries)
-	mcpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
-		return mcpServer
-	}, nil)
 
 	// Content Moderation
 	app := cfg.AppSnapshot()
@@ -249,45 +260,54 @@ func New(
 			r.Post("/refresh", authHandler.Refresh)
 		})
 
-		// Authenticated user routes
+		// Authenticated user routes: MCP-accessible routes accept both JWT and API Token;
+		// other user routes only accept JWT (e.g. logout, profile update, tokens CRUD).
+		// Write operations within the dual-auth group require "write" scope when
+		// authenticated via API token; JWT sessions have no scope restriction.
+		dualAuth := middleware.DualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries)
+
+		r.Group(func(r chi.Router) {
+			r.Use(dualAuth)
+
+			r.Get("/users/me", userHandler.GetProfile)
+
+			// Images — write operations require "write" scope for API tokens
+			r.With(modMiddleware, middleware.RequireScope("write")).Post("/images", imageHandler.Upload)
+			r.Get("/images", imageHandler.List)
+			r.Get("/images/{key}", imageHandler.Get)
+			r.With(middleware.RequireScope("write")).Delete("/images/{key}", imageHandler.Delete)
+			r.With(middleware.RequireScope("write")).Patch("/images/{key}", imageHandler.Update)
+
+			// Albums — write operations require "write" scope for API tokens
+			r.Get("/albums", albumHandler.List)
+			r.With(middleware.RequireScope("write")).Post("/albums", albumHandler.Create)
+			r.With(middleware.RequireScope("write")).Put("/albums/{id}", albumHandler.Update)
+			r.With(middleware.RequireScope("write")).Delete("/albums/{id}", albumHandler.Delete)
+
+			// Strategies (available to user's group)
+			r.Get("/strategies", adminStrategyHandler.List)
+		})
+
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(middleware.NewJWTAuthenticator(jwtSvc)))
 
 			r.Post("/auth/logout", authHandler.Logout)
-
-			r.Get("/users/me", userHandler.GetProfile)
 			r.Put("/users/me", userHandler.UpdateProfile)
 
-			// Images — upload injects moderator into context
-			r.With(modMiddleware).Post("/images", imageHandler.Upload)
-			r.Get("/images", imageHandler.List)
-			r.Get("/images/{key}", imageHandler.Get)
-			r.Delete("/images/{key}", imageHandler.Delete)
-			r.Patch("/images/{key}", imageHandler.Update)
-
-			// Albums
-			r.Get("/albums", albumHandler.List)
-			r.Post("/albums", albumHandler.Create)
-			r.Put("/albums/{id}", albumHandler.Update)
-			r.Delete("/albums/{id}", albumHandler.Delete)
-
-			// Strategies (available to user's group)
-			r.Get("/strategies", adminStrategyHandler.List)
-
-			// API Tokens (for MCP / AI integration)
+			// API Tokens (for API / MCP integration)
 			apiTokenHandler := handler.NewAPITokenHandler(queries)
 			r.Post("/api-tokens", apiTokenHandler.Create)
 			r.Get("/api-tokens", apiTokenHandler.List)
 			r.Delete("/api-tokens/{id}", apiTokenHandler.Delete)
 		})
 
-		// Optional auth for guest upload
-		r.With(middleware.OptionalAuth(middleware.NewJWTAuthenticator(jwtSvc))).
+		// Optional auth for guest upload (also accepts API tokens)
+		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries)).
 			Post("/upload", imageHandler.Upload)
 
 		// ShareX endpoints
 		sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL)
-		r.With(middleware.OptionalAuth(middleware.NewJWTAuthenticator(jwtSvc)), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
+		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
 		r.Get("/sharex/config", sharexHandler.Config)
 
 		// Admin routes
@@ -388,10 +408,6 @@ func New(
 			}
 		})
 	})
-
-	// MCP endpoint (AI integration) — protected by API token auth
-	mcpVerifier := auth.TokenVerifier(mcpAuth.VerifyToken)
-	r.Mount("/mcp", auth.RequireBearerToken(mcpVerifier, nil)(mcpHandler))
 
 	// SPA frontend — must be last so API routes take priority
 	if spaHandler != nil {

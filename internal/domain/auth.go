@@ -21,7 +21,8 @@ type AuthTokens struct {
 type ContextKey string
 
 const (
-	ContextKeyUserID  ContextKey = "user_id"
-	ContextKeyRole    ContextKey = "role"
-	ContextKeyGroupID ContextKey = "group_id"
+	ContextKeyUserID   ContextKey = "user_id"
+	ContextKeyRole     ContextKey = "role"
+	ContextKeyGroupID  ContextKey = "group_id"
+	ContextKeyScopes  ContextKey = "scopes"
 )

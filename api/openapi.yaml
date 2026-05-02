@@ -520,7 +520,7 @@ paths:
 
   /api-tokens:
     get:
-      tags: [mcp]
+      tags: [api-tokens]
       summary: List API tokens for current user
       security:
         - BearerAuth: []
@@ -541,11 +541,8 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
     post:
-      tags: [mcp]
+      tags: [api-tokens]
       summary: Create an API token
-      x-mcp:
-        - Use this token to authenticate MCP requests to /mcp.
-        - Default scopes are ["read", "write"] when omitted.
       security:
         - BearerAuth: []
       requestBody:
@@ -573,7 +570,7 @@ paths:
 
   /api-tokens/{id}:
     delete:
-      tags: [mcp]
+      tags: [api-tokens]
       summary: Delete an API token
       security:
         - BearerAuth: []
