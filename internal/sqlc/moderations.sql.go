@@ -11,6 +11,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const approveAllPendingImages = `-- name: ApproveAllPendingImages :exec
+UPDATE images SET
+    moderation_status = 'approved',
+    updated_at = NOW()
+WHERE moderation_status = 'pending'
+`
+
+func (q *Queries) ApproveAllPendingImages(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, approveAllPendingImages)
+	return err
+}
+
 const countPendingImages = `-- name: CountPendingImages :one
 SELECT COUNT(*) FROM images WHERE moderation_status = 'pending'
 `
