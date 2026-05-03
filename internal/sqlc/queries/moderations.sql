@@ -31,3 +31,9 @@ LIMIT $1 OFFSET $2;
 
 -- name: CountPendingImages :one
 SELECT COUNT(*) FROM images WHERE moderation_status = 'pending';
+
+-- name: ApproveAllPendingImages :exec
+UPDATE images SET
+    moderation_status = 'approved',
+    updated_at = NOW()
+WHERE moderation_status = 'pending';

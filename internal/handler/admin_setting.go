@@ -120,7 +120,15 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if req.ModerationMode != nil {
-		h.setter.SetModerationMode(*req.ModerationMode)
+		oldMode := h.config.AppSnapshot().ModerationMode
+		newMode := strings.TrimSpace(*req.ModerationMode)
+		if isModerationActive(oldMode) && !isModerationActive(newMode) {
+			if err := h.queries.ApproveAllPendingImages(r.Context()); err != nil {
+				Fail(w, http.StatusInternalServerError, "failed to auto-approve pending images")
+				return
+			}
+		}
+		h.setter.SetModerationMode(newMode)
 	}
 	if req.FooterLink1 != nil {
 		if err := validateOptionalURL(*req.FooterLink1); err != nil {
@@ -315,4 +323,8 @@ type badRequestError struct {
 
 func (e *badRequestError) Error() string {
 	return e.message
+}
+
+func isModerationActive(mode string) bool {
+	return mode != "" && mode != "disabled"
 }
