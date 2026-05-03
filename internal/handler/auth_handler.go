@@ -66,6 +66,16 @@ type RegisterResponse struct {
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	userCount, err := h.db.CountUsers(r.Context())
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to read setup status")
+		return
+	}
+	if userCount == 0 {
+		Fail(w, http.StatusConflict, "setup required")
+		return
+	}
+
 	app := h.config.AppSnapshot()
 	if !app.AllowRegistration {
 		Fail(w, http.StatusForbidden, "registration is disabled")

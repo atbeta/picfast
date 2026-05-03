@@ -25,11 +25,11 @@ export function PublicLayout() {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-3 transition-opacity duration-150 hover:opacity-80">
-            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-sm">
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl shadow-sm">
               <img
                 src={logoSrc}
                 alt="logo"
-                className="h-full w-full object-contain"
+                className="block size-full object-cover"
                 onError={(e) => {
                   e.currentTarget.src = '/favicon-default.svg'
                 }}

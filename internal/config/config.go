@@ -39,6 +39,8 @@ type JWTConfig struct {
 	SigningMethod string        `mapstructure:"signing_method"` // HS256, HS384, HS512
 }
 
+const DefaultJWTSecret = "change-me-in-production"
+
 type StorageConfig struct {
 	LocalRoot    string `mapstructure:"local_root"`
 	ThumbnailDir string `mapstructure:"thumbnail_dir"`
@@ -191,6 +193,12 @@ func (c *Config) RuntimeSnapshot() (ServerConfig, AppConfig) {
 	return c.Server, c.App
 }
 
+func (c *Config) UsesDefaultJWTSecret() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.JWT.Secret == DefaultJWTSecret
+}
+
 func (c MailConfig) IsConfigured() bool {
 	return strings.TrimSpace(c.Host) != "" &&
 		c.Port > 0 &&
@@ -227,10 +235,6 @@ func Load() (*Config, error) {
 		}
 	}
 
-	if cfg.JWT.Secret == "change-me-in-production" {
-		return nil, fmt.Errorf("jwt.secret must be changed from default value; set PICFAST_JWT_SECRET environment variable or configure jwt.secret in config.yaml")
-	}
-
 	return &cfg, nil
 }
 
@@ -243,7 +247,7 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("database.url", "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable")
 
-	v.SetDefault("jwt.secret", "change-me-in-production")
+	v.SetDefault("jwt.secret", DefaultJWTSecret)
 	v.SetDefault("jwt.access_ttl", 15*time.Minute)
 	v.SetDefault("jwt.refresh_ttl", 168*time.Hour)
 	v.SetDefault("jwt.signing_method", "HS256")

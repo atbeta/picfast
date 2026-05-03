@@ -17,6 +17,7 @@ export interface SiteConfig {
   analytics_provider: string
   analytics_config: Record<string, unknown>
   github_url: string
+  setup_required: boolean
 }
 
 export async function getSiteConfig(): Promise<SiteConfig> {

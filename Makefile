@@ -12,8 +12,8 @@ LDFLAGS := -X github.com/atbeta/picfast/internal/version.Version=$(VERSION) -X g
 dev:
 	@echo "Starting development environment..."
 	@echo "1. Ensure Postgres is running (make docker-up or use local Postgres)"
-	@echo "2. Run migrations (make migrate-up)"
-	@echo "3. Seed data (make seed)"
+	@echo "2. Migrations run automatically when the backend starts"
+	@echo "3. Optional: seed development data (make seed)"
 	@echo "4. Start backend:  go run ./cmd/picfast"
 	@echo "5. Start frontend: cd web && pnpm dev"
 

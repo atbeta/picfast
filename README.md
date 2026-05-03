@@ -60,7 +60,8 @@ PicFast 是一个面向个人与团队的现代化图床与图片托管服务，
 - Go 1.26+
 - Node.js 20+ 与 pnpm
 - PostgreSQL 16
-- `golang-migrate` CLI
+
+说明：应用启动时会自动执行数据库迁移；只有在需要手动调试迁移版本时才需要额外安装 `golang-migrate` CLI。
 
 ### 1. 启动数据库
 
@@ -117,12 +118,13 @@ app:
 
 某行 `footer_text_*` 为空时，该行不会在页脚展示；`footer_link_*` 留空则该行仅显示纯文本。未配置统计服务时不会加载第三方脚本；页脚会默认显示 `Powered by PicFast`，GitHub 链接固定指向 `https://github.com/atbeta/picfast`。生产环境如果启用了严格 CSP，需要为所选统计服务补充相应的 `script-src` 白名单。
 
-### 3. 执行迁移并填充开发数据
+### 3. 可选：填充开发数据
 
 ```bash
-make migrate-up
 make seed
 ```
+
+数据库迁移会在后端启动时自动执行，不需要手动运行 `make migrate-up`。如果你只想使用空数据库体验首次初始化流程，可以跳过 seed。
 
 默认会创建：
 
@@ -261,14 +263,12 @@ docker run -d \
   -e PICFAST_DATABASE_URL='postgres://picfast:picfast@picfast-db:5432/picfast?sslmode=disable' \
   -e PICFAST_JWT_SECRET='replace-with-a-strong-secret' \
   -e PICFAST_SERVER_BASE_URL='http://localhost:18080' \
-  -e PICFAST_APP_ADMIN_EMAIL='admin@example.com' \
-  -e PICFAST_APP_ADMIN_PASSWORD='change-this-password' \
   -v picfast-uploads:/app/data/uploads \
   -v picfast-thumbnails:/app/data/thumbnails \
   xbeta/picfast:latest
 ```
 
-启动后访问 `http://localhost:18080`。线上建议保持应用监听容器内 `8080`，由反向代理统一处理域名与 HTTPS。
+启动后访问 `http://localhost:18080`，按页面引导创建第一个管理员账号。线上建议保持应用监听容器内 `8080`，由反向代理统一处理域名与 HTTPS。
 
 清理（删除容器 + 数据卷 + 网络）：
 
@@ -294,12 +294,12 @@ docker run -d \
   -e PICFAST_DATABASE_URL='postgres://USER:PASSWORD@HOST:5432/DB?sslmode=disable' \
   -e PICFAST_JWT_SECRET='replace-with-a-strong-secret' \
   -e PICFAST_SERVER_BASE_URL='https://picfast.example.com' \
-  -e PICFAST_APP_ADMIN_EMAIL='admin@example.com' \
-  -e PICFAST_APP_ADMIN_PASSWORD='change-this-password' \
   -v picfast-uploads:/app/data/uploads \
   -v picfast-thumbnails:/app/data/thumbnails \
   xbeta/picfast:latest
 ```
+
+默认情况下，空数据库首次访问会进入初始化向导，由浏览器创建第一个管理员账号。无人值守部署可以额外设置 `PICFAST_APP_ADMIN_EMAIL` 和 `PICFAST_APP_ADMIN_PASSWORD`，应用会在首次启动时自动创建管理员并跳过向导。
 
 ### GitHub Actions 自动发布
 
@@ -341,7 +341,6 @@ docker run -d \
 
 - `PICFAST_JWT_SECRET`：使用高强度随机密钥
 - `PICFAST_SERVER_BASE_URL`：设置为真实访问域名（如 `https://img.example.com`）
-- `PICFAST_APP_ADMIN_EMAIL` / `PICFAST_APP_ADMIN_PASSWORD`：避免弱口令
 - `POSTGRES_PASSWORD`：避免示例密码
 
 建议同时检查：
@@ -370,11 +369,11 @@ docker compose -f docker-compose.traefik.yml up -d
 - PostgreSQL 与 PicFast 同机部署
 - Traefik 通过 Docker label 暴露站点
 - 本地存储上传文件与缩略图
-- 通过环境变量初始化管理员账号
+- 通过浏览器初始化向导创建第一个管理员账号
 
-当前版本还补了一个关键行为：**空数据库首次启动时，应用会自动补齐默认分组、游客分组、本地存储策略，并在配置了 `PICFAST_APP_ADMIN_EMAIL/PASSWORD` 时自动创建管理员账号。**
+当前版本的关键行为：**空数据库首次启动时，应用会自动补齐默认分组、游客分组、本地存储策略；首次访问页面会进入初始化向导创建管理员账号。**
 
-这意味着用户不需要再额外执行一次手工 seed，生产 compose 第一次拉起就能进入登录态验证。
+这意味着用户不需要再额外执行一次手工 seed，生产 compose 第一次拉起即可在浏览器完成初始化。若需要无人值守部署，也可以在 `.env` 中设置 `PICFAST_APP_ADMIN_EMAIL/PASSWORD` 自动创建管理员并跳过向导。
 
 ## 常用命令
 
@@ -389,8 +388,8 @@ make frontend
 make build-full
 
 # 数据库
-make migrate-up
-make migrate-down
+make migrate-up    # 可选：手动执行迁移，需要 golang-migrate CLI
+make migrate-down  # 可选：手动回滚迁移，需要 golang-migrate CLI
 make generate
 
 # 质量
@@ -483,4 +482,3 @@ make lint
 - `/docs` 会加载 OpenAPI 文档页，`/openapi.yaml` 提供规范文件下载。
 - `/api/v1/admin/debug/pprof/*` 默认关闭；调试时可设置 `PICFAST_SERVER_PPROF_ENABLED=true`，启用后仍需管理员权限访问。
 - 如果要在 Docker / 服务器中启用邮箱验证，记得同时传入 `PICFAST_SERVER_BASE_URL`、`PICFAST_MAIL_*` 和 `PICFAST_APP_REQUIRE_EMAIL_VERIFICATION=true`。
-
