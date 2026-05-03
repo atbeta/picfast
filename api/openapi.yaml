@@ -1624,14 +1624,18 @@ components:
           type: string
           description: Moderation pipeline mode.
           enum: ["", disabled, manual, auto]
-        icp_number:
+        footer_text_1:
           type: string
-        icp_link:
+          description: First footer line text. Omitted in UI when empty.
+        footer_link_1:
           type: string
-        psb_number:
+          description: Optional https URL for the first line. Empty means plain text.
+        footer_text_2:
           type: string
-        psb_link:
+          description: Second footer line text. Omitted in UI when empty.
+        footer_link_2:
           type: string
+          description: Optional https URL for the second line. Empty means plain text.
         analytics_provider:
           type: string
         analytics_config:
@@ -1655,14 +1659,18 @@ components:
           type: boolean
         base_url:
           type: string
-        icp_number:
+        footer_text_1:
           type: string
-        icp_link:
+          description: First footer line text. Omitted in UI when empty.
+        footer_link_1:
           type: string
-        psb_number:
+          description: Optional https URL for the first line. Empty means plain text.
+        footer_text_2:
           type: string
-        psb_link:
+          description: Second footer line text. Omitted in UI when empty.
+        footer_link_2:
           type: string
+          description: Optional https URL for the second line. Empty means plain text.
         analytics_provider:
           type: string
         analytics_config:
@@ -1744,14 +1752,16 @@ components:
           type: string
           description: Moderation pipeline mode.
           enum: ["", disabled, manual, auto]
-        icp_number:
+        footer_text_1:
           type: string
-        icp_link:
+        footer_link_1:
           type: string
-        psb_number:
+          description: When set, must be http or https.
+        footer_text_2:
           type: string
-        psb_link:
+        footer_link_2:
           type: string
+          description: When set, must be http or https.
         analytics_provider:
           type: string
           enum: ["", plausible, umami, ga4, baidu, custom]

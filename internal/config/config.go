@@ -69,10 +69,10 @@ type AppConfig struct {
 	AdminEmail               string          `mapstructure:"admin_email"`
 	AdminPassword            string          `mapstructure:"admin_password"`
 	ModerationMode           string          `mapstructure:"moderation_mode"` // disabled, manual, auto
-	ICPNumber                string          `mapstructure:"icp_number"`
-	ICPLink                  string          `mapstructure:"icp_link"`
-	PSBNumber                string          `mapstructure:"psb_number"`
-	PSBLink                  string          `mapstructure:"psb_link"`
+	FooterText1              string          `mapstructure:"footer_text_1"`
+	FooterLink1              string          `mapstructure:"footer_link_1"`
+	FooterText2              string          `mapstructure:"footer_text_2"`
+	FooterLink2              string          `mapstructure:"footer_link_2"`
 	AnalyticsProvider        string          `mapstructure:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `mapstructure:"analytics_config"`
 }
@@ -157,13 +157,13 @@ func (s *Setter) SetModerationMode(mode string) {
 	s.cfg.App.ModerationMode = mode
 }
 
-func (s *Setter) SetFiling(icpNumber, icpLink, psbNumber, psbLink string) {
+func (s *Setter) SetFooterItems(text1, link1, text2, link2 string) {
 	s.cfg.mu.Lock()
 	defer s.cfg.mu.Unlock()
-	s.cfg.App.ICPNumber = icpNumber
-	s.cfg.App.ICPLink = icpLink
-	s.cfg.App.PSBNumber = psbNumber
-	s.cfg.App.PSBLink = psbLink
+	s.cfg.App.FooterText1 = text1
+	s.cfg.App.FooterLink1 = link1
+	s.cfg.App.FooterText2 = text2
+	s.cfg.App.FooterLink2 = link2
 }
 
 func (s *Setter) SetAnalytics(provider string, cfg json.RawMessage) {
@@ -273,9 +273,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.admin_email", "")
 	v.SetDefault("app.admin_password", "")
 	v.SetDefault("app.moderation_mode", "")
-	v.SetDefault("app.icp_number", "")
-	v.SetDefault("app.icp_link", "https://beian.miit.gov.cn/")
-	v.SetDefault("app.psb_number", "")
-	v.SetDefault("app.psb_link", "")
+	v.SetDefault("app.footer_text_1", "")
+	v.SetDefault("app.footer_link_1", "")
+	v.SetDefault("app.footer_text_2", "")
+	v.SetDefault("app.footer_link_2", "")
 	v.SetDefault("app.analytics_provider", "")
 }

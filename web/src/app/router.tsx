@@ -24,7 +24,6 @@ const AdminImagesPage = lazy(async () => ({ default: (await import('../pages/con
 const AdminModerationPage = lazy(async () => ({ default: (await import('../pages/console/admin/moderation-page')).AdminModerationPage }))
 const AdminSiteSettingsPage = lazy(async () => ({ default: (await import('../pages/console/admin/settings/site-settings-page')).AdminSiteSettingsPage }))
 const AdminAccessSettingsPage = lazy(async () => ({ default: (await import('../pages/console/admin/settings/access-settings-page')).AdminAccessSettingsPage }))
-const AdminComplianceSettingsPage = lazy(async () => ({ default: (await import('../pages/console/admin/settings/seo-settings-page')).AdminComplianceSettingsPage }))
 const AdminAnalyticsSettingsPage = lazy(async () => ({ default: (await import('../pages/console/admin/settings/analytics-settings-page')).AdminAnalyticsSettingsPage }))
 const AdminDashboardPage = lazy(async () => ({ default: (await import('../pages/console/admin/dashboard-page')).AdminDashboardPage }))
 const AdminAuditLogsPage = lazy(async () => ({ default: (await import('../pages/console/admin/audit-logs-page')).AdminAuditLogsPage }))
@@ -138,8 +137,8 @@ function PublicRoutes() {
                 <Route path="settings" element={<Navigate to="/console/admin/site" replace />} />
                 <Route path="site" element={<LazyPage><AdminSiteSettingsPage /></LazyPage>} />
                 <Route path="access" element={<LazyPage><AdminAccessSettingsPage /></LazyPage>} />
-                <Route path="seo" element={<Navigate to="/console/admin/compliance" replace />} />
-                <Route path="compliance" element={<LazyPage><AdminComplianceSettingsPage /></LazyPage>} />
+                <Route path="seo" element={<Navigate to="/console/admin/site" replace />} />
+                <Route path="compliance" element={<Navigate to="/console/admin/site" replace />} />
                 <Route path="analytics" element={<LazyPage><AdminAnalyticsSettingsPage /></LazyPage>} />
               </Route>
               <Route index element={<Navigate to="/console/upload" replace />} />

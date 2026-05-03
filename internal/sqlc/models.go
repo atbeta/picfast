@@ -129,15 +129,15 @@ type SiteSetting struct {
 	CreatedAt                time.Time       `json:"created_at"`
 	UpdatedAt                time.Time       `json:"updated_at"`
 	SiteDescription          string          `json:"site_description"`
-	IcpNumber                string          `json:"icp_number"`
-	IcpLink                  string          `json:"icp_link"`
-	PsbNumber                string          `json:"psb_number"`
-	PsbLink                  string          `json:"psb_link"`
 	AnalyticsProvider        string          `json:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `json:"analytics_config"`
 	FaviconUrl               string          `json:"favicon_url"`
 	GuestCapacityBytes       int64           `json:"guest_capacity_bytes"`
 	AllowUserImageProcessing bool            `json:"allow_user_image_processing"`
+	FooterText1              string          `json:"footer_text_1"`
+	FooterLink1              string          `json:"footer_link_1"`
+	FooterText2              string          `json:"footer_text_2"`
+	FooterLink2              string          `json:"footer_link_2"`
 }
 
 type Strategy struct {

@@ -140,10 +140,10 @@ func TestAdminSettingsPersistSiteMetadata(t *testing.T) {
 	body := map[string]interface{}{
 		"site_description":   "A private image hosting service for the team.",
 		"favicon_url":        "https://img.example.com/favicon.ico",
-		"icp_number":         "京ICP备12345678号-1",
-		"icp_link":           "https://beian.miit.gov.cn/",
-		"psb_number":         "京公网安备11000002000001号",
-		"psb_link":           "https://www.beian.gov.cn/",
+		"footer_text_1": "京ICP备12345678号-1",
+		"footer_link_1": "https://beian.miit.gov.cn/",
+		"footer_text_2": "京公网安备11000002000001号",
+		"footer_link_2": "https://www.beian.gov.cn/",
 		"analytics_provider": "umami",
 		"analytics_config": map[string]interface{}{
 			"script_url": "https://analytics.example.com/script.js",
@@ -164,8 +164,8 @@ func TestAdminSettingsPersistSiteMetadata(t *testing.T) {
 	if data["favicon_url"] != "https://img.example.com/favicon.ico" {
 		t.Fatalf("favicon_url = %v", data["favicon_url"])
 	}
-	if data["icp_number"] != "京ICP备12345678号-1" {
-		t.Fatalf("icp_number = %v", data["icp_number"])
+	if data["footer_text_1"] != "京ICP备12345678号-1" {
+		t.Fatalf("footer_text_1 = %v", data["footer_text_1"])
 	}
 	if data["analytics_provider"] != "umami" {
 		t.Fatalf("analytics_provider = %v", data["analytics_provider"])
@@ -214,7 +214,7 @@ func TestPublicConfigIncludesSiteMetadata(t *testing.T) {
 	body := map[string]interface{}{
 		"site_description":   "Public description",
 		"favicon_url":        "https://img.example.com/site.ico",
-		"icp_number":         "沪ICP备12345678号",
+		"footer_text_1": "沪ICP备12345678号",
 		"analytics_provider": "plausible",
 		"analytics_config": map[string]interface{}{
 			"domain":     "img.example.com",
@@ -239,8 +239,8 @@ func TestPublicConfigIncludesSiteMetadata(t *testing.T) {
 	if data["favicon_url"] != "https://img.example.com/site.ico" {
 		t.Fatalf("favicon_url = %v", data["favicon_url"])
 	}
-	if data["icp_number"] != "沪ICP备12345678号" {
-		t.Fatalf("icp_number = %v", data["icp_number"])
+	if data["footer_text_1"] != "沪ICP备12345678号" {
+		t.Fatalf("footer_text_1 = %v", data["footer_text_1"])
 	}
 	if data["analytics_provider"] != "plausible" {
 		t.Fatalf("analytics_provider = %v", data["analytics_provider"])

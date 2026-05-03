@@ -19,10 +19,10 @@ export interface SettingsForm {
   user_initial_capacity_mb: number
   default_image_ttl: string
   moderation_mode: string
-  icp_number: string
-  icp_link: string
-  psb_number: string
-  psb_link: string
+  footer_text_1: string
+  footer_link_1: string
+  footer_text_2: string
+  footer_link_2: string
   analytics_provider: string
   analytics_domain: string
   analytics_script_url: string
@@ -48,10 +48,10 @@ const defaultValues: SettingsForm = {
   user_initial_capacity_mb: 500,
   default_image_ttl: '0',
   moderation_mode: 'disabled',
-  icp_number: '',
-  icp_link: '',
-  psb_number: '',
-  psb_link: '',
+  footer_text_1: '',
+  footer_link_1: '',
+  footer_text_2: '',
+  footer_link_2: '',
   analytics_provider: '',
   analytics_domain: '',
   analytics_script_url: '',
@@ -85,10 +85,10 @@ function settingsToForm(data: AdminSettings): SettingsForm {
     user_initial_capacity_mb: Math.round(data.user_initial_capacity / 1024 / 1024),
     default_image_ttl: normalizeTTL(data.default_image_ttl),
     moderation_mode: data.moderation_mode,
-    icp_number: data.icp_number || '',
-    icp_link: data.icp_link || '',
-    psb_number: data.psb_number || '',
-    psb_link: data.psb_link || '',
+    footer_text_1: data.footer_text_1 || '',
+    footer_link_1: data.footer_link_1 || '',
+    footer_text_2: data.footer_text_2 || '',
+    footer_link_2: data.footer_link_2 || '',
     analytics_provider: data.analytics_provider || '',
     analytics_domain: settingString(data.analytics_config?.domain),
     analytics_script_url: settingString(data.analytics_config?.script_url),

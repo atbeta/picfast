@@ -3,8 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { getVersionInfo, type SiteConfig } from '@/lib/site-config'
 
 const GITHUB_URL = 'https://github.com/atbeta/picfast'
-const ICP_URL = 'https://beian.miit.gov.cn/'
-const PSB_URL = 'https://www.beian.gov.cn/'
 
 export function SiteFooter({ config }: { config: SiteConfig }) {
   const { data: version } = useQuery({
@@ -15,30 +13,30 @@ export function SiteFooter({ config }: { config: SiteConfig }) {
 
   const githubURL = version?.github_url || GITHUB_URL
 
+  const footerItems = [
+    { text: config.footer_text_1, link: config.footer_link_1 },
+    { text: config.footer_text_2, link: config.footer_link_2 },
+  ].filter(item => item.text && item.text.trim() !== '')
+
   return (
     <footer className="relative z-10 mx-auto w-full max-w-[1400px] px-6 pb-8 text-xs text-muted-foreground">
       <div className="flex flex-col gap-2 border-t border-border/40 pt-4">
-        {(config.icp_number || config.psb_number) && (
+        {footerItems.length > 0 && (
           <div className="flex flex-wrap items-center justify-center gap-3">
-            {config.icp_number && (
-              <a
-                href={ICP_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="transition-colors hover:text-foreground"
-              >
-                {config.icp_number}
-              </a>
-            )}
-            {config.psb_number && (
-              <a
-                href={PSB_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="transition-colors hover:text-foreground"
-              >
-                {config.psb_number}
-              </a>
+            {footerItems.map((item, index) =>
+              item.link && item.link.trim() !== '' ? (
+                <a
+                  key={index}
+                  href={item.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="transition-colors hover:text-foreground"
+                >
+                  {item.text}
+                </a>
+              ) : (
+                <span key={index}>{item.text}</span>
+              ),
             )}
           </div>
         )}

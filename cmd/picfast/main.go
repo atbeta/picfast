@@ -227,10 +227,10 @@ func applyPersistedSiteSettings(ctx context.Context, queries *sqlc.Queries, cfg 
 		cfg.App.DefaultImageTTL = d
 	}
 	cfg.App.ModerationMode = settings.ModerationMode
-	cfg.App.ICPNumber = settings.IcpNumber
-	cfg.App.ICPLink = settings.IcpLink
-	cfg.App.PSBNumber = settings.PsbNumber
-	cfg.App.PSBLink = settings.PsbLink
+	cfg.App.FooterText1 = settings.FooterText1
+	cfg.App.FooterLink1 = settings.FooterLink1
+	cfg.App.FooterText2 = settings.FooterText2
+	cfg.App.FooterLink2 = settings.FooterLink2
 	cfg.App.AnalyticsProvider = settings.AnalyticsProvider
 	cfg.App.AnalyticsConfig = settings.AnalyticsConfig
 	return nil

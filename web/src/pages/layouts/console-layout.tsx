@@ -103,7 +103,6 @@ export function ConsoleLayout() {
                   <ConsoleNavItem to="/console/admin/audit-logs" label={t('admin.navAuditLogs', { defaultValue: '审计日志' })} icon={ScrollText} />
                   <ConsoleNavItem to="/console/admin/site" label={t('admin.navSiteSettings')} icon={Globe} />
                   <ConsoleNavItem to="/console/admin/access" label={t('admin.navAccessSettings')} icon={ShieldCheck} />
-                  <ConsoleNavItem to="/console/admin/compliance" label={t('admin.navComplianceSettings')} icon={ScrollText} />
                   <ConsoleNavItem to="/console/admin/analytics" label={t('admin.navAnalyticsSettings')} icon={BarChart3} />
                 </MobileNavRail>
               </div>

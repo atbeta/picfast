@@ -224,10 +224,10 @@ export interface AdminSettings {
   user_initial_capacity: number
   default_image_ttl: string
   moderation_mode: string
-  icp_number: string
-  icp_link: string
-  psb_number: string
-  psb_link: string
+  footer_text_1: string
+  footer_link_1: string
+  footer_text_2: string
+  footer_link_2: string
   analytics_provider: string
   analytics_config: Record<string, unknown>
 }

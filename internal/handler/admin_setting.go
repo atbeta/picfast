@@ -45,10 +45,10 @@ type updateSettingsRequest struct {
 	UserInitialCapacity      *int64           `json:"user_initial_capacity"`
 	DefaultImageTTL          *string          `json:"default_image_ttl"`
 	ModerationMode           *string          `json:"moderation_mode"`
-	ICPNumber                *string          `json:"icp_number"`
-	ICPLink                  *string          `json:"icp_link"`
-	PSBNumber                *string          `json:"psb_number"`
-	PSBLink                  *string          `json:"psb_link"`
+	FooterText1              *string          `json:"footer_text_1"`
+	FooterLink1              *string          `json:"footer_link_1"`
+	FooterText2              *string          `json:"footer_text_2"`
+	FooterLink2              *string          `json:"footer_link_2"`
 	AnalyticsProvider        *string          `json:"analytics_provider"`
 	AnalyticsConfig          *json.RawMessage `json:"analytics_config"`
 }
@@ -122,37 +122,37 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if req.ModerationMode != nil {
 		h.setter.SetModerationMode(*req.ModerationMode)
 	}
-	if req.ICPLink != nil {
-		if err := validateOptionalURL(*req.ICPLink); err != nil {
-			Fail(w, http.StatusBadRequest, "invalid icp_link")
+	if req.FooterLink1 != nil {
+		if err := validateOptionalURL(*req.FooterLink1); err != nil {
+			Fail(w, http.StatusBadRequest, "invalid footer_link_1")
 			return
 		}
 	}
-	if req.PSBLink != nil {
-		if err := validateOptionalURL(*req.PSBLink); err != nil {
-			Fail(w, http.StatusBadRequest, "invalid psb_link")
+	if req.FooterLink2 != nil {
+		if err := validateOptionalURL(*req.FooterLink2); err != nil {
+			Fail(w, http.StatusBadRequest, "invalid footer_link_2")
 			return
 		}
 	}
-	if req.ICPNumber != nil || req.ICPLink != nil || req.PSBNumber != nil || req.PSBLink != nil {
+	if req.FooterText1 != nil || req.FooterLink1 != nil || req.FooterText2 != nil || req.FooterLink2 != nil {
 		_, app := h.config.RuntimeSnapshot()
-		icpNumber := app.ICPNumber
-		icpLink := app.ICPLink
-		psbNumber := app.PSBNumber
-		psbLink := app.PSBLink
-		if req.ICPNumber != nil {
-			icpNumber = *req.ICPNumber
+		text1 := app.FooterText1
+		link1 := app.FooterLink1
+		text2 := app.FooterText2
+		link2 := app.FooterLink2
+		if req.FooterText1 != nil {
+			text1 = *req.FooterText1
 		}
-		if req.ICPLink != nil {
-			icpLink = *req.ICPLink
+		if req.FooterLink1 != nil {
+			link1 = *req.FooterLink1
 		}
-		if req.PSBNumber != nil {
-			psbNumber = *req.PSBNumber
+		if req.FooterText2 != nil {
+			text2 = *req.FooterText2
 		}
-		if req.PSBLink != nil {
-			psbLink = *req.PSBLink
+		if req.FooterLink2 != nil {
+			link2 = *req.FooterLink2
 		}
-		h.setter.SetFiling(icpNumber, icpLink, psbNumber, psbLink)
+		h.setter.SetFooterItems(text1, link1, text2, link2)
 	}
 	if req.AnalyticsProvider != nil || req.AnalyticsConfig != nil {
 		_, app := h.config.RuntimeSnapshot()
@@ -202,10 +202,10 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 		ModerationMode:           app.ModerationMode,
 		SiteDescription:          app.SiteDescription,
 		FaviconUrl:               app.FaviconURL,
-		IcpNumber:                app.ICPNumber,
-		IcpLink:                  app.ICPLink,
-		PsbNumber:                app.PSBNumber,
-		PsbLink:                  app.PSBLink,
+		FooterText1:              app.FooterText1,
+		FooterLink1:              app.FooterLink1,
+		FooterText2:              app.FooterText2,
+		FooterLink2:              app.FooterLink2,
 		AnalyticsProvider:        app.AnalyticsProvider,
 		AnalyticsConfig:          normalizedRawMessage(app.AnalyticsConfig),
 	})
@@ -227,10 +227,10 @@ func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string
 		"user_initial_capacity":       app.UserInitialCapacity,
 		"default_image_ttl":           app.DefaultImageTTL.String(),
 		"moderation_mode":             app.ModerationMode,
-		"icp_number":                  app.ICPNumber,
-		"icp_link":                    app.ICPLink,
-		"psb_number":                  app.PSBNumber,
-		"psb_link":                    app.PSBLink,
+		"footer_text_1":              app.FooterText1,
+		"footer_link_1":              app.FooterLink1,
+		"footer_text_2":              app.FooterText2,
+		"footer_link_2":              app.FooterLink2,
 		"analytics_provider":          app.AnalyticsProvider,
 		"analytics_config":            normalizedRawMessage(app.AnalyticsConfig),
 	}

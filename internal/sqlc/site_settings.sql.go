@@ -11,7 +11,7 @@ import (
 )
 
 const getSiteSettings = `-- name: GetSiteSettings :one
-SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing FROM site_settings WHERE id = 1
+SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2 FROM site_settings WHERE id = 1
 `
 
 func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
@@ -30,15 +30,15 @@ func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SiteDescription,
-		&i.IcpNumber,
-		&i.IcpLink,
-		&i.PsbNumber,
-		&i.PsbLink,
 		&i.AnalyticsProvider,
 		&i.AnalyticsConfig,
 		&i.FaviconUrl,
 		&i.GuestCapacityBytes,
 		&i.AllowUserImageProcessing,
+		&i.FooterText1,
+		&i.FooterLink1,
+		&i.FooterText2,
+		&i.FooterLink2,
 	)
 	return i, err
 }
@@ -57,10 +57,10 @@ INSERT INTO site_settings (
     moderation_mode,
     site_description,
     favicon_url,
-    icp_number,
-    icp_link,
-    psb_number,
-    psb_link,
+    footer_text_1,
+    footer_link_1,
+    footer_text_2,
+    footer_link_2,
     analytics_provider,
     analytics_config,
     allow_user_image_processing
@@ -78,15 +78,15 @@ ON CONFLICT (id) DO UPDATE SET
     moderation_mode = EXCLUDED.moderation_mode,
     site_description = EXCLUDED.site_description,
     favicon_url = EXCLUDED.favicon_url,
-    icp_number = EXCLUDED.icp_number,
-    icp_link = EXCLUDED.icp_link,
-    psb_number = EXCLUDED.psb_number,
-    psb_link = EXCLUDED.psb_link,
+    footer_text_1 = EXCLUDED.footer_text_1,
+    footer_link_1 = EXCLUDED.footer_link_1,
+    footer_text_2 = EXCLUDED.footer_text_2,
+    footer_link_2 = EXCLUDED.footer_link_2,
     analytics_provider = EXCLUDED.analytics_provider,
     analytics_config = EXCLUDED.analytics_config,
     allow_user_image_processing = EXCLUDED.allow_user_image_processing,
     updated_at = NOW()
-RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, icp_number, icp_link, psb_number, psb_link, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing
+RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2
 `
 
 type UpsertSiteSettingsParams struct {
@@ -101,10 +101,10 @@ type UpsertSiteSettingsParams struct {
 	ModerationMode           string          `json:"moderation_mode"`
 	SiteDescription          string          `json:"site_description"`
 	FaviconUrl               string          `json:"favicon_url"`
-	IcpNumber                string          `json:"icp_number"`
-	IcpLink                  string          `json:"icp_link"`
-	PsbNumber                string          `json:"psb_number"`
-	PsbLink                  string          `json:"psb_link"`
+	FooterText1              string          `json:"footer_text_1"`
+	FooterLink1              string          `json:"footer_link_1"`
+	FooterText2              string          `json:"footer_text_2"`
+	FooterLink2              string          `json:"footer_link_2"`
 	AnalyticsProvider        string          `json:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `json:"analytics_config"`
 	AllowUserImageProcessing bool            `json:"allow_user_image_processing"`
@@ -123,10 +123,10 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		arg.ModerationMode,
 		arg.SiteDescription,
 		arg.FaviconUrl,
-		arg.IcpNumber,
-		arg.IcpLink,
-		arg.PsbNumber,
-		arg.PsbLink,
+		arg.FooterText1,
+		arg.FooterLink1,
+		arg.FooterText2,
+		arg.FooterLink2,
 		arg.AnalyticsProvider,
 		arg.AnalyticsConfig,
 		arg.AllowUserImageProcessing,
@@ -145,15 +145,15 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SiteDescription,
-		&i.IcpNumber,
-		&i.IcpLink,
-		&i.PsbNumber,
-		&i.PsbLink,
 		&i.AnalyticsProvider,
 		&i.AnalyticsConfig,
 		&i.FaviconUrl,
 		&i.GuestCapacityBytes,
 		&i.AllowUserImageProcessing,
+		&i.FooterText1,
+		&i.FooterLink1,
+		&i.FooterText2,
+		&i.FooterLink2,
 	)
 	return i, err
 }

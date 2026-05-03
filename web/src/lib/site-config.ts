@@ -10,10 +10,10 @@ export interface SiteConfig {
   allow_user_image_processing: boolean
   require_email_verification: boolean
   base_url: string
-  icp_number: string
-  icp_link: string
-  psb_number: string
-  psb_link: string
+  footer_text_1: string
+  footer_link_1: string
+  footer_text_2: string
+  footer_link_2: string
   analytics_provider: string
   analytics_config: Record<string, unknown>
   github_url: string

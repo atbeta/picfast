@@ -22,6 +22,10 @@ export function AdminSiteSettingsPage() {
     app_url: form.app_url,
     site_description: form.site_description,
     favicon_url: form.favicon_url,
+    footer_text_1: form.footer_text_1,
+    footer_link_1: form.footer_link_1,
+    footer_text_2: form.footer_text_2,
+    footer_link_2: form.footer_link_2,
   }))
 
   const onPickFavicon = async (files: FileList | null) => {
@@ -95,6 +99,33 @@ export function AdminSiteSettingsPage() {
           ) : null}
         </div>
       </SettingField>
+
+      <div className="border-t border-border/40 pt-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.sectionFooterInfo')}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.sectionFooterInfoDesc')}</p>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4 md:p-5">
+            <SettingField label={t('admin.footerFieldText')} hint={t('admin.footerFieldTextHint')}>
+              <input {...register('footer_text_1')} className={fieldInputCls} />
+            </SettingField>
+            <SettingField label={t('admin.footerFieldLink')} hint={t('admin.footerFieldLinkHint')}>
+              <input {...register('footer_link_1')} placeholder="https://" className={fieldInputCls} />
+            </SettingField>
+          </div>
+
+          <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4 md:p-5">
+            <SettingField label={t('admin.footerFieldText')} hint={t('admin.footerFieldTextHint')}>
+              <input {...register('footer_text_2')} className={fieldInputCls} />
+            </SettingField>
+            <SettingField label={t('admin.footerFieldLink')} hint={t('admin.footerFieldLinkHint')}>
+              <input {...register('footer_link_2')} placeholder="https://" className={fieldInputCls} />
+            </SettingField>
+          </div>
+        </div>
+      </div>
 
     </SettingsPageLayout>
   )
