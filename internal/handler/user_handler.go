@@ -116,11 +116,23 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	usedCapacity, err := h.db.GetUserUsedCapacity(r.Context(), pgtype.Int8{Int64: userID, Valid: true})
+	if err != nil {
+		slog.Warn("failed to load user used capacity", "error", err, "user_id", userID)
+		usedCapacity = 0
+	}
+
 	Success(w, map[string]interface{}{
-		"id":         updated.ID,
-		"email":      updated.Email,
-		"name":       updated.Name,
-		"settings":   json.RawMessage(updated.Settings),
-		"updated_at": updated.UpdatedAt,
+		"id":             updated.ID,
+		"email":          updated.Email,
+		"name":           updated.Name,
+		"role":           updated.Role,
+		"status":         updated.Status,
+		"capacity_bytes": updated.CapacityBytes,
+		"used_bytes":     usedCapacity,
+		"image_num":      updated.ImageNum,
+		"album_num":      updated.AlbumNum,
+		"settings":       json.RawMessage(updated.Settings),
+		"updated_at":     updated.UpdatedAt,
 	})
 }

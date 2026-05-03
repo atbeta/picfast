@@ -257,7 +257,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 
 	// Step 12: Content moderation (best effort, does not fail upload)
 	modResult := &moderation.Result{Status: moderation.StatusApproved, Provider: "noop"}
-	if mod := moderation.FromContext(ctx); mod != nil {
+	if mod := moderation.FromContext(ctx); mod != nil && !identity.isAdmin {
 		mr, err := mod.Moderate(ctx, img.ID, img.Key, fileData)
 		if err == nil && mr != nil {
 			modResult = mr
