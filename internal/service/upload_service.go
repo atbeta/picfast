@@ -301,9 +301,14 @@ func (s *UploadService) getStorage(strategy sqlc.Strategy) (storage.Storage, err
 
 func (s *UploadService) applyDefaultTTL(params UploadParams) UploadParams {
 	app := s.config.AppSnapshot()
-	if params.ExpiresAt == nil && app.DefaultImageTTL > 0 {
-		t := time.Now().Add(app.DefaultImageTTL)
-		params.ExpiresAt = &t
+	if params.ExpiresAt == nil {
+		if params.UserID == nil && app.GuestImageTTL > 0 {
+			t := time.Now().Add(app.GuestImageTTL)
+			params.ExpiresAt = &t
+		} else if app.DefaultImageTTL > 0 {
+			t := time.Now().Add(app.DefaultImageTTL)
+			params.ExpiresAt = &t
+		}
 	}
 	return params
 }

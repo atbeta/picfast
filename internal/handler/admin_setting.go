@@ -44,6 +44,7 @@ type updateSettingsRequest struct {
 	RequireEmailVerification *bool            `json:"require_email_verification"`
 	UserInitialCapacity      *int64           `json:"user_initial_capacity"`
 	DefaultImageTTL          *string          `json:"default_image_ttl"`
+	GuestImageTTL            *string          `json:"guest_image_ttl"`
 	ModerationMode           *string          `json:"moderation_mode"`
 	FooterText1              *string          `json:"footer_text_1"`
 	FooterLink1              *string          `json:"footer_link_1"`
@@ -117,6 +118,18 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			h.setter.SetDefaultImageTTL(d)
+		}
+	}
+	if req.GuestImageTTL != nil {
+		if *req.GuestImageTTL == "0" || *req.GuestImageTTL == "" {
+			h.setter.SetGuestImageTTL(0)
+		} else {
+			d, err := time.ParseDuration(*req.GuestImageTTL)
+			if err != nil {
+				Fail(w, http.StatusBadRequest, "invalid guest_image_ttl format")
+				return
+			}
+			h.setter.SetGuestImageTTL(d)
 		}
 	}
 	if req.ModerationMode != nil {
@@ -207,6 +220,7 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 		RequireEmailVerification: app.RequireEmailVerification,
 		UserInitialCapacity:      app.UserInitialCapacity,
 		DefaultImageTtl:          app.DefaultImageTTL.String(),
+		GuestImageTtl:            app.GuestImageTTL.String(),
 		ModerationMode:           app.ModerationMode,
 		SiteDescription:          app.SiteDescription,
 		FaviconUrl:               app.FaviconURL,
@@ -234,6 +248,7 @@ func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string
 		"require_email_verification":  app.RequireEmailVerification,
 		"user_initial_capacity":       app.UserInitialCapacity,
 		"default_image_ttl":           app.DefaultImageTTL.String(),
+		"guest_image_ttl":            app.GuestImageTTL.String(),
 		"moderation_mode":             app.ModerationMode,
 		"footer_text_1":              app.FooterText1,
 		"footer_link_1":              app.FooterLink1,

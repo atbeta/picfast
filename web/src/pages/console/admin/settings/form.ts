@@ -18,6 +18,7 @@ export interface SettingsForm {
   require_email_verification: boolean
   user_initial_capacity_mb: number
   default_image_ttl: string
+  guest_image_ttl: string
   moderation_mode: string
   footer_text_1: string
   footer_link_1: string
@@ -47,6 +48,7 @@ const defaultValues: SettingsForm = {
   require_email_verification: false,
   user_initial_capacity_mb: 500,
   default_image_ttl: '0',
+  guest_image_ttl: '0',
   moderation_mode: 'disabled',
   footer_text_1: '',
   footer_link_1: '',
@@ -84,6 +86,7 @@ function settingsToForm(data: AdminSettings): SettingsForm {
     require_email_verification: data.require_email_verification,
     user_initial_capacity_mb: Math.round(data.user_initial_capacity / 1024 / 1024),
     default_image_ttl: normalizeTTL(data.default_image_ttl),
+    guest_image_ttl: normalizeTTL(data.guest_image_ttl),
     moderation_mode: data.moderation_mode,
     footer_text_1: data.footer_text_1 || '',
     footer_link_1: data.footer_link_1 || '',

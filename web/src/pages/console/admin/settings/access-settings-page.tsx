@@ -24,6 +24,7 @@ export function AdminAccessSettingsPage() {
     require_email_verification: Boolean(values.require_email_verification),
     user_initial_capacity: values.user_initial_capacity_mb * 1024 * 1024,
     default_image_ttl: values.default_image_ttl,
+    guest_image_ttl: values.guest_image_ttl,
     moderation_mode: values.moderation_mode,
   }))
 
@@ -143,6 +144,37 @@ export function AdminAccessSettingsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="0">{t('admin.ttlNever')}</SelectItem>
+                <SelectItem value="24h">{t('admin.ttl1Day')}</SelectItem>
+                <SelectItem value="168h">{t('admin.ttl7Days')}</SelectItem>
+                <SelectItem value="720h">{t('admin.ttl30Days')}</SelectItem>
+                <SelectItem value="2160h">{t('admin.ttl90Days')}</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </SettingField>
+
+      <SettingField label={t('admin.guestImageTTL')} hint={t('admin.guestImageTTLDesc')}>
+        <Controller
+          name="guest_image_ttl"
+          control={control}
+          render={({ field }) => (
+            <Select
+              value={field.value || '0'}
+              items={{
+                '0': t('admin.ttlGuestDefault'),
+                '24h': t('admin.ttl1Day'),
+                '168h': t('admin.ttl7Days'),
+                '720h': t('admin.ttl30Days'),
+                '2160h': t('admin.ttl90Days'),
+              }}
+              onValueChange={(val) => field.onChange(String(val))}
+            >
+              <SelectTrigger className="h-11 w-full bg-background border-input">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">{t('admin.ttlGuestDefault')}</SelectItem>
                 <SelectItem value="24h">{t('admin.ttl1Day')}</SelectItem>
                 <SelectItem value="168h">{t('admin.ttl7Days')}</SelectItem>
                 <SelectItem value="720h">{t('admin.ttl30Days')}</SelectItem>

@@ -12,6 +12,7 @@ INSERT INTO site_settings (
     require_email_verification,
     user_initial_capacity,
     default_image_ttl,
+    guest_image_ttl,
     moderation_mode,
     site_description,
     favicon_url,
@@ -23,7 +24,7 @@ INSERT INTO site_settings (
     analytics_config,
     allow_user_image_processing
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
@@ -33,6 +34,7 @@ ON CONFLICT (id) DO UPDATE SET
     require_email_verification = EXCLUDED.require_email_verification,
     user_initial_capacity = EXCLUDED.user_initial_capacity,
     default_image_ttl = EXCLUDED.default_image_ttl,
+    guest_image_ttl = EXCLUDED.guest_image_ttl,
     moderation_mode = EXCLUDED.moderation_mode,
     site_description = EXCLUDED.site_description,
     favicon_url = EXCLUDED.favicon_url,

@@ -34,6 +34,12 @@ paths:
                     properties:
                       data:
                         $ref: "#/components/schemas/PublicConfigResponse"
+        "503":
+          description: Service Unavailable (e.g. could not read instance setup status)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /version:
     get:
@@ -1681,7 +1687,12 @@ components:
           type: string
         allow_guest_upload:
           type: boolean
+        guest_capacity_bytes:
+          type: integer
+          format: int64
         allow_registration:
+          type: boolean
+        allow_user_image_processing:
           type: boolean
         require_email_verification:
           type: boolean
@@ -1692,7 +1703,15 @@ components:
           format: int64
         default_image_ttl:
           type: string
-          description: 'Go duration format. Empty means never expires. Examples: 24h, 720h.'
+          description: >-
+            Go duration string (`time.ParseDuration`). Zero or empty disables automatic expiry from this default for authenticated users unless another rule applies.
+            Examples: `24h`, `720h`.
+          example: 24h
+        guest_image_ttl:
+          type: string
+          description: >-
+            Go duration string for guest uploads only. Zero or empty means guests use `default_image_ttl`.
+            When greater than zero, guest uploads use this TTL instead of `default_image_ttl`.
           example: 24h
         moderation_mode:
           type: string
@@ -1727,12 +1746,30 @@ components:
           type: string
         allow_guest_upload:
           type: boolean
+        guest_capacity_bytes:
+          type: integer
+          format: int64
+          description: Max aggregate guest storage in bytes; 0 means no limit.
         allow_registration:
+          type: boolean
+        allow_user_image_processing:
           type: boolean
         require_email_verification:
           type: boolean
         base_url:
           type: string
+        default_image_ttl:
+          type: string
+          description: >-
+            Default automatic expiry for authenticated users’ uploads when the client does not set `expires_in`.
+            Go duration string; zero means no automatic expiry from this setting.
+          example: 24h
+        guest_image_ttl:
+          type: string
+          description: >-
+            Automatic expiry for guest uploads only. Zero means use `default_image_ttl` for guests.
+            When set to a positive duration, guest uploads use this TTL instead of `default_image_ttl`.
+          example: 24h
         footer_text_1:
           type: string
           description: First footer line text. Omitted in UI when empty.
@@ -1750,6 +1787,9 @@ components:
         analytics_config:
           type: object
           additionalProperties: true
+        github_url:
+          type: string
+          description: Repository or project URL shown in the public UI.
         setup_required:
           type: boolean
           description: True when the instance has no users and must complete first-run setup.
@@ -1814,7 +1854,12 @@ components:
           type: string
         allow_guest_upload:
           type: boolean
+        guest_capacity_bytes:
+          type: integer
+          format: int64
         allow_registration:
+          type: boolean
+        allow_user_image_processing:
           type: boolean
         require_email_verification:
           type: boolean
@@ -1823,7 +1868,15 @@ components:
           format: int64
         default_image_ttl:
           type: string
-          description: 'Go duration format. Empty means never expires. Examples: 24h, 720h.'
+          description: >-
+            Go duration string. Use `0` or empty to disable automatic expiry from this default for authenticated users.
+            Examples: `24h`, `720h`.
+          example: 24h
+        guest_image_ttl:
+          type: string
+          description: >-
+            Go duration string for guest uploads only. Use `0` or empty to fall back to `default_image_ttl` for guests.
+            When set to a positive duration, guest uploads use this TTL instead of `default_image_ttl`.
           example: 24h
         moderation_mode:
           type: string

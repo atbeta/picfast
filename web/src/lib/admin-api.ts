@@ -223,6 +223,7 @@ export interface AdminSettings {
   email_verification_ready: boolean
   user_initial_capacity: number
   default_image_ttl: string
+  guest_image_ttl: string
   moderation_mode: string
   footer_text_1: string
   footer_link_1: string
