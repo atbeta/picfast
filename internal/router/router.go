@@ -240,6 +240,8 @@ func New(
 				"allow_user_image_processing": app.AllowUserImageProcessing,
 				"require_email_verification":  app.RequireEmailVerification && mailSender != nil && mailSender.Ready(),
 				"base_url":                    server.BaseURL,
+				"default_image_ttl":           app.DefaultImageTTL.String(),
+				"guest_image_ttl":             app.GuestImageTTL.String(),
 				"footer_text_1":               app.FooterText1,
 				"footer_link_1":               app.FooterLink1,
 				"footer_text_2":               app.FooterText2,

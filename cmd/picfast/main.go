@@ -229,6 +229,15 @@ func applyPersistedSiteSettings(ctx context.Context, queries *sqlc.Queries, cfg 
 		}
 		cfg.App.DefaultImageTTL = d
 	}
+	if settings.GuestImageTtl == "" {
+		cfg.App.GuestImageTTL = 0
+	} else {
+		d, err := time.ParseDuration(settings.GuestImageTtl)
+		if err != nil {
+			return fmt.Errorf("parse persisted guest_image_ttl: %w", err)
+		}
+		cfg.App.GuestImageTTL = d
+	}
 	cfg.App.ModerationMode = settings.ModerationMode
 	cfg.App.FooterText1 = settings.FooterText1
 	cfg.App.FooterLink1 = settings.FooterLink1

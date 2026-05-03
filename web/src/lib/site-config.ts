@@ -10,6 +10,8 @@ export interface SiteConfig {
   allow_user_image_processing: boolean
   require_email_verification: boolean
   base_url: string
+  default_image_ttl: string
+  guest_image_ttl: string
   footer_text_1: string
   footer_link_1: string
   footer_text_2: string

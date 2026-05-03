@@ -32,6 +32,7 @@ app:
   require_email_verification: true  # only takes effect when mail.* is configured and reachable
   user_initial_capacity: 524288000
   default_image_ttl: "0"       # 0 = no default expiration; e.g. "24h", "168h"
+  guest_image_ttl: "0"        # 0 = use default_image_ttl for guests; e.g. "24h" for shorter guest retention
   admin_email: ""
   admin_password: ""
   moderation_mode: "disabled"  # disabled | manual | auto (future)

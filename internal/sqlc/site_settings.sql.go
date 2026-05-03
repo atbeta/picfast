@@ -11,7 +11,7 @@ import (
 )
 
 const getSiteSettings = `-- name: GetSiteSettings :one
-SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2 FROM site_settings WHERE id = 1
+SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl FROM site_settings WHERE id = 1
 `
 
 func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
@@ -39,6 +39,7 @@ func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
 		&i.FooterLink1,
 		&i.FooterText2,
 		&i.FooterLink2,
+		&i.GuestImageTtl,
 	)
 	return i, err
 }
@@ -54,6 +55,7 @@ INSERT INTO site_settings (
     require_email_verification,
     user_initial_capacity,
     default_image_ttl,
+    guest_image_ttl,
     moderation_mode,
     site_description,
     favicon_url,
@@ -65,7 +67,7 @@ INSERT INTO site_settings (
     analytics_config,
     allow_user_image_processing
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
@@ -75,6 +77,7 @@ ON CONFLICT (id) DO UPDATE SET
     require_email_verification = EXCLUDED.require_email_verification,
     user_initial_capacity = EXCLUDED.user_initial_capacity,
     default_image_ttl = EXCLUDED.default_image_ttl,
+    guest_image_ttl = EXCLUDED.guest_image_ttl,
     moderation_mode = EXCLUDED.moderation_mode,
     site_description = EXCLUDED.site_description,
     favicon_url = EXCLUDED.favicon_url,
@@ -86,7 +89,7 @@ ON CONFLICT (id) DO UPDATE SET
     analytics_config = EXCLUDED.analytics_config,
     allow_user_image_processing = EXCLUDED.allow_user_image_processing,
     updated_at = NOW()
-RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2
+RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl
 `
 
 type UpsertSiteSettingsParams struct {
@@ -98,6 +101,7 @@ type UpsertSiteSettingsParams struct {
 	RequireEmailVerification bool            `json:"require_email_verification"`
 	UserInitialCapacity      int64           `json:"user_initial_capacity"`
 	DefaultImageTtl          string          `json:"default_image_ttl"`
+	GuestImageTtl            string          `json:"guest_image_ttl"`
 	ModerationMode           string          `json:"moderation_mode"`
 	SiteDescription          string          `json:"site_description"`
 	FaviconUrl               string          `json:"favicon_url"`
@@ -120,6 +124,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		arg.RequireEmailVerification,
 		arg.UserInitialCapacity,
 		arg.DefaultImageTtl,
+		arg.GuestImageTtl,
 		arg.ModerationMode,
 		arg.SiteDescription,
 		arg.FaviconUrl,
@@ -154,6 +159,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		&i.FooterLink1,
 		&i.FooterText2,
 		&i.FooterLink2,
+		&i.GuestImageTtl,
 	)
 	return i, err
 }
