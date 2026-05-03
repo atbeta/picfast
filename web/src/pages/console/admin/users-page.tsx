@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export function AdminUsersPage() {
@@ -187,35 +188,36 @@ export function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={() => openEdit(u)}
                           title={t('admin.edit')}
-                          className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
                         >
                           <Pencil className="size-4" />
-                        </button>
+                        </Button>
                         {u.role !== 'admin' && (
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
                             onClick={() => toggleStatus(u)}
                             disabled={saving === u.id}
                             title={u.status === 1 ? t('admin.freeze') : t('admin.activate')}
-                            className="rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 transition-colors cursor-pointer"
                           >
-                            {u.status === 1 ? <Ban className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-                          </button>
+                            {u.status === 1 ? <Ban className="size-4" /> : <Unlock className="size-4" />}
+                          </Button>
                         )}
                         {u.role !== 'admin' && (
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
                             onClick={() => setDeleteTarget(u.id)}
                             disabled={deleting === u.id}
+                            className="text-destructive/70 hover:text-destructive"
                             title={t('admin.delete')}
-                            className="rounded-lg p-1.5 text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                           >
                             <Trash2 className="size-4" />
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </td>
@@ -229,27 +231,15 @@ export function AdminUsersPage() {
             <div className="flex items-center justify-between pt-4">
               <span className="text-xs text-muted-foreground">{t('admin.pagination', { total: data.total })}</span>
               <div className="flex gap-2">
-                <button 
-                  type="button" 
-                  disabled={page <= 1} 
-                  onClick={() => setPage((p) => p - 1)} 
-                  title={t('admin.prev')}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                >
+                <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} title={t('admin.prev')}>
                   <ChevronLeft className="size-4" />
-                </button>
+                </Button>
                 <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-lg border border-input bg-background px-2 text-xs text-muted-foreground">
                   {page} / {totalPages}
                 </span>
-                <button 
-                  type="button" 
-                  disabled={page >= totalPages} 
-                  onClick={() => setPage((p) => p + 1)} 
-                  title={t('admin.next')}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                >
+                <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} title={t('admin.next')}>
                   <ChevronRight className="size-4" />
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -336,12 +326,12 @@ export function AdminUsersPage() {
             </div>
           </div>
           <div className="mt-3 flex justify-end gap-3 border-t border-border pt-5">
-            <button type="button" onClick={() => setEditing(null)} className="h-10 rounded-lg border border-input bg-background px-4 text-sm font-medium hover:bg-accent transition-colors cursor-pointer">
+            <Button variant="outline" size="lg" onClick={() => setEditing(null)}>
               {t('admin.cancel')}
-            </button>
-            <button type="button" onClick={handleEditSave} disabled={editSaving} className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
+            </Button>
+            <Button size="lg" onClick={handleEditSave} disabled={editSaving}>
               {editSaving ? '…' : t('admin.confirmSave')}
-            </button>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

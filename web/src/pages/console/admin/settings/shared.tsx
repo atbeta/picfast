@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 
+import { Button } from '@/components/ui/button'
 import { HelpHint } from '@/components/help-hint'
 import { LoadingState } from '@/components/page-states'
 
@@ -66,9 +67,9 @@ export function SettingsPageLayout({
           {errorMsg && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{errorMsg}</p>}
 
           <div className="flex justify-end pt-4">
-            <button type="submit" disabled={isSubmitting} className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
+            <Button type="submit" size="lg" disabled={isSubmitting}>
               {isSubmitting ? t('admin.saving') : t('admin.save')}
-            </button>
+            </Button>
           </div>
         </form>
       )}

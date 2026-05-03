@@ -9,6 +9,7 @@ import { createAlbum, deleteAlbum, listAlbums, updateAlbum } from '../../lib/con
 import { extractErrorMessage } from '../../lib/error-handler'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
+import { Button } from '@/components/ui/button'
 
 export function AlbumsPage() {
   const { t } = useTranslation()
@@ -100,14 +101,10 @@ export function AlbumsPage() {
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">{t('page.albums.title')}</h1>
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors duration-150 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
-        >
-          <Plus className="-ms-1 me-2 size-4" />
+        <Button type="button" size="lg" onClick={() => setShowCreate(true)}>
+          <Plus className="size-4" />
           {t('albums.create')}
-        </button>
+        </Button>
       </div>
 
       {showCreate && (
@@ -134,21 +131,12 @@ export function AlbumsPage() {
             </div>
           </div>
           <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              onClick={handleCreate}
-              disabled={creating || !newName.trim()}
-              className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
-            >
+            <Button type="button" size="lg" onClick={handleCreate} disabled={creating || !newName.trim()}>
               {creating ? t('albums.creating') : t('albums.confirmCreate')}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowCreate(false); setNewName(''); setNewIntro('') }}
-              className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
-            >
+            </Button>
+            <Button type="button" variant="outline" size="lg" onClick={() => { setShowCreate(false); setNewName(''); setNewIntro('') }}>
               {t('albums.cancel')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -188,21 +176,12 @@ export function AlbumsPage() {
                     className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   />
                   <div className="flex gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={handleUpdate}
-                      disabled={saving}
-                      className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
-                    >
+                    <Button type="button" size="lg" onClick={handleUpdate} disabled={saving}>
                       {saving ? t('albums.saving') : t('albums.confirmSave')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingId(null)}
-                      className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
-                    >
+                    </Button>
+                    <Button type="button" variant="outline" size="lg" onClick={() => setEditingId(null)}>
                       {t('albums.cancel')}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -240,23 +219,24 @@ export function AlbumsPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button 
-                      type="button" 
-                      onClick={() => startEdit(album)} 
-                      className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => startEdit(album)}
                       title={t('albums.edit')}
                     >
                       <Pencil className="size-4" />
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setDeleteTarget(album.id)} 
-                      disabled={deleting === album.id} 
-                      className="rounded-lg p-1.5 text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setDeleteTarget(album.id)}
+                      disabled={deleting === album.id}
+                      className="text-destructive/70 hover:text-destructive"
                       title={t('albums.delete')}
                     >
                       <Trash2 className="size-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 <div className="mt-auto flex items-center justify-between border-t border-border/50 pt-4 text-xs text-muted-foreground">
@@ -276,27 +256,27 @@ export function AlbumsPage() {
         <div className="flex items-center justify-between border-t border-border/50 pt-4">
           <span className="text-sm text-muted-foreground">{t('albums.pagination', { total: data.total })}</span>
           <div className="flex gap-2">
-            <button 
-              type="button" 
-              disabled={page <= 1} 
-              onClick={() => setPage((p) => p - 1)} 
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
               title={t('albums.prev')}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             >
               <ChevronLeft className="size-4" />
-            </button>
+            </Button>
             <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-lg border border-input bg-background px-2 text-xs text-muted-foreground">
               {page} / {totalPages}
             </span>
-            <button 
-              type="button" 
-              disabled={page >= totalPages} 
-              onClick={() => setPage((p) => p + 1)} 
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
               title={t('albums.next')}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             >
               <ChevronRight className="size-4" />
-            </button>
+            </Button>
           </div>
         </div>
       )}

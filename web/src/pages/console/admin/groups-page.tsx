@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -222,9 +223,9 @@ export function AdminGroupsPage() {
           <h1 className="text-2xl font-bold tracking-tight">{t('admin.groupsTitle')}</h1>
           <p className="text-sm text-muted-foreground">{t('admin.groupsSubtitle', { defaultValue: '配置分组策略、格式限制与上传配额。' })}</p>
         </div>
-        <button type="button" onClick={openCreate} className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
+        <Button size="lg" onClick={openCreate}>
           {t('admin.create')}
-        </button>
+        </Button>
       </div>
 
       {/* Group create/edit dialog */}
@@ -371,12 +372,12 @@ export function AdminGroupsPage() {
           </div>
 
           <div className="mt-2 flex justify-end gap-3 border-t border-border pt-5">
-            <button type="button" onClick={() => setShowModal(false)} className="h-10 rounded-lg border border-input bg-background px-4 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+            <Button variant="outline" size="lg" onClick={() => setShowModal(false)}>
               {t('admin.cancel')}
-            </button>
-            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()} className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm cursor-pointer">
+            </Button>
+            <Button size="lg" onClick={handleSave} disabled={saving || !form.name.trim()}>
               {saving ? '…' : t('admin.confirmSave')}
-            </button>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -430,13 +431,13 @@ export function AdminGroupsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
-                      <button type="button" onClick={() => openEdit(g)} title={t('admin.edit')} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
+                      <Button variant="ghost" size="icon-sm" onClick={() => openEdit(g)} title={t('admin.edit')}>
                         <Pencil className="size-4" />
-                      </button>
+                      </Button>
                       {!g.is_default && !g.is_guest && (
-                        <button type="button" onClick={() => setDeleteTarget(g.id)} disabled={deleting === g.id} title={t('admin.delete')} className="rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 transition-colors cursor-pointer">
+                        <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(g.id)} disabled={deleting === g.id} className="text-destructive/70 hover:text-destructive" title={t('admin.delete')}>
                           <Trash2 className="size-4" />
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </td>

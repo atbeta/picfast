@@ -13,6 +13,7 @@ import { extractErrorMessage } from '../../lib/error-handler'
 import { storageStrategyLabel } from '../../lib/storage-strategy'
 import { getSiteConfig } from '../../lib/site-config'
 
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { HelpHint } from '@/components/help-hint'
 import { Switch } from '@/components/ui/switch'
@@ -416,13 +417,9 @@ export function SettingsPage() {
               )}
 
               <div className="flex justify-end mt-6">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-opacity duration-150 hover:opacity-90 disabled:opacity-50 cursor-pointer"
-                >
+                <Button type="submit" size="lg" disabled={saving}>
                   {saving ? t('settings.saving') : t('settings.save')}
-                </button>
+                </Button>
               </div>
             </div>
           </form>

@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { getSiteConfig } from '../../lib/site-config'
 import { createApiToken } from '../../lib/console-api'
+import { Button } from '@/components/ui/button'
 import { extractErrorMessage } from '../../lib/error-handler'
 
 function trimTrailingSlash(value: string): string {
@@ -187,25 +188,27 @@ URL to file: %url%`,
             <div className="flex items-center gap-2 rounded-lg bg-success/10 border border-success/20 px-3 py-2">
               <div className="size-2 rounded-full bg-success shrink-0" />
               <span className="text-sm text-foreground">{t('connections.tokenActive', { defaultValue: '令牌已填入，以下配置中的令牌可直接复制使用。' })}</span>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setShowToken(!showToken)}
-                className="ml-auto text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                className="ml-auto"
               >
                 {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
+              </Button>
             </div>
             <div className="flex items-center gap-2">
               <code className="flex-1 bg-muted rounded-md px-3 py-2 text-sm font-mono break-all select-all overflow-hidden text-ellipsis">
                 {showToken ? activeToken : 'img_' + '•'.repeat(16) + activeToken.slice(-4)}
               </code>
-              <button
-                type="button"
+              <Button
+                variant="link"
+                size="xs"
                 onClick={() => { setActiveToken(''); setShowToken(false) }}
-                className="text-sm text-muted-foreground hover:text-destructive transition-colors cursor-pointer whitespace-nowrap"
+                className="text-muted-foreground hover:text-destructive whitespace-nowrap"
               >
                 {t('connections.tokenClear', { defaultValue: '清除' })}
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -222,14 +225,13 @@ URL to file: %url%`,
                   placeholder="img_..."
                   className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
-                <button
-                  type="button"
+                <Button
+                  size="sm"
                   onClick={handleApplyToken}
                   disabled={!inputToken.trim()}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {t('connections.tokenApply', { defaultValue: '应用' })}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -241,14 +243,13 @@ URL to file: %url%`,
             </div>
 
             {!showCreateForm ? (
-              <button
-                type="button"
+              <Button
+                variant="outline"
                 onClick={() => setShowCreateForm(true)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
               >
                 <PlusIcon className="size-4" />
                 {t('connections.tokenCreateNew', { defaultValue: '创建新令牌' })}
-              </button>
+              </Button>
             ) : (
               <div className="rounded-lg border border-border p-4 space-y-3">
                 <div className="flex items-center gap-2">
@@ -260,21 +261,20 @@ URL to file: %url%`,
                     className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
                     onKeyDown={(e) => { if (e.key === 'Enter') handleCreateToken() }}
                   />
-                  <button
-                    type="button"
+                  <Button
+                    size="sm"
                     onClick={handleCreateToken}
                     disabled={creating || !newTokenName.trim()}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {creating ? t('tokens.creating', { defaultValue: '创建中…' }) : t('tokens.confirmCreate', { defaultValue: '创建' })}
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => { setShowCreateForm(false); setNewTokenName('') }}
-                    className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   >
                     {t('dialog.cancel', { defaultValue: '取消' })}
-                  </button>
+                  </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">{t('connections.tokenCreateNote', { defaultValue: '将创建一个读写权限且永不过期的令牌。创建后令牌只会显示一次。' })}</p>
               </div>
@@ -345,13 +345,9 @@ URL to file: %url%`,
               {t('connections.sharexCopied', { defaultValue: 'ShareX 配置已复制，也可以直接下载 `.sxcu` 文件导入。' })}
             </p>
           )}
-          <button
-            type="button"
-            onClick={downloadShareXConfig}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
-          >
+          <Button size="lg" onClick={downloadShareXConfig}>
             {t('connections.downloadConfig', { defaultValue: '下载配置文件' })}
-          </button>
+          </Button>
           <p className="text-sm text-muted-foreground">
             {t('connections.sharexFooterHint', { defaultValue: '下载后在 ShareX 中选择：目标 → 自定义上传器设置 → 导入 → 从文件。' })}
           </p>

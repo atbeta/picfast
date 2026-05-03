@@ -7,6 +7,7 @@ import { Trash2, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-re
 import { deleteAdminImage, listAdminImages } from '../../../lib/admin-api'
 import { extractErrorMessage } from '../../../lib/error-handler'
 import { formatFileSize } from '../../../lib/upload'
+import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
 
@@ -124,15 +125,16 @@ export function AdminImagesPage() {
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">{new Date(img.created_at).toLocaleDateString()}</td>
                     <td className="px-4 py-3 text-right">
-                      <button 
-                        type="button" 
-                        onClick={() => setDeleteTarget(img.id)} 
-                        disabled={deleting === img.id} 
-                        className="rounded-lg p-1.5 text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setDeleteTarget(img.id)}
+                        disabled={deleting === img.id}
+                        className="text-destructive/70 hover:text-destructive"
                         title={t('admin.delete')}
                       >
                         <Trash2 className="size-4" />
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -144,27 +146,15 @@ export function AdminImagesPage() {
             <div className="flex items-center justify-between pt-4">
               <span className="text-xs text-muted-foreground">{t('admin.pagination', { total: data.total })}</span>
               <div className="flex gap-2">
-                <button 
-                  type="button" 
-                  disabled={page <= 1} 
-                  onClick={() => setPage((p) => p - 1)} 
-                  title={t('admin.prev')}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                >
+                <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} title={t('admin.prev')}>
                   <ChevronLeft className="size-4" />
-                </button>
+                </Button>
                 <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-lg border border-input bg-background px-2 text-xs text-muted-foreground">
                   {page} / {totalPages}
                 </span>
-                <button 
-                  type="button" 
-                  disabled={page >= totalPages} 
-                  onClick={() => setPage((p) => p + 1)} 
-                  title={t('admin.next')}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                >
+                <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} title={t('admin.next')}>
                   <ChevronRight className="size-4" />
-                </button>
+                </Button>
               </div>
             </div>
           )}

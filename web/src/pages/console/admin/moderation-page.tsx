@@ -11,6 +11,7 @@ import {
 } from '../../../lib/admin-api'
 import { extractErrorMessage } from '../../../lib/error-handler'
 import { formatFileSize } from '../../../lib/upload'
+import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
 
@@ -124,24 +125,25 @@ export function AdminModerationPage() {
                     <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">{new Date(img.created_at).toLocaleDateString()}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setApproveTarget(img.id)}
                           disabled={processingId === img.id}
-                          className="inline-flex h-8 items-center gap-1 rounded-md border border-success/30 bg-success/10 px-2.5 text-xs font-medium text-success hover:bg-success/20 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                          className="border-success/30 bg-success/10 text-success hover:bg-success/20"
                         >
                           <Check className="size-3.5" />
                           {t('admin.moderationApprove', { defaultValue: '通过' })}
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
                           onClick={() => setRejectTarget(img.id)}
                           disabled={processingId === img.id}
-                          className="inline-flex h-8 items-center gap-1 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                         >
                           <X className="size-3.5" />
                           {t('admin.moderationReject', { defaultValue: '拒绝' })}
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -154,27 +156,15 @@ export function AdminModerationPage() {
             <div className="flex items-center justify-between pt-4">
               <span className="text-xs text-muted-foreground">{t('admin.pagination', { total: data.total })}</span>
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                  title={t('admin.prev')}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                >
+                <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} title={t('admin.prev')}>
                   <ChevronLeft className="size-4" />
-                </button>
+                </Button>
                 <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-lg border border-input bg-background px-2 text-xs text-muted-foreground">
                   {page} / {totalPages}
                 </span>
-                <button
-                  type="button"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  title={t('admin.next')}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                >
+                <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} title={t('admin.next')}>
                   <ChevronRight className="size-4" />
-                </button>
+                </Button>
               </div>
             </div>
           )}

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { Album, ImageItem } from '@/lib/console-api'
 import { storageStrategyLabel } from '@/lib/storage-strategy'
 import { formatFileSize } from '@/lib/upload'
+import { Button } from '@/components/ui/button'
 import { LoadingState } from '@/components/page-states'
 import {
   Dialog,
@@ -56,14 +57,15 @@ export function ImageDetailDialog({
         {image && (
           <div className="flex-1 overflow-y-auto p-6 space-y-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border/50 hover:[&::-webkit-scrollbar-thumb]:bg-border">
             <div className="flex justify-center rounded-xl bg-muted/20 border border-border/40 p-4 relative group">
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => onDelete(image.key)}
-                className="absolute top-2 right-2 p-2 rounded-md text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                className="absolute top-2 right-2 text-muted-foreground/60 hover:text-destructive opacity-0 group-hover:opacity-100"
                 title={t('images.delete', { defaultValue: '删除' })}
               >
                 <Trash2 className="size-4" />
-              </button>
+              </Button>
               <img
                 src={toRelative(image.links?.url ?? image.url ?? '')}
                 alt={image.key}
@@ -141,9 +143,9 @@ export function ImageDetailDialog({
                       <div key={fmt} className="group flex items-center gap-3 rounded-lg bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50 border border-border/40 hover:border-primary/30">
                         <span className="shrink-0 w-14 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">{fmt}</span>
                         <code className="min-w-0 flex-1 truncate text-xs font-medium text-foreground bg-background/50 px-2 py-1 rounded-md border border-border/30">{val}</code>
-                        <button type="button" onClick={() => onCopy(val)} className="shrink-0 flex h-6 w-6 items-center justify-center rounded-md border border-border/50 bg-background text-muted-foreground shadow-sm transition-colors duration-150 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
+                        <Button variant="ghost" size="icon-xs" onClick={() => onCopy(val)} className="border border-border/50 hover:border-primary hover:bg-primary hover:text-primary-foreground" title={t('upload.copy')}>
                           <Copy className="size-3" />
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>
