@@ -60,6 +60,11 @@ export async function register(email: string, password: string, name: string): P
   return res.data.data
 }
 
+export async function createSetupAdmin(email: string, password: string, name: string): Promise<AuthTokens> {
+  const res = await api.post<ApiResponse<AuthTokens>>('/setup/admin', { email, password, name })
+  return res.data.data
+}
+
 export async function resendVerification(email: string): Promise<void> {
   await api.post('/auth/resend-verification', { email })
 }

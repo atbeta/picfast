@@ -42,6 +42,9 @@ func main() {
 		slog.Error("failed to load config", "error", err)
 		os.Exit(1)
 	}
+	if cfg.UsesDefaultJWTSecret() {
+		slog.Warn("insecure default JWT secret is in use; set PICFAST_JWT_SECRET or jwt.secret before production use")
+	}
 	if cfg.App.RequireEmailVerification && !cfg.Mail.IsConfigured() {
 		slog.Warn("email verification is enabled but mail delivery is not configured; the requirement will stay inactive")
 	}

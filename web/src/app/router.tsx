@@ -1,5 +1,5 @@
 import { Suspense, lazy, type ReactNode } from 'react'
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 
 import { useQuery } from '@tanstack/react-query'
 
@@ -30,6 +30,7 @@ const AdminAuditLogsPage = lazy(async () => ({ default: (await import('../pages/
 const GuestUploadPage = lazy(async () => ({ default: (await import('../pages/public/guest-upload-page')).GuestUploadPage }))
 const LoginPage = lazy(async () => ({ default: (await import('../pages/public/login-page')).LoginPage }))
 const RegisterPage = lazy(async () => ({ default: (await import('../pages/public/register-page')).RegisterPage }))
+const SetupPage = lazy(async () => ({ default: (await import('../pages/public/setup-page')).SetupPage }))
 const VerifyEmailPage = lazy(async () => ({ default: (await import('../pages/public/verify-email-page')).VerifyEmailPage }))
 
 function PageLoader() {
@@ -71,6 +72,7 @@ function RequireAdmin() {
 }
 
 function PublicRoutes() {
+  const location = useLocation()
   const { data: config, isLoading } = useQuery<SiteConfig>({
     queryKey: ['site-config'],
     queryFn: getSiteConfig,
@@ -82,6 +84,25 @@ function PublicRoutes() {
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     )
+  }
+
+  if (config?.setup_required) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background text-foreground">
+        <SiteMetadata config={config} />
+        <div className="flex flex-1 items-center px-4 py-10">
+          <Routes>
+            <Route path="/setup" element={<LazyPage><SetupPage /></LazyPage>} />
+            <Route path="*" element={<Navigate to="/setup" replace />} />
+          </Routes>
+        </div>
+        <SiteFooter config={config} />
+      </div>
+    )
+  }
+
+  if (location.pathname === '/setup') {
+    return <Navigate to="/login" replace />
   }
 
   return (

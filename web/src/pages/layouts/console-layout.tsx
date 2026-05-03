@@ -45,11 +45,11 @@ export function ConsoleLayout() {
       <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-card/80 backdrop-blur-xl supports-[backdrop-filter]:bg-card/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
         <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center justify-between px-6">
           <Link to="/console/upload" className="flex items-center gap-2 text-lg font-bold tracking-tight transition-opacity hover:opacity-80">
-            <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-md shadow-sm border border-border/50 bg-background">
+            <div className="h-7 w-7 shrink-0 overflow-hidden rounded-md shadow-sm border border-border/50 bg-background">
               <img
                 src={logoSrc}
                 alt="logo"
-                className="h-4/5 w-4/5 object-contain"
+                className="block size-full object-cover"
                 onError={(e) => {
                   e.currentTarget.src = '/favicon-default.svg'
                 }}

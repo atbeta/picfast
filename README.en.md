@@ -47,7 +47,8 @@ PicFast is a modern self-hosted image hosting platform for individuals and teams
 - Go 1.26+
 - Node.js 20+ and pnpm
 - PostgreSQL 16
-- `golang-migrate` CLI
+
+Note: PicFast runs database migrations automatically when the backend starts. Install the `golang-migrate` CLI only if you need to inspect or run migrations manually.
 
 ### 1) Start Database
 
@@ -78,12 +79,13 @@ cp config.example.yaml config.yaml
 
 Environment variables override `config.yaml`.
 
-### 3) Run Migrations and Seed
+### 3) Optional: Seed Development Data
 
 ```bash
-make migrate-up
 make seed
 ```
+
+Migrations run automatically when the backend starts, so `make migrate-up` is not required for the normal local or Docker flow. Skip seeding if you want to test the first-run setup on an empty database.
 
 ### 4) Start Backend and Frontend
 
@@ -139,14 +141,12 @@ docker run -d \
   -e PICFAST_DATABASE_URL='postgres://picfast:picfast@picfast-db:5432/picfast?sslmode=disable' \
   -e PICFAST_JWT_SECRET='replace-with-a-strong-secret' \
   -e PICFAST_SERVER_BASE_URL='http://localhost:18080' \
-  -e PICFAST_APP_ADMIN_EMAIL='admin@example.com' \
-  -e PICFAST_APP_ADMIN_PASSWORD='change-this-password' \
   -v picfast-uploads:/app/data/uploads \
   -v picfast-thumbnails:/app/data/thumbnails \
   xbeta/picfast:latest
 ```
 
-Open `http://localhost:18080`.
+Open `http://localhost:18080` and follow the setup wizard to create the first admin account. For unattended deployments, set both `PICFAST_APP_ADMIN_EMAIL` and `PICFAST_APP_ADMIN_PASSWORD` to auto-create the admin user and skip the wizard.
 
 Cleanup (remove containers, volumes, and network):
 

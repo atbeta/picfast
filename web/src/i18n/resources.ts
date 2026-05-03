@@ -65,6 +65,15 @@ export const resources = {
         verifyEmailFailed: '邮箱验证失败，请重新获取验证邮件。',
         backToLogin: '返回登录',
       },
+      setup: {
+        eyebrow: '首次初始化',
+        title: '创建管理员账号',
+        description: '此实例还没有任何用户。创建第一个管理员账号后，即可进入控制台完成站点配置。',
+        submit: '创建管理员',
+        submitting: '创建中…',
+        success: '管理员账号已创建',
+        failed: '初始化失败，请稍后重试',
+      },
       upload: {
         dropHint: '拖拽图片到此处，或点击选择',
         dropFormats: '支持 JPG、PNG、GIF、WebP 等格式',
@@ -641,6 +650,15 @@ export const resources = {
         verifyEmailSuccess: 'Email verified. You can log in now.',
         verifyEmailFailed: 'Email verification failed. Please request a new verification email.',
         backToLogin: 'Back to login',
+      },
+      setup: {
+        eyebrow: 'First-run setup',
+        title: 'Create Admin Account',
+        description: 'This instance does not have any users yet. Create the first admin account to enter the console and finish site configuration.',
+        submit: 'Create Admin',
+        submitting: 'Creating…',
+        success: 'Admin account created',
+        failed: 'Setup failed. Please try again later.',
       },
       upload: {
         dropHint: 'Drop images here, or click to select',

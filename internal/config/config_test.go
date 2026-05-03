@@ -28,6 +28,20 @@ func TestLoadReadsAdminCredentialsFromEnv(t *testing.T) {
 	}
 }
 
+func TestLoadAllowsDefaultJWTSecretForQuickstart(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if !cfg.UsesDefaultJWTSecret() {
+		t.Fatal("expected default JWT secret to be reported")
+	}
+}
+
 func TestLoadReadsPprofEnabledFromEnv(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)

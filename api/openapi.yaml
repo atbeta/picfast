@@ -52,6 +52,59 @@ paths:
                       data:
                         $ref: "#/components/schemas/VersionResponse"
 
+  /setup/status:
+    get:
+      tags: [setup]
+      summary: Check whether first-run setup is required
+      description: Returns whether the instance has no users and must create its first administrator.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/SetupStatusResponse"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /setup/admin:
+    post:
+      tags: [setup]
+      summary: Create the first administrator
+      description: Public only while the instance has no users. Returns 409 after setup has completed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupAdminRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /auth/register:
     post:
       tags: [auth]
@@ -1153,6 +1206,27 @@ components:
           type: string
           example: Bearer
 
+    SetupStatusResponse:
+      type: object
+      properties:
+        required:
+          type: boolean
+          description: True when the instance has no users and must create the first administrator.
+
+    SetupAdminRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+        name:
+          type: string
+
     RegisterRequest:
       type: object
       required: [email, password, name]
@@ -1676,6 +1750,9 @@ components:
         analytics_config:
           type: object
           additionalProperties: true
+        setup_required:
+          type: boolean
+          description: True when the instance has no users and must complete first-run setup.
 
     VersionResponse:
       type: object

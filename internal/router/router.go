@@ -42,6 +42,7 @@ func New(
 	r.Use(chimw.RequestID)
 	r.Use(chimw.Timeout(60 * time.Second))
 	r.Use(middleware.Metrics)
+	r.Use(middleware.RequireSetupCompleteForWrites(queries))
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		status := map[string]interface{}{
@@ -172,6 +173,7 @@ func New(
 
 	// Handlers
 	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg, mailSender)
+	setupHandler := handler.NewSetupHandler(queries, pool, jwtSvc, cfg)
 	userHandler := handler.NewUserHandler(queries)
 	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL, cfg.App.AuditUploadLogs)
 	albumHandler := handler.NewAlbumHandler(queries, pool)
@@ -221,6 +223,13 @@ func New(
 		// Public site config
 		r.Get("/config", func(w http.ResponseWriter, r *http.Request) {
 			server, app := cfg.RuntimeSnapshot()
+			setupRequired := false
+			if count, err := queries.CountUsers(r.Context()); err != nil {
+				handler.Fail(w, http.StatusServiceUnavailable, "failed to read setup status")
+				return
+			} else {
+				setupRequired = count == 0
+			}
 			handler.Success(w, map[string]interface{}{
 				"app_name":                    app.Name,
 				"site_description":            app.SiteDescription,
@@ -231,17 +240,24 @@ func New(
 				"allow_user_image_processing": app.AllowUserImageProcessing,
 				"require_email_verification":  app.RequireEmailVerification && mailSender != nil && mailSender.Ready(),
 				"base_url":                    server.BaseURL,
-				"footer_text_1": app.FooterText1,
-				"footer_link_1": app.FooterLink1,
-				"footer_text_2": app.FooterText2,
-				"footer_link_2": app.FooterLink2,
+				"footer_text_1":               app.FooterText1,
+				"footer_link_1":               app.FooterLink1,
+				"footer_text_2":               app.FooterText2,
+				"footer_link_2":               app.FooterLink2,
 				"analytics_provider":          app.AnalyticsProvider,
 				"analytics_config":            normalizeJSON(app.AnalyticsConfig),
 				"github_url":                  version.DefaultGitHubURL(),
+				"setup_required":              setupRequired,
 			})
 		})
 		r.Get("/version", func(w http.ResponseWriter, r *http.Request) {
 			handler.Success(w, version.Info())
+		})
+
+		// First-run setup
+		r.Route("/setup", func(r chi.Router) {
+			r.Get("/status", setupHandler.Status)
+			r.Post("/admin", setupHandler.CreateAdmin)
 		})
 
 		// Auth
