@@ -1,201 +1,99 @@
-# PicFast
+<p align="center">
+  <img src="web/public/favicon-default.svg" width="128" height="128" alt="PicFast logo">
+</p>
 
-[![CI](https://github.com/atbeta/picfast/actions/workflows/ci.yml/badge.svg)](https://github.com/atbeta/picfast/actions/workflows/ci.yml)
-[![Release Please](https://github.com/atbeta/picfast/actions/workflows/release-please.yml/badge.svg)](https://github.com/atbeta/picfast/actions/workflows/release-please.yml)
-[![Publish Docker Image](https://github.com/atbeta/picfast/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/atbeta/picfast/actions/workflows/docker-publish.yml)
-[![Docker Pulls](https://img.shields.io/docker/pulls/xbeta/picfast?logo=docker)](https://hub.docker.com/r/xbeta/picfast)
-[![Docker Image](https://img.shields.io/docker/image-size/xbeta/picfast/latest?logo=docker&label=image)](https://hub.docker.com/r/xbeta/picfast)
+<h1 align="center">PicFast</h1>
 
-[中文](README.md)
+<p align="center">
+  PicFast is open-source image hosting you can deploy in one step,<br>with an intuitive admin console and open APIs for upload tools, automation workflows, and AI applications.<br>
+  <a href="README.md">中文</a>
+</p>
 
-PicFast is a modern self-hosted image hosting platform for individuals and teams. It provides guest uploads, authenticated uploads, admin management, and flexible storage backends.
+<p align="center">
+  <a href="https://github.com/atbeta/picfast/actions/workflows/ci.yml"><img src="https://github.com/atbeta/picfast/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/atbeta/picfast/actions/workflows/release-please.yml"><img src="https://github.com/atbeta/picfast/actions/workflows/release-please.yml/badge.svg" alt="Release Please"></a>
+  <a href="https://github.com/atbeta/picfast/actions/workflows/docker-publish.yml"><img src="https://github.com/atbeta/picfast/actions/workflows/docker-publish.yml/badge.svg" alt="Publish Docker Image"></a>
+  <a href="https://hub.docker.com/r/xbeta/picfast"><img src="https://img.shields.io/docker/pulls/xbeta/picfast?logo=docker" alt="Docker Pulls"></a>
+  <a href="https://hub.docker.com/r/xbeta/picfast"><img src="https://img.shields.io/docker/image-size/xbeta/picfast/latest?logo=docker&label=image" alt="Docker Image"></a>
+</p>
+
+---
 
 ## UI Preview
 
-| Chinese UI | English UI |
-|---|---|
-| ![PicFast Console Chinese UI](.github/assets/console-zh-cn.png) | ![PicFast Console English UI](.github/assets/console-en-us.png) |
+![PicFast console (English)](.github/assets/console-en-us.png)
 
-## Technology Stack
+## Stack
 
 | Layer | Technology |
-|------|------|
+|-------|------------|
 | Backend | Go 1.26, Chi Router, pgx/v5, sqlc, JWT |
 | Frontend | React 19, TypeScript, Vite, React Router, Tailwind CSS v4 |
 | Database | PostgreSQL 16 |
-| Storage | Local filesystem / S3-compatible / Qiniu Kodo / Alibaba OSS / Tencent COS / WebDAV |
+| Storage | Local / S3-compatible / Kodo / OSS / COS / WebDAV |
 | Observability | Prometheus metrics, health check |
 
-## Key Capabilities
+## Features
 
-- User auth: register, login, token refresh, logout
-- Guest upload and authenticated upload
-- Image list, permission update, deletion
-- Album management
-- Admin console: users, groups, storage strategies, settings, image management
-- Storage backends: local, S3-compatible, Kodo, OSS, COS, WebDAV
-- Image compression, watermarking, thumbnail generation
-- Moderation and moderation callbacks
-- ShareX config endpoint and upload integration
-- API token and MCP server integration
-- Health check, Prometheus metrics (internal port), pprof endpoints
+Multi-user and guest uploads, albums, pluggable storage backends, admin dashboard; ShareX, API tokens, and MCP integration. Full docs at **[picfast.dev](https://picfast.dev)**.
 
-## Quick Start
+## Local Development
 
-### Prerequisites
-
-- Go 1.26+
-- Node.js 20+ and pnpm
-- PostgreSQL 16
-
-Note: PicFast runs database migrations automatically when the backend starts. Install the `golang-migrate` CLI only if you need to inspect or run migrations manually.
-
-### 1) Start Database
+**Requires**: Go 1.26+, Node 20+, pnpm, PostgreSQL 16. Migrations run **automatically** at startup; `golang-migrate` is only needed for manual migration control.
 
 ```bash
-make docker-up
-```
-
-Or use a local PostgreSQL instance:
-
-```bash
-createdb picfast
-```
-
-### 2) Configure Environment
-
-```bash
-cp .env.example .env
-```
-
-PicFast supports two config modes:
-
-- Environment variables (`PICFAST_*` in `.env`)
-- YAML config file (`config.yaml`)
-
-```bash
-cp config.example.yaml config.yaml
-```
-
-Environment variables override `config.yaml`.
-
-### 3) Optional: Seed Development Data
-
-```bash
-make seed
-```
-
-Migrations run automatically when the backend starts, so `make migrate-up` is not required for the normal local or Docker flow. Skip seeding if you want to test the first-run setup on an empty database.
-
-### 4) Start Backend and Frontend
-
-Backend:
-
-```bash
+make docker-up                    # PostgreSQL + Mailpit
+cp .env.example .env              # optional: cp config.example.yaml config.yaml
+# optional: make seed
 go run ./cmd/picfast
+cd web && pnpm install && pnpm dev
 ```
 
-Frontend:
+Open [http://localhost:5173](http://localhost:5173). Vite proxies `/api`, `/i`, `/t` to `VITE_BACKEND_URL` (default `http://localhost:8080`; see `web/vite.config.ts`).
+
+Bundled static serving: `cd web && pnpm build && go run ./cmd/picfast`.
+
+## Docker
+
+Image: `xbeta/picfast` ([Docker Hub](https://hub.docker.com/r/xbeta/picfast)). Quick start:
 
 ```bash
-cd web
-pnpm install
-pnpm dev
-```
-
-Open [http://localhost:5173](http://localhost:5173). Vite proxies `/api`, `/i`, `/t` to backend `http://localhost:8080`.
-
-## Docker Deployment
-
-Recommended image:
-
-- `xbeta/picfast`
-
-Common tags:
-
-- `xbeta/picfast:latest` — latest stable build
-- `xbeta/picfast:vX.Y.Z` — fixed release tag
-- `xbeta/picfast:sha-<commit>` — commit trace tag
-
-### 3-Minute Local Start
-
-```bash
-# 0) Create a dedicated network (once)
 docker network create picfast-net
 
-# 1) Start PostgreSQL
-docker run -d \
-  --name picfast-db \
-  --network picfast-net \
-  -e POSTGRES_USER=picfast \
-  -e POSTGRES_PASSWORD=picfast \
-  -e POSTGRES_DB=picfast \
+docker run -d --name picfast-db --network picfast-net \
+  -e POSTGRES_PASSWORD=devonly \
   -v picfast-pgdata:/var/lib/postgresql/data \
   postgres:16-alpine
 
-# 2) Start PicFast
-docker run -d \
-  --name picfast \
-  --network picfast-net \
-  -p 18080:8080 \
-  -e PICFAST_DATABASE_URL='postgres://picfast:picfast@picfast-db:5432/picfast?sslmode=disable' \
-  -e PICFAST_JWT_SECRET='replace-with-a-strong-secret' \
+docker run -d --name picfast --network picfast-net -p 18080:8080 \
+  -e PICFAST_DATABASE_URL='postgres://postgres:devonly@picfast-db:5432/postgres?sslmode=disable' \
+  -e PICFAST_JWT_SECRET='change-me-in-production' \
   -e PICFAST_SERVER_BASE_URL='http://localhost:18080' \
   -v picfast-uploads:/app/data/uploads \
   -v picfast-thumbnails:/app/data/thumbnails \
   xbeta/picfast:latest
 ```
 
-Open `http://localhost:18080` and follow the setup wizard to create the first admin account. For unattended deployments, set both `PICFAST_APP_ADMIN_EMAIL` and `PICFAST_APP_ADMIN_PASSWORD` to auto-create the admin user and skip the wizard.
+Open `http://localhost:18080` and follow the setup wizard. For headless deployments, set both `PICFAST_APP_ADMIN_EMAIL` and `PICFAST_APP_ADMIN_PASSWORD` to skip the wizard.
 
-Cleanup (remove containers, volumes, and network):
+See **[docker/README.md](docker/README.md)** for Compose, Traefik, and `.env` templates.
 
-```bash
-docker rm -f picfast picfast-db 2>/dev/null || true
-docker volume rm picfast-pgdata picfast-uploads picfast-thumbnails 2>/dev/null || true
-docker network rm picfast-net 2>/dev/null || true
-```
-
-### Pull Image
+## Common Commands
 
 ```bash
-docker pull xbeta/picfast:latest
+make dev                # print development steps
+make test && make lint
+make docker-up          # docker-compose.dev.yml
+make docker-down
 ```
 
-### Compose Templates
+## Documentation
 
-- [`docker/docker-compose.yml`](docker/docker-compose.yml): local development
-- [`docker/docker-compose.traefik.yml`](docker/docker-compose.traefik.yml): production-like Traefik setup
-
-## API Overview
-
-| Endpoint | Description |
-|------|------|
-| `POST /api/v1/auth/register` | User registration |
-| `POST /api/v1/auth/login` | User login |
-| `POST /api/v1/auth/refresh` | Refresh access token |
-| `POST /api/v1/upload` | Guest upload |
-| `POST /api/v1/images` | Authenticated upload |
-| `GET /api/v1/images` | List images |
-| `GET /api/v1/albums` | List albums |
-| `GET /api/v1/sharex/config` | Download ShareX config |
-| `GET /i/{key}.{ext}` | Access image |
-| `GET /t/{hash}.png` | Access thumbnail |
-| `GET /health` | Health check |
-
-Admin endpoints prefix: `/api/v1/admin/*`.
-
-## Testing
-
-```bash
-make test
-make lint
-```
-
-## Release and Image Policy
-
-See `docs/release-playbook.md` for:
-
-- Local `dev` image workflow
-- CI `release` image workflow
-- rollback guidance
+| Topic | Location |
+|-------|----------|
+| Website | [picfast.dev](https://picfast.dev) |
+| Docker | [docker/README.md](docker/README.md) |
+| Environment | [.env.example](.env.example) |
+| OpenAPI | `/docs`, `/openapi.yaml` when running |
+| MCP | [docs/mcp-api.md](docs/mcp-api.md) |
+| Images & release | [docs/release-playbook.md](docs/release-playbook.md) |
