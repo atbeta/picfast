@@ -24,7 +24,7 @@ Vite 会将以下请求代理到后端：
 - `/i`
 - `/t`
 
-后端默认地址：`http://localhost:8080`
+默认代理目标为 `http://localhost:8080`（与本地 `go run ./cmd/picfast` 一致），可通过环境变量 `VITE_BACKEND_URL` 覆盖（见 `vite.config.ts`）。
 
 ## 构建
 
