@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://github.com/atbeta/picfast/compare/v0.4.0...v0.5.0) (2026-05-03)
+
+
+### Features
+
+* **admin:** add two optional footer text and link lines in site settings ([de51829](https://github.com/atbeta/picfast/commit/de51829d05e8dff355336fd368af3854a8bae167))
+* **auth:** add first-run setup wizard with gated writes ([9281474](https://github.com/atbeta/picfast/commit/9281474772ff3ed37440daa4d713060681ca5ef5))
+* **moderation:** auto-approve pending images when moderation is disabled ([681e96a](https://github.com/atbeta/picfast/commit/681e96a2367d5168f11407331a905080c61729d6))
+* **upload:** guest image TTL separate from default ([0e1bce3](https://github.com/atbeta/picfast/commit/0e1bce38ebcdab2db17611de12204fbbd28be81f))
+
+
+### Bug Fixes
+
+* **admin:** exempt admin uploads from moderation and preserve role on profile update ([632b2e9](https://github.com/atbeta/picfast/commit/632b2e9eb3b5797661ef3f2a850ad3c17769a14c))
+
 ## [0.4.0](https://github.com/atbeta/picfast/compare/v0.3.0...v0.4.0) (2026-05-02)
 
 
