@@ -13,6 +13,7 @@ import { ImageDetailDialog } from '@/components/console/image-detail-dialog'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 
 function toRelative(url: string): string {
   try { return new URL(url).pathname }
@@ -241,25 +242,25 @@ export function ImagesPage() {
         <div className="flex items-center gap-3">
             {data && <span className="text-sm font-medium text-muted-foreground">{t('images.pagination', { total: data.total })}</span>}
             {currentAlbum && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => {
                   searchParams.delete('album_id')
                   setSearchParams(searchParams)
                 }}
-                className="rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-medium shadow-sm transition-colors hover:bg-muted hover:text-foreground"
               >
                 {t('albums.backToAll', { defaultValue: '返回全部' })}
-              </button>
+              </Button>
             )}
             {!batchMode ? (
-            <button type="button" onClick={() => setBatchMode(true)} className="rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-medium shadow-sm transition-colors hover:bg-muted hover:text-foreground cursor-pointer">
+            <Button type="button" variant="outline" onClick={() => setBatchMode(true)}>
               {t('images.batchManage', { defaultValue: '批量管理' })}
-            </button>
+            </Button>
           ) : (
-            <button type="button" onClick={exitBatch} className="rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-medium shadow-sm transition-colors hover:bg-muted hover:text-foreground cursor-pointer">
+            <Button type="button" variant="outline" onClick={exitBatch}>
               {t('images.exitBatch', { defaultValue: '退出管理' })}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -296,14 +297,14 @@ export function ImagesPage() {
                 ))}
               </SelectContent>
             </Select>
-            <button type="button" onClick={batchDownload} disabled={selectedKeys.size === 0 || batchProcessing} className="flex h-8 items-center gap-1.5 rounded-lg border border-primary/20 bg-background px-3 text-xs font-medium text-primary shadow-sm transition-colors hover:bg-primary/10 disabled:opacity-50 cursor-pointer">
+            <Button type="button" size="sm" variant="outline" onClick={batchDownload} disabled={selectedKeys.size === 0 || batchProcessing}>
               <Download className="size-3.5" />
               {t('images.batchDownload', { defaultValue: '下载' })}
-            </button>
-            <button type="button" onClick={() => setShowBatchConfirm(true)} disabled={selectedKeys.size === 0 || batchProcessing} className="flex h-8 items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 text-xs font-medium text-destructive shadow-sm transition-colors hover:bg-destructive/15 disabled:opacity-50 cursor-pointer">
+            </Button>
+            <Button type="button" size="sm" variant="destructive" onClick={() => setShowBatchConfirm(true)} disabled={selectedKeys.size === 0 || batchProcessing}>
               <Trash2 className="size-3.5" />
               {batchProcessing ? '…' : t('images.delete')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -416,15 +417,15 @@ export function ImagesPage() {
                 {t('images.pagination', { total: data.total })}
               </span>
               <div className="flex gap-2">
-                <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} title={t('images.prev')} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background text-xs font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
+                <Button type="button" variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} title={t('images.prev')}>
                   <ChevronLeft className="size-4" />
-                </button>
+                </Button>
                 <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-lg border border-input bg-background px-2 text-xs text-muted-foreground">
                   {page} / {totalPages}
                 </span>
-                <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} title={t('images.next')} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-background text-xs font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
+                <Button type="button" variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} title={t('images.next')}>
                   <ChevronRight className="size-4" />
-                </button>
+                </Button>
               </div>
             </div>
           )}

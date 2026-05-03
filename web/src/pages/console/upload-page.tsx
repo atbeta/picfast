@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { XIcon, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
+import { Button } from '@/components/ui/button'
 import { UploadZone } from '../../components/upload-zone'
 import { UploadResultCard } from '../../components/upload-result'
 import { getStrategies, uploadImageAuth, listAlbums } from '../../lib/console-api'
@@ -231,13 +232,14 @@ export function UploadPage() {
               <p className="text-base font-semibold text-foreground">{t('auth.registerSuccess')}</p>
               <p className="mt-1 text-sm text-muted-foreground">{t('auth.registerSuccessDesc')}</p>
             </div>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setDismissedWelcome(true)}
-              className="shrink-0 rounded-full p-2 text-muted-foreground hover:bg-background/50 hover:text-foreground transition-colors"
+              className="shrink-0 rounded-full"
             >
-              <XIcon className="h-4 w-4" />
-            </button>
+              <XIcon className="size-4" />
+            </Button>
           </div>
         </div>
       )}

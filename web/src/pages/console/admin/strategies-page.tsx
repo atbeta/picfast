@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface StrategyForm {
@@ -274,9 +275,9 @@ export function AdminStrategiesPage() {
           <h1 className="text-2xl font-bold tracking-tight">{t('admin.strategiesTitle')}</h1>
           <p className="text-sm text-muted-foreground">{t('admin.strategiesSubtitle', { defaultValue: '维护存储策略配置并统一上传落盘规则。' })}</p>
         </div>
-        <button type="button" onClick={openCreate} className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
+        <Button size="lg" onClick={openCreate}>
           {t('admin.create')}
-        </button>
+        </Button>
       </div>
 
       {/* Strategy create/edit dialog */}
@@ -461,12 +462,12 @@ export function AdminStrategiesPage() {
           </div>
 
           <div className="mt-5 flex justify-end gap-2 border-t border-border/60 pt-4">
-            <button type="button" onClick={() => setShowModal(false)} className="h-10 rounded-lg border border-input bg-background px-4 text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+            <Button variant="outline" size="lg" onClick={() => setShowModal(false)}>
               {t('admin.cancel')}
-            </button>
-            <button type="button" onClick={handleSave} disabled={saving || !form.name.trim() || !requiredFieldsComplete(form)} className="h-10 rounded-lg bg-primary px-4 text-sm text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors cursor-pointer disabled:cursor-not-allowed">
+            </Button>
+            <Button size="lg" onClick={handleSave} disabled={saving || !form.name.trim() || !requiredFieldsComplete(form)}>
               {saving ? '…' : t('admin.confirmSave')}
-            </button>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -550,15 +551,15 @@ export function AdminStrategiesPage() {
               </div>
 
               <div className="mt-6 flex items-center justify-end gap-2 border-t border-border/40 pt-4">
-                <button type="button" onClick={() => openEdit(s)} title={t('admin.edit')} className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
+                <Button variant="ghost" size="sm" onClick={() => openEdit(s)} title={t('admin.edit')}>
                   <Pencil className="size-3.5" />
                   {t('admin.edit')}
-                </button>
+                </Button>
                 {s.id !== 1 && (
-                  <button type="button" onClick={() => setDeleteTarget(s.id)} disabled={deleting === s.id} title={t('admin.delete')} className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-destructive/70 hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
+                  <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(s.id)} disabled={deleting === s.id} className="text-destructive/70 hover:text-destructive" title={t('admin.delete')}>
                     <Trash2 className="size-3.5" />
                     {t('admin.delete')}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>

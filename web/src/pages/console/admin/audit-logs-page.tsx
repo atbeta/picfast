@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 
 import { listAdminAuditLogs } from '../../../lib/admin-api'
+import { Button } from '@/components/ui/button'
 import { LoadingState } from '@/components/page-states'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -153,9 +154,10 @@ export function AdminAuditLogsPage() {
                 <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
                   {t('admin.auditFiltered', { defaultValue: '已筛选' })}
                 </span>
-                <button
-                  type="button"
-                  className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                <Button
+                  variant="link"
+                  size="xs"
+                  className="text-muted-foreground hover:text-foreground"
                   onClick={() => {
                     setPage(1)
                     setAction('')
@@ -163,7 +165,7 @@ export function AdminAuditLogsPage() {
                   }}
                 >
                   {t('admin.auditClearFilters', { defaultValue: '清空筛选' })}
-                </button>
+                </Button>
               </>
             ) : null}
           </div>
@@ -206,15 +208,16 @@ export function AdminAuditLogsPage() {
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                         <div>{item.ip || '-'}</div>
-                        <button
-                          type="button"
-                          className="mt-1 text-[11px] text-primary hover:underline"
+                        <Button
+                          variant="link"
+                          size="xs"
+                          className="mt-1 text-[11px]"
                           onClick={() => setExpandedId((prev) => (prev === item.id ? null : item.id))}
                         >
                           {expandedId === item.id
                             ? t('admin.auditHideDetails', { defaultValue: '收起详情' })
                             : t('admin.auditViewDetails', { defaultValue: '查看详情' })}
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                     {expandedId === item.id && (
@@ -243,15 +246,15 @@ export function AdminAuditLogsPage() {
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{t('admin.pagination', { total: data.total })}</span>
               <div className="flex gap-2">
-                <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="h-8 rounded-lg border border-input px-3 text-xs disabled:opacity-50">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                   {t('admin.prev')}
-                </button>
+                </Button>
                 <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-lg border border-input bg-background px-2 text-xs text-muted-foreground">
                   {page} / {totalPages}
                 </span>
-                <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="h-8 rounded-lg border border-input px-3 text-xs disabled:opacity-50">
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
                   {t('admin.next')}
-                </button>
+                </Button>
               </div>
             </div>
           )}

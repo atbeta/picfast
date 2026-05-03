@@ -8,6 +8,7 @@ import { createApiToken, deleteApiToken, listApiTokens } from '../../lib/console
 import { extractErrorMessage } from '../../lib/error-handler'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 
@@ -107,14 +108,10 @@ export function ApiTokensPage() {
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">{t('page.apiTokens.title')}</h1>
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors duration-150 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
-        >
-          <Plus className="-ms-1 me-2 inline size-4" />
+        <Button size="lg" onClick={() => setShowCreate(true)}>
+          <Plus className="size-4" />
           {t('tokens.create')}
-        </button>
+        </Button>
       </div>
 
       {createdToken && (
@@ -126,22 +123,23 @@ export function ApiTokensPage() {
             <code className="min-w-0 flex-1 truncate rounded-lg bg-background/50 backdrop-blur-sm px-3 py-1.5 text-xs font-mono border border-border/50">
               {createdToken.token}
             </code>
-            <button
-              type="button"
+            <Button
+              size="icon"
               onClick={() => onCopy(createdToken.token)}
-              className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg bg-success text-success-foreground shadow-sm transition-opacity duration-150 hover:opacity-90 cursor-pointer"
+              className="shrink-0 bg-success text-success-foreground hover:opacity-90"
               title={t('tokens.copyToken')}
             >
               <Copy className="size-4" />
-            </button>
+            </Button>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="link"
+            size="xs"
             onClick={() => setCreatedToken(null)}
-            className="mt-3 text-xs font-medium text-success-foreground/70 hover:text-success-foreground transition-colors"
+            className="mt-3 text-success-foreground/70 hover:text-success-foreground"
           >
             {t('tokens.dismiss')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -201,21 +199,20 @@ export function ApiTokensPage() {
           </div>
 
           <div className="flex items-center gap-3 pt-4 border-t border-border/50">
-            <button
-              type="button"
+            <Button
+              size="lg"
               onClick={handleCreate}
               disabled={creating || !newName.trim() || newScopes.length === 0}
-              className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
             >
               {creating ? t('tokens.creating') : t('tokens.confirmCreate')}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
               onClick={() => { setShowCreate(false); setNewName(''); setNewExpires(undefined); setNewScopes(['read', 'write']) }}
-              className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg border border-input bg-background px-5 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-colors duration-150 hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
             >
               {t('tokens.cancel')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -268,15 +265,16 @@ export function ApiTokensPage() {
                       ))}
                     </div>
                   </div>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => setDeleteTarget(tk.id)}
                     disabled={deleting === tk.id}
-                    className="shrink-0 rounded-lg p-2 text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                    className="shrink-0 text-destructive/70 hover:text-destructive"
                     title={t('tokens.delete')}
                   >
                     <Trash2 className="size-4" />
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="mt-4 grid gap-3 rounded-lg border border-border/40 bg-muted/20 p-3 text-xs sm:grid-cols-2">
@@ -388,15 +386,16 @@ export function ApiTokensPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
                         onClick={() => setDeleteTarget(tk.id)}
                         disabled={deleting === tk.id}
-                        className="transition-opacity rounded-lg p-1.5 text-destructive/70 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed inline-flex"
+                        className="text-destructive/70 hover:text-destructive"
                         title={t('tokens.delete')}
                       >
                         <Trash2 className="size-4" />
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}

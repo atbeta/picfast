@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatFileSize } from '../lib/upload'
 import { Copy, Check, ExternalLink } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface UploadResultLike {
   permission?: number
@@ -34,14 +35,15 @@ function CopyButton({ text }: { text: string }) {
   }
 
   return (
-    <button
-          type="button"
-          onClick={copy}
-          title={copied ? t('upload.copied') : t('upload.copy')}
-          className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-border/50 bg-background/50 text-muted-foreground shadow-sm transition-colors duration-150 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer"
-        >
-      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-    </button>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={copy}
+      title={copied ? t('upload.copied') : t('upload.copy')}
+      className="shrink-0 border border-border/50 bg-background/50 hover:border-primary hover:bg-primary hover:text-primary-foreground"
+    >
+      {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+    </Button>
   )
 }
 
