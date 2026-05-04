@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
+	"time"
 
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/service"
@@ -25,37 +25,40 @@ func NewAdminImageHandler(db *sqlc.Queries, deleter *service.DeleteService, base
 func (h *AdminImageHandler) List(w http.ResponseWriter, r *http.Request) {
 	page, pageSize := parsePagination(r)
 
-	rows, err := h.db.ListAllImages(r.Context(), sqlc.ListAllImagesParams{
-		Limit:  pageSize,
-		Offset: (page - 1) * pageSize,
-	})
+	var dateFrom, dateTo *time.Time
+	if df := r.URL.Query().Get("date_from"); df != "" {
+		if t, err := time.Parse(time.RFC3339, df); err == nil {
+			dateFrom = &t
+		}
+	}
+	if dt := r.URL.Query().Get("date_to"); dt != "" {
+		if t, err := time.Parse(time.RFC3339, dt); err == nil {
+			dateTo = &t
+		}
+	}
+
+	params := sqlc.ListAllImagesParams{
+		Limit:     pageSize,
+		Offset:    (page - 1) * pageSize,
+		Keyword:   domain.PgTextNonEmpty(r.URL.Query().Get("keyword")),
+		Email:     domain.PgTextNonEmpty(r.URL.Query().Get("email")),
+		Extension: domain.PgTextNonEmpty(r.URL.Query().Get("extension")),
+		DateFrom:  domain.PgTimeWithZonePtr(dateFrom),
+		DateTo:    domain.PgTimeWithZonePtr(dateTo),
+	}
+	rows, err := h.db.ListAllImages(r.Context(), params)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to list images")
 		return
 	}
 
-	keyword := r.URL.Query().Get("keyword")
-	email := r.URL.Query().Get("email")
-	ext := r.URL.Query().Get("extension")
-
-	if keyword != "" || email != "" || ext != "" {
-		filtered := make([]sqlc.ListAllImagesRow, 0)
-		for _, img := range rows {
-			if keyword != "" && !strings.Contains(strings.ToLower(img.OriginName), strings.ToLower(keyword)) {
-				continue
-			}
-			if email != "" && !strings.Contains(strings.ToLower(img.UserEmail.String), strings.ToLower(email)) {
-				continue
-			}
-			if ext != "" && img.Extension != ext {
-				continue
-			}
-			filtered = append(filtered, img)
-		}
-		rows = filtered
-	}
-
-	total, err := h.db.CountAllImages(r.Context())
+	total, err := h.db.CountAllImages(r.Context(), sqlc.CountAllImagesParams{
+		Keyword:   params.Keyword,
+		Email:     params.Email,
+		Extension: params.Extension,
+		DateFrom:  params.DateFrom,
+		DateTo:    params.DateTo,
+	})
 	if err != nil {
 		slog.Warn("failed to count all images", "error", err)
 		total = 0

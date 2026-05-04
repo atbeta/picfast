@@ -32,13 +32,21 @@ FROM images
 LEFT JOIN strategies ON images.strategy_id = strategies.id
 WHERE images.user_id = $1
   AND (sqlc.narg('album_id')::bigint IS NULL OR images.album_id = sqlc.narg('album_id'))
+  AND (sqlc.narg('keyword')::text IS NULL OR images.origin_name ILIKE '%' || sqlc.narg('keyword') || '%')
+  AND (sqlc.narg('extension')::text IS NULL OR images.extension = sqlc.narg('extension'))
+  AND (sqlc.narg('date_from')::timestamptz IS NULL OR images.created_at >= sqlc.narg('date_from'))
+  AND (sqlc.narg('date_to')::timestamptz IS NULL OR images.created_at <= sqlc.narg('date_to'))
 ORDER BY images.created_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: CountImagesByUser :one
 SELECT COUNT(*) FROM images
 WHERE user_id = $1
-  AND (sqlc.narg('album_id')::bigint IS NULL OR album_id = sqlc.narg('album_id'));
+  AND (sqlc.narg('album_id')::bigint IS NULL OR album_id = sqlc.narg('album_id'))
+  AND (sqlc.narg('keyword')::text IS NULL OR origin_name ILIKE '%' || sqlc.narg('keyword') || '%')
+  AND (sqlc.narg('extension')::text IS NULL OR extension = sqlc.narg('extension'))
+  AND (sqlc.narg('date_from')::timestamptz IS NULL OR created_at >= sqlc.narg('date_from'))
+  AND (sqlc.narg('date_to')::timestamptz IS NULL OR created_at <= sqlc.narg('date_to'));
 
 -- name: FindDuplicateImage :one
 SELECT * FROM images
@@ -58,11 +66,22 @@ AND created_at > NOW() - ($2::text || ' seconds')::interval;
 -- name: ListAllImages :many
 SELECT images.*, users.email as user_email FROM images
 LEFT JOIN users ON images.user_id = users.id
+WHERE (sqlc.narg('keyword')::text IS NULL OR images.origin_name ILIKE '%' || sqlc.narg('keyword') || '%')
+  AND (sqlc.narg('email')::text IS NULL OR users.email ILIKE '%' || sqlc.narg('email') || '%')
+  AND (sqlc.narg('extension')::text IS NULL OR images.extension = sqlc.narg('extension'))
+  AND (sqlc.narg('date_from')::timestamptz IS NULL OR images.created_at >= sqlc.narg('date_from'))
+  AND (sqlc.narg('date_to')::timestamptz IS NULL OR images.created_at <= sqlc.narg('date_to'))
 ORDER BY images.created_at DESC
 LIMIT $1 OFFSET $2;
 
 -- name: CountAllImages :one
-SELECT COUNT(*) FROM images;
+SELECT COUNT(*) FROM images
+LEFT JOIN users ON images.user_id = users.id
+WHERE (sqlc.narg('keyword')::text IS NULL OR images.origin_name ILIKE '%' || sqlc.narg('keyword') || '%')
+  AND (sqlc.narg('email')::text IS NULL OR users.email ILIKE '%' || sqlc.narg('email') || '%')
+  AND (sqlc.narg('extension')::text IS NULL OR images.extension = sqlc.narg('extension'))
+  AND (sqlc.narg('date_from')::timestamptz IS NULL OR images.created_at >= sqlc.narg('date_from'))
+  AND (sqlc.narg('date_to')::timestamptz IS NULL OR images.created_at <= sqlc.narg('date_to'));
 
 -- name: GetGuestUsedCapacity :one
 SELECT COALESCE(SUM(size_bytes), 0)::bigint FROM images WHERE user_id IS NULL;

@@ -142,20 +142,41 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	images, err := h.db.ListImagesByUser(r.Context(), sqlc.ListImagesByUserParams{
-		UserID:  domain.PgInt8(userID),
-		AlbumID: domain.PgInt8Ptr(albumID),
-		Limit:   pageSize,
-		Offset:  (page - 1) * pageSize,
-	})
+	var dateFrom, dateTo *time.Time
+	if df := r.FormValue("date_from"); df != "" {
+		if t, err := time.Parse(time.RFC3339, df); err == nil {
+			dateFrom = &t
+		}
+	}
+	if dt := r.FormValue("date_to"); dt != "" {
+		if t, err := time.Parse(time.RFC3339, dt); err == nil {
+			dateTo = &t
+		}
+	}
+
+	params := sqlc.ListImagesByUserParams{
+		UserID:    domain.PgInt8(userID),
+		AlbumID:   domain.PgInt8Ptr(albumID),
+		Keyword:   domain.PgTextNonEmpty(r.FormValue("keyword")),
+		Extension: domain.PgTextNonEmpty(r.FormValue("extension")),
+		DateFrom:  domain.PgTimeWithZonePtr(dateFrom),
+		DateTo:    domain.PgTimeWithZonePtr(dateTo),
+		Limit:     pageSize,
+		Offset:    (page - 1) * pageSize,
+	}
+	images, err := h.db.ListImagesByUser(r.Context(), params)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to list images")
 		return
 	}
 
 	total, err := h.db.CountImagesByUser(r.Context(), sqlc.CountImagesByUserParams{
-		UserID:  domain.PgInt8(userID),
-		AlbumID: domain.PgInt8Ptr(albumID),
+		UserID:    domain.PgInt8(userID),
+		AlbumID:   domain.PgInt8Ptr(albumID),
+		Keyword:   params.Keyword,
+		Extension: params.Extension,
+		DateFrom:  params.DateFrom,
+		DateTo:    params.DateTo,
 	})
 	if err != nil {
 		slog.Warn("failed to count images", "error", err, "user_id", userID)

@@ -70,7 +70,7 @@ func NewUploadService(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Config) 
 // each successful insert, so it stays accurate without per-upload queries.
 func (s *UploadService) totalImagesCount(ctx context.Context) int64 {
 	s.countInit.Do(func() {
-		count, err := s.db.CountAllImages(ctx)
+		count, err := s.db.CountAllImages(ctx, sqlc.CountAllImagesParams{})
 		if err != nil {
 			slog.Warn("failed to seed image count, starting from zero", "error", err)
 			return

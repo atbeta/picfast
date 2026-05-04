@@ -27,10 +27,13 @@ export interface ImageItem {
   created_at: string
 }
 
-export async function listImages(page = 1, pageSize = 20, albumId?: number | null): Promise<PaginatedData<ImageItem>> {
+export async function listImages(page = 1, pageSize = 20, albumId?: number | null, keyword?: string): Promise<PaginatedData<ImageItem>> {
   const params: Record<string, string | number> = { page, page_size: pageSize }
   if (albumId) {
     params.album_id = albumId
+  }
+  if (keyword) {
+    params.keyword = keyword
   }
   const res = await api.get<ApiResponse<PaginatedData<ImageItem>>>('/images', { params })
   return res.data.data

@@ -44,3 +44,10 @@ func PgTimeWithZonePtr(v *time.Time) pgtype.Timestamptz {
 	}
 	return pgtype.Timestamptz{Time: *v, Valid: true}
 }
+
+func PgTextNonEmpty(v string) pgtype.Text {
+	if v == "" {
+		return pgtype.Text{Valid: false}
+	}
+	return pgtype.Text{String: v, Valid: true}
+}

@@ -263,7 +263,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  /images:
+   /images:
     get:
       tags: [images]
       summary: List user images
@@ -272,6 +272,11 @@ paths:
       parameters:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/AlbumIdParam"
+        - $ref: "#/components/parameters/KeywordParam"
+        - $ref: "#/components/parameters/ExtensionParam"
+        - $ref: "#/components/parameters/DateFromParam"
+        - $ref: "#/components/parameters/DateToParam"
       responses:
         "200":
           description: OK
@@ -916,7 +921,7 @@ paths:
                         items:
                           $ref: "#/components/schemas/StrategyHealthItem"
 
-  /admin/images:
+   /admin/images:
     get:
       tags: [admin]
       summary: List all images
@@ -925,6 +930,11 @@ paths:
       parameters:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/KeywordParam"
+        - $ref: "#/components/parameters/EmailParam"
+        - $ref: "#/components/parameters/ExtensionParam"
+        - $ref: "#/components/parameters/DateFromParam"
+        - $ref: "#/components/parameters/DateToParam"
       responses:
         "200":
           description: OK
@@ -1118,6 +1128,45 @@ components:
       required: true
       schema:
         type: string
+    KeywordParam:
+      name: keyword
+      in: query
+      description: ILIKE search on image file name
+      schema:
+        type: string
+    AlbumIdParam:
+      name: album_id
+      in: query
+      description: Filter by album ID
+      schema:
+        type: integer
+        format: int64
+    EmailParam:
+      name: email
+      in: query
+      description: ILIKE search on uploader email (admin only)
+      schema:
+        type: string
+    ExtensionParam:
+      name: extension
+      in: query
+      description: Filter by file extension (e.g. png, jpg)
+      schema:
+        type: string
+    DateFromParam:
+      name: date_from
+      in: query
+      description: Filter images created at or after this ISO-8601 timestamp
+      schema:
+        type: string
+        format: date-time
+    DateToParam:
+      name: date_to
+      in: query
+      description: Filter images created at or before this ISO-8601 timestamp
+      schema:
+        type: string
+        format: date-time
 
   responses:
     OK:

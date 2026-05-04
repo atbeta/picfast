@@ -148,7 +148,7 @@ func (h *AdminObservabilityHandler) loadUsage(ctx context.Context) (map[string]a
 	if err != nil {
 		return nil, err
 	}
-	images, err := h.db.CountAllImages(ctx)
+	images, err := h.db.CountAllImages(ctx, sqlc.CountAllImagesParams{})
 	if err != nil {
 		return nil, err
 	}

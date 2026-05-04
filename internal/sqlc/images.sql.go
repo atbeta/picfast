@@ -14,10 +14,30 @@ import (
 
 const countAllImages = `-- name: CountAllImages :one
 SELECT COUNT(*) FROM images
+LEFT JOIN users ON images.user_id = users.id
+WHERE ($1::text IS NULL OR images.origin_name ILIKE '%' || $1 || '%')
+  AND ($2::text IS NULL OR users.email ILIKE '%' || $2 || '%')
+  AND ($3::text IS NULL OR images.extension = $3)
+  AND ($4::timestamptz IS NULL OR images.created_at >= $4)
+  AND ($5::timestamptz IS NULL OR images.created_at <= $5)
 `
 
-func (q *Queries) CountAllImages(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countAllImages)
+type CountAllImagesParams struct {
+	Keyword   pgtype.Text        `json:"keyword"`
+	Email     pgtype.Text        `json:"email"`
+	Extension pgtype.Text        `json:"extension"`
+	DateFrom  pgtype.Timestamptz `json:"date_from"`
+	DateTo    pgtype.Timestamptz `json:"date_to"`
+}
+
+func (q *Queries) CountAllImages(ctx context.Context, arg CountAllImagesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countAllImages,
+		arg.Keyword,
+		arg.Email,
+		arg.Extension,
+		arg.DateFrom,
+		arg.DateTo,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -38,15 +58,30 @@ const countImagesByUser = `-- name: CountImagesByUser :one
 SELECT COUNT(*) FROM images
 WHERE user_id = $1
   AND ($2::bigint IS NULL OR album_id = $2)
+  AND ($3::text IS NULL OR origin_name ILIKE '%' || $3 || '%')
+  AND ($4::text IS NULL OR extension = $4)
+  AND ($5::timestamptz IS NULL OR created_at >= $5)
+  AND ($6::timestamptz IS NULL OR created_at <= $6)
 `
 
 type CountImagesByUserParams struct {
-	UserID  pgtype.Int8 `json:"user_id"`
-	AlbumID pgtype.Int8 `json:"album_id"`
+	UserID    pgtype.Int8        `json:"user_id"`
+	AlbumID   pgtype.Int8        `json:"album_id"`
+	Keyword   pgtype.Text        `json:"keyword"`
+	Extension pgtype.Text        `json:"extension"`
+	DateFrom  pgtype.Timestamptz `json:"date_from"`
+	DateTo    pgtype.Timestamptz `json:"date_to"`
 }
 
 func (q *Queries) CountImagesByUser(ctx context.Context, arg CountImagesByUserParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countImagesByUser, arg.UserID, arg.AlbumID)
+	row := q.db.QueryRow(ctx, countImagesByUser,
+		arg.UserID,
+		arg.AlbumID,
+		arg.Keyword,
+		arg.Extension,
+		arg.DateFrom,
+		arg.DateTo,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -409,13 +444,23 @@ func (q *Queries) GetImagesByMD5(ctx context.Context, md5 string) ([]Image, erro
 const listAllImages = `-- name: ListAllImages :many
 SELECT images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status, images.expires_at, users.email as user_email FROM images
 LEFT JOIN users ON images.user_id = users.id
+WHERE ($3::text IS NULL OR images.origin_name ILIKE '%' || $3 || '%')
+  AND ($4::text IS NULL OR users.email ILIKE '%' || $4 || '%')
+  AND ($5::text IS NULL OR images.extension = $5)
+  AND ($6::timestamptz IS NULL OR images.created_at >= $6)
+  AND ($7::timestamptz IS NULL OR images.created_at <= $7)
 ORDER BY images.created_at DESC
 LIMIT $1 OFFSET $2
 `
 
 type ListAllImagesParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	Limit     int32              `json:"limit"`
+	Offset    int32              `json:"offset"`
+	Keyword   pgtype.Text        `json:"keyword"`
+	Email     pgtype.Text        `json:"email"`
+	Extension pgtype.Text        `json:"extension"`
+	DateFrom  pgtype.Timestamptz `json:"date_from"`
+	DateTo    pgtype.Timestamptz `json:"date_to"`
 }
 
 type ListAllImagesRow struct {
@@ -446,7 +491,15 @@ type ListAllImagesRow struct {
 }
 
 func (q *Queries) ListAllImages(ctx context.Context, arg ListAllImagesParams) ([]ListAllImagesRow, error) {
-	rows, err := q.db.Query(ctx, listAllImages, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listAllImages,
+		arg.Limit,
+		arg.Offset,
+		arg.Keyword,
+		arg.Email,
+		arg.Extension,
+		arg.DateFrom,
+		arg.DateTo,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -499,15 +552,23 @@ FROM images
 LEFT JOIN strategies ON images.strategy_id = strategies.id
 WHERE images.user_id = $1
   AND ($4::bigint IS NULL OR images.album_id = $4)
+  AND ($5::text IS NULL OR images.origin_name ILIKE '%' || $5 || '%')
+  AND ($6::text IS NULL OR images.extension = $6)
+  AND ($7::timestamptz IS NULL OR images.created_at >= $7)
+  AND ($8::timestamptz IS NULL OR images.created_at <= $8)
 ORDER BY images.created_at DESC
 LIMIT $2 OFFSET $3
 `
 
 type ListImagesByUserParams struct {
-	UserID  pgtype.Int8 `json:"user_id"`
-	Limit   int32       `json:"limit"`
-	Offset  int32       `json:"offset"`
-	AlbumID pgtype.Int8 `json:"album_id"`
+	UserID    pgtype.Int8        `json:"user_id"`
+	Limit     int32              `json:"limit"`
+	Offset    int32              `json:"offset"`
+	AlbumID   pgtype.Int8        `json:"album_id"`
+	Keyword   pgtype.Text        `json:"keyword"`
+	Extension pgtype.Text        `json:"extension"`
+	DateFrom  pgtype.Timestamptz `json:"date_from"`
+	DateTo    pgtype.Timestamptz `json:"date_to"`
 }
 
 type ListImagesByUserRow struct {
@@ -544,6 +605,10 @@ func (q *Queries) ListImagesByUser(ctx context.Context, arg ListImagesByUserPara
 		arg.Limit,
 		arg.Offset,
 		arg.AlbumID,
+		arg.Keyword,
+		arg.Extension,
+		arg.DateFrom,
+		arg.DateTo,
 	)
 	if err != nil {
 		return nil, err

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
@@ -27,7 +27,17 @@ export function ImagesPage() {
   const albumIdParam = searchParams.get('album_id')
   const albumId = albumIdParam ? Number(albumIdParam) : null
   const [page, setPage] = useState(1)
+  const [keyword, setKeyword] = useState('')
+  const [debouncedKeyword, setDebouncedKeyword] = useState('')
+  const keywordTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
   const pageSize = 60
+
+  const onKeywordChange = useCallback((value: string) => {
+    setKeyword(value)
+    setPage(1)
+    if (keywordTimerRef.current) clearTimeout(keywordTimerRef.current)
+    keywordTimerRef.current = setTimeout(() => setDebouncedKeyword(value), 300)
+  }, [])
 
   // Reset page when album changes
   // Remove synchronous setState from useEffect to prevent cascading renders
@@ -38,8 +48,8 @@ export function ImagesPage() {
   }
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['images', page, albumId],
-    queryFn: () => listImages(page, pageSize, albumId),
+    queryKey: ['images', page, albumId, debouncedKeyword],
+    queryFn: () => listImages(page, pageSize, albumId, debouncedKeyword),
   })
   const totalPages = data ? (data.total_pages > 0 ? data.total_pages : Math.max(1, Math.ceil(data.total / pageSize))) : 1
 
@@ -52,6 +62,7 @@ export function ImagesPage() {
     listAlbums(1, 100)
       .then((res) => setAlbums(res.items))
       .catch((err: unknown) => logError('images.loadAlbums', err))
+    return () => { if (keywordTimerRef.current) clearTimeout(keywordTimerRef.current) }
   }, [])
 
   const showDetail = async (img: ImageItem) => {
@@ -262,6 +273,19 @@ export function ImagesPage() {
               {t('images.exitBatch', { defaultValue: '退出管理' })}
             </Button>
           )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <input
+            type="text"
+            value={keyword}
+            onChange={(e) => onKeywordChange(e.target.value)}
+            placeholder={t('images.searchPlaceholder', { defaultValue: '搜索文件名…' })}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 pl-9 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-1 focus:ring-primary/20"
+          />
+          <svg className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
         </div>
       </div>
 
