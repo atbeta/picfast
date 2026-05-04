@@ -35,6 +35,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         } as React.CSSProperties
       }
       toastOptions={{
+        duration: 4000,
         classNames: {
           toast: "cn-toast",
         },
