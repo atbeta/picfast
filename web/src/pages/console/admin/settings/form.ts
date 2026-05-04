@@ -63,10 +63,21 @@ const defaultValues: SettingsForm = {
   analytics_custom_script: '',
 }
 
-function normalizeTTL(v?: string): string {
-  const val = (v || '').trim().toLowerCase()
-  if (!val || val === '0' || val === '0s') return '0'
-  return v || '0'
+const ttlOptions = new Set(['0', '24h', '168h', '720h', '2160h'])
+
+function normalizeTTL(v?: unknown): string {
+  const raw = typeof v === 'string' ? v.trim().toLowerCase() : ''
+  if (!raw || raw === '0' || raw === '0s') return '0'
+  if (ttlOptions.has(raw)) return raw
+
+  // Go `time.Duration` strings are usually returned as "24h0m0s".
+  const hourOnly = /^(\d+)h0m0s$/.exec(raw)
+  if (hourOnly) {
+    const compact = `${hourOnly[1]}h`
+    if (ttlOptions.has(compact)) return compact
+  }
+
+  return '0'
 }
 
 function settingString(value: unknown): string {
