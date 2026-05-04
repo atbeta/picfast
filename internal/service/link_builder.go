@@ -14,7 +14,12 @@ type LinkBuilder struct {
 func (b LinkBuilder) BuildImageLinks(key, extension, md5, originName string) domain.ImageLinks {
 	baseURL := strings.TrimRight(b.BaseURL, "/")
 	url := fmt.Sprintf("%s/i/%s.%s", baseURL, key, extension)
-	thumbURL := fmt.Sprintf("%s/t/%s.png", baseURL, md5)
+
+	var thumbURL string
+	ext := strings.ToLower(extension)
+	if ext != "svg" && ext != "ico" {
+		thumbURL = fmt.Sprintf("%s/t/%s.png", baseURL, md5)
+	}
 
 	return domain.ImageLinks{
 		URL:          url,
