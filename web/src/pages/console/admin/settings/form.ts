@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { getAdminSettings, updateAdminSettings, type AdminSettings } from '@/lib/admin-api'
@@ -128,8 +128,6 @@ export function analyticsPayload(form: SettingsForm): Record<string, unknown> {
 export function useAdminSettingsForm() {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const [success, setSuccess] = useState(false)
-  const [errorMsg, setErrorMsg] = useState('')
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-settings'],
@@ -142,17 +140,15 @@ export function useAdminSettingsForm() {
   })
 
   const saveSettings = async (payload: Partial<AdminSettings>) => {
-    setSuccess(false)
-    setErrorMsg('')
     try {
       await updateAdminSettings(payload)
-      setSuccess(true)
+      toast.success(t('admin.saved'))
       await qc.invalidateQueries({ queryKey: ['admin-settings'] })
       await qc.invalidateQueries({ queryKey: ['site-config'] })
     } catch (err: unknown) {
-      setErrorMsg(extractErrorMessage(err, t('admin.saveFailed')))
+      toast.error(extractErrorMessage(err, t('admin.saveFailed')))
     }
   }
 
-  return { data, isLoading, error, form, success, errorMsg, saveSettings }
+  return { data, isLoading, error, form, saveSettings }
 }

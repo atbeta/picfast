@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { z } from 'zod/v4'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
@@ -55,8 +56,6 @@ export function SettingsPage() {
   const { user, updateProfile } = useAuth()
 
   const [saving, setSaving] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [errorMsg, setErrorMsg] = useState('')
   const [strategies, setStrategies] = useState<Strategy[]>([])
   const [defaultStrategy, setDefaultStrategy] = useState(0)
   const [imageQuality, setImageQuality] = useState(85)
@@ -109,11 +108,9 @@ export function SettingsPage() {
 
   const onSubmit = async (data: ProfileForm) => {
     setSaving(true)
-    setSuccess(false)
-    setErrorMsg('')
     try {
       if (allowUserImageProcessing && enableWatermark && !watermarkText.trim()) {
-        setErrorMsg(t('settings.watermarkTextRequired', { defaultValue: '启用文字水印时，请填写水印文本。' }))
+        toast.error(t('settings.watermarkTextRequired', { defaultValue: '启用文字水印时，请填写水印文本。' }))
         return
       }
       const payload: { name?: string; password?: string; settings?: Record<string, unknown> } = { name: data.name }
@@ -140,9 +137,9 @@ export function SettingsPage() {
         image_processing: imageProcessing,
       }
       await updateProfile(payload)
-      setSuccess(true)
+      toast.success(t('settings.saved'))
     } catch (err: unknown) {
-      setErrorMsg(extractErrorMessage(err, t('settings.saveFailed')))
+      toast.error(extractErrorMessage(err, t('settings.saveFailed')))
     } finally {
       setSaving(false)
     }
@@ -405,17 +402,6 @@ export function SettingsPage() {
             </div>
 
             <div className="pt-2">
-              {success && (
-                <p className="mt-6 mb-2 rounded-lg bg-success/10 px-4 py-2.5 text-sm font-medium text-success border border-success/20">
-                  {t('settings.saved')}
-                </p>
-              )}
-              {errorMsg && (
-                <p className="mt-6 mb-2 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm font-medium text-destructive border border-destructive/20">
-                  {errorMsg}
-                </p>
-              )}
-
               <div className="flex justify-end mt-6">
                 <Button type="submit" size="lg" disabled={saving}>
                   {saving ? t('settings.saving') : t('settings.save')}

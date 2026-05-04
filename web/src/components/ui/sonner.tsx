@@ -7,6 +7,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
   return (
     <Sonner
+      duration={4000}
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
@@ -35,6 +36,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         } as React.CSSProperties
       }
       toastOptions={{
+        duration: 4000,
         classNames: {
           toast: "cn-toast",
         },

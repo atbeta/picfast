@@ -44,7 +44,7 @@ export function SettingsPageLayout({
   children: ReactNode
 }) {
   const { t } = useTranslation()
-  const { data, isLoading, error, form, success, errorMsg } = state
+  const { data, isLoading, error, form } = state
   const { formState: { isSubmitting } } = form
 
   return (
@@ -62,9 +62,6 @@ export function SettingsPageLayout({
           <div className="space-y-6 rounded-xl border border-border/40 bg-card/60 p-6 shadow-sm">
             {children}
           </div>
-
-          {success && <p className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">{t('admin.saved')}</p>}
-          {errorMsg && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{errorMsg}</p>}
 
           <div className="flex justify-end pt-4">
             <Button type="submit" size="lg" disabled={isSubmitting}>
