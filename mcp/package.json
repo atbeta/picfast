@@ -1,6 +1,6 @@
 {
   "name": "@picfast/mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "PicFast MCP Server — upload images and manage your image hosting via AI with local file access",
   "type": "module",
   "bin": {

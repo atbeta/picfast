@@ -101,6 +101,52 @@ export class ApiClient {
     return `${this.baseUrl}/api/v1${path}`;
   }
 
+  /**
+   * PicFast REST handlers wrap payloads as `{ status, message, data }`.
+   * Unwrap `data` when present; otherwise return the body as-is.
+   */
+  private async handleResponse<T>(res: Response): Promise<T> {
+    const text = await res.text();
+    let parsed: unknown;
+    try {
+      parsed = text ? JSON.parse(text) : {};
+    } catch {
+      const preview = text.slice(0, 300);
+      if (!res.ok) {
+        throw new Error(`request failed (${res.status}): ${preview}`);
+      }
+      throw new Error(`invalid json (${res.status}): ${preview}`);
+    }
+
+    const obj = parsed as Record<string, unknown> | null;
+    const isEnvelope =
+      obj !== null &&
+      typeof obj === "object" &&
+      "status" in obj &&
+      typeof (obj as { status?: unknown }).status === "boolean";
+
+    if (isEnvelope) {
+      const envelopeOk = (obj as { status: boolean }).status;
+      const message =
+        typeof (obj as { message?: unknown }).message === "string"
+          ? (obj as { message: string }).message
+          : "request failed";
+      if (!envelopeOk || !res.ok) {
+        throw new Error(`${res.status}: ${message}`);
+      }
+      if ("data" in obj) {
+        return (obj as { data: T }).data;
+      }
+      throw new Error(`unexpected envelope (${res.status})`);
+    }
+
+    if (!res.ok) {
+      throw new Error(`request failed (${res.status}): ${text.slice(0, 300)}`);
+    }
+
+    return parsed as T;
+  }
+
   async uploadImage(
     filePath: string,
     options?: { filename?: string; album_id?: number; permission?: number; strategy_id?: number }
@@ -132,12 +178,12 @@ export class ApiClient {
       body: form,
     });
 
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`upload failed (${res.status}): ${body}`);
+    try {
+      return await this.handleResponse<UploadResult>(res);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`upload failed (${res.status}): ${message}`);
     }
-
-    return (await res.json()) as UploadResult;
   }
 
   async listImages(
@@ -156,12 +202,12 @@ export class ApiClient {
       headers: this.authHeaders(),
     });
 
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`list images failed (${res.status}): ${body}`);
+    try {
+      return await this.handleResponse<ImageListResult>(res);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`list images failed (${res.status}): ${message}`);
     }
-
-    return (await res.json()) as ImageListResult;
   }
 
   async getImage(key: string): Promise<UploadResult> {
@@ -170,12 +216,12 @@ export class ApiClient {
       headers: this.authHeaders(),
     });
 
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`get image failed (${res.status}): ${body}`);
+    try {
+      return await this.handleResponse<UploadResult>(res);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`get image failed (${res.status}): ${message}`);
     }
-
-    return (await res.json()) as UploadResult;
   }
 
   async deleteImage(key: string): Promise<void> {
@@ -185,9 +231,11 @@ export class ApiClient {
       headers: this.authHeaders(),
     });
 
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`delete image failed (${res.status}): ${body}`);
+    try {
+      await this.handleResponse<unknown>(res);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`delete image failed (${res.status}): ${message}`);
     }
   }
 
@@ -197,11 +245,11 @@ export class ApiClient {
       headers: this.authHeaders(),
     });
 
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`get profile failed (${res.status}): ${body}`);
+    try {
+      return await this.handleResponse<UserProfile>(res);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`get profile failed (${res.status}): ${message}`);
     }
-
-    return (await res.json()) as UserProfile;
   }
 }
