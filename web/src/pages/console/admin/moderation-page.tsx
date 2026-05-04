@@ -106,8 +106,8 @@ export function AdminModerationPage() {
                 {data.items.map((img) => (
                   <tr key={img.id} className="group hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3">
-                      {img.thumbnail_url ? (
-                        <img src={img.thumbnail_url} alt="" className="h-10 w-10 rounded border border-border/50 object-cover" />
+                      {(img.thumbnail_url || img.extension === 'svg' || img.extension === 'ico') ? (
+                        <img src={img.thumbnail_url || img.url} alt="" className="h-10 w-10 rounded border border-border/50 object-cover" />
                       ) : (
                         <div className="flex h-10 w-10 items-center justify-center rounded border border-border/50 text-xs text-muted-foreground bg-muted/30">
                           {img.extension.toUpperCase()}

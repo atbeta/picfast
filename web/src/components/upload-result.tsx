@@ -73,9 +73,9 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
         <div className="relative shrink-0">
           <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-primary/20 to-transparent opacity-0 transition-opacity duration-150 group-hover:opacity-100 blur-md" />
           <div className="relative h-32 w-32 sm:h-40 sm:w-40 overflow-hidden rounded-xl border border-border/60 bg-muted/30 shadow-sm">
-            {result.links.thumbnail_url ? (
+            {(result.links.thumbnail_url || result.extension === 'svg' || result.extension === 'ico') ? (
               <img
-                src={result.links.thumbnail_url}
+                src={result.links.thumbnail_url || result.links.url}
                 alt={result.origin_name}
                 className="h-full w-full object-contain p-2"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}

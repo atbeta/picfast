@@ -357,10 +357,10 @@ export function ImagesPage() {
                 onClick={() => batchMode ? toggleSelect(img.key) : showDetail(img)}
               >
                 <div className="relative aspect-[4/3] flex items-center justify-center overflow-hidden bg-muted/30">
-                  {img.thumbnail_url || img.links?.thumbnail_url ? (
+                  {img.thumbnail_url || img.links?.thumbnail_url || img.extension === 'svg' || img.extension === 'ico' ? (
                     <>
                       <img
-                        src={toRelative(img.thumbnail_url || img.links?.thumbnail_url || '')}
+                        src={toRelative(img.thumbnail_url || img.links?.thumbnail_url || img.links?.url || img.url || '')}
                         alt=""
                         className="h-full w-full object-cover"
                         loading="lazy"
