@@ -136,6 +136,9 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	originalSize := int64(len(params.FileData))
 	processed := processUploadImage(params.FileData, ext, identity.processing)
 	fileData := processed.data
+	if processed.processed && identity.processing.Format != "" {
+		ext = identity.processing.Format
+	}
 
 	// Step 7: Generate path and filename
 	pathname := GeneratePathname(
