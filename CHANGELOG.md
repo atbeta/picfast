@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.2](https://github.com/atbeta/picfast/compare/v0.6.1...v0.6.2) (2026-05-04)
+
+
+### Bug Fixes
+
+* **admin:** populate user count in group list endpoint ([5af02e9](https://github.com/atbeta/picfast/commit/5af02e95135f359dc6a54f9d19fc592ddbb84da4))
+* **upload:** persist selected permission across page navigation ([0f63f01](https://github.com/atbeta/picfast/commit/0f63f01e1fbe43eafba46ab5f4bb29558d683971))
+* **upload:** update extension when image format is converted during processing ([be4998c](https://github.com/atbeta/picfast/commit/be4998c608cf39f68908ff9e5b76035a473ef108))
+* **ux:** render SVG/ICO originals as thumbnails when no preview is generated ([dba2f27](https://github.com/atbeta/picfast/commit/dba2f27e50ebdb9006b8db0d99bc3046a66618de))
+
 ## [0.6.1](https://github.com/atbeta/picfast/compare/v0.6.0...v0.6.1) (2026-05-04)
 
 
