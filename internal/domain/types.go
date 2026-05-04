@@ -61,9 +61,9 @@ func (c *GroupConfig) IsExtensionAllowed(ext string) bool {
 }
 
 type UserSettings struct {
-	DefaultAlbum      int64                        `json:"default_album"`
-	DefaultStrategy   int64                        `json:"default_strategy"`
-	DefaultPermission int16                        `json:"default_permission"`
+	DefaultAlbum      int64                        `json:"default_album,omitempty"`
+	DefaultStrategy   int64                        `json:"default_strategy,omitempty"`
+	DefaultPermission *int16                       `json:"default_permission,omitempty"`
 	ImageProcessing   *UserImageProcessingSettings `json:"image_processing,omitempty"`
 }
 
