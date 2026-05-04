@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.7.0](https://github.com/atbeta/picfast/compare/v0.6.0...v0.7.0) (2026-05-04)
+
+
+### Features
+
+* **admin:** add two optional footer text and link lines in site settings ([de51829](https://github.com/atbeta/picfast/commit/de51829d05e8dff355336fd368af3854a8bae167))
+* **admin:** expand health and site personalization controls ([36159fc](https://github.com/atbeta/picfast/commit/36159fc6d131d1a216f1bd5a043c490137e9daa1))
+* **ai-docs:** enrich OpenAPI and MCP semantics for agent usage ([268551d](https://github.com/atbeta/picfast/commit/268551d79082d848695038793edae8daa5a0e9d4))
+* **api-tokens:** dual auth and scope enforcement for API tokens ([f1f2dd5](https://github.com/atbeta/picfast/commit/f1f2dd51295d6d9a2c2b761f64c871fc219e2f06))
+* **auth:** add first-run setup wizard with gated writes ([e8e55e9](https://github.com/atbeta/picfast/commit/e8e55e9896ca5f3a4b801d99d0cc1a0177b1f9fb))
+* **auth:** enforce verified signup flow ([34e1bcf](https://github.com/atbeta/picfast/commit/34e1bcfa5e9cf5fe1757cdbff78ec2ba99f2ba19))
+* **auth:** enhance registration flow and add password reset ([ed44113](https://github.com/atbeta/picfast/commit/ed44113ba23ffff62ac4c59db041c5bcfee66281))
+* **config:** streamline bootstrap and deployment defaults ([992f91e](https://github.com/atbeta/picfast/commit/992f91ebf20ee14417576cab407f16272be9495a))
+* **connections:** add flat upload endpoint, redesign connections page with inline token input ([945ed41](https://github.com/atbeta/picfast/commit/945ed416b0136f7246d27ad76d7c8bb2f93f2614))
+* **images:** add batch delete endpoint to reduce N requests to 1 ([7618aba](https://github.com/atbeta/picfast/commit/7618aba1d6ae85c690e4b78908867508059d7e76))
+* **images:** add keyword, extension, and date-range filtering for image lists ([05fd1b9](https://github.com/atbeta/picfast/commit/05fd1b9d272c94c0f4d46cbd90d471fb380f8b7c))
+* **image:** support configurable processing and width variants ([acf4872](https://github.com/atbeta/picfast/commit/acf487240f807de1ac45c7cff9e25dfe32e1e085))
+* **mcp:** replace remote MCP server with local @picfast/mcp package ([a138d70](https://github.com/atbeta/picfast/commit/a138d70e3c43cac30dcc56130547f5f184360346))
+* **moderation:** add admin review queue and status visibility ([dbab2c9](https://github.com/atbeta/picfast/commit/dbab2c97454d83a7d55f553cc8973ee0e421f12f))
+* **moderation:** auto-approve pending images when moderation is disabled ([d8ab523](https://github.com/atbeta/picfast/commit/d8ab52376fe69e40ba71e2bb360a922d343fb8f1))
+* **observability:** expose Docker-ready metrics ([9a4f0f7](https://github.com/atbeta/picfast/commit/9a4f0f7f2ba391f0119672ccdfa37050fd20cbc6))
+* **pagination:** add total_pages and page indicator UI ([f243f4b](https://github.com/atbeta/picfast/commit/f243f4b2a9939528e4e4fb787e107a1eacb00029))
+* **settings:** move image processing to user preferences ([c3b5246](https://github.com/atbeta/picfast/commit/c3b5246abed2d3818a2829a65de300f778c3fa78))
+* **ui:** polish console workflows and album interactions ([2618211](https://github.com/atbeta/picfast/commit/2618211dce5b00b6f3dfa8cbc90294e3ddda23a4))
+* **upload:** add configurable guest quota limits ([9438ceb](https://github.com/atbeta/picfast/commit/9438ceb0d88f5c35dd60729a9a1dd323b5e74cb1))
+* **upload:** dynamic image key length with atomic counter ([6875d71](https://github.com/atbeta/picfast/commit/6875d7105abd227a71ae472f59ea7c231dc30f8a))
+* **upload:** guest image TTL separate from default ([20fb2f3](https://github.com/atbeta/picfast/commit/20fb2f3851c5bcf15f2fb7422f7013be8d46cefa))
+
+
+### Bug Fixes
+
+* **admin-preview:** allow admins to view private thumbnails ([df7278c](https://github.com/atbeta/picfast/commit/df7278c0a2c4876b28798b990e76335383f201a8))
+* **admin:** exempt admin uploads from moderation and preserve role on profile update ([5925ca5](https://github.com/atbeta/picfast/commit/5925ca53946effb1ecf2105ac1ff1b4a4c910b6d))
+* **admin:** improve settings safety and SMTP gating ([268091f](https://github.com/atbeta/picfast/commit/268091f7c30de73e0fbb699e8f9d31f887fd8f3d))
+* **admin:** track administrator login audits ([012fc8d](https://github.com/atbeta/picfast/commit/012fc8d698ceca7901b5dba998c99782fe6d8ee4))
+* **api:** stabilize upload and MCP tool responses ([57ae754](https://github.com/atbeta/picfast/commit/57ae7543495480d2893cf7d2fbe8d0002b532376))
+* **auth:** harden email verification and reset mail flow ([5b26f6b](https://github.com/atbeta/picfast/commit/5b26f6b27fc9e591aaeafbd7ab3ae53a51bea3ec))
+* **config:** load local .env and align local dev defaults ([e096391](https://github.com/atbeta/picfast/commit/e096391ba76b958c54a09acd72b5ec97c2535c28))
+* **docker:** include OpenAPI spec in runtime image ([9062b54](https://github.com/atbeta/picfast/commit/9062b54f6c9a933133c1bc75ed74b9247ea5fdc9))
+* **docs:** render OpenAPI server URL from runtime base URL ([69be5cd](https://github.com/atbeta/picfast/commit/69be5cd6c9edbb1a73241a9b3a8300e0ed1e3b92))
+* **i18n:** complete console localization and audit labeling ([db62fc4](https://github.com/atbeta/picfast/commit/db62fc40fbffce208e3f80faa0ceb004edb4c413))
+* **i18n:** localize API errors and admin field labels ([0e58a26](https://github.com/atbeta/picfast/commit/0e58a2656222754f7dfa709c4e3d7b1734e54739))
+* **observability:** isolate metrics endpoint on internal port ([4c9225d](https://github.com/atbeta/picfast/commit/4c9225dca0afd365d6eb87e8387863debd5dc66d))
+* **openapi:** allow cross-origin spec imports ([5dc3d68](https://github.com/atbeta/picfast/commit/5dc3d68d8a644b5b388ca69214c31bd7f7252929))
+* **openapi:** correct YAML indentation for /images and /admin/images paths ([0e2ff9c](https://github.com/atbeta/picfast/commit/0e2ff9c73120f67887344906bdc7ebcb1b975d52))
+* **ux:** set default toast duration so notifications auto-dismiss after 4s ([bdc7729](https://github.com/atbeta/picfast/commit/bdc77298d07c678cf3f3dad366e1b352e03d08d1))
+
 ## [0.6.0](https://github.com/atbeta/picfast/compare/v0.5.0...v0.6.0) (2026-05-04)
 
 
