@@ -39,7 +39,7 @@ docker compose up -d
 |------|------|
 | [`Dockerfile`](Dockerfile) | 多阶段构建镜像 |
 | [`docker-compose.yml`](docker-compose.yml) | **推荐**：PostgreSQL + PicFast，自行接入反代 |
-| [`docker-compose.traefik.yml`](docker-compose.traefik.yml) | Traefik 自动证书方案（需已运行 Traefik） |
+| [`docker-compose.traefik.yml`](docker-compose.traefik.yml) | Traefik 方案（需已运行 Traefik 并配置证书） |
 | [`docker-compose.dev.yml`](docker-compose.dev.yml) | 本地开发：PostgreSQL + Mailpit + PicFast |
 | [`.env.example`](.env.example) | 环境变量参考（配合 `docker-compose.yml`） |
 | [`.env.traefik.example`](.env.traefik.example) | Traefik 环境变量参考 |
@@ -49,18 +49,18 @@ docker compose up -d
 
 ## Traefik 方案
 
-已有运行中的 Traefik 时可使用，自动申请 Let's Encrypt 证书：
+适用于已有 Traefik 并配置好证书的场景。
 
 ```bash
 mkdir picfast && cd picfast
 wget https://raw.githubusercontent.com/atbeta/picfast/main/docker/docker-compose.traefik.yml
 wget https://raw.githubusercontent.com/atbeta/picfast/main/docker/.env.traefik.example -O .env
 
-vim .env  # 替换域名、证书邮箱、数据库密码等
+vim .env  # 替换域名、数据库密码等
 docker compose -f docker-compose.traefik.yml up -d
 ```
 
-确保 `.env` 中 `TRAEFIK_DOCKER_NETWORK` 与 Traefik 所在网络一致。
+确保 `.env` 中 `TRAEFIK_DOCKER_NETWORK` 与 Traefik 所在网络一致，且 Traefik 已提前载入域名对应的证书（如通过 `tls.certificates` 静态文件或 certResolver）。
 
 ---
 
@@ -102,7 +102,7 @@ scrape_configs:
 
 ## 仅用镜像（无 Compose）
 
-最小示例见仓 [DOCKER.md](../DOCKER.md)。核心变量：
+最小示例见 [DOCKER.md](DOCKER.md)。核心变量：
 
 - `PICFAST_DATABASE_URL` — 数据库连接串（必填）
 - `PICFAST_SERVER_BASE_URL` — 站点对外访问地址
