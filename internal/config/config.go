@@ -288,7 +288,7 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("app.name", "PicFast")
 	v.SetDefault("app.web_base_url", "")
-	v.SetDefault("app.site_description", "PicFast is a modern self-hosted image hosting service.")
+	v.SetDefault("app.site_description", "Modern self-hosted image hosting.")
 	v.SetDefault("app.favicon_url", "")
 	v.SetDefault("app.allow_guest_upload", false)
 	v.SetDefault("app.guest_capacity_bytes", int64(10737418240))

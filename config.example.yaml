@@ -27,7 +27,7 @@ mail:
 app:
   name: "PicFast"
   web_base_url: ""            # optional: frontend URL used by email links; defaults to server.base_url when empty
-  site_description: "PicFast is a modern self-hosted image hosting service."
+  site_description: "Modern self-hosted image hosting."
   favicon_url: ""              # custom site icon URL; empty uses bundled favicon
   allow_guest_upload: false
   allow_registration: true
