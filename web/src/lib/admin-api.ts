@@ -150,6 +150,7 @@ export interface AdminImage {
   height: number
   permission: number
   user_email: string | null
+  uploaded_ip: string
   url: string
   thumbnail_url: string
   created_at: string

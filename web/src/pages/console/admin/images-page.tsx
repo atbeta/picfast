@@ -116,7 +116,7 @@ export function AdminImagesPage() {
                     </td>
                     <td className="max-w-[120px] truncate px-3 py-3 font-mono text-xs text-muted-foreground">{img.key}</td>
                     <td className="max-w-[140px] truncate px-3 py-3 text-foreground">{img.origin_name}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{img.user_email ?? '—'}</td>
+                    <td className="px-3 py-3 text-muted-foreground">{img.user_email || img.uploaded_ip || '—'}</td>
                     <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">{formatFileSize(img.size_bytes)}</td>
                     <td className="px-3 py-3">
                       <span className={['rounded px-1.5 py-0.5 text-xs font-medium', img.permission === 1 ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning'].join(' ')}>
