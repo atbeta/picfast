@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.1](https://github.com/atbeta/picfast/compare/v0.6.0...v0.6.1) (2026-05-04)
+
+
+### Bug Fixes
+
+* **admin-settings:** restore image lifecycle dropdown value on page reload ([da78a1b](https://github.com/atbeta/picfast/commit/da78a1b595d21799acc6dbca7ef839e9000f428b))
+* **admin:** fallback to uploaded IP when image has no associated user email ([bdc84fa](https://github.com/atbeta/picfast/commit/bdc84fa0fd8bdc2318cb4e4d4c9b3f146f758e22))
+* **thumbnail:** skip thumbnail URL for SVG and ICO formats ([f8a0ded](https://github.com/atbeta/picfast/commit/f8a0dedc5026b6a573839b8174f83cb10635c9c5))
+* **ux:** keep previous image list data while search is in flight ([072fc1c](https://github.com/atbeta/picfast/commit/072fc1ca3e4c3d3fed8ef224a12b4c16bf174ff8))
+
 ## [0.6.0](https://github.com/atbeta/picfast/compare/v0.5.0...v0.6.0) (2026-05-04)
 
 
