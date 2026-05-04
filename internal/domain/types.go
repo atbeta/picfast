@@ -48,7 +48,6 @@ type GroupConfig struct {
 	ImageSaveFormat            string          `json:"image_save_format"`
 	IsEnableWatermark          bool            `json:"is_enable_watermark"`
 	WatermarkConfigs           json.RawMessage `json:"watermark_configs"`
-	IsEnableOriginalProtection bool            `json:"is_enable_original_protection"`
 	IsStripExif                bool            `json:"is_strip_exif"`
 }
 

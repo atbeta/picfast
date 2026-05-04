@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -243,6 +244,16 @@ func (h *AdminGroupHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	if group.IsDefault || group.IsGuest {
 		Fail(w, http.StatusBadRequest, "cannot delete default or guest group")
+		return
+	}
+
+	count, err := h.db.CountUsersByGroup(r.Context(), domain.PgInt8(id))
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to check group usage")
+		return
+	}
+	if count > 0 {
+		Fail(w, http.StatusConflict, "cannot delete group: users are still assigned to it")
 		return
 	}
 

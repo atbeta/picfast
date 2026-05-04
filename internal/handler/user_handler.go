@@ -91,7 +91,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			Fail(w, http.StatusBadRequest, "password must be at least 8 characters")
 			return
 		}
-		hash, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
+		hash, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcryptCost)
 		if err != nil {
 			Fail(w, http.StatusInternalServerError, "failed to hash password")
 			return

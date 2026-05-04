@@ -14,23 +14,31 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+const defaultMaxUploadBytes = 50 << 20 // 50 MiB
+
 type ImageHandler struct {
 	db              *sqlc.Queries
 	upload          *service.UploadService
 	deleter         *service.DeleteService
 	baseURL         string
 	auditUploadLogs bool
+	maxUploadBytes  int64
 }
 
-func NewImageHandler(db *sqlc.Queries, upload *service.UploadService, deleter *service.DeleteService, baseURL string, auditUploadLogs bool) *ImageHandler {
-	return &ImageHandler{db: db, upload: upload, deleter: deleter, baseURL: baseURL, auditUploadLogs: auditUploadLogs}
+func NewImageHandler(db *sqlc.Queries, upload *service.UploadService, deleter *service.DeleteService, baseURL string, auditUploadLogs bool, maxUploadBytes int64) *ImageHandler {
+	if maxUploadBytes <= 0 {
+		maxUploadBytes = defaultMaxUploadBytes
+	}
+	return &ImageHandler{db: db, upload: upload, deleter: deleter, baseURL: baseURL, auditUploadLogs: auditUploadLogs, maxUploadBytes: maxUploadBytes}
 }
 
 func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
-	// 32MB max memory for multipart
-	r.Body = http.MaxBytesReader(w, r.Body, 50<<20)
+	r.Body = http.MaxBytesReader(w, r.Body, h.maxUploadBytes)
 
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
+	// multipartFormMemory sets the max in-memory buffer for form parsing;
+	// payloads exceeding this are spilled to temp files on disk.
+	const multipartFormMemory = 32 << 20
+	if err := r.ParseMultipartForm(multipartFormMemory); err != nil {
 		Fail(w, http.StatusBadRequest, "failed to parse multipart form")
 		return
 	}

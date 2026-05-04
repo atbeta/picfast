@@ -23,6 +23,17 @@ func (q *Queries) CountAllImages(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countImagesByStrategy = `-- name: CountImagesByStrategy :one
+SELECT COUNT(*) FROM images WHERE strategy_id = $1
+`
+
+func (q *Queries) CountImagesByStrategy(ctx context.Context, strategyID pgtype.Int8) (int64, error) {
+	row := q.db.QueryRow(ctx, countImagesByStrategy, strategyID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countImagesByUser = `-- name: CountImagesByUser :one
 SELECT COUNT(*) FROM images
 WHERE user_id = $1

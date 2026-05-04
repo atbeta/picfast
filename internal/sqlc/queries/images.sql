@@ -78,3 +78,6 @@ UPDATE images SET expires_at = $2, updated_at = NOW() WHERE id = $1;
 
 -- name: GetImagesByMD5 :many
 SELECT * FROM images WHERE md5 = $1;
+
+-- name: CountImagesByStrategy :one
+SELECT COUNT(*) FROM images WHERE strategy_id = $1;

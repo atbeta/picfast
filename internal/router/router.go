@@ -40,7 +40,9 @@ func New(
 	r.Use(chimw.Recoverer)
 	r.Use(chimw.RealIP)
 	r.Use(chimw.RequestID)
-	r.Use(chimw.Timeout(60 * time.Second))
+	if cfg.Server.ReadTimeout > 0 {
+		r.Use(chimw.Timeout(cfg.Server.ReadTimeout))
+	}
 	r.Use(middleware.Metrics)
 	r.Use(middleware.RequireSetupCompleteForWrites(queries))
 
@@ -162,7 +164,7 @@ func New(
 		ticker := time.NewTicker(1 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
-			deleted, err := deleteSvc.CleanExpiredImages(context.Background(), 100)
+			deleted, err := deleteSvc.CleanExpiredImages(context.Background(), cfg.Server.ExpiredCleanupBatchSize)
 			if err != nil {
 				slog.Warn("failed to clean expired images", "error", err)
 			} else if deleted > 0 {
@@ -175,7 +177,7 @@ func New(
 	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg, mailSender)
 	setupHandler := handler.NewSetupHandler(queries, pool, jwtSvc, cfg)
 	userHandler := handler.NewUserHandler(queries)
-	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL, cfg.App.AuditUploadLogs)
+	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL, cfg.App.AuditUploadLogs, cfg.App.MaxUploadBytes)
 	albumHandler := handler.NewAlbumHandler(queries, pool)
 	fileHandler := handler.NewFileHandler(queries, cfg.Server.BaseURL, cfg.Storage.ThumbnailDir)
 	adminGroupHandler := handler.NewAdminGroupHandler(queries, pool)
@@ -328,12 +330,12 @@ func New(
 			Post("/upload", imageHandler.Upload)
 
 			// ShareX endpoints
-		sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL)
+		sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL, cfg.App.MaxUploadBytes)
 		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
 		r.Get("/sharex/config", sharexHandler.Config)
 
 		// Flat upload endpoints (PicGo, uPic, Dropshare, etc.)
-		flatHandler := handler.NewFlatUploadHandler(uploadSvc, cfg.Server.BaseURL)
+		flatHandler := handler.NewFlatUploadHandler(uploadSvc, cfg.Server.BaseURL, cfg.App.MaxUploadBytes)
 		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/flat/upload", flatHandler.Upload)
 
 		// Admin routes

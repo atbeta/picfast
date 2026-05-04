@@ -45,6 +45,9 @@ SELECT * FROM users ORDER BY created_at DESC;
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users;
 
+-- name: CountUsersByGroup :one
+SELECT COUNT(*) FROM users WHERE group_id = $1;
+
 -- name: IncrementUserImageNum :exec
 UPDATE users SET image_num = image_num + 1, updated_at = NOW() WHERE id = $1;
 

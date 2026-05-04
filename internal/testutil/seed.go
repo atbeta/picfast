@@ -24,8 +24,7 @@ func SeedDefaultGroup(t *testing.T, q *sqlc.Queries) sqlc.Group {
 		ImageSaveQuality:           75,
 		ImageSaveFormat:            "",
 		IsEnableWatermark:          false,
-		WatermarkConfigs:           json.RawMessage(`{}`),
-		IsEnableOriginalProtection: false,
+		WatermarkConfigs:  json.RawMessage(`{}`),
 	}
 	configs, _ := json.Marshal(cfg)
 

@@ -12,6 +12,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const bcryptCost = bcrypt.DefaultCost
+
 func bootstrapCoreData(ctx context.Context, queries *sqlc.Queries, cfg *config.Config) error {
 	defaultGroup, err := ensureDefaultGroup(ctx, queries)
 	if err != nil {
@@ -150,7 +152,7 @@ func ensureAdminUser(ctx context.Context, queries *sqlc.Queries, cfg *config.Con
 		return nil
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(cfg.App.AdminPassword), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(cfg.App.AdminPassword), bcryptCost)
 	if err != nil {
 		return err
 	}
@@ -185,9 +187,8 @@ func defaultBootstrapGroupConfig() []byte {
 		ImageSaveQuality:           85,
 		ImageSaveFormat:            "",
 		IsEnableWatermark:          false,
-		WatermarkConfigs:           json.RawMessage(`{}`),
-		IsEnableOriginalProtection: false,
-		IsStripExif:                true,
+		WatermarkConfigs:    json.RawMessage(`{}`),
+		IsStripExif:         true,
 	}
 	b, _ := json.Marshal(cfg)
 	return b

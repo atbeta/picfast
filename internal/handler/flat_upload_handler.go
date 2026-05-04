@@ -10,8 +10,9 @@ import (
 )
 
 type FlatUploadHandler struct {
-	upload  *service.UploadService
-	baseURL string
+	upload         *service.UploadService
+	baseURL        string
+	maxUploadBytes int64
 }
 
 type flatUploadResponse struct {
@@ -22,14 +23,20 @@ type flatUploadResponse struct {
 	HTML         string `json:"html,omitempty"`
 }
 
-func NewFlatUploadHandler(upload *service.UploadService, baseURL string) *FlatUploadHandler {
-	return &FlatUploadHandler{upload: upload, baseURL: baseURL}
+func NewFlatUploadHandler(upload *service.UploadService, baseURL string, maxUploadBytes int64) *FlatUploadHandler {
+	if maxUploadBytes <= 0 {
+		maxUploadBytes = defaultMaxUploadBytes
+	}
+	return &FlatUploadHandler{upload: upload, baseURL: baseURL, maxUploadBytes: maxUploadBytes}
 }
 
 func (h *FlatUploadHandler) Upload(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, 50<<20)
+	r.Body = http.MaxBytesReader(w, r.Body, h.maxUploadBytes)
 
-	if err := r.ParseMultipartForm(50 << 20); err != nil {
+	// multipartFormMemory sets the max in-memory buffer for form parsing;
+	// payloads exceeding this are spilled to temp files on disk.
+	const multipartFormMemory = 32 << 20
+	if err := r.ParseMultipartForm(multipartFormMemory); err != nil {
 		Fail(w, http.StatusBadRequest, "failed to parse multipart form")
 		return
 	}

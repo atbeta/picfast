@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
@@ -164,7 +165,22 @@ func (h *AdminStrategyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	existing, _ := h.db.GetStrategyByID(r.Context(), id)
+	existing, err := h.db.GetStrategyByID(r.Context(), id)
+	if err != nil {
+		Fail(w, http.StatusNotFound, "strategy not found")
+		return
+	}
+
+	count, err := h.db.CountImagesByStrategy(r.Context(), domain.PgInt8(id))
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to check strategy usage")
+		return
+	}
+	if count > 0 {
+		Fail(w, http.StatusConflict, "cannot delete strategy: images are still using it")
+		return
+	}
+
 	if err := h.db.DeleteStrategy(r.Context(), id); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to delete strategy")
 		return

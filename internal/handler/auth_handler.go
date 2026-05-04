@@ -22,6 +22,7 @@ import (
 const (
 	emailVerificationTokenTTL = 24 * time.Hour
 	passwordResetTokenTTL     = time.Hour
+	bcryptCost                = bcrypt.DefaultCost
 )
 
 type AuthHandler struct {
@@ -125,7 +126,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcryptCost)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to hash password")
 		return
@@ -435,7 +436,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcryptCost)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to hash password")
 		return

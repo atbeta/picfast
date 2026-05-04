@@ -21,11 +21,13 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port        int    `mapstructure:"port"`
-	MetricsPort int    `mapstructure:"metrics_port"`
-	BaseURL     string `mapstructure:"base_url"`
-	WebDir      string `mapstructure:"web_dir"`
-	EnablePprof bool   `mapstructure:"pprof_enabled"`
+	Port                   int           `mapstructure:"port"`
+	MetricsPort            int           `mapstructure:"metrics_port"`
+	BaseURL                string        `mapstructure:"base_url"`
+	WebDir                 string        `mapstructure:"web_dir"`
+	EnablePprof            bool          `mapstructure:"pprof_enabled"`
+	ReadTimeout            time.Duration `mapstructure:"read_timeout"`
+	ExpiredCleanupBatchSize int32         `mapstructure:"expired_cleanup_batch_size"`
 }
 
 type DatabaseConfig struct {
@@ -76,6 +78,7 @@ type AppConfig struct {
 	FooterLink1              string          `mapstructure:"footer_link_1"`
 	FooterText2              string          `mapstructure:"footer_text_2"`
 	FooterLink2              string          `mapstructure:"footer_link_2"`
+	MaxUploadBytes           int64           `mapstructure:"max_upload_bytes"`
 	AnalyticsProvider        string          `mapstructure:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `mapstructure:"analytics_config"`
 }
@@ -250,6 +253,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.metrics_port", 9090)
 	v.SetDefault("server.base_url", "http://localhost:8080")
 	v.SetDefault("server.web_dir", "")
+	v.SetDefault("server.read_timeout", 60*time.Second)
+	v.SetDefault("server.expired_cleanup_batch_size", int32(100))
 	v.SetDefault("server.pprof_enabled", false)
 
 	v.SetDefault("database.url", "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable")
@@ -284,6 +289,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.guest_image_ttl", time.Duration(0))
 	v.SetDefault("app.admin_email", "")
 	v.SetDefault("app.admin_password", "")
+	v.SetDefault("app.max_upload_bytes", int64(52428800)) // 50 MiB
 	v.SetDefault("app.moderation_mode", "")
 	v.SetDefault("app.footer_text_1", "")
 	v.SetDefault("app.footer_link_1", "")
