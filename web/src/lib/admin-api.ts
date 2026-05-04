@@ -61,6 +61,7 @@ export interface AdminGroup {
   is_guest: boolean
   configs: Record<string, unknown>
   strategy_ids: number[]
+  user_count: number
   created_at: string
   updated_at: string
 }

@@ -413,7 +413,7 @@ export function AdminGroupsPage() {
                     {g.is_default && <span className="ml-2 rounded-lg bg-primary/10 px-1.5 py-0.5 text-xs text-primary">{t('admin.default')}</span>}
                     {g.is_guest && <span className="ml-2 rounded-lg bg-success/10 px-1.5 py-0.5 text-xs text-success">{t('admin.guest')}</span>}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{(g as unknown as Record<string, unknown>).user_count as number ?? '-'}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{g.user_count}</td>
                   <td className="px-4 py-3 text-muted-foreground">{formatSize((g.configs?.maximum_file_size as number) || 0)}</td>
                   <td className="px-4 py-3 text-muted-foreground">{(g.configs?.limit_per_day as number) || '-'}</td>
                   <td className="px-4 py-3">

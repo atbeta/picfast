@@ -49,6 +49,7 @@ func (h *AdminGroupHandler) List(w http.ResponseWriter, r *http.Request) {
 		IsGuest     bool            `json:"is_guest"`
 		Configs     json.RawMessage `json:"configs"`
 		StrategyIDs []int64         `json:"strategy_ids"`
+		UserCount   int64           `json:"user_count"`
 		CreatedAt   string          `json:"created_at"`
 		UpdatedAt   string          `json:"updated_at"`
 	}
@@ -64,9 +65,15 @@ func (h *AdminGroupHandler) List(w http.ResponseWriter, r *http.Request) {
 		for _, s := range strategies {
 			stratIDs = append(stratIDs, s.ID)
 		}
+		count, err := h.db.CountUsersByGroup(r.Context(), domain.PgInt8(g.ID))
+		if err != nil {
+			slog.Warn("failed to count group users", "error", err, "group_id", g.ID)
+			count = 0
+		}
 		items = append(items, groupRow{
 			ID: g.ID, Name: g.Name, IsDefault: g.IsDefault,
 			IsGuest: g.IsGuest, Configs: g.Configs, StrategyIDs: stratIDs,
+			UserCount: count,
 			CreatedAt: g.CreatedAt.Format("2006-01-02T15:04:05Z"),
 			UpdatedAt: g.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 		})
