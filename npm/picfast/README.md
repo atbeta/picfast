@@ -8,7 +8,7 @@ It does **not** ship a Node.js runtime or CLI here. The application is primarily
 
 | Use case | Package / path |
 |----------|----------------|
-| **MCP (local, Cursor / Claude / etc.)** | [`@picfast/mcp-server`](https://www.npmjs.com/package/@picfast/mcp-server) — uploads via `file_path` + REST multipart |
+| **MCP (local, Cursor / Claude / etc.)** | [`@picfast/mcp`](https://www.npmjs.com/package/@picfast/mcp) — uploads via `file_path` + REST multipart |
 | **Server / binary** | Build from source: `cmd/picfast` |
 
 ## Why this package exists
@@ -25,7 +25,7 @@ The unscoped name `picfast` on npm is held so it cannot be squatted by unrelated
 
 | 场景 | 说明 |
 |------|------|
-| **本地 MCP** | 请使用 [`@picfast/mcp-server`](https://www.npmjs.com/package/@picfast/mcp-server)，通过本地路径读文件并以 multipart 上传 |
+| **本地 MCP** | 请使用 [`@picfast/mcp`](https://www.npmjs.com/package/@picfast/mcp)，通过本地路径读文件并以 multipart 上传 |
 | **自建服务** | 从本仓库编译 `cmd/picfast` |
 
 发布本占位包是为了避免第三方占用 `picfast` 这一 npm 包名；不包含业务代码。
