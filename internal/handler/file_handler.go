@@ -7,8 +7,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/atbeta/picfast/internal/domain"
+	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
@@ -27,17 +29,25 @@ func NewFileHandler(db *sqlc.Queries, baseURL, thumbDir string) *FileHandler {
 }
 
 func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	result := "error"
+	defer func() {
+		picmetrics.ObserveImageServe("image", result, time.Since(start))
+	}()
+
 	key := chi.URLParam(r, "key")
 	ext, resizeWidth, _ := parseImageVariant(chi.URLParam(r, "ext"))
 
 	img, err := h.db.GetImageByKey(r.Context(), key)
 	if err != nil {
+		result = "not_found"
 		http.NotFound(w, r)
 		return
 	}
 
 	// Extension must match
 	if img.Extension != ext {
+		result = "not_found"
 		http.NotFound(w, r)
 		return
 	}
@@ -50,6 +60,7 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 			role = rVal
 		}
 		if !ok || (img.UserID.Int64 != userID && role != domain.RoleAdmin) {
+			result = "denied"
 			http.NotFound(w, r)
 			return
 		}
@@ -63,6 +74,7 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 			role = rVal
 		}
 		if !ok || (img.UserID.Int64 != userID && role != domain.RoleAdmin) {
+			result = "denied"
 			slog.Info("private image access denied",
 				"key", img.Key,
 				"path", r.URL.Path,
@@ -79,12 +91,14 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	// Load strategy and group config
 	strategy, err := h.db.GetStrategyByID(r.Context(), img.StrategyID.Int64)
 	if err != nil {
+		result = "error"
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
 
 	store, err := service.GetStorageForStrategy(strategy)
 	if err != nil {
+		result = "error"
 		http.Error(w, "storage error", http.StatusInternalServerError)
 		return
 	}
@@ -96,6 +110,7 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := store.Read(r.Context(), pathname)
 	if err != nil {
+		result = "not_found"
 		http.NotFound(w, r)
 		return
 	}
@@ -123,12 +138,14 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	if resizeWidth <= 0 {
 		if match := r.Header.Get("If-None-Match"); match != "" {
 			if strings.Contains(match, img.Md5) {
+				result = "success"
 				w.WriteHeader(http.StatusNotModified)
 				return
 			}
 		}
 	}
 
+	result = "success"
 	w.Write(data)
 }
 
@@ -159,14 +176,22 @@ func parseWidthVariant(variant string) (int, bool) {
 }
 
 func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	result := "error"
+	defer func() {
+		picmetrics.ObserveImageServe("thumbnail", result, time.Since(start))
+	}()
+
 	md5Hash := chi.URLParam(r, "hash")
 	if !md5HashRegex.MatchString(md5Hash) {
+		result = "not_found"
 		http.NotFound(w, r)
 		return
 	}
 
 	images, err := h.db.GetImagesByMD5(r.Context(), md5Hash)
 	if err != nil || len(images) == 0 {
+		result = "not_found"
 		http.NotFound(w, r)
 		return
 	}
@@ -187,6 +212,7 @@ func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 			role = rVal
 		}
 		if !ok {
+			result = "denied"
 			slog.Info("private thumbnail access denied",
 				"hash", md5Hash,
 				"path", r.URL.Path,
@@ -204,6 +230,7 @@ func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if !ownsOne && role != domain.RoleAdmin {
+			result = "denied"
 			slog.Info("private thumbnail access denied",
 				"hash", md5Hash,
 				"path", r.URL.Path,
@@ -224,5 +251,36 @@ func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filePath := filepath.Join(h.thumbDir, md5Hash+".png")
-	http.ServeFile(w, r, filePath)
+	ww := &serveStatusWriter{ResponseWriter: w, statusCode: http.StatusOK}
+	http.ServeFile(ww, r, filePath)
+	if ww.statusCode == http.StatusNotFound {
+		result = "not_found"
+		return
+	}
+	if ww.statusCode >= http.StatusInternalServerError {
+		result = "error"
+		return
+	}
+	result = "success"
+}
+
+type serveStatusWriter struct {
+	http.ResponseWriter
+	statusCode int
+	written    bool
+}
+
+func (w *serveStatusWriter) WriteHeader(code int) {
+	if !w.written {
+		w.statusCode = code
+		w.written = true
+	}
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *serveStatusWriter) Write(b []byte) (int, error) {
+	if !w.written {
+		w.written = true
+	}
+	return w.ResponseWriter.Write(b)
 }

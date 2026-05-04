@@ -39,13 +39,17 @@ func Metrics(next http.Handler) http.Handler {
 		duration := time.Since(start).Seconds()
 		status := strconv.Itoa(ww.statusCode)
 
-		path := r.URL.Path
-		if rctx := chi.RouteContext(r.Context()); rctx != nil && rctx.RoutePattern() != "" {
-			path = rctx.RoutePattern()
-		}
+		path := routePattern(r)
 		requestsTotal.WithLabelValues(r.Method, path, status).Inc()
 		requestDuration.WithLabelValues(r.Method, path).Observe(duration)
 	})
+}
+
+func routePattern(r *http.Request) string {
+	if rctx := chi.RouteContext(r.Context()); rctx != nil && rctx.RoutePattern() != "" {
+		return rctx.RoutePattern()
+	}
+	return "unknown"
 }
 
 type statusWriter struct {

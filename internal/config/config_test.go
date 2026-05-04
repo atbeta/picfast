@@ -59,6 +59,40 @@ func TestLoadReadsPprofEnabledFromEnv(t *testing.T) {
 	}
 }
 
+func TestLoadReadsMetricsAddrFromEnv(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+	t.Setenv("PICFAST_SERVER_METRICS_ADDR", ":9190")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.Server.MetricsAddr != ":9190" {
+		t.Fatalf("MetricsAddr = %q, want :9190", cfg.Server.MetricsAddr)
+	}
+}
+
+func TestLoadFallsBackToLegacyMetricsPort(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+	t.Setenv("PICFAST_SERVER_METRICS_PORT", "9191")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.Server.MetricsAddr != "127.0.0.1:9191" {
+		t.Fatalf("MetricsAddr = %q, want 127.0.0.1:9191", cfg.Server.MetricsAddr)
+	}
+}
+
 func TestLoadReadsSiteMetadataFromEnv(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)

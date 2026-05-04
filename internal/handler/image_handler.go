@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/atbeta/picfast/internal/domain"
+	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
@@ -33,18 +34,26 @@ func NewImageHandler(db *sqlc.Queries, upload *service.UploadService, deleter *s
 }
 
 func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	source := uploadSource(r)
+	observeUpload := func(result, reason string, bytes int64) {
+		picmetrics.ObserveUpload(source, result, reason, bytes, time.Since(start))
+	}
+
 	r.Body = http.MaxBytesReader(w, r.Body, h.maxUploadBytes)
 
 	// multipartFormMemory sets the max in-memory buffer for form parsing;
 	// payloads exceeding this are spilled to temp files on disk.
 	const multipartFormMemory = 32 << 20
 	if err := r.ParseMultipartForm(multipartFormMemory); err != nil {
+		observeUpload("error", "invalid_file", 0)
 		Fail(w, http.StatusBadRequest, "failed to parse multipart form")
 		return
 	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
+		observeUpload("error", "invalid_file", 0)
 		Fail(w, http.StatusBadRequest, "file is required")
 		return
 	}
@@ -52,6 +61,7 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	fileData, err := io.ReadAll(file)
 	if err != nil {
+		observeUpload("error", "invalid_file", 0)
 		Fail(w, http.StatusInternalServerError, "failed to read file")
 		return
 	}
@@ -89,6 +99,7 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	if exp := r.FormValue("expires_in"); exp != "" {
 		duration, err := time.ParseDuration(exp)
 		if err != nil {
+			observeUpload("error", "invalid_file", int64(len(fileData)))
 			Fail(w, http.StatusBadRequest, "invalid expires_in format")
 			return
 		}
@@ -108,9 +119,11 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt:  expiresAt,
 	})
 	if err != nil {
+		observeUpload("error", picmetrics.ClassifyUploadError(err), int64(len(fileData)))
 		Fail(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	observeUpload("success", picmetrics.ReasonNone, result.OriginalSizeBytes)
 
 	if h.auditUploadLogs {
 		details := map[string]any{
@@ -124,6 +137,18 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Created(w, imageResponse(result.Image, result.Links))
+}
+
+func uploadSource(r *http.Request) string {
+	if rctx := chi.RouteContext(r.Context()); rctx != nil {
+		switch rctx.RoutePattern() {
+		case "/api/v1/upload":
+			return "web"
+		case "/api/v1/images":
+			return "api"
+		}
+	}
+	return "api"
 }
 
 func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {

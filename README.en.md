@@ -76,7 +76,7 @@ docker run -d --name picfast --network picfast-net -p 18080:8080 \
 
 Open `http://localhost:18080` and follow the setup wizard. For headless deployments, set both `PICFAST_APP_ADMIN_EMAIL` and `PICFAST_APP_ADMIN_PASSWORD` to skip the wizard.
 
-See **[docker/README.md](docker/README.md)** for Compose, Traefik, and `.env` templates.
+Observability: Docker Compose listens for metrics on container-local `:9190` without publishing it to the host. Prometheus can scrape `app:9190/metrics` from the same Docker network. See **[docker/README.md](docker/README.md)** for the generic Compose file, Traefik template, and `.env` examples.
 
 ## Common Commands
 

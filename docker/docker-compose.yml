@@ -34,6 +34,8 @@ services:
         condition: service_completed_successfully
       db:
         condition: service_healthy
+    ports:
+      - "${PICFAST_HTTP_BIND:-127.0.0.1}:${PICFAST_HTTP_PORT:-18080}:8080"
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       PICFAST_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
@@ -42,8 +44,8 @@ services:
       PICFAST_JWT_SECRET: ${PICFAST_JWT_SECRET}
       PICFAST_APP_NAME: ${PICFAST_APP_NAME:-PicFast}
       PICFAST_APP_SITE_DESCRIPTION: ${PICFAST_APP_SITE_DESCRIPTION:-}
-      PICFAST_APP_ADMIN_EMAIL: ${PICFAST_APP_ADMIN_EMAIL}
-      PICFAST_APP_ADMIN_PASSWORD: ${PICFAST_APP_ADMIN_PASSWORD}
+      PICFAST_APP_ADMIN_EMAIL: ${PICFAST_APP_ADMIN_EMAIL:-}
+      PICFAST_APP_ADMIN_PASSWORD: ${PICFAST_APP_ADMIN_PASSWORD:-}
       PICFAST_APP_ALLOW_GUEST_UPLOAD: ${PICFAST_APP_ALLOW_GUEST_UPLOAD:-false}
       PICFAST_APP_ALLOW_REGISTRATION: ${PICFAST_APP_ALLOW_REGISTRATION:-false}
       PICFAST_APP_REQUIRE_EMAIL_VERIFICATION: ${PICFAST_APP_REQUIRE_EMAIL_VERIFICATION:-true}
@@ -79,18 +81,7 @@ services:
       - no-new-privileges:true
     networks:
       - picfast
-      - traefik_monitoring
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.picfast.rule=Host(`${PICFAST_DOMAIN}`)"
-      - "traefik.http.routers.picfast.entrypoints=web,websecure"
-      - "traefik.http.routers.picfast.tls=true"
-      - "traefik.http.services.picfast.loadbalancer.server.port=8080"
-      - "traefik.docker.network=${TRAEFIK_DOCKER_NETWORK:-traefik_monitoring}"
 
 networks:
   picfast:
     driver: bridge
-  traefik_monitoring:
-    external: true
-    name: ${TRAEFIK_DOCKER_NETWORK:-traefik_monitoring}

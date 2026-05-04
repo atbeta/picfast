@@ -76,7 +76,7 @@ docker run -d --name picfast --network picfast-net -p 18080:8080 \
 
 打开 `http://localhost:18080` 完成初始化向导。无人值守部署时同时设置 `PICFAST_APP_ADMIN_EMAIL` 和 `PICFAST_APP_ADMIN_PASSWORD` 即可跳过向导。
 
-Compose、Traefik 及 `.env` 模板详见 **[docker/README.md](docker/README.md)**。
+可观测性：Docker Compose 默认让 metrics 在容器内 `:9190` 监听，不发布到宿主机；Prometheus 可在同一 Docker 网络抓取 `app:9190/metrics`。通用 Compose、Traefik 模板及 `.env` 示例详见 **[docker/README.md](docker/README.md)**。
 
 ## 常用命令
 

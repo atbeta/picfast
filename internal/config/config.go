@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -21,12 +22,12 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port                   int           `mapstructure:"port"`
-	MetricsPort            int           `mapstructure:"metrics_port"`
-	BaseURL                string        `mapstructure:"base_url"`
-	WebDir                 string        `mapstructure:"web_dir"`
-	EnablePprof            bool          `mapstructure:"pprof_enabled"`
-	ReadTimeout            time.Duration `mapstructure:"read_timeout"`
+	Port                    int           `mapstructure:"port"`
+	MetricsAddr             string        `mapstructure:"metrics_addr"`
+	BaseURL                 string        `mapstructure:"base_url"`
+	WebDir                  string        `mapstructure:"web_dir"`
+	EnablePprof             bool          `mapstructure:"pprof_enabled"`
+	ReadTimeout             time.Duration `mapstructure:"read_timeout"`
 	ExpiredCleanupBatchSize int32         `mapstructure:"expired_cleanup_batch_size"`
 }
 
@@ -244,13 +245,22 @@ func Load() (*Config, error) {
 			cfg.App.AnalyticsConfig = json.RawMessage(raw)
 		}
 	}
+	if _, ok := os.LookupEnv("PICFAST_SERVER_METRICS_ADDR"); ok {
+		cfg.Server.MetricsAddr = v.GetString("server.metrics_addr")
+	}
+	if strings.TrimSpace(cfg.Server.MetricsAddr) == "" {
+		if v.IsSet("server.metrics_port") {
+			cfg.Server.MetricsAddr = fmt.Sprintf("127.0.0.1:%d", v.GetInt("server.metrics_port"))
+		} else {
+			cfg.Server.MetricsAddr = "127.0.0.1:9190"
+		}
+	}
 
 	return &cfg, nil
 }
 
 func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.port", 8080)
-	v.SetDefault("server.metrics_port", 9090)
 	v.SetDefault("server.base_url", "http://localhost:8080")
 	v.SetDefault("server.web_dir", "")
 	v.SetDefault("server.read_timeout", 60*time.Second)

@@ -1,5 +1,6 @@
 server:
   port: 8080
+  metrics_addr: "127.0.0.1:9190" # Docker Compose overrides this to ":9190" for internal Prometheus scraping
   base_url: "http://localhost:8080"
 
 database:

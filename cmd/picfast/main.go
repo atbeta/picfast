@@ -90,7 +90,7 @@ func main() {
 	metricsMux.Handle("/metrics", promhttp.Handler())
 
 	metricsSrv := &http.Server{
-		Addr:         fmt.Sprintf("127.0.0.1:%d", cfg.Server.MetricsPort),
+		Addr:         cfg.Server.MetricsAddr,
 		Handler:      metricsMux,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
