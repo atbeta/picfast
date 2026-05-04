@@ -62,6 +62,7 @@ type MailConfig struct {
 
 type AppConfig struct {
 	Name                     string          `mapstructure:"name"`
+	WebBaseURL               string          `mapstructure:"web_base_url"`
 	SiteDescription          string          `mapstructure:"site_description"`
 	FaviconURL               string          `mapstructure:"favicon_url"`
 	AllowGuestUpload         bool            `mapstructure:"allow_guest_upload"`
@@ -286,6 +287,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("mail.encryption", "starttls")
 
 	v.SetDefault("app.name", "PicFast")
+	v.SetDefault("app.web_base_url", "")
 	v.SetDefault("app.site_description", "PicFast is a modern self-hosted image hosting service.")
 	v.SetDefault("app.favicon_url", "")
 	v.SetDefault("app.allow_guest_upload", false)

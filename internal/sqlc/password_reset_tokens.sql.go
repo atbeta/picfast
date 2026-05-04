@@ -56,6 +56,28 @@ func (q *Queries) DeleteUnusedPasswordResetTokensByUser(ctx context.Context, use
 	return err
 }
 
+const getLatestUnusedPasswordResetTokenByUser = `-- name: GetLatestUnusedPasswordResetTokenByUser :one
+SELECT id, user_id, token_hash, expires_at, used_at, created_at
+FROM password_reset_tokens
+WHERE user_id = $1 AND used_at IS NULL
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetLatestUnusedPasswordResetTokenByUser(ctx context.Context, userID int64) (PasswordResetToken, error) {
+	row := q.db.QueryRow(ctx, getLatestUnusedPasswordResetTokenByUser, userID)
+	var i PasswordResetToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.ExpiresAt,
+		&i.UsedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getPasswordResetTokenByHash = `-- name: GetPasswordResetTokenByHash :one
 SELECT id, user_id, token_hash, expires_at, used_at, created_at FROM password_reset_tokens WHERE token_hash = $1
 `

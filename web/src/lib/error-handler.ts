@@ -12,6 +12,8 @@ function mapKnownApiMessage(message: string): string {
   switch (normalized) {
     case 'invalid email or password':
       return i18next.t('auth.loginFailed')
+    case 'email already registered':
+      return i18next.t('auth.emailAlreadyRegistered')
     case 'account is frozen':
       return i18next.t('auth.accountFrozen')
     case 'email verification required':

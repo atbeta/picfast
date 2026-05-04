@@ -6,6 +6,13 @@ RETURNING *;
 -- name: GetEmailVerificationTokenByHash :one
 SELECT * FROM email_verification_tokens WHERE token_hash = $1;
 
+-- name: GetLatestUnusedEmailVerificationTokenByUser :one
+SELECT *
+FROM email_verification_tokens
+WHERE user_id = $1 AND used_at IS NULL
+ORDER BY created_at DESC
+LIMIT 1;
+
 -- name: MarkEmailVerificationTokenUsed :one
 UPDATE email_verification_tokens
 SET used_at = NOW()

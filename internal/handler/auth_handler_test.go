@@ -388,6 +388,7 @@ func TestVerifyEmailFlow(t *testing.T) {
 	env := newTestEnv(t)
 	_, _, _ = env.seedSetup(t)
 	env.Config.App.RequireEmailVerification = true
+	env.Config.App.WebBaseURL = "http://localhost:5173"
 	env.MailSender.ready = true
 	env.rebuildRouter()
 
@@ -410,11 +411,27 @@ func TestVerifyEmailFlow(t *testing.T) {
 	if len(match) != 2 {
 		t.Fatalf("verification token not found in mail body: %s", env.MailSender.messages[0].Text)
 	}
+	if !strings.Contains(env.MailSender.messages[0].Text, "http://localhost:5173/verify-email?token=") {
+		t.Fatalf("verification mail link should use app.web_base_url, got: %s", env.MailSender.messages[0].Text)
+	}
 
 	verifyReq := newJSONReq(t, http.MethodPost, "/api/v1/auth/verify-email", map[string]string{"token": match[1]})
 	verifyRec := doReq(env.Router, verifyReq)
 	if verifyRec.Code != http.StatusOK {
 		t.Fatalf("verify status = %d, want 200; body: %s", verifyRec.Code, verifyRec.Body.String())
+	}
+	verifyResp := parseResp(t, verifyRec)
+	if verifyResp.Message != "email verified" {
+		t.Fatalf("verify message = %q, want %q", verifyResp.Message, "email verified")
+	}
+	verifyAgainReq := newJSONReq(t, http.MethodPost, "/api/v1/auth/verify-email", map[string]string{"token": match[1]})
+	verifyAgainRec := doReq(env.Router, verifyAgainReq)
+	if verifyAgainRec.Code != http.StatusOK {
+		t.Fatalf("verify again status = %d, want 200; body: %s", verifyAgainRec.Code, verifyAgainRec.Body.String())
+	}
+	verifyAgainResp := parseResp(t, verifyAgainRec)
+	if verifyAgainResp.Message != verifyResp.Message {
+		t.Fatalf("verify-again message = %q, want %q", verifyAgainResp.Message, verifyResp.Message)
 	}
 
 	user, err := env.DB.GetUserByEmail(t.Context(), "verify-flow@example.com")

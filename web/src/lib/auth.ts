@@ -69,8 +69,10 @@ export async function resendVerification(email: string, language?: string): Prom
   await api.post('/auth/resend-verification', { email, language })
 }
 
-export async function forgotPassword(email: string, language?: string): Promise<void> {
-  await api.post('/auth/forgot-password', { email, language })
+export async function forgotPassword(email: string, language?: string): Promise<number | null> {
+  const res = await api.post('/auth/forgot-password', { email, language })
+  const cooldown = Number.parseInt(String(res.headers['x-cooldown-seconds'] ?? ''), 10)
+  return Number.isFinite(cooldown) && cooldown > 0 ? cooldown : null
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<void> {

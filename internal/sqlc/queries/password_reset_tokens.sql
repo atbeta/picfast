@@ -6,6 +6,13 @@ RETURNING *;
 -- name: GetPasswordResetTokenByHash :one
 SELECT * FROM password_reset_tokens WHERE token_hash = $1;
 
+-- name: GetLatestUnusedPasswordResetTokenByUser :one
+SELECT *
+FROM password_reset_tokens
+WHERE user_id = $1 AND used_at IS NULL
+ORDER BY created_at DESC
+LIMIT 1;
+
 -- name: MarkPasswordResetTokenUsed :one
 UPDATE password_reset_tokens
 SET used_at = NOW()

@@ -10,18 +10,20 @@ import (
 func TestRateLimiter_Allow(t *testing.T) {
 	rl := NewRateLimiter(2, time.Second)
 
-	if !rl.Allow("key1") {
+	if allowed, _ := rl.Allow("key1"); !allowed {
 		t.Fatal("expected first request to be allowed")
 	}
-	if !rl.Allow("key1") {
+	if allowed, _ := rl.Allow("key1"); !allowed {
 		t.Fatal("expected second request to be allowed")
 	}
-	if rl.Allow("key1") {
+	if allowed, retryAfter := rl.Allow("key1"); allowed {
 		t.Fatal("expected third request to be denied")
+	} else if retryAfter <= 0 {
+		t.Fatal("expected retry-after to be positive for denied request")
 	}
 
 	// Different key should be allowed
-	if !rl.Allow("key2") {
+	if allowed, _ := rl.Allow("key2"); !allowed {
 		t.Fatal("expected different key to be allowed")
 	}
 }
@@ -29,16 +31,16 @@ func TestRateLimiter_Allow(t *testing.T) {
 func TestRateLimiter_WindowReset(t *testing.T) {
 	rl := NewRateLimiter(1, 50*time.Millisecond)
 
-	if !rl.Allow("key") {
+	if allowed, _ := rl.Allow("key"); !allowed {
 		t.Fatal("expected first request to be allowed")
 	}
-	if rl.Allow("key") {
+	if allowed, _ := rl.Allow("key"); allowed {
 		t.Fatal("expected second request to be denied")
 	}
 
 	// Wait for window to reset
 	time.Sleep(60 * time.Millisecond)
-	if !rl.Allow("key") {
+	if allowed, _ := rl.Allow("key"); !allowed {
 		t.Fatal("expected request after reset to be allowed")
 	}
 }
@@ -47,7 +49,7 @@ func TestRateLimiter_PrunesExpiredWindows(t *testing.T) {
 	rl := NewRateLimiter(1, time.Minute)
 	rl.windows["expired"] = &slidingWindow{count: 1, resetAt: time.Now().Add(-time.Minute)}
 
-	if !rl.Allow("fresh") {
+	if allowed, _ := rl.Allow("fresh"); !allowed {
 		t.Fatal("expected fresh request to be allowed")
 	}
 	if _, exists := rl.windows["expired"]; exists {
@@ -85,5 +87,8 @@ func TestRateLimit_Middleware(t *testing.T) {
 	handler.ServeHTTP(rec3, req)
 	if rec3.Code != http.StatusTooManyRequests {
 		t.Fatalf("third request: status = %d, want 429", rec3.Code)
+	}
+	if rec3.Header().Get("Retry-After") == "" {
+		t.Fatal("third request: expected Retry-After header")
 	}
 }

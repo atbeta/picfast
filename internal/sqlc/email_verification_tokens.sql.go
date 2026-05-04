@@ -74,6 +74,28 @@ func (q *Queries) GetEmailVerificationTokenByHash(ctx context.Context, tokenHash
 	return i, err
 }
 
+const getLatestUnusedEmailVerificationTokenByUser = `-- name: GetLatestUnusedEmailVerificationTokenByUser :one
+SELECT id, user_id, token_hash, expires_at, used_at, created_at
+FROM email_verification_tokens
+WHERE user_id = $1 AND used_at IS NULL
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetLatestUnusedEmailVerificationTokenByUser(ctx context.Context, userID int64) (EmailVerificationToken, error) {
+	row := q.db.QueryRow(ctx, getLatestUnusedEmailVerificationTokenByUser, userID)
+	var i EmailVerificationToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.ExpiresAt,
+		&i.UsedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const markEmailVerificationTokenUsed = `-- name: MarkEmailVerificationTokenUsed :one
 UPDATE email_verification_tokens
 SET used_at = NOW()

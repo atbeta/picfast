@@ -3,6 +3,7 @@ package handler_test
 import (
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -10,6 +11,7 @@ import (
 func TestForgotAndResetPasswordFlow(t *testing.T) {
 	env := newTestEnv(t)
 	_, _, _ = env.seedSetup(t)
+	env.Config.App.WebBaseURL = "http://localhost:5173"
 	env.MailSender.ready = true
 	env.rebuildRouter()
 
@@ -21,11 +23,17 @@ func TestForgotAndResetPasswordFlow(t *testing.T) {
 	if forgotRec.Code != http.StatusOK {
 		t.Fatalf("forgot status = %d, want 200; body: %s", forgotRec.Code, forgotRec.Body.String())
 	}
+	if forgotRec.Header().Get("X-Cooldown-Seconds") == "" {
+		t.Fatal("forgot response should include X-Cooldown-Seconds header")
+	}
 	if len(env.MailSender.messages) != 1 {
 		t.Fatalf("sent messages = %d, want 1", len(env.MailSender.messages))
 	}
 	if !strings.Contains(env.MailSender.messages[0].Subject, "重置密码") {
 		t.Fatalf("subject = %q, want zh reset password subject", env.MailSender.messages[0].Subject)
+	}
+	if !strings.Contains(env.MailSender.messages[0].Text, "http://localhost:5173/reset-password?token=") {
+		t.Fatalf("reset mail link should use app.web_base_url, got: %s", env.MailSender.messages[0].Text)
 	}
 
 	re := regexp.MustCompile(`token=([a-f0-9]+)`)
@@ -100,6 +108,62 @@ func TestForgotPasswordSafetyAndAvailability(t *testing.T) {
 		}
 		if len(env.MailSender.messages) != 0 {
 			t.Fatalf("messages = %d, want 0 for non-existing account", len(env.MailSender.messages))
+		}
+	})
+
+	t.Run("returns generic success when mail send fails", func(t *testing.T) {
+		env.MailSender.ready = true
+		env.MailSender.failSend = true
+		env.MailSender.messages = nil
+		env.rebuildRouter()
+		t.Cleanup(func() { env.MailSender.failSend = false })
+
+		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/forgot-password", map[string]string{
+			"email": "test@example.com",
+		})
+		rec := doReq(env.Router, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+		}
+		if len(env.MailSender.messages) != 0 {
+			t.Fatalf("messages = %d, want 0 when sender fails", len(env.MailSender.messages))
+		}
+	})
+
+	t.Run("applies email cooldown to avoid repeated sends", func(t *testing.T) {
+		env.MailSender.ready = true
+		env.MailSender.failSend = false
+		env.MailSender.messages = nil
+		env.rebuildRouter()
+		user, err := env.DB.GetUserByEmail(t.Context(), "test@example.com")
+		if err != nil {
+			t.Fatalf("get user: %v", err)
+		}
+		if err := env.DB.DeleteUnusedPasswordResetTokensByUser(t.Context(), user.ID); err != nil {
+			t.Fatalf("clear reset tokens: %v", err)
+		}
+
+		firstReq := newJSONReq(t, http.MethodPost, "/api/v1/auth/forgot-password", map[string]string{
+			"email": "test@example.com",
+		})
+		firstRec := doReq(env.Router, firstReq)
+		if firstRec.Code != http.StatusOK {
+			t.Fatalf("first status = %d, want 200; body: %s", firstRec.Code, firstRec.Body.String())
+		}
+
+		secondReq := newJSONReq(t, http.MethodPost, "/api/v1/auth/forgot-password", map[string]string{
+			"email": "test@example.com",
+		})
+		secondRec := doReq(env.Router, secondReq)
+		if secondRec.Code != http.StatusOK {
+			t.Fatalf("second status = %d, want 200; body: %s", secondRec.Code, secondRec.Body.String())
+		}
+		cooldown, err := strconv.Atoi(secondRec.Header().Get("X-Cooldown-Seconds"))
+		if err != nil || cooldown < 1 || cooldown > 120 {
+			t.Fatalf("cooldown header = %q, want 1..120", secondRec.Header().Get("X-Cooldown-Seconds"))
+		}
+		if len(env.MailSender.messages) != 1 {
+			t.Fatalf("messages = %d, want 1 due to email cooldown", len(env.MailSender.messages))
 		}
 	})
 

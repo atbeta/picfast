@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"math"
 	"net/http"
 	"net/mail"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 	"github.com/atbeta/picfast/internal/domain"
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -22,6 +24,7 @@ import (
 const (
 	emailVerificationTokenTTL = 24 * time.Hour
 	passwordResetTokenTTL     = time.Hour
+	mailActionEmailCooldown   = 2 * time.Minute
 	bcryptCost                = bcrypt.DefaultCost
 )
 
@@ -270,6 +273,7 @@ func (h *AuthHandler) auditAdminLogin(r *http.Request, user sqlc.User, success b
 }
 
 func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	const verifySuccessMessage = "email verified"
 	var req VerifyEmailRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		Fail(w, http.StatusBadRequest, "invalid request body")
@@ -287,7 +291,7 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if stored.UsedAt.Valid {
-		Fail(w, http.StatusBadRequest, "verification token has already been used")
+		SuccessMessage(w, verifySuccessMessage)
 		return
 	}
 	if time.Now().After(stored.ExpiresAt) {
@@ -297,7 +301,7 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
-		if _, err := qtx.MarkEmailVerificationTokenUsed(r.Context(), stored.ID); err != nil {
+		if _, err := qtx.MarkEmailVerificationTokenUsed(r.Context(), stored.ID); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
 		if err := qtx.UpdateUserEmailVerified(r.Context(), stored.UserID); err != nil {
@@ -310,10 +314,11 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SuccessMessage(w, "email verified")
+	SuccessMessage(w, verifySuccessMessage)
 }
 
 func (h *AuthHandler) ResendVerification(w http.ResponseWriter, r *http.Request) {
+	const genericMessage = "if the account exists, a verification email has been sent"
 	if !h.emailVerificationEnabled() {
 		Fail(w, http.StatusServiceUnavailable, "email verification is not available")
 		return
@@ -332,13 +337,26 @@ func (h *AuthHandler) ResendVerification(w http.ResponseWriter, r *http.Request)
 
 	user, err := h.db.GetUserByEmail(r.Context(), req.Email)
 	if err != nil || user.EmailVerified {
-		SuccessMessage(w, "if the account exists, a verification email has been sent")
+		SuccessMessage(w, genericMessage)
+		return
+	}
+
+	if latest, qErr := h.db.GetLatestUnusedEmailVerificationTokenByUser(r.Context(), user.ID); qErr == nil {
+		if cooldown := remainingCooldown(latest.CreatedAt, mailActionEmailCooldown); cooldown > 0 {
+			setMailActionCooldownHeader(w, cooldown)
+			SuccessMessage(w, genericMessage)
+			return
+		}
+	} else if !errors.Is(qErr, pgx.ErrNoRows) {
+		slog.Warn("failed to read latest email verification token", "email", user.Email, "error", qErr)
+		SuccessMessage(w, genericMessage)
 		return
 	}
 
 	plain, err := h.issueVerificationToken(r.Context(), h.db, user.ID)
 	if err != nil {
-		Fail(w, http.StatusInternalServerError, "failed to create verification token")
+		slog.Warn("failed to create verification token", "email", user.Email, "error", err)
+		SuccessMessage(w, genericMessage)
 		return
 	}
 	if err := h.sendVerificationEmail(
@@ -349,14 +367,14 @@ func (h *AuthHandler) ResendVerification(w http.ResponseWriter, r *http.Request)
 		resolveEmailLanguage(req.Language, r.Header.Get("Accept-Language")),
 	); err != nil {
 		slog.Warn("failed to resend verification email", "email", user.Email, "error", err)
-		Fail(w, http.StatusInternalServerError, "failed to send verification email")
-		return
 	}
 
-	SuccessMessage(w, "verification email sent")
+	setMailActionCooldownHeader(w, mailActionEmailCooldown)
+	SuccessMessage(w, genericMessage)
 }
 
 func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	const genericMessage = "if the account exists, a password reset email has been sent"
 	if h.mail == nil || !h.mail.Ready() {
 		Fail(w, http.StatusServiceUnavailable, "password reset is not available")
 		return
@@ -380,13 +398,26 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.db.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
-		SuccessMessage(w, "if the account exists, a password reset email has been sent")
+		SuccessMessage(w, genericMessage)
+		return
+	}
+
+	if latest, qErr := h.db.GetLatestUnusedPasswordResetTokenByUser(r.Context(), user.ID); qErr == nil {
+		if cooldown := remainingCooldown(latest.CreatedAt, mailActionEmailCooldown); cooldown > 0 {
+			setMailActionCooldownHeader(w, cooldown)
+			SuccessMessage(w, genericMessage)
+			return
+		}
+	} else if !errors.Is(qErr, pgx.ErrNoRows) {
+		slog.Warn("failed to read latest password reset token", "email", user.Email, "error", qErr)
+		SuccessMessage(w, genericMessage)
 		return
 	}
 
 	plain, err := h.issuePasswordResetToken(r.Context(), h.db, user.ID)
 	if err != nil {
-		Fail(w, http.StatusInternalServerError, "failed to create password reset token")
+		slog.Warn("failed to create password reset token", "email", user.Email, "error", err)
+		SuccessMessage(w, genericMessage)
 		return
 	}
 	if err := h.sendPasswordResetEmail(
@@ -397,11 +428,26 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		resolveEmailLanguage(req.Language, r.Header.Get("Accept-Language")),
 	); err != nil {
 		slog.Warn("failed to send password reset email", "email", user.Email, "error", err)
-		Fail(w, http.StatusInternalServerError, "failed to send password reset email")
-		return
 	}
 
-	SuccessMessage(w, "password reset email sent")
+	setMailActionCooldownHeader(w, mailActionEmailCooldown)
+	SuccessMessage(w, genericMessage)
+}
+
+func remainingCooldown(createdAt time.Time, cooldown time.Duration) time.Duration {
+	remaining := cooldown - time.Since(createdAt)
+	if remaining < 0 {
+		return 0
+	}
+	return remaining
+}
+
+func setMailActionCooldownHeader(w http.ResponseWriter, cooldown time.Duration) {
+	seconds := int(math.Ceil(cooldown.Seconds()))
+	if seconds < 1 {
+		seconds = 1
+	}
+	w.Header().Set("X-Cooldown-Seconds", strconv.Itoa(seconds))
 }
 
 func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
@@ -601,8 +647,8 @@ func (h *AuthHandler) issuePasswordResetToken(ctx context.Context, qtx *sqlc.Que
 }
 
 func (h *AuthHandler) sendVerificationEmail(ctx context.Context, toEmail, toName, token, language string) error {
-	server, app := h.config.RuntimeSnapshot()
-	verifyURL := strings.TrimRight(server.BaseURL, "/") + "/verify-email?token=" + token
+	baseURL, app := h.resolveAppWebBaseURL()
+	verifyURL := strings.TrimRight(baseURL, "/") + "/verify-email?token=" + token
 	subject, body := buildVerificationEmail(app.Name, toName, verifyURL, language)
 
 	return h.mail.Send(ctx, mailservice.Message{
@@ -614,8 +660,8 @@ func (h *AuthHandler) sendVerificationEmail(ctx context.Context, toEmail, toName
 }
 
 func (h *AuthHandler) sendPasswordResetEmail(ctx context.Context, toEmail, toName, token, language string) error {
-	server, app := h.config.RuntimeSnapshot()
-	resetURL := strings.TrimRight(server.BaseURL, "/") + "/reset-password?token=" + token
+	baseURL, app := h.resolveAppWebBaseURL()
+	resetURL := strings.TrimRight(baseURL, "/") + "/reset-password?token=" + token
 	subject, body := buildPasswordResetEmail(app.Name, toName, resetURL, language)
 
 	return h.mail.Send(ctx, mailservice.Message{
@@ -637,6 +683,14 @@ func resolveEmailLanguage(explicit, acceptLanguage string) string {
 		return "zh-CN"
 	}
 	return "en-US"
+}
+
+func (h *AuthHandler) resolveAppWebBaseURL() (string, config.AppConfig) {
+	server, app := h.config.RuntimeSnapshot()
+	if strings.TrimSpace(app.WebBaseURL) != "" {
+		return strings.TrimSpace(app.WebBaseURL), app
+	}
+	return server.BaseURL, app
 }
 
 func buildVerificationEmail(appName, toName, verifyURL, language string) (subject, body string) {

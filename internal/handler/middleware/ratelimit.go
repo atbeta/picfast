@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"math"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -10,7 +12,7 @@ import (
 
 // RateLimiter decides whether a request identified by key should be allowed.
 type RateLimiter interface {
-	Allow(key string) bool
+	Allow(key string) (allowed bool, retryAfter time.Duration)
 }
 
 // MemoryRateLimiter is an in-memory sliding-window rate limiter.
@@ -37,7 +39,7 @@ func NewRateLimiter(max int, interval time.Duration) *MemoryRateLimiter {
 	}
 }
 
-func (rl *MemoryRateLimiter) Allow(key string) bool {
+func (rl *MemoryRateLimiter) Allow(key string) (bool, time.Duration) {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
@@ -46,11 +48,18 @@ func (rl *MemoryRateLimiter) Allow(key string) bool {
 	w, exists := rl.windows[key]
 	if !exists || now.After(w.resetAt) {
 		rl.windows[key] = &slidingWindow{count: 1, resetAt: now.Add(rl.interval)}
-		return true
+		return true, 0
 	}
 
 	w.count++
-	return w.count <= rl.max
+	if w.count <= rl.max {
+		return true, 0
+	}
+	retryAfter := time.Until(w.resetAt)
+	if retryAfter < 0 {
+		retryAfter = 0
+	}
+	return false, retryAfter
 }
 
 func (rl *MemoryRateLimiter) pruneExpired(now time.Time) {
@@ -69,7 +78,13 @@ func RateLimit(limiter RateLimiter, keyFunc func(r *http.Request) string) func(h
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			key := keyFunc(r)
-			if !limiter.Allow(key) {
+			allowed, retryAfter := limiter.Allow(key)
+			if !allowed {
+				retryAfterSeconds := int(math.Ceil(retryAfter.Seconds()))
+				if retryAfterSeconds < 1 {
+					retryAfterSeconds = 1
+				}
+				w.Header().Set("Retry-After", strconv.Itoa(retryAfterSeconds))
 				httputil.Fail(w, http.StatusTooManyRequests, "rate limit exceeded")
 				return
 			}
