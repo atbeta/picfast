@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.0](https://github.com/atbeta/picfast/compare/v0.5.0...v0.6.0) (2026-05-04)
+
+
+### Features
+
+* **auth:** enhance registration flow and add password reset ([ed44113](https://github.com/atbeta/picfast/commit/ed44113ba23ffff62ac4c59db041c5bcfee66281))
+* **images:** add batch delete endpoint to reduce N requests to 1 ([7618aba](https://github.com/atbeta/picfast/commit/7618aba1d6ae85c690e4b78908867508059d7e76))
+* **images:** add keyword, extension, and date-range filtering for image lists ([05fd1b9](https://github.com/atbeta/picfast/commit/05fd1b9d272c94c0f4d46cbd90d471fb380f8b7c))
+* **observability:** expose Docker-ready metrics ([9a4f0f7](https://github.com/atbeta/picfast/commit/9a4f0f7f2ba391f0119672ccdfa37050fd20cbc6))
+
+
+### Bug Fixes
+
+* **auth:** harden email verification and reset mail flow ([5b26f6b](https://github.com/atbeta/picfast/commit/5b26f6b27fc9e591aaeafbd7ab3ae53a51bea3ec))
+* **config:** load local .env and align local dev defaults ([e096391](https://github.com/atbeta/picfast/commit/e096391ba76b958c54a09acd72b5ec97c2535c28))
+* **ux:** make toast notifications auto-dismiss and unify save feedback ([56392b7](https://github.com/atbeta/picfast/commit/56392b7a1eaa9abaf0866b5d3327e64033323216))
+
 ## [0.5.0](https://github.com/atbeta/picfast/compare/v0.4.0...v0.5.0) (2026-05-03)
 
 
