@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Trash2, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react'
 
@@ -23,6 +23,7 @@ export function AdminImagesPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-images', page, keyword, emailFilter],
     queryFn: () => listAdminImages({ page, page_size: pageSize, keyword: keyword || undefined, email: emailFilter || undefined }),
+    placeholderData: keepPreviousData,
   })
   const totalPages = data ? (data.total_pages > 0 ? data.total_pages : Math.max(1, Math.ceil(data.total / pageSize))) : 1
 

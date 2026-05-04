@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Trash2, Image as ImageIcon, ChevronLeft, ChevronRight, Check, Download } from 'lucide-react'
@@ -50,6 +50,7 @@ export function ImagesPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['images', page, albumId, debouncedKeyword],
     queryFn: () => listImages(page, pageSize, albumId, debouncedKeyword),
+    placeholderData: keepPreviousData,
   })
   const totalPages = data ? (data.total_pages > 0 ? data.total_pages : Math.max(1, Math.ceil(data.total / pageSize))) : 1
 
