@@ -28,7 +28,7 @@ function mapLoginApiMessage(raw: string | undefined, t: TFunction): string {
 }
 
 export function LoginPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { login } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -36,6 +36,9 @@ export function LoginPage() {
   const [allowRegister, setAllowRegister] = useState(false)
   const [requireVerification, setRequireVerification] = useState(false)
   const [resendState, setResendState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const isVerificationPendingUrl = searchParams.get('verification') === 'pending'
+  const [loginFailedVerification, setLoginFailedVerification] = useState(false)
+  const showResendVerification = isVerificationPendingUrl || loginFailedVerification
 
   useEffect(() => {
     getSiteConfig()
@@ -71,6 +74,9 @@ export function LoginPage() {
     } catch (err: unknown) {
       const raw = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
       setServerError(mapLoginApiMessage(raw, t))
+      if (raw?.trim().toLowerCase() === 'email verification required') {
+        setLoginFailedVerification(true)
+      }
     }
   }
 
@@ -78,7 +84,7 @@ export function LoginPage() {
     if (!emailValue) return
     setResendState('loading')
     try {
-      await resendVerification(emailValue)
+      await resendVerification(emailValue, i18n.language)
       setResendState('success')
     } catch {
       setResendState('error')
@@ -130,6 +136,11 @@ export function LoginPage() {
           />
           {errors.password && <p className="mt-1 text-xs text-destructive">{t('auth.required')}</p>}
         </div>
+        <div className="text-right">
+          <Link to="/forgot-password" className="text-xs font-medium text-primary transition-colors hover:underline">
+            {t('auth.forgotPassword')}
+          </Link>
+        </div>
 
         {serverError && (
           <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -137,7 +148,7 @@ export function LoginPage() {
           </p>
         )}
 
-        {requireVerification && emailValue && (
+        {requireVerification && showResendVerification && emailValue && (
           <div className="space-y-2 rounded-lg border border-border bg-background px-3 py-3">
             <p className="text-xs text-muted-foreground">{t('auth.verificationHelp')}</p>
             <button

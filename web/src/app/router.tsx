@@ -29,7 +29,9 @@ const AdminDashboardPage = lazy(async () => ({ default: (await import('../pages/
 const AdminAuditLogsPage = lazy(async () => ({ default: (await import('../pages/console/admin/audit-logs-page')).AdminAuditLogsPage }))
 const GuestUploadPage = lazy(async () => ({ default: (await import('../pages/public/guest-upload-page')).GuestUploadPage }))
 const LoginPage = lazy(async () => ({ default: (await import('../pages/public/login-page')).LoginPage }))
+const ForgotPasswordPage = lazy(async () => ({ default: (await import('../pages/public/forgot-password-page')).ForgotPasswordPage }))
 const RegisterPage = lazy(async () => ({ default: (await import('../pages/public/register-page')).RegisterPage }))
+const ResetPasswordPage = lazy(async () => ({ default: (await import('../pages/public/reset-password-page')).ResetPasswordPage }))
 const SetupPage = lazy(async () => ({ default: (await import('../pages/public/setup-page')).SetupPage }))
 const VerifyEmailPage = lazy(async () => ({ default: (await import('../pages/public/verify-email-page')).VerifyEmailPage }))
 
@@ -124,6 +126,8 @@ function PublicRoutes() {
               }
             />
             <Route path="/login" element={<LazyPage><LoginPage /></LazyPage>} />
+            <Route path="/forgot-password" element={<LazyPage><ForgotPasswordPage /></LazyPage>} />
+            <Route path="/reset-password" element={<LazyPage><ResetPasswordPage /></LazyPage>} />
             <Route path="/verify-email" element={<LazyPage><VerifyEmailPage /></LazyPage>} />
             <Route
               path="/register"

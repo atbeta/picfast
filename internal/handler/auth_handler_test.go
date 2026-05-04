@@ -54,6 +54,7 @@ func TestRegister(t *testing.T) {
 			"email":    "verify@example.com",
 			"password": "password123",
 			"name":     "Verify User",
+			"language": "zh-CN",
 		}
 		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/register", body)
 		rec := doReq(env.Router, req)
@@ -71,6 +72,9 @@ func TestRegister(t *testing.T) {
 		}
 		if len(env.MailSender.messages) != 1 {
 			t.Fatalf("sent messages = %d, want 1", len(env.MailSender.messages))
+		}
+		if !strings.Contains(env.MailSender.messages[0].Subject, "邮箱验证") {
+			t.Fatalf("subject = %q, want zh verification subject", env.MailSender.messages[0].Subject)
 		}
 	})
 

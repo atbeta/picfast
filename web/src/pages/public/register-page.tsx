@@ -12,11 +12,15 @@ const registerSchema = z.object({
   name: z.string().min(1),
   email: z.email(),
   password: z.string().min(8),
+  confirmPassword: z.string().min(1),
+}).refine((data) => data.password === data.confirmPassword, {
+  path: ['confirmPassword'],
+  message: 'passwordMismatch',
 })
 type RegisterForm = z.infer<typeof registerSchema>
 
 export function RegisterPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { register: registerUser } = useAuth()
   const navigate = useNavigate()
   const [serverError, setServerError] = useState('')
@@ -30,7 +34,7 @@ export function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     setServerError('')
     try {
-      const result = await registerUser(data.email, data.password, data.name)
+      const result = await registerUser(data.email, data.password, data.name, i18n.language)
       if (result.requires_email_verification) {
         const verificationState = result.verification_email_sent ? 'sent' : 'pending'
         toast.success(t('auth.registerVerificationRequired'), {
@@ -94,6 +98,26 @@ export function RegisterPage() {
             {...register('password')}
           />
           {errors.password && <p className="mt-1 text-xs text-destructive">{t('auth.passwordMin')}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="confirmPassword" className="mb-1 block text-sm font-medium text-foreground">
+            {t('auth.confirmPassword')}
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-1 focus:ring-primary/20"
+            {...register('confirmPassword')}
+          />
+          {errors.confirmPassword && (
+            <p className="mt-1 text-xs text-destructive">
+              {errors.confirmPassword.message === 'passwordMismatch'
+                ? t('auth.passwordMismatch')
+                : t('auth.required')}
+            </p>
+          )}
         </div>
 
         {serverError && (

@@ -9,6 +9,11 @@ UPDATE users
 SET email_verified = TRUE, updated_at = NOW()
 WHERE id = $1;
 
+-- name: UpdateUserPasswordByID :exec
+UPDATE users
+SET password = $2, updated_at = NOW()
+WHERE id = $1;
+
 -- name: CreateUser :one
 INSERT INTO users (group_id, email, password, name, role, capacity_bytes, settings, status, email_verified, registered_ip)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

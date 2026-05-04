@@ -8,7 +8,7 @@ interface AuthContextValue {
   isLoading: boolean
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, name: string) => Promise<RegisterResult>
+  register: (email: string, password: string, name: string, language?: string) => Promise<RegisterResult>
   logout: () => Promise<void>
   updateProfile: (data: { name?: string; password?: string; settings?: Record<string, unknown> }) => Promise<void>
 }
@@ -47,8 +47,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(profile)
   }, [])
 
-  const register = useCallback(async (email: string, password: string, name: string) => {
-    const result = await authApi.register(email, password, name)
+  const register = useCallback(async (email: string, password: string, name: string, language?: string) => {
+    const result = await authApi.register(email, password, name, language)
     if (result.tokens) {
       authApi.saveTokens(result.tokens)
       const profile = await authApi.getProfile()

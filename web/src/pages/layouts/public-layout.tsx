@@ -55,9 +55,11 @@ export function PublicLayout() {
                 <Link to="/login" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                   {t('nav.login')}
                 </Link>
-                <Link to="/register" className="inline-flex h-8 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
-                  {t('nav.register')}
-                </Link>
+                {config?.allow_registration && (
+                  <Link to="/register" className="inline-flex h-8 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+                    {t('nav.register')}
+                  </Link>
+                )}
               </div>
             )}
           </div>

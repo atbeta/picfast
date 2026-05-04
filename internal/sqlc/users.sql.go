@@ -370,3 +370,19 @@ func (q *Queries) UpdateUserEmailVerified(ctx context.Context, id int64) error {
 	_, err := q.db.Exec(ctx, updateUserEmailVerified, id)
 	return err
 }
+
+const updateUserPasswordByID = `-- name: UpdateUserPasswordByID :exec
+UPDATE users
+SET password = $2, updated_at = NOW()
+WHERE id = $1
+`
+
+type UpdateUserPasswordByIDParams struct {
+	ID       int64  `json:"id"`
+	Password string `json:"password"`
+}
+
+func (q *Queries) UpdateUserPasswordByID(ctx context.Context, arg UpdateUserPasswordByIDParams) error {
+	_, err := q.db.Exec(ctx, updateUserPasswordByID, arg.ID, arg.Password)
+	return err
+}

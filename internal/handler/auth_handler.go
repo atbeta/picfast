@@ -19,7 +19,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const emailVerificationTokenTTL = 24 * time.Hour
+const (
+	emailVerificationTokenTTL = 24 * time.Hour
+	passwordResetTokenTTL     = time.Hour
+)
 
 type AuthHandler struct {
 	db     *sqlc.Queries
@@ -40,6 +43,7 @@ type RegisterRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Name     string `json:"name"`
+	Language string `json:"language,omitempty"`
 }
 
 type LoginRequest struct {
@@ -56,7 +60,18 @@ type VerifyEmailRequest struct {
 }
 
 type ResendVerificationRequest struct {
-	Email string `json:"email"`
+	Email    string `json:"email"`
+	Language string `json:"language,omitempty"`
+}
+
+type ForgotPasswordRequest struct {
+	Email    string `json:"email"`
+	Language string `json:"language,omitempty"`
+}
+
+type ResetPasswordRequest struct {
+	Token       string `json:"token"`
+	NewPassword string `json:"new_password"`
 }
 
 type RegisterResponse struct {
@@ -90,6 +105,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	req.Email = strings.TrimSpace(req.Email)
 	req.Name = strings.TrimSpace(req.Name)
+	req.Language = strings.TrimSpace(req.Language)
 	if req.Email == "" || req.Password == "" || req.Name == "" {
 		Fail(w, http.StatusBadRequest, "email, password and name are required")
 		return
@@ -175,7 +191,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if requiresVerification {
-		resp.VerificationEmailSent = h.sendVerificationEmail(r.Context(), user.Email, user.Name, verificationToken) == nil
+		resp.VerificationEmailSent = h.sendVerificationEmail(
+			r.Context(),
+			user.Email,
+			user.Name,
+			verificationToken,
+			resolveEmailLanguage(req.Language, r.Header.Get("Accept-Language")),
+		) == nil
 		if !resp.VerificationEmailSent {
 			slog.Warn("failed to send verification email after registration", "email", user.Email)
 		}
@@ -305,6 +327,7 @@ func (h *AuthHandler) ResendVerification(w http.ResponseWriter, r *http.Request)
 		Fail(w, http.StatusBadRequest, "email is required")
 		return
 	}
+	req.Language = strings.TrimSpace(req.Language)
 
 	user, err := h.db.GetUserByEmail(r.Context(), req.Email)
 	if err != nil || user.EmailVerified {
@@ -317,13 +340,128 @@ func (h *AuthHandler) ResendVerification(w http.ResponseWriter, r *http.Request)
 		Fail(w, http.StatusInternalServerError, "failed to create verification token")
 		return
 	}
-	if err := h.sendVerificationEmail(r.Context(), user.Email, user.Name, plain); err != nil {
+	if err := h.sendVerificationEmail(
+		r.Context(),
+		user.Email,
+		user.Name,
+		plain,
+		resolveEmailLanguage(req.Language, r.Header.Get("Accept-Language")),
+	); err != nil {
 		slog.Warn("failed to resend verification email", "email", user.Email, "error", err)
 		Fail(w, http.StatusInternalServerError, "failed to send verification email")
 		return
 	}
 
 	SuccessMessage(w, "verification email sent")
+}
+
+func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	if h.mail == nil || !h.mail.Ready() {
+		Fail(w, http.StatusServiceUnavailable, "password reset is not available")
+		return
+	}
+
+	var req ForgotPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		Fail(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.Email = strings.TrimSpace(req.Email)
+	req.Language = strings.TrimSpace(req.Language)
+	if req.Email == "" {
+		Fail(w, http.StatusBadRequest, "email is required")
+		return
+	}
+	if !isValidEmail(req.Email) {
+		Fail(w, http.StatusBadRequest, "invalid email format")
+		return
+	}
+
+	user, err := h.db.GetUserByEmail(r.Context(), req.Email)
+	if err != nil {
+		SuccessMessage(w, "if the account exists, a password reset email has been sent")
+		return
+	}
+
+	plain, err := h.issuePasswordResetToken(r.Context(), h.db, user.ID)
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to create password reset token")
+		return
+	}
+	if err := h.sendPasswordResetEmail(
+		r.Context(),
+		user.Email,
+		user.Name,
+		plain,
+		resolveEmailLanguage(req.Language, r.Header.Get("Accept-Language")),
+	); err != nil {
+		slog.Warn("failed to send password reset email", "email", user.Email, "error", err)
+		Fail(w, http.StatusInternalServerError, "failed to send password reset email")
+		return
+	}
+
+	SuccessMessage(w, "password reset email sent")
+}
+
+func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		Fail(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.Token = strings.TrimSpace(req.Token)
+	if req.Token == "" {
+		Fail(w, http.StatusBadRequest, "token is required")
+		return
+	}
+	if len(req.NewPassword) < 8 || len(req.NewPassword) > 72 {
+		Fail(w, http.StatusBadRequest, "password must be between 8 and 72 bytes")
+		return
+	}
+
+	tokenHash := HashRefreshToken(req.Token)
+	stored, err := h.db.GetPasswordResetTokenByHash(r.Context(), tokenHash)
+	if err != nil {
+		Fail(w, http.StatusBadRequest, "invalid reset token")
+		return
+	}
+	if stored.UsedAt.Valid {
+		Fail(w, http.StatusBadRequest, "reset token has already been used")
+		return
+	}
+	if time.Now().After(stored.ExpiresAt) {
+		_ = h.db.DeletePasswordResetTokenByHash(r.Context(), tokenHash)
+		Fail(w, http.StatusBadRequest, "reset token has expired")
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to hash password")
+		return
+	}
+
+	err = sqlc.RunInTx(r.Context(), h.pool, func(qtx *sqlc.Queries) error {
+		if _, err := qtx.MarkPasswordResetTokenUsed(r.Context(), stored.ID); err != nil {
+			return err
+		}
+		if err := qtx.UpdateUserPasswordByID(r.Context(), sqlc.UpdateUserPasswordByIDParams{
+			ID:       stored.UserID,
+			Password: string(hash),
+		}); err != nil {
+			return err
+		}
+		if err := qtx.DeleteUnusedPasswordResetTokensByUser(r.Context(), stored.UserID); err != nil {
+			return err
+		}
+		return qtx.DeleteAllUserRefreshTokens(r.Context(), stored.UserID)
+	})
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to reset password")
+		return
+	}
+
+	SuccessMessage(w, "password reset successfully")
 }
 
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
@@ -442,18 +580,96 @@ func (h *AuthHandler) issueVerificationToken(ctx context.Context, qtx *sqlc.Quer
 	return plain, nil
 }
 
-func (h *AuthHandler) sendVerificationEmail(ctx context.Context, toEmail, toName, token string) error {
+func (h *AuthHandler) issuePasswordResetToken(ctx context.Context, qtx *sqlc.Queries, userID int64) (string, error) {
+	if err := qtx.DeleteUnusedPasswordResetTokensByUser(ctx, userID); err != nil {
+		return "", err
+	}
+	plain, tokenHash, err := GenerateRefreshToken()
+	if err != nil {
+		return "", err
+	}
+	_, err = qtx.CreatePasswordResetToken(ctx, sqlc.CreatePasswordResetTokenParams{
+		UserID:    userID,
+		TokenHash: tokenHash,
+		ExpiresAt: time.Now().Add(passwordResetTokenTTL),
+	})
+	if err != nil {
+		return "", err
+	}
+	return plain, nil
+}
+
+func (h *AuthHandler) sendVerificationEmail(ctx context.Context, toEmail, toName, token, language string) error {
 	server, app := h.config.RuntimeSnapshot()
 	verifyURL := strings.TrimRight(server.BaseURL, "/") + "/verify-email?token=" + token
-	body := strings.TrimSpace("Hi " + toName + ",\n\n" +
-		"Welcome to " + app.Name + ". Please verify your email by opening the link below:\n\n" +
-		verifyURL + "\n\n" +
-		"This link expires in 24 hours.\n")
+	subject, body := buildVerificationEmail(app.Name, toName, verifyURL, language)
 
 	return h.mail.Send(ctx, mailservice.Message{
 		ToEmail: toEmail,
 		ToName:  toName,
-		Subject: "Verify your email for " + app.Name,
+		Subject: subject,
 		Text:    body,
 	})
+}
+
+func (h *AuthHandler) sendPasswordResetEmail(ctx context.Context, toEmail, toName, token, language string) error {
+	server, app := h.config.RuntimeSnapshot()
+	resetURL := strings.TrimRight(server.BaseURL, "/") + "/reset-password?token=" + token
+	subject, body := buildPasswordResetEmail(app.Name, toName, resetURL, language)
+
+	return h.mail.Send(ctx, mailservice.Message{
+		ToEmail: toEmail,
+		ToName:  toName,
+		Subject: subject,
+		Text:    body,
+	})
+}
+
+func resolveEmailLanguage(explicit, acceptLanguage string) string {
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(explicit)), "zh") {
+		return "zh-CN"
+	}
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(explicit)), "en") {
+		return "en-US"
+	}
+	if strings.Contains(strings.ToLower(acceptLanguage), "zh") {
+		return "zh-CN"
+	}
+	return "en-US"
+}
+
+func buildVerificationEmail(appName, toName, verifyURL, language string) (subject, body string) {
+	if language == "zh-CN" {
+		subject = appName + " 邮箱验证"
+		body = strings.TrimSpace("你好 " + toName + "，\n\n" +
+			"欢迎使用 " + appName + "。请点击下方链接完成邮箱验证：\n\n" +
+			verifyURL + "\n\n" +
+			"该链接 24 小时内有效。\n")
+		return subject, body
+	}
+	subject = "Verify your email for " + appName
+	body = strings.TrimSpace("Hi " + toName + ",\n\n" +
+		"Welcome to " + appName + ". Please verify your email by opening the link below:\n\n" +
+		verifyURL + "\n\n" +
+		"This link expires in 24 hours.\n")
+	return subject, body
+}
+
+func buildPasswordResetEmail(appName, toName, resetURL, language string) (subject, body string) {
+	if language == "zh-CN" {
+		subject = appName + " 重置密码"
+		body = strings.TrimSpace("你好 " + toName + "，\n\n" +
+			"我们收到了重置 " + appName + " 账号密码的请求。请点击下方链接设置新密码：\n\n" +
+			resetURL + "\n\n" +
+			"该链接 1 小时内有效，且仅可使用一次。\n" +
+			"如果这不是你的操作，请忽略此邮件。\n")
+		return subject, body
+	}
+	subject = "Reset your password for " + appName
+	body = strings.TrimSpace("Hi " + toName + ",\n\n" +
+		"We received a request to reset your password for " + appName + ". Open the link below to set a new password:\n\n" +
+		resetURL + "\n\n" +
+		"This link expires in 1 hour and can only be used once.\n" +
+		"If you did not request this, you can safely ignore this email.\n")
+	return subject, body
 }

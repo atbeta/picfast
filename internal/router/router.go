@@ -206,7 +206,15 @@ func New(
 		})
 	}
 
-	loginLimiter := middleware.NewRateLimiter(5, 60*1e9)
+	loginLimiter := middleware.NewRateLimiter(5, time.Minute)
+	mailActionLimiter := middleware.NewRateLimiter(3, 10*time.Minute)
+	clientIPKey := func(r *http.Request) string {
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil || host == "" {
+			return r.RemoteAddr
+		}
+		return host
+	}
 
 	// Image file serving: /i/{key}.{ext} — with OptionalAuth so private images can be accessed by owner
 	r.With(middleware.OptionalAuth(middleware.NewJWTAuthenticator(jwtSvc))).Get("/i/{key}.{ext}", fileHandler.ServeImage)
@@ -266,14 +274,10 @@ func New(
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authHandler.Register)
 			r.Post("/verify-email", authHandler.VerifyEmail)
-			r.Post("/resend-verification", authHandler.ResendVerification)
-			r.With(middleware.RateLimit(loginLimiter, func(r *http.Request) string {
-				host, _, err := net.SplitHostPort(r.RemoteAddr)
-				if err != nil || host == "" {
-					return r.RemoteAddr
-				}
-				return host
-			})).
+			r.With(middleware.RateLimit(mailActionLimiter, clientIPKey)).Post("/resend-verification", authHandler.ResendVerification)
+			r.With(middleware.RateLimit(mailActionLimiter, clientIPKey)).Post("/forgot-password", authHandler.ForgotPassword)
+			r.Post("/reset-password", authHandler.ResetPassword)
+			r.With(middleware.RateLimit(loginLimiter, clientIPKey)).
 				Post("/login", authHandler.Login)
 			r.Post("/refresh", authHandler.Refresh)
 		})

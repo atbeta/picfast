@@ -55,8 +55,8 @@ export async function login(email: string, password: string): Promise<AuthTokens
   return res.data.data
 }
 
-export async function register(email: string, password: string, name: string): Promise<RegisterResult> {
-  const res = await api.post<ApiResponse<RegisterResult>>('/auth/register', { email, password, name })
+export async function register(email: string, password: string, name: string, language?: string): Promise<RegisterResult> {
+  const res = await api.post<ApiResponse<RegisterResult>>('/auth/register', { email, password, name, language })
   return res.data.data
 }
 
@@ -65,8 +65,16 @@ export async function createSetupAdmin(email: string, password: string, name: st
   return res.data.data
 }
 
-export async function resendVerification(email: string): Promise<void> {
-  await api.post('/auth/resend-verification', { email })
+export async function resendVerification(email: string, language?: string): Promise<void> {
+  await api.post('/auth/resend-verification', { email, language })
+}
+
+export async function forgotPassword(email: string, language?: string): Promise<void> {
+  await api.post('/auth/forgot-password', { email, language })
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await api.post('/auth/reset-password', { token, new_password: newPassword })
 }
 
 export async function verifyEmail(token: string): Promise<void> {
