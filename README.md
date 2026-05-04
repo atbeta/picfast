@@ -39,21 +39,44 @@
 
 ## 本地开发
 
-**环境**：Go 1.26+、Node 20+、pnpm、PostgreSQL 16。数据库迁移在后端启动时**自动执行**，无需手动安装 `golang-migrate`。
+### 环境准备
 
-```bash
-make docker-up                    # 启动 PostgreSQL + Mailpit
-cp .env.example .env              # 可选：cp config.example.yaml config.yaml
-# 可选：make seed
-go run ./cmd/picfast
-cd web && pnpm install && pnpm dev
-```
+- 安装 Go 1.26+、Node 20+、pnpm、Docker（含 Compose）。
+- 首次进入仓库执行：`cd web && pnpm install`。
+- 复制配置：`cp .env.example .env`（可选：`cp config.example.yaml config.yaml`）。
 
-打开 [http://localhost:5173](http://localhost:5173)。Vite 将 `/api`、`/i`、`/t` 代理到 `VITE_BACKEND_URL`（默认 `http://localhost:8080`，见 `web/vite.config.ts`）。
+数据库迁移在后端启动时**自动执行**，无需手动安装 `golang-migrate`。
 
-前后端一体部署：`cd web && pnpm build && go run ./cmd/picfast`。
+### 快速验证
 
-## Docker
+- `make docker-up`
+- 访问 `http://localhost:18080`
+
+> 未安装 `make` 时，在仓库根目录使用等价命令：
+> `docker compose -f docker/docker-compose.dev.yml up --build -d`
+
+### 功能开发
+
+- `make docker-up`
+- `docker compose -f docker/docker-compose.dev.yml stop app`
+- `cp .env.example .env`
+- `go run ./cmd/picfast`
+
+此时后端由本机 Go 进程接管，后端接口地址为 `http://localhost:8080`，`http://localhost:18080` 不再提供前端页面。
+
+如需界面功能验证或前端开发，再按需启动：
+
+- `cd web && pnpm install && pnpm dev`
+- 访问 `http://localhost:5173`
+
+Vite 将 `/api`、`/i`、`/t` 代理到 `VITE_BACKEND_URL`（默认 `http://localhost:8080`，见 `web/vite.config.ts`）。
+
+如需演示数据（额外测试账号与样例内容）再执行：`make seed`。
+
+前后端一体静态托管：`cd web && pnpm build && go run ./cmd/picfast`。
+
+
+## 部署
 
 镜像：`xbeta/picfast`（[Docker Hub](https://hub.docker.com/r/xbeta/picfast)）。快速试跑：
 
@@ -83,9 +106,10 @@ docker run -d --name picfast --network picfast-net -p 18080:8080 \
 ```bash
 make dev                # 打印开发步骤
 make test && make lint
-make docker-up          # docker-compose.dev.yml
+make docker-up
 make docker-down
 ```
+
 
 ## 文档
 

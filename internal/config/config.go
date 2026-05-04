@@ -3,11 +3,11 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/subosito/gotenv"
 	"github.com/spf13/viper"
 )
 
@@ -24,11 +24,12 @@ type Config struct {
 type ServerConfig struct {
 	Port                    int           `mapstructure:"port"`
 	MetricsAddr             string        `mapstructure:"metrics_addr"`
+	MetricsPort             int           `mapstructure:"metrics_port"` // legacy fallback for metrics_addr
 	BaseURL                 string        `mapstructure:"base_url"`
 	WebDir                  string        `mapstructure:"web_dir"`
 	EnablePprof             bool          `mapstructure:"pprof_enabled"`
 	ReadTimeout             time.Duration `mapstructure:"read_timeout"`
-	ExpiredCleanupBatchSize int32         `mapstructure:"expired_cleanup_batch_size"`
+	ExpiredCleanupBatchSize int           `mapstructure:"expired_cleanup_batch_size"`
 }
 
 type DatabaseConfig struct {
@@ -69,6 +70,7 @@ type AppConfig struct {
 	AllowUserImageProcessing bool            `mapstructure:"allow_user_image_processing"`
 	RequireEmailVerification bool            `mapstructure:"require_email_verification"`
 	AuditUploadLogs          bool            `mapstructure:"audit_upload_logs"`
+	MaxUploadBytes           int64           `mapstructure:"max_upload_bytes"`
 	UserInitialCapacity      int64           `mapstructure:"user_initial_capacity"`
 	DefaultImageTTL          time.Duration   `mapstructure:"default_image_ttl"`
 	GuestImageTTL            time.Duration   `mapstructure:"guest_image_ttl"`
@@ -79,7 +81,6 @@ type AppConfig struct {
 	FooterLink1              string          `mapstructure:"footer_link_1"`
 	FooterText2              string          `mapstructure:"footer_text_2"`
 	FooterLink2              string          `mapstructure:"footer_link_2"`
-	MaxUploadBytes           int64           `mapstructure:"max_upload_bytes"`
 	AnalyticsProvider        string          `mapstructure:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `mapstructure:"analytics_config"`
 }
@@ -219,6 +220,10 @@ func (c MailConfig) IsConfigured() bool {
 func Load() (*Config, error) {
 	v := viper.New()
 
+	// Load optional local .env for `go run ./cmd/picfast`.
+	// Missing file is fine; process env vars still take precedence.
+	_ = gotenv.Load(".env")
+
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
 	v.AddConfigPath(".")
@@ -245,15 +250,8 @@ func Load() (*Config, error) {
 			cfg.App.AnalyticsConfig = json.RawMessage(raw)
 		}
 	}
-	if _, ok := os.LookupEnv("PICFAST_SERVER_METRICS_ADDR"); ok {
-		cfg.Server.MetricsAddr = v.GetString("server.metrics_addr")
-	}
 	if strings.TrimSpace(cfg.Server.MetricsAddr) == "" {
-		if v.IsSet("server.metrics_port") {
-			cfg.Server.MetricsAddr = fmt.Sprintf("127.0.0.1:%d", v.GetInt("server.metrics_port"))
-		} else {
-			cfg.Server.MetricsAddr = "127.0.0.1:9190"
-		}
+		cfg.Server.MetricsAddr = fmt.Sprintf("127.0.0.1:%d", cfg.Server.MetricsPort)
 	}
 
 	return &cfg, nil
@@ -261,11 +259,13 @@ func Load() (*Config, error) {
 
 func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.port", 8080)
+	v.SetDefault("server.metrics_addr", "")
+	v.SetDefault("server.metrics_port", 9090)
 	v.SetDefault("server.base_url", "http://localhost:8080")
 	v.SetDefault("server.web_dir", "")
-	v.SetDefault("server.read_timeout", 60*time.Second)
-	v.SetDefault("server.expired_cleanup_batch_size", int32(100))
 	v.SetDefault("server.pprof_enabled", false)
+	v.SetDefault("server.read_timeout", 60*time.Second)
+	v.SetDefault("server.expired_cleanup_batch_size", 100)
 
 	v.SetDefault("database.url", "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable")
 
@@ -294,12 +294,12 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.allow_user_image_processing", true)
 	v.SetDefault("app.require_email_verification", false)
 	v.SetDefault("app.audit_upload_logs", false)
+	v.SetDefault("app.max_upload_bytes", int64(50<<20))
 	v.SetDefault("app.user_initial_capacity", int64(524288000))
 	v.SetDefault("app.default_image_ttl", time.Duration(0))
 	v.SetDefault("app.guest_image_ttl", time.Duration(0))
 	v.SetDefault("app.admin_email", "")
 	v.SetDefault("app.admin_password", "")
-	v.SetDefault("app.max_upload_bytes", int64(52428800)) // 50 MiB
 	v.SetDefault("app.moderation_mode", "")
 	v.SetDefault("app.footer_text_1", "")
 	v.SetDefault("app.footer_link_1", "")

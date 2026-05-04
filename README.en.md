@@ -39,21 +39,44 @@ Multi-user and guest uploads, albums, pluggable storage backends, admin dashboar
 
 ## Local Development
 
-**Requires**: Go 1.26+, Node 20+, pnpm, PostgreSQL 16. Migrations run **automatically** at startup; `golang-migrate` is only needed for manual migration control.
+### Environment setup
 
-```bash
-make docker-up                    # PostgreSQL + Mailpit
-cp .env.example .env              # optional: cp config.example.yaml config.yaml
-# optional: make seed
-go run ./cmd/picfast
-cd web && pnpm install && pnpm dev
-```
+- Install Go 1.26+, Node 20+, pnpm, and Docker (with Compose).
+- First time in this repo, run: `cd web && pnpm install`.
+- Copy config: `cp .env.example .env` (optional: `cp config.example.yaml config.yaml`).
 
-Open [http://localhost:5173](http://localhost:5173). Vite proxies `/api`, `/i`, `/t` to `VITE_BACKEND_URL` (default `http://localhost:8080`; see `web/vite.config.ts`).
+Migrations run **automatically** at startup; `golang-migrate` is not required for normal local setup.
+
+### Quick verification
+
+- `make docker-up`
+- Open `http://localhost:18080`
+
+> If `make` is unavailable, run this equivalent command from the repository root:
+> `docker compose -f docker/docker-compose.dev.yml up --build -d`
+
+### Feature development
+
+- `make docker-up`
+- `docker compose -f docker/docker-compose.dev.yml stop app`
+- `cp .env.example .env`
+- `go run ./cmd/picfast`
+
+At this point, the backend is served by your local Go process at `http://localhost:8080`, and `http://localhost:18080` no longer serves the frontend page.
+
+Start frontend dev server only when needed:
+
+- `cd web && pnpm install && pnpm dev`
+- Open `http://localhost:5173`
+
+Vite proxies `/api`, `/i`, `/t` to `VITE_BACKEND_URL` (default `http://localhost:8080`; see `web/vite.config.ts`).
+
+Run `make seed` only when you want demo data (extra test users and sample content).
 
 Bundled static serving: `cd web && pnpm build && go run ./cmd/picfast`.
 
-## Docker
+
+## Deployment
 
 Image: `xbeta/picfast` ([Docker Hub](https://hub.docker.com/r/xbeta/picfast)). Quick start:
 
@@ -83,9 +106,10 @@ Observability: Docker Compose listens for metrics on container-local `:9190` wit
 ```bash
 make dev                # print development steps
 make test && make lint
-make docker-up          # docker-compose.dev.yml
+make docker-up
 make docker-down
 ```
+
 
 ## Documentation
 

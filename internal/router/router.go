@@ -164,7 +164,7 @@ func New(
 		ticker := time.NewTicker(1 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
-			deleted, err := deleteSvc.CleanExpiredImages(context.Background(), cfg.Server.ExpiredCleanupBatchSize)
+			deleted, err := deleteSvc.CleanExpiredImages(context.Background(), int32(cfg.Server.ExpiredCleanupBatchSize))
 			if err != nil {
 				slog.Warn("failed to clean expired images", "error", err)
 			} else if deleted > 0 {
