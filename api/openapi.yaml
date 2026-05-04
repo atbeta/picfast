@@ -263,7 +263,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-   /images:
+  /images:
     get:
       tags: [images]
       summary: List user images
@@ -958,7 +958,7 @@ paths:
                         items:
                           $ref: "#/components/schemas/StrategyHealthItem"
 
-   /admin/images:
+  /admin/images:
     get:
       tags: [admin]
       summary: List all images
