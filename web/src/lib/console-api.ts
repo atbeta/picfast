@@ -43,6 +43,11 @@ export async function deleteImage(key: string): Promise<void> {
   await api.delete(`/images/${encodeURIComponent(key)}`)
 }
 
+export async function batchDeleteImages(keys: string[]): Promise<{ deleted: number; failed: number }> {
+  const res = await api.post<ApiResponse<{ deleted: number; failed: number }>>('/images/batch-delete', { keys })
+  return res.data.data
+}
+
 export async function getImage(key: string): Promise<ImageItem> {
   const res = await api.get<ApiResponse<ImageItem>>(`/images/${encodeURIComponent(key)}`)
   return res.data.data

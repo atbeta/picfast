@@ -338,6 +338,50 @@ func (h *ImageHandler) Update(w http.ResponseWriter, r *http.Request) {
 	Success(w, imageResponse(updated, links))
 }
 
+type batchDeleteRequest struct {
+	Keys []string `json:"keys"`
+}
+
+func (h *ImageHandler) BatchDelete(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)
+	if !ok {
+		Fail(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req batchDeleteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Keys) == 0 {
+		Fail(w, http.StatusBadRequest, "keys is required and must be a non-empty array")
+		return
+	}
+	if len(req.Keys) > 200 {
+		Fail(w, http.StatusBadRequest, "too many keys, max 200 per batch")
+		return
+	}
+
+	var deleted, failed int
+	for _, key := range req.Keys {
+		img, err := h.db.GetImageByKey(r.Context(), key)
+		if err != nil || img.UserID.Int64 != userID {
+			failed++
+			continue
+		}
+		if err := h.deleter.DeleteImage(r.Context(), img.ID); err != nil {
+			slog.Warn("batch delete failed for image", "key", key, "error", err)
+			failed++
+			continue
+		}
+		deleted++
+	}
+	writeAuditLog(h.db, r, "image.batch_delete", "image", "", "", map[string]any{
+		"count":   len(req.Keys),
+		"deleted": deleted,
+		"failed":  failed,
+	})
+
+	Success(w, map[string]int{"deleted": deleted, "failed": failed})
+}
+
 func (h *ImageHandler) buildLinks(key, extension, md5, originName string) domain.ImageLinks {
 	return service.LinkBuilder{BaseURL: h.baseURL}.BuildImageLinks(key, extension, md5, originName)
 }

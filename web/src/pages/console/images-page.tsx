@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Trash2, Image as ImageIcon, ChevronLeft, ChevronRight, Check, Download } from 'lucide-react'
 
-import { deleteImage, getImage, listImages, updateImage, listAlbums } from '@/lib/console-api'
+import { deleteImage, getImage, listImages, updateImage, listAlbums, batchDeleteImages } from '@/lib/console-api'
 import type { ImageItem, Album } from '@/lib/console-api'
 import { extractErrorMessage, logError } from '@/lib/error-handler'
 import { formatFileSize } from '@/lib/upload'
@@ -154,26 +154,22 @@ export function ImagesPage() {
 
   const batchDelete = async () => {
     setBatchProcessing(true)
-    let success = 0
-    let failed = 0
-    for (const key of selectedKeys) {
-      try {
-        await deleteImage(key)
-        success++
-      } catch (err: unknown) {
-        logError('images.batchDelete', err)
-        failed++
+    try {
+      const result = await batchDeleteImages([...selectedKeys])
+      setShowBatchConfirm(false)
+      setSelectedKeys(new Set())
+      if (result.failed === 0) {
+        toast.success(t('images.batchDeleteSuccess', { defaultValue: `成功删除 ${result.deleted} 张图片` }))
+      } else {
+        toast.error(t('images.batchDeletePartial', { defaultValue: `删除完成：成功 ${result.deleted} 张，失败 ${result.failed} 张` }))
       }
+      await qc.invalidateQueries({ queryKey: ['images'] })
+    } catch (err: unknown) {
+      logError('images.batchDelete', err)
+      toast.error(t('images.deleteFailed'))
+    } finally {
+      setBatchProcessing(false)
     }
-    setBatchProcessing(false)
-    setShowBatchConfirm(false)
-    setSelectedKeys(new Set())
-    if (failed === 0) {
-      toast.success(t('images.batchDeleteSuccess', { defaultValue: `成功删除 ${success} 张图片` }))
-    } else {
-      toast.error(t('images.batchDeletePartial', { defaultValue: `删除完成：成功 ${success} 张，失败 ${failed} 张` }))
-    }
-    await qc.invalidateQueries({ queryKey: ['images'] })
   }
 
   const batchDownload = async () => {

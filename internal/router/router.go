@@ -300,6 +300,7 @@ func New(
 			r.Get("/images", imageHandler.List)
 			r.Get("/images/{key}", imageHandler.Get)
 			r.With(middleware.RequireScope("write")).Delete("/images/{key}", imageHandler.Delete)
+			r.With(middleware.RequireScope("write")).Post("/images/batch-delete", imageHandler.BatchDelete)
 			r.With(middleware.RequireScope("write")).Patch("/images/{key}", imageHandler.Update)
 
 			// Albums — write operations require "write" scope for API tokens

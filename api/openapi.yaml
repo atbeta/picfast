@@ -401,6 +401,43 @@ paths:
                       data:
                         $ref: "#/components/schemas/ImageResponse"
 
+  /images/batch-delete:
+    post:
+      tags: [images]
+      summary: Batch delete images
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keys]
+              properties:
+                keys:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 200
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          deleted:
+                            type: integer
+                          failed:
+                            type: integer
+
   /albums:
     get:
       tags: [albums]
