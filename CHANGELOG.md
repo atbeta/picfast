@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.3](https://github.com/atbeta/picfast/compare/v0.6.2...v0.6.3) (2026-05-05)
+
+
+### Bug Fixes
+
+* **mcp:** unwrap standard API JSON envelope in MCP client ([dd60bb2](https://github.com/atbeta/picfast/commit/dd60bb2a6a1d06fae093f76d44e0e2f805d747b4))
+* **upload:** use localStorage-only for permission preference, skip server default ([caf2ec8](https://github.com/atbeta/picfast/commit/caf2ec817b9028b2d3b4c9e2f212bee8b0f8163b))
+* **ux:** add cursor-pointer to Button base styles ([517fe67](https://github.com/atbeta/picfast/commit/517fe67cd8c3383677b626f1c8472085e010c872))
+
+
+### Performance Improvements
+
+* **docker:** replace 90MB fonts-noto-cjk with 5MB fonts-wqy-microhei ([d7c50d0](https://github.com/atbeta/picfast/commit/d7c50d08a2296e8454ec443ed1025c740e7a58db))
+
 ## [0.6.2](https://github.com/atbeta/picfast/compare/v0.6.1...v0.6.2) (2026-05-04)
 
 
