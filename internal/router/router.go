@@ -104,7 +104,7 @@ func New(
 			server := cfg.ServerSnapshot()
 			baseURL := strings.TrimRight(server.BaseURL, "/")
 			if baseURL != "" {
-				raw = []byte(strings.ReplaceAll(string(raw), "http://localhost:8080/api/v1", baseURL+"/api/v1"))
+				raw = []byte(strings.Replace(string(raw), "http://localhost:8080/api/v1", baseURL+"/api/v1", 1))
 			}
 			if v := strings.TrimSpace(version.Version); v != "" {
 				raw = []byte(strings.ReplaceAll(string(raw), `version: "1.0"`, fmt.Sprintf(`version: "%s"`, v)))
