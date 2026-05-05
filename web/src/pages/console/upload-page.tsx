@@ -72,15 +72,9 @@ export function UploadPage() {
       })
       .catch((err: unknown) => logError('upload.loadAlbums', err))
 
-    // Load default permission
-    const userDefaultPerm = (user?.settings as Record<string, unknown>)?.default_permission
+    // Load default permission — no server-side UI for this, use localStorage only
     const savedPerm = localStorage.getItem('default_permission')
-    let nextPermission = 1
-    if (userDefaultPerm !== undefined && userDefaultPerm !== null) {
-      nextPermission = Number(userDefaultPerm)
-    } else if (savedPerm !== null) {
-      nextPermission = Number(savedPerm)
-    }
+    const nextPermission = savedPerm !== null ? Number(savedPerm) : 1
     queueMicrotask(() => setSelectedPermission(nextPermission))
   }, [user])
 
