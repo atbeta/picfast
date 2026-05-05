@@ -30,11 +30,11 @@ RUN go build -ldflags="-s -w -X github.com/atbeta/picfast/internal/version.Versi
 # ---- Stage 3: Runtime ----
 FROM debian:12-slim
 
-# Install runtime dependencies
+# Install runtime dependencies; fonts-wqy-microhei (~5MB) covers CJK watermark rendering.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libvips \
     fontconfig \
-    fonts-noto-cjk \
+    fonts-wqy-microhei \
     ca-certificates \
     tzdata \
     wget \
