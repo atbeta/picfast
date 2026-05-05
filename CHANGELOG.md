@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4](https://github.com/atbeta/picfast/compare/v0.6.3...v0.6.4) (2026-05-05)
+
+
+### Bug Fixes
+
+* **openapi:** replace hardcoded pbeta.me server URL with localhost placeholder ([c2926ad](https://github.com/atbeta/picfast/commit/c2926ad04032154d7559d21a4f0728d1644d1fc9))
+
 ## [0.6.3](https://github.com/atbeta/picfast/compare/v0.6.2...v0.6.3) (2026-05-05)
 
 
