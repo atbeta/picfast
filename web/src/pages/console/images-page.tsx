@@ -9,6 +9,7 @@ import { deleteImage, getImage, listImages, updateImage, listAlbums, batchDelete
 import type { ImageItem, Album } from '@/lib/console-api'
 import { extractErrorMessage, logError } from '@/lib/error-handler'
 import { formatFileSize } from '@/lib/upload'
+import { copyToClipboard } from '@/lib/clipboard'
 import { ImageDetailDialog } from '@/components/console/image-detail-dialog'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
@@ -222,7 +223,7 @@ export function ImagesPage() {
   }
 
   const onCopy = async (text: string) => {
-    await navigator.clipboard.writeText(text)
+    await copyToClipboard(text)
     toast.success(t('upload.copied'))
   }
 

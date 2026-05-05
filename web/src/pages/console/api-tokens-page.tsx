@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Calendar, Clock, CheckCircle2, History, Trash2, Copy, KeyRound, Plus } from 'lucide-react'
 import { createApiToken, deleteApiToken, listApiTokens } from '../../lib/console-api'
 import { extractErrorMessage } from '../../lib/error-handler'
+import { copyToClipboard } from '../../lib/clipboard'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
 import { Button } from '@/components/ui/button'
@@ -91,7 +92,7 @@ export function ApiTokensPage() {
 
   const onCopy = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text)
+      await copyToClipboard(text)
       toast.success(t('upload.copied'))
     } catch {
       toast.error(t('upload.copyError'))

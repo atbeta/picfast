@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { getSiteConfig } from '../../lib/site-config'
 import { createApiToken } from '../../lib/console-api'
+import { copyToClipboard } from '../../lib/clipboard'
 import { Button } from '@/components/ui/button'
 import { extractErrorMessage } from '../../lib/error-handler'
 
@@ -138,7 +139,7 @@ URL to file: %url%`,
 
   const onCopy = async (text: string, key: string) => {
     try {
-      await navigator.clipboard.writeText(text)
+      await copyToClipboard(text)
       toast.success(t('upload.copySuccess'))
       setCopied(key)
       setTimeout(() => setCopied(null), 2500)

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { formatFileSize } from '../lib/upload'
 import { Copy, Check, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { copyToClipboard } from '@/lib/clipboard'
 
 interface UploadResultLike {
   permission?: number
@@ -29,7 +30,7 @@ function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
-    await navigator.clipboard.writeText(text)
+    await copyToClipboard(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
