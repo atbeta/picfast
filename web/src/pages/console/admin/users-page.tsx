@@ -136,7 +136,97 @@ export function AdminUsersPage() {
 
       {data && data.items.length > 0 && (
         <>
-          <div className="overflow-x-auto rounded-xl border border-border/50 bg-card/80 shadow-sm">
+          <div className="space-y-3 md:hidden">
+            {data.items.map((u) => (
+              <div
+                key={u.id}
+                className="rounded-xl border border-border/50 bg-card/80 p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-1">
+                    <p className="truncate text-sm font-semibold text-foreground">{u.name || '—'}</p>
+                    <p className="truncate text-xs text-muted-foreground">{u.email}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => openEdit(u)}
+                      title={t('admin.edit')}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                    {u.role !== 'admin' && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => toggleStatus(u)}
+                        disabled={saving === u.id}
+                        title={u.status === 1 ? t('admin.freeze') : t('admin.activate')}
+                      >
+                        {u.status === 1 ? <Ban className="size-4" /> : <Unlock className="size-4" />}
+                      </Button>
+                    )}
+                    {u.role !== 'admin' && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setDeleteTarget(u.id)}
+                        disabled={deleting === u.id}
+                        className="text-destructive/70 hover:text-destructive"
+                        title={t('admin.delete')}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-lg bg-muted/20 px-2.5 py-2">
+                    <p className="text-muted-foreground">ID</p>
+                    <p className="mt-1 font-medium text-foreground">{u.id}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/20 px-2.5 py-2">
+                    <p className="text-muted-foreground">{t('admin.colRole')}</p>
+                    <p className="mt-1">
+                      <span className={['rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider', u.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'].join(' ')}>
+                        {u.role}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-muted/20 px-2.5 py-2">
+                    <p className="text-muted-foreground">{t('admin.colStatus')}</p>
+                    <p className="mt-1">
+                      <span className={['rounded px-1.5 py-0.5 text-xs font-medium', u.status === 1 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'].join(' ')}>
+                        {u.status === 1 ? t('admin.active') : t('admin.frozen')}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-muted/20 px-2.5 py-2">
+                    <p className="text-muted-foreground">{t('admin.colGroup', { defaultValue: '分组' })}</p>
+                    <p className="mt-1 text-foreground">
+                      {u.group_id ? (groups.find((g) => g.id === u.group_id)?.name || u.group_id) : '—'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-muted/20 px-2.5 py-2">
+                    <p className="text-muted-foreground">{t('admin.colImages')}</p>
+                    <p className="mt-1 font-medium text-foreground">{u.image_num}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/20 px-2.5 py-2">
+                    <p className="text-muted-foreground">{t('admin.usedCapacity', { defaultValue: '已用容量' })}</p>
+                    <p className="mt-1 text-foreground">
+                      {formatFileSize(u.used_capacity || 0)} / {u.capacity_bytes <= 0
+                        ? t('settings.unlimitedCapacity')
+                        : formatFileSize(u.capacity_bytes)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden overflow-x-auto rounded-xl border border-border/50 bg-card/80 shadow-sm md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/50 bg-muted/35 text-left text-xs text-muted-foreground">

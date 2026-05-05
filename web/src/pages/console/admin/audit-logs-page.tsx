@@ -177,7 +177,60 @@ export function AdminAuditLogsPage() {
 
       {data && (
         <div className="space-y-4">
-          <div className="overflow-x-auto rounded-xl border border-border/50 bg-card/80">
+          <div className="space-y-3 md:hidden">
+            {data.items.map((item) => (
+              <div key={item.id} className="rounded-xl border border-border/50 bg-card/80 p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-1">
+                    <div className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString()}</div>
+                    <div className="text-sm font-medium text-foreground">
+                      {item.actor_email ??
+                        (item.details?.guest === true ? t('admin.auditActorGuest', { defaultValue: '游客' }) : '—')}
+                    </div>
+                  </div>
+                  <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary" title={item.action}>
+                    {auditActionLabel(item.action, t)}
+                  </span>
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 gap-2 text-xs">
+                  <div className="rounded-lg bg-muted/20 px-2.5 py-2">
+                    <p className="text-muted-foreground">{t('admin.auditResource', { defaultValue: '资源' })}</p>
+                    <p className="mt-1 text-foreground">{item.resource_type}</p>
+                    <p className="mt-1 truncate text-muted-foreground">{item.resource_name || item.resource_id || '-'}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/20 px-2.5 py-2">
+                    <p className="text-muted-foreground">IP</p>
+                    <p className="mt-1 font-mono text-foreground">{item.ip || '-'}</p>
+                  </div>
+                </div>
+
+                <Button
+                  variant="link"
+                  size="xs"
+                  className="mt-2 px-0 text-[11px]"
+                  onClick={() => setExpandedId((prev) => (prev === item.id ? null : item.id))}
+                >
+                  {expandedId === item.id
+                    ? t('admin.auditHideDetails', { defaultValue: '收起详情' })
+                    : t('admin.auditViewDetails', { defaultValue: '查看详情' })}
+                </Button>
+
+                {expandedId === item.id && (
+                  <pre className="mt-2 max-h-72 overflow-auto rounded-lg border border-border/40 bg-background p-3 text-xs">
+                    {JSON.stringify(item.details ?? {}, null, 2)}
+                  </pre>
+                )}
+              </div>
+            ))}
+            {data.items.length === 0 && (
+              <div className="rounded-xl border border-border/50 bg-card/80 px-4 py-10 text-center text-sm text-muted-foreground">
+                {t('admin.empty')}
+              </div>
+            )}
+          </div>
+
+          <div className="hidden overflow-x-auto rounded-xl border border-border/50 bg-card/80 md:block">
             <table className="min-w-full text-sm">
               <thead className="bg-muted/40 text-left">
                 <tr>

@@ -39,21 +39,21 @@ export function ImageDetailDialog({
 
   return (
     <Dialog open={!!image} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-h-[90vh] flex flex-col sm:max-w-3xl p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b border-border/50 bg-muted/10 shrink-0">
+      <DialogContent className="flex h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] flex-col gap-0 overflow-hidden p-0 sm:h-auto sm:max-h-[90vh] sm:max-w-3xl">
+        <DialogHeader className="shrink-0 border-b border-border/50 bg-muted/10 px-4 py-3 sm:px-6 sm:py-4">
           <DialogTitle>{t('images.detailTitle', { defaultValue: '图片详情' })}</DialogTitle>
         </DialogHeader>
 
         {loading && <LoadingState compact className="py-6" />}
 
         {image && (
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border/50 hover:[&::-webkit-scrollbar-thumb]:bg-border">
-            <div className="flex justify-center rounded-xl bg-muted/20 border border-border/40 p-4 relative group">
+          <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-6 sm:p-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border/50 hover:[&::-webkit-scrollbar-thumb]:bg-border">
+            <div className="group relative flex justify-center rounded-xl border border-border/40 bg-muted/20 p-3 sm:p-4">
               <Button
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => onDelete(image.key)}
-                className="absolute top-2 right-2 text-muted-foreground/60 hover:text-destructive opacity-0 group-hover:opacity-100"
+                className="absolute right-2 top-2 text-muted-foreground/70 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100"
                 title={t('images.delete', { defaultValue: '删除' })}
               >
                 <Trash2 className="size-4" />
@@ -61,16 +61,16 @@ export function ImageDetailDialog({
               <img
                 src={image.links?.url ?? image.url ?? ''}
                 alt={image.key}
-                className="max-h-[35vh] rounded-lg object-contain shadow-sm"
+                className="max-h-[32vh] rounded-lg object-contain shadow-sm sm:max-h-[35vh]"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-6">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-foreground border-b border-border/40 pb-2">{t('images.metadata', { defaultValue: '元数据' })}</h4>
-                <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
-                  <div className="flex flex-col gap-1"><span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Key</span> <span className="font-mono text-foreground break-all">{image.key}</span></div>
+                <div className="grid grid-cols-1 gap-x-4 gap-y-3 text-sm sm:grid-cols-2">
+                  <div className="flex flex-col gap-1 sm:col-span-2"><span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Key</span> <span className="font-mono text-foreground break-all">{image.key}</span></div>
                   <div className="flex flex-col gap-1"><span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('images.colName')}</span> <span className="text-foreground truncate" title={image.origin_name}>{image.origin_name}</span></div>
                   <div className="flex flex-col gap-1"><span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('images.colSize')}</span> <span className="text-foreground">{formatFileSize(image.size_bytes)}</span></div>
                   <div className="flex flex-col gap-1"><span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('images.type', { defaultValue: '类型' })}</span> <span className="text-foreground">{image.mimetype}</span></div>
@@ -105,7 +105,7 @@ export function ImageDetailDialog({
                         ...Object.fromEntries(albums.map((a) => [a.id.toString(), a.name])),
                       }}
                     >
-                      <SelectTrigger className="w-full h-6 px-2 py-0 bg-primary/5 hover:bg-primary/10 border-none shadow-none text-xs font-medium text-primary">
+                      <SelectTrigger className="h-8 w-full border-none bg-primary/5 px-2 py-0 text-xs font-medium text-primary shadow-none hover:bg-primary/10">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -132,10 +132,10 @@ export function ImageDetailDialog({
                 {image.links && (
                   <div className="space-y-2">
                     {Object.entries(image.links).map(([fmt, val]) => (
-                      <div key={fmt} className="group flex items-center gap-3 rounded-lg bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50 border border-border/40 hover:border-primary/30">
-                        <span className="shrink-0 w-14 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">{fmt}</span>
-                        <code className="min-w-0 flex-1 truncate text-xs font-medium text-foreground bg-background/50 px-2 py-1 rounded-md border border-border/30">{val}</code>
-                        <Button variant="ghost" size="icon-xs" onClick={() => onCopy(val)} className="border border-border/50 hover:border-primary hover:bg-primary hover:text-primary-foreground" title={t('upload.copy')}>
+                      <div key={fmt} className="group flex items-start gap-2 rounded-lg border border-border/40 bg-muted/30 px-2.5 py-2 transition-colors hover:border-primary/30 hover:bg-muted/50 sm:items-center sm:gap-3 sm:px-3">
+                        <span className="w-12 shrink-0 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground sm:w-14 sm:pt-0">{fmt}</span>
+                        <code className="min-w-0 flex-1 break-all text-[11px] font-medium text-foreground bg-background/50 px-2 py-1 rounded-md border border-border/30 sm:text-xs">{val}</code>
+                        <Button variant="ghost" size="icon-xs" onClick={() => onCopy(val)} className="mt-0.5 shrink-0 border border-border/50 hover:border-primary hover:bg-primary hover:text-primary-foreground sm:mt-0" title={t('upload.copy')}>
                           <Copy className="size-3" />
                         </Button>
                       </div>

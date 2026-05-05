@@ -23,8 +23,8 @@ export function PublicLayout() {
       </div>
 
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-6">
-          <Link to="/" className="flex items-center gap-3 transition-opacity duration-150 hover:opacity-80">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+          <Link to="/" className="flex min-w-0 items-center gap-3 transition-opacity duration-150 hover:opacity-80">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl shadow-sm">
               <img
                 src={logoSrc}
@@ -35,11 +35,11 @@ export function PublicLayout() {
                 }}
               />
             </div>
-            <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70 dark:from-white dark:to-white/60">
+            <span className="truncate text-base font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70 sm:text-xl dark:from-white dark:to-white/60">
               {appName}
             </span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <LanguageSwitcher />
             <ThemeSwitcher />
             <div className="h-4 w-px bg-border/50 hidden sm:block" />
