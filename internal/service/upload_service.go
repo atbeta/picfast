@@ -165,19 +165,29 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	}
 	dedup := existing.ID != 0
 
-	// Step 10: Write to storage
+	// Step 10: Write to storage and resolve strategy URL
+	store, err := s.getStorage(strategy)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init storage: %w", err)
+	}
+	var strategyPublicURL string
 	if !dedup {
-		store, err := s.getStorage(strategy)
-		if err != nil {
-			return nil, fmt.Errorf("failed to init storage: %w", err)
-		}
 		defer store.Close()
 		if err := store.Write(ctx, pathname, fileData, mimetypeFromExt(ext)); err != nil {
 			return nil, fmt.Errorf("failed to write file: %w", err)
 		}
+		strategyPublicURL = store.URL(pathname)
+		if strategy.StrategyType == "webdav" {
+			strategyPublicURL = ""
+		}
 	} else {
+		store.Close()
 		// Reuse existing file path so all dedup records point to the same file
 		pathname = existing.Path + "/" + existing.Name
+		strategyPublicURL = store.URL(pathname)
+		if strategy.StrategyType == "webdav" {
+			strategyPublicURL = ""
+		}
 	}
 
 	// Step 11: Save DB record
@@ -281,7 +291,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	}
 
 	// Step 14: Build response
-	links := LinkBuilder{BaseURL: s.config.ServerSnapshot().BaseURL}.BuildImageLinks(imageKey, ext, md5Hash, params.FileName)
+	links := LinkBuilder{BaseURL: s.config.ServerSnapshot().BaseURL, StrategyURL: strategyPublicURL}.BuildImageLinks(imageKey, ext, md5Hash, params.FileName)
 
 	// Include moderation info in response so frontend can show pending state
 	resp := &UploadResult{

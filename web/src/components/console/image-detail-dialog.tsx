@@ -14,14 +14,6 @@ import {
 } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-function toRelative(url: string): string {
-  try {
-    return new URL(url).pathname
-  } catch {
-    return url
-  }
-}
-
 interface ImageDetailDialogProps {
   image: ImageItem | null
   loading: boolean
@@ -67,7 +59,7 @@ export function ImageDetailDialog({
                 <Trash2 className="size-4" />
               </Button>
               <img
-                src={toRelative(image.links?.url ?? image.url ?? '')}
+                src={image.links?.url ?? image.url ?? ''}
                 alt={image.key}
                 className="max-h-[35vh] rounded-lg object-contain shadow-sm"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}

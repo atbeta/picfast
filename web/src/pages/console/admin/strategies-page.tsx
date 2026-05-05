@@ -274,6 +274,7 @@ export function AdminStrategiesPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">{t('admin.strategiesTitle')}</h1>
           <p className="text-sm text-muted-foreground">{t('admin.strategiesSubtitle', { defaultValue: '维护存储策略配置并统一上传落盘规则。' })}</p>
+          <p className="mt-3 text-xs text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">{t('admin.strategiesUrlHint', { defaultValue: '本地存储通过 PicFast 代理访问。外部存储（S3/OSS/COS 等）将直接返回 CDN 地址，不受图片公开/私有权限控制。' })}</p>
         </div>
         <Button size="lg" onClick={openCreate}>
           {t('admin.create')}

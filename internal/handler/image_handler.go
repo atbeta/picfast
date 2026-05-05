@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/atbeta/picfast/internal/domain"
@@ -13,7 +15,25 @@ import (
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// extractStrategyURL resolves a direct storage URL from a strategy's configs for non-local strategies.
+// Returns empty string for local storage (fallback to proxy URLs).
+func extractStrategyURL(strategyType string, configs []byte) string {
+	if strategyType == "" || strategyType == "local" || strategyType == "webdav" {
+		return ""
+	}
+	var raw map[string]string
+	if err := json.Unmarshal(configs, &raw); err != nil {
+		return ""
+	}
+	base := raw["url"]
+	if base == "" {
+		base = raw["domain"] // Kodo uses "domain"
+	}
+	return strings.TrimRight(base, "/")
+}
 
 const defaultMaxUploadBytes = 50 << 20 // 50 MiB
 
@@ -209,8 +229,19 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	items := make([]ImageListItem, len(images))
+	strategyBaseCache := make(map[int64]string)
 	for i, img := range images {
-		links := h.buildLinks(img.Key, img.Extension, img.Md5, img.OriginName)
+		var surl string
+		if img.StrategyID.Valid {
+			sid := img.StrategyID.Int64
+			base, ok := strategyBaseCache[sid]
+			if !ok {
+				base = h.strategyBaseURL(r.Context(), img.StrategyID)
+				strategyBaseCache[sid] = base
+			}
+			surl = joinStrategyURL(base, img.Path, img.Name)
+		}
+		links := h.buildLinks(img.Key, img.Extension, img.Md5, img.OriginName, surl)
 		items[i] = ImageListItem{
 			ID:               img.ID,
 			Key:              img.Key,
@@ -254,7 +285,7 @@ func (h *ImageHandler) Get(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	links := h.buildLinks(img.Key, img.Extension, img.Md5, img.OriginName)
+	links := h.buildLinks(img.Key, img.Extension, img.Md5, img.OriginName, joinStrategyURL(h.strategyBaseURL(r.Context(), img.StrategyID), img.Path, img.Name))
 	Success(w, imageResponse(img, links))
 }
 
@@ -359,7 +390,7 @@ func (h *ImageHandler) Update(w http.ResponseWriter, r *http.Request) {
 		"after_album_id":    domain.PgInt8PtrVal(updated.AlbumID),
 	})
 
-	links := h.buildLinks(updated.Key, updated.Extension, updated.Md5, updated.OriginName)
+	links := h.buildLinks(updated.Key, updated.Extension, updated.Md5, updated.OriginName, joinStrategyURL(h.strategyBaseURL(r.Context(), updated.StrategyID), updated.Path, updated.Name))
 	Success(w, imageResponse(updated, links))
 }
 
@@ -407,8 +438,30 @@ func (h *ImageHandler) BatchDelete(w http.ResponseWriter, r *http.Request) {
 	Success(w, map[string]int{"deleted": deleted, "failed": failed})
 }
 
-func (h *ImageHandler) buildLinks(key, extension, md5, originName string) domain.ImageLinks {
-	return service.LinkBuilder{BaseURL: h.baseURL}.BuildImageLinks(key, extension, md5, originName)
+func (h *ImageHandler) buildLinks(key, extension, md5, originName string, strategyURL string) domain.ImageLinks {
+	return service.LinkBuilder{BaseURL: h.baseURL, StrategyURL: strategyURL}.BuildImageLinks(key, extension, md5, originName)
+}
+
+func (h *ImageHandler) strategyBaseURL(ctx context.Context, strategyID pgtype.Int8) string {
+	if !strategyID.Valid {
+		return ""
+	}
+	strategy, err := h.db.GetStrategyByID(ctx, strategyID.Int64)
+	if err != nil {
+		return ""
+	}
+	return extractStrategyURL(strategy.StrategyType, strategy.Configs)
+}
+
+func joinStrategyURL(base, path, name string) string {
+	if base == "" {
+		return ""
+	}
+	pathname := path
+	if name != "" && path != "" {
+		pathname = path + "/" + name
+	}
+	return strings.TrimRight(base, "/") + "/" + strings.TrimLeft(pathname, "/")
 }
 
 func imageResponse(img sqlc.Image, links domain.ImageLinks) ImageResponse {

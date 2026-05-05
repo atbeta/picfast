@@ -8,12 +8,19 @@ import (
 )
 
 type LinkBuilder struct {
-	BaseURL string
+	BaseURL     string
+	StrategyURL string
 }
 
 func (b LinkBuilder) BuildImageLinks(key, extension, md5, originName string) domain.ImageLinks {
 	baseURL := strings.TrimRight(b.BaseURL, "/")
-	url := fmt.Sprintf("%s/i/%s.%s", baseURL, key, extension)
+
+	var url string
+	if b.StrategyURL != "" {
+		url = b.StrategyURL
+	} else {
+		url = fmt.Sprintf("%s/i/%s.%s", baseURL, key, extension)
+	}
 
 	var thumbURL string
 	ext := strings.ToLower(extension)

@@ -15,11 +15,6 @@ import { EmptyState, LoadingState } from '@/components/page-states'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 
-function toRelative(url: string): string {
-  try { return new URL(url).pathname }
-  catch { return url }
-}
-
 export function ImagesPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -181,7 +176,7 @@ export function ImagesPage() {
       const img = data.items.find(i => i.key === key)
       if (img) {
         try {
-          const url = toRelative(img.links?.url ?? img.url ?? '')
+          const url = img.links?.url ?? img.url ?? ''
           const res = await fetch(url)
           const blob = await res.blob()
           const a = document.createElement('a')
@@ -360,7 +355,7 @@ export function ImagesPage() {
                   {img.thumbnail_url || img.links?.thumbnail_url || img.extension === 'svg' || img.extension === 'ico' ? (
                     <>
                       <img
-                        src={toRelative(img.thumbnail_url || img.links?.thumbnail_url || img.links?.url || img.url || '')}
+                        src={img.thumbnail_url || img.links?.thumbnail_url || img.links?.url || img.url || ''}
                         alt=""
                         className="h-full w-full object-cover"
                         loading="lazy"

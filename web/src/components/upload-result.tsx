@@ -65,6 +65,9 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
     { label: 'HTML', value: result.links.html },
     { label: 'BBCode', value: result.links.bbcode },
   ]
+  if (result.links.thumbnail_url) {
+    items.push({ label: 'Thumbnail URL', value: result.links.thumbnail_url })
+  }
 
   return (
     <div className="group overflow-hidden rounded-2xl border border-border/50 bg-card/60 shadow-sm transition-colors duration-150 hover:border-border/80">
