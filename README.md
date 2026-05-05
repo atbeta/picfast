@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/atbeta/picfast/actions/workflows/ci.yml"><img src="https://github.com/atbeta/picfast/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/atbeta/picfast/actions/workflows/release-please.yml"><img src="https://github.com/atbeta/picfast/actions/workflows/release-please.yml/badge.svg" alt="Release Please"></a>
-  <a href="https://github.com/atbeta/picfast/actions/workflows/docker-publish.yml"><img src="https://github.com/atbeta/picfast/actions/workflows/docker-publish.yml/badge.svg" alt="Publish Docker Image"></a>
-  <a href="https://hub.docker.com/r/xbeta/picfast"><img src="https://img.shields.io/docker/pulls/xbeta/picfast?logo=docker" alt="Docker Pulls"></a>
-  <a href="https://hub.docker.com/r/xbeta/picfast"><img src="https://img.shields.io/docker/image-size/xbeta/picfast/latest?logo=docker&label=image" alt="Docker Image"></a>
+  <a href="https://github.com/atbeta/picfast/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/atbeta/picfast/ci.yml?branch=main&label=ci&logo=github" alt="CI"></a>
+  <a href="https://github.com/atbeta/picfast/releases/latest"><img src="https://img.shields.io/github/v/release/atbeta/picfast?logo=github&label=release" alt="Latest Release"></a>
+  <a href="https://hub.docker.com/r/xbeta/picfast"><img src="https://img.shields.io/docker/pulls/xbeta/picfast?logo=docker&label=pulls" alt="Docker Pulls"></a>
+  <a href="https://hub.docker.com/r/xbeta/picfast"><img src="https://img.shields.io/docker/image-size/xbeta/picfast/latest?logo=docker&label=image" alt="Docker Image Size"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License"></a>
 </p>
 
 ---
