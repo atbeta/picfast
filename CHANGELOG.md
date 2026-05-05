@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/atbeta/picfast/compare/v0.6.4...v0.7.0) (2026-05-05)
+
+
+### Features
+
+* **storage:** return direct CDN URLs for external storage strategies ([92b2373](https://github.com/atbeta/picfast/commit/92b2373223051ff05dc1126a2e52e6075d2fa3f2))
+
+
+### Bug Fixes
+
+* **ux:** add execCommand fallback for clipboard copy on older Edge ([25cdea4](https://github.com/atbeta/picfast/commit/25cdea46ace81c0f4e90591aa710305792f62bc2))
+* **ux:** improve console mobile navigation and admin readability ([464bd3f](https://github.com/atbeta/picfast/commit/464bd3f1b15345d5db795648934a3fd9bc451c2e))
+
 ## [0.6.4](https://github.com/atbeta/picfast/compare/v0.6.3...v0.6.4) (2026-05-05)
 
 
