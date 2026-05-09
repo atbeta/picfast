@@ -245,5 +245,6 @@ func applyPersistedSiteSettings(ctx context.Context, queries *sqlc.Queries, cfg 
 	cfg.App.FooterLink2 = settings.FooterLink2
 	cfg.App.AnalyticsProvider = settings.AnalyticsProvider
 	cfg.App.AnalyticsConfig = settings.AnalyticsConfig
+	cfg.App.ThemeConfig = settings.ThemeConfig
 	return nil
 }

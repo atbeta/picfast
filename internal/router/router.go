@@ -258,6 +258,7 @@ func New(
 				"footer_link_2":               app.FooterLink2,
 				"analytics_provider":          app.AnalyticsProvider,
 				"analytics_config":            normalizeJSON(app.AnalyticsConfig),
+				"theme_config":                normalizeJSON(app.ThemeConfig),
 				"github_url":                  version.DefaultGitHubURL(),
 				"setup_required":              setupRequired,
 			})

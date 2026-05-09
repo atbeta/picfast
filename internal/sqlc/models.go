@@ -148,6 +148,7 @@ type SiteSetting struct {
 	FooterText2              string          `json:"footer_text_2"`
 	FooterLink2              string          `json:"footer_link_2"`
 	GuestImageTtl            string          `json:"guest_image_ttl"`
+	ThemeConfig              json.RawMessage `json:"theme_config"`
 }
 
 type Strategy struct {

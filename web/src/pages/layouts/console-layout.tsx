@@ -19,7 +19,8 @@ import {
   ShieldCheck,
   BarChart3,
   ShieldAlert,
-  Menu
+  Menu,
+  Palette
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -60,7 +61,7 @@ export function ConsoleLayout() {
               <span className="sr-only">{t('nav.menu', { defaultValue: '菜单' })}</span>
             </Button>
             <Link to="/console/upload" className="flex min-w-0 items-center gap-2 text-lg font-bold tracking-tight transition-opacity hover:opacity-80">
-            <div className="h-7 w-7 shrink-0 overflow-hidden rounded-md shadow-sm border border-border/50 bg-background">
+            <div className="pf-site-logo h-7 w-7 shrink-0 overflow-hidden rounded-md shadow-sm border border-border/50 bg-background">
               <img
                 src={logoSrc}
                 alt="logo"
@@ -128,6 +129,7 @@ export function ConsoleLayout() {
                   <ConsoleNavItem to="/console/admin/moderation" label={t('admin.navModeration', { defaultValue: '审核管理' })} icon={ShieldAlert} onNavigate={() => setMobileNavOpen(false)} />
                   <ConsoleNavItem to="/console/admin/audit-logs" label={t('admin.navAuditLogs', { defaultValue: '审计日志' })} icon={ScrollText} onNavigate={() => setMobileNavOpen(false)} />
                   <ConsoleNavItem to="/console/admin/site" label={t('admin.navSiteSettings')} icon={Globe} onNavigate={() => setMobileNavOpen(false)} />
+                  <ConsoleNavItem to="/console/admin/appearance" label={t('admin.navAppearanceSettings', { defaultValue: '外观风格' })} icon={Palette} onNavigate={() => setMobileNavOpen(false)} />
                   <ConsoleNavItem to="/console/admin/access" label={t('admin.navAccessSettings')} icon={ShieldCheck} onNavigate={() => setMobileNavOpen(false)} />
                   <ConsoleNavItem to="/console/admin/analytics" label={t('admin.navAnalyticsSettings')} icon={BarChart3} onNavigate={() => setMobileNavOpen(false)} />
                 </>
@@ -137,7 +139,7 @@ export function ConsoleLayout() {
         </DialogContent>
       </Dialog>
 
-      <div className="relative z-10 mx-auto flex flex-col md:grid w-full max-w-[1400px] md:grid-cols-[200px_1fr] gap-6 md:gap-8 px-4 md:px-6 py-6 md:py-8 flex-1">
+      <div className="pf-console-shell relative z-10 mx-auto flex flex-col md:grid w-full max-w-[1400px] md:grid-cols-[200px_1fr] gap-6 md:gap-8 px-4 md:px-6 py-6 md:py-8 flex-1">
         <aside className="hidden w-full md:block">
           <div className="md:sticky md:top-24 space-y-1">
             <div className="space-y-2">
@@ -162,6 +164,7 @@ export function ConsoleLayout() {
                   <ConsoleNavItem to="/console/admin/moderation" label={t('admin.navModeration', { defaultValue: '审核管理' })} icon={ShieldAlert} />
                   <ConsoleNavItem to="/console/admin/audit-logs" label={t('admin.navAuditLogs', { defaultValue: '审计日志' })} icon={ScrollText} />
                   <ConsoleNavItem to="/console/admin/site" label={t('admin.navSiteSettings')} icon={Globe} />
+                  <ConsoleNavItem to="/console/admin/appearance" label={t('admin.navAppearanceSettings', { defaultValue: '外观风格' })} icon={Palette} />
                   <ConsoleNavItem to="/console/admin/access" label={t('admin.navAccessSettings')} icon={ShieldCheck} />
                   <ConsoleNavItem to="/console/admin/analytics" label={t('admin.navAnalyticsSettings')} icon={BarChart3} />
                 </div>
@@ -170,7 +173,7 @@ export function ConsoleLayout() {
           </div>
         </aside>
         <main className="min-w-0 flex flex-col">
-          <div className="rounded-2xl border border-border/40 bg-card p-4 sm:p-6 md:p-8 shadow-sm flex-1">
+          <div className="pf-console-content rounded-2xl border border-border/40 bg-card p-4 sm:p-6 md:p-8 shadow-sm flex-1">
             <Outlet />
           </div>
         </main>

@@ -44,3 +44,4 @@ app:
   footer_link_2: ""             # footer item 2 link; if set, text becomes a hyperlink
   analytics_provider: ""       # plausible | umami | ga4 | baidu | custom
   analytics_config: "{}"       # provider-specific JSON; configurable in admin console
+  theme_config: "{}"           # theme preset/tokens/custom CSS JSON; configurable in admin console

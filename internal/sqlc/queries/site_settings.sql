@@ -22,9 +22,10 @@ INSERT INTO site_settings (
     footer_link_2,
     analytics_provider,
     analytics_config,
-    allow_user_image_processing
+    allow_user_image_processing,
+    theme_config
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
@@ -45,5 +46,6 @@ ON CONFLICT (id) DO UPDATE SET
     analytics_provider = EXCLUDED.analytics_provider,
     analytics_config = EXCLUDED.analytics_config,
     allow_user_image_processing = EXCLUDED.allow_user_image_processing,
+    theme_config = EXCLUDED.theme_config,
     updated_at = NOW()
 RETURNING *;

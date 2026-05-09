@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -52,6 +53,7 @@ type updateSettingsRequest struct {
 	FooterLink2              *string          `json:"footer_link_2"`
 	AnalyticsProvider        *string          `json:"analytics_provider"`
 	AnalyticsConfig          *json.RawMessage `json:"analytics_config"`
+	ThemeConfig              *json.RawMessage `json:"theme_config"`
 }
 
 func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -194,6 +196,17 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 		h.setter.SetAnalytics(provider, analyticsConfig)
 	}
+	if req.ThemeConfig != nil {
+		themeConfig := cloneRawMessage(*req.ThemeConfig)
+		if len(themeConfig) == 0 {
+			themeConfig = json.RawMessage(`{}`)
+		}
+		if err := validateThemeConfig(themeConfig); err != nil {
+			Fail(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		h.setter.SetThemeConfig(themeConfig)
+	}
 	if err := h.persist(r.Context()); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to persist settings")
 		return
@@ -230,6 +243,7 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 		FooterLink2:              app.FooterLink2,
 		AnalyticsProvider:        app.AnalyticsProvider,
 		AnalyticsConfig:          normalizedRawMessage(app.AnalyticsConfig),
+		ThemeConfig:              normalizedRawMessage(app.ThemeConfig),
 	})
 	return err
 }
@@ -248,20 +262,93 @@ func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string
 		"require_email_verification":  app.RequireEmailVerification,
 		"user_initial_capacity":       app.UserInitialCapacity,
 		"default_image_ttl":           app.DefaultImageTTL.String(),
-		"guest_image_ttl":            app.GuestImageTTL.String(),
+		"guest_image_ttl":             app.GuestImageTTL.String(),
 		"moderation_mode":             app.ModerationMode,
-		"footer_text_1":              app.FooterText1,
-		"footer_link_1":              app.FooterLink1,
-		"footer_text_2":              app.FooterText2,
-		"footer_link_2":              app.FooterLink2,
+		"footer_text_1":               app.FooterText1,
+		"footer_link_1":               app.FooterLink1,
+		"footer_text_2":               app.FooterText2,
+		"footer_link_2":               app.FooterLink2,
 		"analytics_provider":          app.AnalyticsProvider,
 		"analytics_config":            normalizedRawMessage(app.AnalyticsConfig),
+		"theme_config":                normalizedRawMessage(app.ThemeConfig),
 	}
 	if includeMailReady {
 		resp["require_email_verification"] = app.RequireEmailVerification && h.mailReady
 		resp["email_verification_ready"] = h.mailReady
 	}
 	return resp
+}
+
+func validateThemeConfig(raw json.RawMessage) error {
+	var cfg map[string]any
+	if err := json.Unmarshal(normalizedRawMessage(raw), &cfg); err != nil {
+		return &badRequestError{"invalid theme_config"}
+	}
+	if css, ok := cfg["custom_css"].(string); ok && len(css) > 20000 {
+		return &badRequestError{"theme_config custom_css is too large"}
+	}
+	if preset, ok := cfg["preset"].(string); ok && len(preset) > 80 {
+		return &badRequestError{"theme_config preset is too long"}
+	}
+	if public, ok := cfg["public"].(map[string]any); ok {
+		if backgroundImage := stringValue(public["background_image"]); backgroundImage != "" {
+			if err := validateOptionalURL(backgroundImage); err != nil {
+				return &badRequestError{"theme_config background_image is invalid"}
+			}
+		}
+	}
+	if tokens, ok := cfg["tokens"].(map[string]any); ok {
+		for _, mode := range []string{"light", "dark"} {
+			values, ok := tokens[mode].(map[string]any)
+			if !ok {
+				continue
+			}
+			for key, rawValue := range values {
+				value, ok := rawValue.(string)
+				if !ok || strings.TrimSpace(value) == "" {
+					continue
+				}
+				if key == "radius" {
+					if !isSafeCSSLength(value) {
+						return &badRequestError{"theme_config radius is invalid"}
+					}
+					continue
+				}
+				if !isSafeCSSColor(value) {
+					return &badRequestError{"theme_config color is invalid"}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+var (
+	themeHexColorRe  = regexp.MustCompile(`^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$`)
+	themeFuncColorRe = regexp.MustCompile(`^(?:rgb|rgba|hsl|hsla|oklch|oklab|lch|lab|color)\([0-9a-zA-Z\s.,%/+_-]+\)$`)
+	themeLengthRe    = regexp.MustCompile(`^(?:0|[0-9]+(?:\.[0-9]+)?(?:px|rem|em|%|vh|vw|vmin|vmax|ch|ex))$`)
+	themeNamedColors = map[string]bool{
+		"transparent": true, "currentcolor": true, "black": true, "white": true,
+		"red": true, "orange": true, "yellow": true, "green": true, "blue": true,
+		"purple": true, "pink": true, "gray": true, "grey": true, "slate": true,
+		"cyan": true, "teal": true, "lime": true, "indigo": true, "violet": true,
+	}
+)
+
+func isSafeCSSColor(value string) bool {
+	value = strings.TrimSpace(value)
+	if value == "" || strings.ContainsAny(value, ";{}<>") || len(value) > 160 {
+		return false
+	}
+	return themeHexColorRe.MatchString(value) || themeFuncColorRe.MatchString(value) || themeNamedColors[strings.ToLower(value)]
+}
+
+func isSafeCSSLength(value string) bool {
+	value = strings.TrimSpace(value)
+	if value == "" || strings.ContainsAny(value, ";{}<>") || len(value) > 48 {
+		return false
+	}
+	return themeLengthRe.MatchString(value)
 }
 
 func validateOptionalURL(value string) error {

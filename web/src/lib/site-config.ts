@@ -1,4 +1,5 @@
 import api from './api'
+import type { ThemeConfig } from './theme-config'
 
 export interface SiteConfig {
   app_name: string
@@ -18,6 +19,7 @@ export interface SiteConfig {
   footer_link_2: string
   analytics_provider: string
   analytics_config: Record<string, unknown>
+  theme_config: ThemeConfig
   github_url: string
   setup_required: boolean
 }

@@ -25,6 +25,7 @@ const AdminModerationPage = lazy(async () => ({ default: (await import('../pages
 const AdminSiteSettingsPage = lazy(async () => ({ default: (await import('../pages/console/admin/settings/site-settings-page')).AdminSiteSettingsPage }))
 const AdminAccessSettingsPage = lazy(async () => ({ default: (await import('../pages/console/admin/settings/access-settings-page')).AdminAccessSettingsPage }))
 const AdminAnalyticsSettingsPage = lazy(async () => ({ default: (await import('../pages/console/admin/settings/analytics-settings-page')).AdminAnalyticsSettingsPage }))
+const AdminAppearanceSettingsPage = lazy(async () => ({ default: (await import('../pages/console/admin/settings/appearance-settings-page')).AdminAppearanceSettingsPage }))
 const AdminDashboardPage = lazy(async () => ({ default: (await import('../pages/console/admin/dashboard-page')).AdminDashboardPage }))
 const AdminAuditLogsPage = lazy(async () => ({ default: (await import('../pages/console/admin/audit-logs-page')).AdminAuditLogsPage }))
 const GuestUploadPage = lazy(async () => ({ default: (await import('../pages/public/guest-upload-page')).GuestUploadPage }))
@@ -165,6 +166,7 @@ function PublicRoutes() {
                 <Route path="seo" element={<Navigate to="/console/admin/site" replace />} />
                 <Route path="compliance" element={<Navigate to="/console/admin/site" replace />} />
                 <Route path="analytics" element={<LazyPage><AdminAnalyticsSettingsPage /></LazyPage>} />
+                <Route path="appearance" element={<LazyPage><AdminAppearanceSettingsPage /></LazyPage>} />
               </Route>
               <Route index element={<Navigate to="/console/upload" replace />} />
             </Route>

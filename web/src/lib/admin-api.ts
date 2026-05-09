@@ -1,4 +1,5 @@
 import api, { type ApiResponse, type PaginatedData } from './api'
+import type { ThemeConfig } from './theme-config'
 
 // --- Shared ---
 
@@ -233,6 +234,7 @@ export interface AdminSettings {
   footer_link_2: string
   analytics_provider: string
   analytics_config: Record<string, unknown>
+  theme_config: ThemeConfig
 }
 
 export async function getAdminSettings(): Promise<AdminSettings> {

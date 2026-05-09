@@ -11,7 +11,7 @@ import (
 )
 
 const getSiteSettings = `-- name: GetSiteSettings :one
-SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl FROM site_settings WHERE id = 1
+SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config FROM site_settings WHERE id = 1
 `
 
 func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
@@ -40,6 +40,7 @@ func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
 		&i.FooterText2,
 		&i.FooterLink2,
 		&i.GuestImageTtl,
+		&i.ThemeConfig,
 	)
 	return i, err
 }
@@ -65,9 +66,10 @@ INSERT INTO site_settings (
     footer_link_2,
     analytics_provider,
     analytics_config,
-    allow_user_image_processing
+    allow_user_image_processing,
+    theme_config
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
@@ -88,8 +90,9 @@ ON CONFLICT (id) DO UPDATE SET
     analytics_provider = EXCLUDED.analytics_provider,
     analytics_config = EXCLUDED.analytics_config,
     allow_user_image_processing = EXCLUDED.allow_user_image_processing,
+    theme_config = EXCLUDED.theme_config,
     updated_at = NOW()
-RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl
+RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config
 `
 
 type UpsertSiteSettingsParams struct {
@@ -112,6 +115,7 @@ type UpsertSiteSettingsParams struct {
 	AnalyticsProvider        string          `json:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `json:"analytics_config"`
 	AllowUserImageProcessing bool            `json:"allow_user_image_processing"`
+	ThemeConfig              json.RawMessage `json:"theme_config"`
 }
 
 func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettingsParams) (SiteSetting, error) {
@@ -135,6 +139,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		arg.AnalyticsProvider,
 		arg.AnalyticsConfig,
 		arg.AllowUserImageProcessing,
+		arg.ThemeConfig,
 	)
 	var i SiteSetting
 	err := row.Scan(
@@ -160,6 +165,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		&i.FooterText2,
 		&i.FooterLink2,
 		&i.GuestImageTtl,
+		&i.ThemeConfig,
 	)
 	return i, err
 }

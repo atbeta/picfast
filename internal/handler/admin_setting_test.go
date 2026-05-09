@@ -3,6 +3,7 @@ package handler_test
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/atbeta/picfast/internal/domain"
@@ -140,10 +141,10 @@ func TestAdminSettingsPersistSiteMetadata(t *testing.T) {
 	body := map[string]interface{}{
 		"site_description":   "A private image hosting service for the team.",
 		"favicon_url":        "https://img.example.com/favicon.ico",
-		"footer_text_1": "京ICP备12345678号-1",
-		"footer_link_1": "https://beian.miit.gov.cn/",
-		"footer_text_2": "京公网安备11000002000001号",
-		"footer_link_2": "https://www.beian.gov.cn/",
+		"footer_text_1":      "京ICP备12345678号-1",
+		"footer_link_1":      "https://beian.miit.gov.cn/",
+		"footer_text_2":      "京公网安备11000002000001号",
+		"footer_link_2":      "https://www.beian.gov.cn/",
 		"analytics_provider": "umami",
 		"analytics_config": map[string]interface{}{
 			"script_url": "https://analytics.example.com/script.js",
@@ -190,6 +191,117 @@ func TestAdminSettingsPersistSiteMetadata(t *testing.T) {
 	}
 }
 
+func TestAdminSettingsPersistThemeConfig(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, admin := env.seedSetup(t)
+	makeAdmin(t, env, admin.ID)
+
+	body := map[string]interface{}{
+		"theme_config": map[string]interface{}{
+			"preset": "moe",
+			"mode":   "system",
+			"tokens": map[string]interface{}{
+				"light": map[string]interface{}{
+					"primary": "oklch(0.68 0.18 345)",
+					"radius":  "1rem",
+				},
+			},
+			"public": map[string]interface{}{
+				"background_style": "soft",
+				"logo_shape":       "circle",
+			},
+			"custom_css": ".pf-custom { color: var(--primary); }",
+		},
+	}
+	req := env.authReq(t, http.MethodPut, "/api/v1/admin/settings", body, admin.ID, domain.RoleAdmin, group.ID)
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+	}
+
+	data := respDataMap(t, parseResp(t, rec))
+	theme, ok := data["theme_config"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("theme_config = %T, want object", data["theme_config"])
+	}
+	if theme["preset"] != "moe" {
+		t.Fatalf("theme preset = %v", theme["preset"])
+	}
+
+	settings, err := env.DB.GetSiteSettings(req.Context())
+	if err != nil {
+		t.Fatalf("get persisted site settings: %v", err)
+	}
+	var persisted map[string]interface{}
+	if err := json.Unmarshal(settings.ThemeConfig, &persisted); err != nil {
+		t.Fatalf("unmarshal theme config: %v", err)
+	}
+	if persisted["preset"] != "moe" {
+		t.Fatalf("persisted theme preset = %v", persisted["preset"])
+	}
+}
+
+func TestAdminSettingsRejectsInvalidThemeBackgroundImage(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, admin := env.seedSetup(t)
+	makeAdmin(t, env, admin.ID)
+
+	body := map[string]interface{}{
+		"theme_config": map[string]interface{}{
+			"public": map[string]interface{}{
+				"background_image": "javascript:alert(1)",
+			},
+		},
+	}
+	req := env.authReq(t, http.MethodPut, "/api/v1/admin/settings", body, admin.ID, domain.RoleAdmin, group.ID)
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAdminSettingsRejectsOversizedThemeCSS(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, admin := env.seedSetup(t)
+	makeAdmin(t, env, admin.ID)
+
+	body := map[string]interface{}{
+		"theme_config": map[string]interface{}{
+			"custom_css": strings.Repeat("x", 20001),
+		},
+	}
+	req := env.authReq(t, http.MethodPut, "/api/v1/admin/settings", body, admin.ID, domain.RoleAdmin, group.ID)
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAdminSettingsRejectsInvalidThemeColor(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, admin := env.seedSetup(t)
+	makeAdmin(t, env, admin.ID)
+
+	body := map[string]interface{}{
+		"theme_config": map[string]interface{}{
+			"tokens": map[string]interface{}{
+				"light": map[string]interface{}{
+					"primary": "definitely-not-a-color",
+				},
+			},
+		},
+	}
+	req := env.authReq(t, http.MethodPut, "/api/v1/admin/settings", body, admin.ID, domain.RoleAdmin, group.ID)
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestAdminSettingsRejectsInvalidAnalyticsProvider(t *testing.T) {
 	env := newTestEnv(t)
 	_, group, admin := env.seedSetup(t)
@@ -214,7 +326,7 @@ func TestPublicConfigIncludesSiteMetadata(t *testing.T) {
 	body := map[string]interface{}{
 		"site_description":   "Public description",
 		"favicon_url":        "https://img.example.com/site.ico",
-		"footer_text_1": "沪ICP备12345678号",
+		"footer_text_1":      "沪ICP备12345678号",
 		"analytics_provider": "plausible",
 		"analytics_config": map[string]interface{}{
 			"domain":     "img.example.com",
@@ -244,6 +356,9 @@ func TestPublicConfigIncludesSiteMetadata(t *testing.T) {
 	}
 	if data["analytics_provider"] != "plausible" {
 		t.Fatalf("analytics_provider = %v", data["analytics_provider"])
+	}
+	if _, ok := data["theme_config"].(map[string]interface{}); !ok {
+		t.Fatalf("theme_config = %T, want object", data["theme_config"])
 	}
 	if data["github_url"] != "https://github.com/atbeta/picfast" {
 		t.Fatalf("github_url = %v", data["github_url"])

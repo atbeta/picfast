@@ -1820,6 +1820,9 @@ components:
         analytics_config:
           type: object
           additionalProperties: true
+        theme_config:
+          type: object
+          additionalProperties: true
 
     PublicConfigResponse:
       type: object
@@ -1871,6 +1874,9 @@ components:
         analytics_provider:
           type: string
         analytics_config:
+          type: object
+          additionalProperties: true
+        theme_config:
           type: object
           additionalProperties: true
         github_url:
@@ -1982,6 +1988,9 @@ components:
           type: string
           enum: ["", plausible, umami, ga4, baidu, custom]
         analytics_config:
+          type: object
+          additionalProperties: true
+        theme_config:
           type: object
           additionalProperties: true
 

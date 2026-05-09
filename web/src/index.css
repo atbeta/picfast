@@ -50,6 +50,8 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --pf-public-bg-image: none;
+  --pf-public-bg-opacity: 0;
 }
 
 .dark {
@@ -105,6 +107,34 @@ body {
     sans-serif;
 }
 
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--pf-public-bg-image);
+  background-position: center;
+  background-size: cover;
+  opacity: var(--pf-public-bg-opacity);
+}
+
+html[data-pf-theme-background='clean'] .pf-public-glow {
+  display: none;
+}
+
+html[data-pf-theme-background='image'] .pf-public-glow {
+  opacity: 0.45;
+}
+
+html[data-pf-theme-logo='circle'] .pf-site-logo {
+  border-radius: 9999px;
+}
+
+html[data-pf-theme-logo='square'] .pf-site-logo {
+  border-radius: calc(var(--radius) * 0.35);
+}
+
 /* ===== Dark-mode form controls ===== */
 /* These reset browser defaults that ignore Tailwind's dark variant */
 
@@ -114,9 +144,10 @@ body {
   color-scheme: dark;
 }
 
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: var(--muted-foreground);
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in oklch, var(--muted-foreground), transparent 45%) !important;
+  opacity: 1;
 }
 
 .dark select option {

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/subosito/gotenv"
 	"github.com/spf13/viper"
+	"github.com/subosito/gotenv"
 )
 
 type Config struct {
@@ -84,6 +84,7 @@ type AppConfig struct {
 	FooterLink2              string          `mapstructure:"footer_link_2"`
 	AnalyticsProvider        string          `mapstructure:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `mapstructure:"analytics_config"`
+	ThemeConfig              json.RawMessage `mapstructure:"theme_config"`
 }
 
 type Setter struct {
@@ -188,6 +189,12 @@ func (s *Setter) SetAnalytics(provider string, cfg json.RawMessage) {
 	s.cfg.App.AnalyticsConfig = cfg
 }
 
+func (s *Setter) SetThemeConfig(cfg json.RawMessage) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.ThemeConfig = cfg
+}
+
 func (c *Config) AppSnapshot() AppConfig {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -250,6 +257,14 @@ func Load() (*Config, error) {
 		if raw := strings.TrimSpace(v.GetString("app.analytics_config")); raw != "" {
 			cfg.App.AnalyticsConfig = json.RawMessage(raw)
 		}
+	}
+	if v.IsSet("app.theme_config") {
+		if raw := strings.TrimSpace(v.GetString("app.theme_config")); raw != "" {
+			cfg.App.ThemeConfig = json.RawMessage(raw)
+		}
+	}
+	if len(cfg.App.ThemeConfig) == 0 {
+		cfg.App.ThemeConfig = json.RawMessage(`{}`)
 	}
 	if strings.TrimSpace(cfg.Server.MetricsAddr) == "" {
 		cfg.Server.MetricsAddr = fmt.Sprintf("127.0.0.1:%d", cfg.Server.MetricsPort)
