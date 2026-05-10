@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/atbeta/picfast/compare/v0.7.0...v0.8.0) (2026-05-10)
+
+
+### Features
+
+* **admin:** customize site appearance with theme presets ([34c9368](https://github.com/atbeta/picfast/commit/34c93680b790c3d00f3b61431d248d7e850bba46))
+* **maintenance:** add backup and restore CLI with admin reference ([94ca147](https://github.com/atbeta/picfast/commit/94ca1478a984fb93b7590463458432af1b95aae7))
+
 ## [0.7.0](https://github.com/atbeta/picfast/compare/v0.6.4...v0.7.0) (2026-05-05)
 
 
