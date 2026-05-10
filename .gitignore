@@ -7,6 +7,11 @@ web/dist/
 *.exe
 .env
 
+# Local TLS / CA tooling outputs (e.g. mkcert); never commit keys
+/ca_cert.json
+/ca_cert.pem
+/ca_key.pem
+
 # JavaScript — any package dir (web/, mcp/, tools/, …)
 node_modules/
 mcp/dist/

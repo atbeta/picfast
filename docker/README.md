@@ -30,6 +30,7 @@ docker compose up -d
 数据落盘在当前目录下：
 - Postgres：`./data/postgres`
 - 上传与缩略图：`./data/uploads`、`./data/thumbnails`（`init-permissions` 自动修正权限）
+- 维护备份：`./data/backups`（管理后台「维护与迁移」页的默认命令会写入这里）
 
 ---
 

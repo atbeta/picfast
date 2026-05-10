@@ -62,6 +62,7 @@ services:
     volumes:
       - uploads:/app/data/uploads
       - thumbnails:/app/data/thumbnails
+      - backups:/app/data/backups
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
       interval: 10s
@@ -75,6 +76,7 @@ volumes:
   pgdata:
   uploads:
   thumbnails:
+  backups:
 
 networks:
   picfast-net:

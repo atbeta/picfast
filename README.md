@@ -94,6 +94,7 @@ docker run -d --name picfast --network picfast-net -p 18080:8080 \
   -e PICFAST_SERVER_BASE_URL='http://localhost:18080' \
   -v picfast-uploads:/app/data/uploads \
   -v picfast-thumbnails:/app/data/thumbnails \
+  -v picfast-backups:/app/data/backups \
   xbeta/picfast:latest
 ```
 
@@ -120,4 +121,5 @@ make docker-down
 | 环境变量 | [.env.example](.env.example) |
 | OpenAPI | 启动后访问 `/docs`、`/openapi.yaml` |
 | MCP | [docs/mcp-api.md](docs/mcp-api.md) |
+| 备份、巡检与恢复（CLI） | [docs/maintenance.md](docs/maintenance.md) |
 | 镜像发布与回滚 | [docs/release-playbook.md](docs/release-playbook.md) |

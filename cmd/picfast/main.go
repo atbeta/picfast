@@ -29,6 +29,10 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "maintenance" {
+		os.Exit(runMaintenanceCommand(context.Background(), os.Args[2:], os.Stdout, os.Stderr))
+	}
+
 	vips.Startup(&vips.Config{
 		ConcurrencyLevel: 2,
 		MaxCacheFiles:    0,

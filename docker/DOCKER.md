@@ -25,6 +25,7 @@ docker run -d \
   -e PICFAST_SERVER_BASE_URL='http://localhost:18080' \
   -v picfast-uploads:/app/data/uploads \
   -v picfast-thumbnails:/app/data/thumbnails \
+  -v picfast-backups:/app/data/backups \
   xbeta/picfast:latest
 ```
 

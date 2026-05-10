@@ -21,10 +21,11 @@ services:
     image: busybox:latest
     restart: "no"
     user: "0:0"
-    command: sh -c "mkdir -p /data/uploads /data/thumbnails && chown -R 10001:10001 /data/uploads /data/thumbnails"
+    command: sh -c "mkdir -p /data/uploads /data/thumbnails /data/backups && chown -R 10001:10001 /data/uploads /data/thumbnails /data/backups"
     volumes:
       - ./data/uploads:/data/uploads
       - ./data/thumbnails:/data/thumbnails
+      - ./data/backups:/data/backups
 
   app:
     image: ${PICFAST_IMAGE:-xbeta/picfast:latest}
@@ -71,6 +72,7 @@ services:
     volumes:
       - ./data/uploads:/app/data/uploads
       - ./data/thumbnails:/app/data/thumbnails
+      - ./data/backups:/app/data/backups
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health || exit 1"]
       interval: 10s
