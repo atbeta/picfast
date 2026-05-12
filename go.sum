@@ -142,8 +142,8 @@ github.com/prometheus/common v0.66.1 h1:h5E0h5/Y8niHc5DlaLlWLArTQI7tMrsfQjHV+d9Z
 github.com/prometheus/common v0.66.1/go.mod h1:gcaUsgf3KfRSwHY4dIMXLPV0K/Wg1oZ8+SbZk/HH/dA=
 github.com/prometheus/procfs v0.16.1 h1:hZ15bTNuirocR6u0JZ6BAHHmwS1p8B4P6MRqxtzMyRg=
 github.com/prometheus/procfs v0.16.1/go.mod h1:teAbpZRB1iIAJYREa1LsoWUXykVXA1KlTmWl8x/U+Is=
-github.com/qiniu/go-sdk/v7 v7.26.10 h1:1c2c+grH7b8k5inIDKc95CI8+mAzB5YtfQ/dLOB2nNo=
-github.com/qiniu/go-sdk/v7 v7.26.10/go.mod h1:ri7fGwbio0pRDFr8EK5TUpx0DbnpIMJ2bMSDxGWfCbk=
+github.com/qiniu/go-sdk/v7 v7.26.12 h1:AnWiKjBY62XpULoB/MySKdNmlUo9S9pQB7/0s7QueCo=
+github.com/qiniu/go-sdk/v7 v7.26.12/go.mod h1:ri7fGwbio0pRDFr8EK5TUpx0DbnpIMJ2bMSDxGWfCbk=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/rs/dnscache v0.0.0-20230804202142-fc85eb664529/go.mod h1:qe5TWALJ8/a1Lqznoc5BDHpYX/8HU60Hm2AwRmqzxqA=
