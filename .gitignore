@@ -17,3 +17,6 @@ node_modules/
 mcp/dist/
 /picfast
 imgapi
+
+# Go test coverage output
+coverage.out

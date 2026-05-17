@@ -119,6 +119,20 @@ func (e *testEnv) authReq(t *testing.T, method, path string, body interface{}, u
 	return req
 }
 
+func (e *testEnv) apiTokenReq(t *testing.T, method, path string, body interface{}, apiToken string) *http.Request {
+	t.Helper()
+	req := newJSONReq(t, method, path, body)
+	req.Header.Set("X-API-Token", apiToken)
+	return req
+}
+
+func (e *testEnv) bearerAPITokenReq(t *testing.T, method, path string, body interface{}, apiToken string) *http.Request {
+	t.Helper()
+	req := newJSONReq(t, method, path, body)
+	req.Header.Set("Authorization", "Bearer "+apiToken)
+	return req
+}
+
 func doReq(r http.Handler, req *http.Request) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)

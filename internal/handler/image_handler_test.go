@@ -25,13 +25,19 @@ func pngBytes() []byte {
 
 func uploadAndGetKey(t *testing.T, env *testEnv, token string) string {
 	t.Helper()
+	key, _ := uploadAndGetImage(t, env, token)
+	return key
+}
+
+func uploadAndGetImage(t *testing.T, env *testEnv, token string) (key string, id int64) {
+	t.Helper()
 	req := uploadReq(t, "/api/v1/images", "test.png", pngBytes(), token)
 	rec := doReq(env.Router, req)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("upload failed: %d; body: %s", rec.Code, rec.Body.String())
 	}
 	data := respDataMap(t, parseResp(t, rec))
-	return data["key"].(string)
+	return data["key"].(string), int64(data["id"].(float64))
 }
 
 func TestImageUpload(t *testing.T) {
@@ -161,6 +167,70 @@ func TestImageDeleteOtherUser(t *testing.T) {
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want 403", rec.Code)
 	}
+}
+
+func TestImageBatchDelete(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, user := env.seedSetup(t)
+	other := testutil.SeedUser(t, env.DB, group.ID, "batch-other@example.com", "password", string(domain.RoleUser))
+
+	token := env.generateToken(t, user.ID, domain.RoleUser, group.ID)
+	key1, _ := uploadAndGetImage(t, env, token)
+	key2, _ := uploadAndGetImage(t, env, token)
+	otherKey := uploadAndGetKey(t, env, env.generateToken(t, other.ID, domain.RoleUser, group.ID))
+
+	t.Run("deletes own images", func(t *testing.T) {
+		body := map[string]interface{}{"keys": []string{key1, key2}}
+		rec := doReq(env.Router, env.authReq(t, http.MethodPost, "/api/v1/images/batch-delete", body, user.ID, domain.RoleUser, group.ID))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+		}
+		data := respDataMap(t, parseResp(t, rec))
+		if int(data["deleted"].(float64)) != 2 {
+			t.Errorf("deleted = %v, want 2", data["deleted"])
+		}
+		if int(data["failed"].(float64)) != 0 {
+			t.Errorf("failed = %v, want 0", data["failed"])
+		}
+		u, _ := env.DB.GetUserByID(t.Context(), user.ID)
+		if u.ImageNum != 0 {
+			t.Errorf("image_num = %d, want 0", u.ImageNum)
+		}
+	})
+
+	t.Run("counts other users images as failed", func(t *testing.T) {
+		ownKey := uploadAndGetKey(t, env, token)
+		body := map[string]interface{}{"keys": []string{ownKey, otherKey}}
+		rec := doReq(env.Router, env.authReq(t, http.MethodPost, "/api/v1/images/batch-delete", body, user.ID, domain.RoleUser, group.ID))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", rec.Code)
+		}
+		data := respDataMap(t, parseResp(t, rec))
+		if int(data["deleted"].(float64)) != 1 {
+			t.Errorf("deleted = %v, want 1", data["deleted"])
+		}
+		if int(data["failed"].(float64)) != 1 {
+			t.Errorf("failed = %v, want 1", data["failed"])
+		}
+	})
+
+	t.Run("empty keys bad request", func(t *testing.T) {
+		rec := doReq(env.Router, env.authReq(t, http.MethodPost, "/api/v1/images/batch-delete", map[string]interface{}{"keys": []string{}}, user.ID, domain.RoleUser, group.ID))
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d, want 400", rec.Code)
+		}
+	})
+
+	t.Run("read only api token forbidden", func(t *testing.T) {
+		_, readToken := createAPITokenViaAPI(t, env, user.ID, group.ID, map[string]interface{}{
+			"name": "read batch", "expires_in": "never", "scopes": []string{"read"},
+		})
+		body := map[string]interface{}{"keys": []string{uploadAndGetKey(t, env, token)}}
+		rec := doReq(env.Router, env.apiTokenReq(t, http.MethodPost, "/api/v1/images/batch-delete", body, readToken))
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("status = %d, want 403; body: %s", rec.Code, rec.Body.String())
+		}
+	})
 }
 
 func TestImageUpdatePermission(t *testing.T) {
