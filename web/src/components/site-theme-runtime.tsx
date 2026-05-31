@@ -13,9 +13,15 @@ export function SiteThemeRuntime() {
 
   useEffect(() => {
     const root = document.documentElement
+    const pub = themeConfig.public
     root.dataset.pfTheme = themeConfig.preset || 'default'
-    root.dataset.pfThemeBackground = themeConfig.public?.background_style || 'soft'
-    root.dataset.pfThemeLogo = themeConfig.public?.logo_shape || 'rounded'
+    root.dataset.pfThemeBackground = pub?.background_style || 'soft'
+    root.dataset.pfThemeLogo = pub?.logo_shape || 'rounded'
+    root.dataset.pfUploadStyle = pub?.upload_style || 'dashed'
+    root.dataset.pfCardStyle = pub?.card_style || 'elevated'
+    root.dataset.pfButtonStyle = pub?.button_style || 'default'
+    root.dataset.pfDensity = pub?.density || 'comfortable'
+    root.dataset.pfMotion = pub?.motion || 'subtle'
   }, [themeConfig])
 
   useEffect(() => {

@@ -58,7 +58,7 @@ export function UploadZone({ onFiles, disabled, className = '' }: UploadZoneProp
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       className={[
-        'relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl p-12 transition-colors duration-150 group',
+        'pf-upload-zone relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl p-12 transition-colors duration-150 group',
         dragging
           ? 'bg-primary/5 dark:bg-primary/10'
           : 'bg-muted/30 hover:bg-muted/50 dark:bg-muted/10 dark:hover:bg-muted/20',

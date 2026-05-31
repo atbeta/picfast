@@ -94,7 +94,7 @@ export function LoginPage() {
   const verificationState = searchParams.get('verification')
 
   return (
-    <section className="mx-auto w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground">
+    <section className="pf-auth-card mx-auto w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground">
       <h1 className="text-xl font-semibold">{t('page.login.title')}</h1>
 
       {verificationState === 'sent' && (

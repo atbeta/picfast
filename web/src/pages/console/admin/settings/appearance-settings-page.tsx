@@ -1,7 +1,19 @@
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { themePresets } from '@/lib/theme-config'
+import { copyToClipboard } from '@/lib/clipboard'
+import { themeConfigToCSS, themePresets } from '@/lib/theme-config'
+import {
+  parseThemePackage,
+  presetDefaultFormFields,
+  serializeThemePackage,
+  themeConfigToFormFields,
+  type ThemeFormImportFields,
+  ThemePackageError,
+} from '@/lib/theme-package'
 import { fieldInputCls, fieldTextareaCls, themePayload, useAdminSettingsForm } from './form'
 import { SettingField, SettingsPageLayout } from './shared'
 
@@ -33,11 +45,15 @@ function validateOptionalHTTPURL(value: string) {
 export function AdminAppearanceSettingsPage() {
   const { t } = useTranslation()
   const state = useAdminSettingsForm()
-  const { handleSubmit, register, setValue, watch, formState: { errors } } = state.form
+  const { handleSubmit, register, setValue, watch, getValues, formState: { errors } } = state.form
+  const [importText, setImportText] = useState('')
   const preset = watch('theme_preset')
   const mode = watch('theme_mode')
   const backgroundStyle = watch('theme_background_style')
   const logoShape = watch('theme_logo_shape')
+  const themePrimary = watch('theme_primary')
+  const themeAccent = watch('theme_accent')
+  const themeRadius = watch('theme_radius')
   const modeItems = {
     system: t('settings.themeSystem'),
     light: t('settings.themeLight'),
@@ -54,14 +70,62 @@ export function AdminAppearanceSettingsPage() {
     square: t('admin.themeLogoSquare'),
   }
 
+  const applyThemeFields = (fields: ThemeFormImportFields) => {
+    for (const [key, value] of Object.entries(fields) as [keyof ThemeFormImportFields, string][]) {
+      setValue(key, value, { shouldDirty: true })
+    }
+  }
+
   const applyPreset = (id: string) => {
-    const next = themePresets.find((item) => item.id === id)
-    setValue('theme_preset', id, { shouldDirty: true })
-    setValue('theme_primary', '', { shouldDirty: true })
-    setValue('theme_accent', '', { shouldDirty: true })
-    setValue('theme_radius', '', { shouldDirty: true })
-    setValue('theme_background_style', next?.config.public?.background_style || 'soft', { shouldDirty: true })
-    setValue('theme_logo_shape', next?.config.public?.logo_shape || 'rounded', { shouldDirty: true })
+    applyThemeFields(presetDefaultFormFields(id))
+  }
+
+  const previewCSS = useMemo(() => {
+    return themeConfigToCSS(themePayload({
+      ...getValues(),
+      theme_preset: preset,
+      theme_mode: mode,
+      theme_primary: themePrimary,
+      theme_accent: themeAccent,
+      theme_radius: themeRadius,
+      theme_background_style: backgroundStyle,
+      theme_logo_shape: logoShape,
+    }))
+  }, [backgroundStyle, getValues, logoShape, mode, preset, themeAccent, themePrimary, themeRadius])
+
+  const exportCurrentTheme = () => serializeThemePackage(themePayload(getValues()))
+
+  const copyThemeJSON = async () => {
+    await copyToClipboard(exportCurrentTheme())
+    toast.success(t('admin.themeCopied'))
+  }
+
+  const downloadThemeJSON = () => {
+    const blob = new Blob([exportCurrentTheme()], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `picfast-theme-${preset || 'default'}.json`
+    anchor.click()
+    URL.revokeObjectURL(url)
+    toast.success(t('admin.themeExported'))
+  }
+
+  const importThemeJSON = () => {
+    try {
+      const config = parseThemePackage(importText)
+      applyThemeFields(themeConfigToFormFields(config))
+      toast.success(t('admin.themeImported'))
+    } catch (err: unknown) {
+      const message = err instanceof ThemePackageError ? err.message : t('admin.themeImportFailed')
+      toast.error(message)
+    }
+  }
+
+  const resetThemeToPreset = () => {
+    applyPreset(preset || 'default')
+    setImportText('')
+    toast.success(t('admin.themeReset'))
   }
 
   const onSubmit = handleSubmit((form) => state.saveSettings({
@@ -209,6 +273,69 @@ export function AdminAppearanceSettingsPage() {
             <p className="text-xs leading-5 text-muted-foreground">{t('admin.themeCustomCssScope')}</p>
           </div>
         </SettingField>
+      </div>
+
+      <div className="border-t border-border/40 pt-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.sectionThemePreview')}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.sectionThemePreviewDesc')}</p>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-background">
+          <style>{previewCSS}</style>
+          <div className="space-y-4 p-6">
+            <div className="flex items-center gap-3">
+              <div className="pf-site-logo h-10 w-10 rounded-xl border border-border bg-muted" />
+              <div>
+                <div className="text-sm font-semibold">{t('admin.themePreviewTitle')}</div>
+                <div className="text-xs text-muted-foreground">{t('admin.themePreviewSubtitle')}</div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-dashed border-primary/30 bg-card/60 p-6 text-center text-sm text-muted-foreground">
+              {t('admin.themePreviewUpload')}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground">
+                {t('admin.themePreviewPrimaryButton')}
+              </span>
+              <span className="inline-flex h-9 items-center rounded-lg border border-border bg-background px-4 text-sm font-medium">
+                {t('admin.themePreviewSecondaryButton')}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-border/40 pt-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.sectionThemePackage')}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.sectionThemePackageDesc')}</p>
+        </div>
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={copyThemeJSON}>
+              {t('admin.themeCopyJson')}
+            </Button>
+            <Button type="button" variant="outline" onClick={downloadThemeJSON}>
+              {t('admin.themeExportJson')}
+            </Button>
+            <Button type="button" variant="outline" onClick={resetThemeToPreset}>
+              {t('admin.themeResetPreset')}
+            </Button>
+          </div>
+          <textarea
+            value={importText}
+            onChange={(event) => setImportText(event.target.value)}
+            spellCheck={false}
+            placeholder={t('admin.themeImportPlaceholder')}
+            className={`${fieldTextareaCls} min-h-40 font-mono`}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={importThemeJSON}>
+              {t('admin.themeApplyImport')}
+            </Button>
+          </div>
+          <p className="text-xs leading-5 text-muted-foreground">{t('admin.themeImportHint')}</p>
+        </div>
       </div>
     </SettingsPageLayout>
   )
