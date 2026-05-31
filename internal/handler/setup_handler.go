@@ -137,6 +137,7 @@ func (h *SetupHandler) CreateAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	setAccessTokenCookie(w, r, tokens.AccessToken, tokens.ExpiresIn)
 	Created(w, tokens)
 }
 

@@ -118,6 +118,9 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	if err != nil {
 		return nil, err
 	}
+	if err := validateUploadContent(ext, params.FileData); err != nil {
+		return nil, err
+	}
 	if err := s.checkCapacity(ctx, params, identity.userID); err != nil {
 		return nil, err
 	}

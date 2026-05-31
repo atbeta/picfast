@@ -210,6 +210,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.Tokens = tokens
+	setAccessTokenCookie(w, r, tokens.AccessToken, tokens.ExpiresIn)
 	Created(w, resp)
 }
 
@@ -253,7 +254,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.auditAdminLogin(r, user, true, "")
-	Success(w, tokens)
+	writeAuthTokens(w, r, tokens)
 }
 
 func (h *AuthHandler) auditAdminLogin(r *http.Request, user sqlc.User, success bool, reason string) {
@@ -557,7 +558,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Success(w, tokens)
+	writeAuthTokens(w, r, tokens)
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -568,6 +569,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.db.DeleteAllUserRefreshTokens(r.Context(), userID)
+	clearAccessTokenCookie(w, r)
 	SuccessMessage(w, "logged out")
 }
 

@@ -175,6 +175,19 @@ func TestLogin(t *testing.T) {
 		if tokens["access_token"] == nil {
 			t.Fatal("missing access_token")
 		}
+		var authCookie *http.Cookie
+		for _, cookie := range rec.Result().Cookies() {
+			if cookie.Name == "picfast_token" {
+				authCookie = cookie
+				break
+			}
+		}
+		if authCookie == nil {
+			t.Fatal("missing picfast_token cookie")
+		}
+		if !authCookie.HttpOnly {
+			t.Fatal("expected HttpOnly auth cookie")
+		}
 	})
 
 	t.Run("wrong password", func(t *testing.T) {

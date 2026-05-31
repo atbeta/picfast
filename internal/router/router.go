@@ -37,6 +37,7 @@ func New(
 	r := chi.NewRouter()
 
 	r.Use(middleware.StructuredLogger)
+	r.Use(middleware.SecurityHeaders)
 	r.Use(chimw.Recoverer)
 	r.Use(chimw.RealIP)
 	r.Use(chimw.RequestID)
@@ -259,6 +260,8 @@ func New(
 				"analytics_provider":          app.AnalyticsProvider,
 				"analytics_config":            normalizeJSON(app.AnalyticsConfig),
 				"theme_config":                normalizeJSON(app.ThemeConfig),
+				"default_copy_format":           app.DefaultCopyFormat,
+				"copy_template":                 app.CopyTemplate,
 				"github_url":                  version.DefaultGitHubURL(),
 				"setup_required":              setupRequired,
 			})

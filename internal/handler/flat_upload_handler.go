@@ -45,7 +45,7 @@ func (h *FlatUploadHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	const multipartFormMemory = 32 << 20
 	if err := r.ParseMultipartForm(multipartFormMemory); err != nil {
 		observeUpload("error", "invalid_file", 0)
-		Fail(w, http.StatusBadRequest, "failed to parse multipart form")
+		Fail(w, http.StatusBadRequest, multipartParseErrorMessage(err, h.maxUploadBytes))
 		return
 	}
 
