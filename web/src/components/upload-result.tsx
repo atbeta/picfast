@@ -4,6 +4,8 @@ import { formatFileSize } from '../lib/upload'
 import { Copy, Check, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { copyToClipboard } from '@/lib/clipboard'
+import { resolveCopyText } from '@/lib/copy-template'
+import { copyFormatLabelKey, useCopyPreferences } from '@/lib/use-copy-preferences'
 
 interface UploadResultLike {
   permission?: number
@@ -60,6 +62,21 @@ function CopyRow({ item }: { item: CopyItem }) {
 
 export function UploadResultCard({ result }: UploadResultCardProps) {
   const { t } = useTranslation()
+  const copyPrefs = useCopyPreferences()
+  const primaryCopyText = resolveCopyText(result.links, {
+    name: result.origin_name,
+    extension: result.extension,
+    width: result.width,
+    height: result.height,
+  }, copyPrefs)
+  const [primaryCopied, setPrimaryCopied] = useState(false)
+
+  const copyPrimary = async () => {
+    await copyToClipboard(primaryCopyText)
+    setPrimaryCopied(true)
+    setTimeout(() => setPrimaryCopied(false), 2000)
+  }
+
   const items: CopyItem[] = [
     { label: 'URL', value: result.links.url },
     { label: 'Markdown', value: result.links.markdown },
@@ -71,7 +88,7 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
   }
 
   return (
-    <div className="group overflow-hidden rounded-2xl border border-border/50 bg-card/60 shadow-sm transition-colors duration-150 hover:border-border/80">
+    <div className="pf-result-card group overflow-hidden rounded-2xl border border-border/50 bg-card/60 shadow-sm transition-colors duration-150 hover:border-border/80">
       <div className="flex flex-col sm:flex-row sm:items-start gap-6 p-6">
         {/* Image Preview */}
         <div className="relative shrink-0">
@@ -120,7 +137,17 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
                 )}
               </div>
             </div>
-            <a 
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={copyPrimary}
+                className="pf-primary-button gap-2"
+              >
+                {primaryCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                {primaryCopied ? t('upload.copied') : t(copyFormatLabelKey(copyPrefs.format))}
+              </Button>
+              <a
               href={result.links.url} 
               target="_blank" 
               rel="noreferrer"
@@ -128,7 +155,8 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
               title="Open Original"
             >
               <ExternalLink className="h-4 w-4" />
-            </a>
+              </a>
+            </div>
           </div>
 
           <div className="space-y-2">

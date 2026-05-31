@@ -20,6 +20,8 @@ export interface SiteConfig {
   analytics_provider: string
   analytics_config: Record<string, unknown>
   theme_config: ThemeConfig
+  default_copy_format: string
+  copy_template: string
   github_url: string
   setup_required: boolean
 }

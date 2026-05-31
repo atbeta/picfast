@@ -149,6 +149,8 @@ type SiteSetting struct {
 	FooterLink2              string          `json:"footer_link_2"`
 	GuestImageTtl            string          `json:"guest_image_ttl"`
 	ThemeConfig              json.RawMessage `json:"theme_config"`
+	DefaultCopyFormat        string          `json:"default_copy_format"`
+	CopyTemplate             string          `json:"copy_template"`
 }
 
 type Strategy struct {

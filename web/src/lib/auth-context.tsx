@@ -21,7 +21,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!authApi.hasToken()) return
-    authApi.syncTokenToCookie()
     let mounted = true
     const fetchProfile = async () => {
       setIsLoading(true)

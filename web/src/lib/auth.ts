@@ -110,21 +110,11 @@ export async function updateProfile(data: {
 export function saveTokens(tokens: AuthTokens) {
   localStorage.setItem('token', tokens.access_token)
   localStorage.setItem('refresh_token', tokens.refresh_token)
-  document.cookie = `picfast_token=${tokens.access_token}; path=/; max-age=${tokens.expires_in}`
 }
 
 export function clearTokens() {
   localStorage.removeItem('token')
   localStorage.removeItem('refresh_token')
-  document.cookie = 'picfast_token=; path=/; max-age=0'
-}
-
-export function syncTokenToCookie() {
-  const token = localStorage.getItem('token')
-  if (token && !document.cookie.includes('picfast_token=')) {
-    // 30 days default if we don't have the exact expires_in
-    document.cookie = `picfast_token=${token}; path=/; max-age=2592000`
-  }
 }
 
 export function hasToken(): boolean {

@@ -54,6 +54,8 @@ type updateSettingsRequest struct {
 	AnalyticsProvider        *string          `json:"analytics_provider"`
 	AnalyticsConfig          *json.RawMessage `json:"analytics_config"`
 	ThemeConfig              *json.RawMessage `json:"theme_config"`
+	DefaultCopyFormat        *string          `json:"default_copy_format"`
+	CopyTemplate             *string          `json:"copy_template"`
 }
 
 func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -207,6 +209,22 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 		h.setter.SetThemeConfig(themeConfig)
 	}
+	if req.DefaultCopyFormat != nil || req.CopyTemplate != nil {
+		format := h.config.AppSnapshot().DefaultCopyFormat
+		template := h.config.AppSnapshot().CopyTemplate
+		if req.DefaultCopyFormat != nil {
+			format = strings.TrimSpace(*req.DefaultCopyFormat)
+		}
+		if req.CopyTemplate != nil {
+			template = *req.CopyTemplate
+		}
+		if err := validateCopySettings(format, template); err != nil {
+			Fail(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		h.setter.SetDefaultCopyFormat(format)
+		h.setter.SetCopyTemplate(template)
+	}
 	if err := h.persist(r.Context()); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to persist settings")
 		return
@@ -244,6 +262,8 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 		AnalyticsProvider:        app.AnalyticsProvider,
 		AnalyticsConfig:          normalizedRawMessage(app.AnalyticsConfig),
 		ThemeConfig:              normalizedRawMessage(app.ThemeConfig),
+		DefaultCopyFormat:        app.DefaultCopyFormat,
+		CopyTemplate:             app.CopyTemplate,
 	})
 	return err
 }
@@ -271,6 +291,8 @@ func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string
 		"analytics_provider":          app.AnalyticsProvider,
 		"analytics_config":            normalizedRawMessage(app.AnalyticsConfig),
 		"theme_config":                normalizedRawMessage(app.ThemeConfig),
+		"default_copy_format":           app.DefaultCopyFormat,
+		"copy_template":                 app.CopyTemplate,
 	}
 	if includeMailReady {
 		resp["require_email_verification"] = app.RequireEmailVerification && h.mailReady
@@ -284,16 +306,70 @@ func validateThemeConfig(raw json.RawMessage) error {
 	if err := json.Unmarshal(normalizedRawMessage(raw), &cfg); err != nil {
 		return &badRequestError{"invalid theme_config"}
 	}
+	allowedKeys := map[string]bool{
+		"preset": true, "mode": true, "tokens": true, "public": true, "custom_css": true,
+	}
+	for key := range cfg {
+		if !allowedKeys[key] {
+			return &badRequestError{"theme_config contains unknown field"}
+		}
+	}
 	if css, ok := cfg["custom_css"].(string); ok && len(css) > 20000 {
 		return &badRequestError{"theme_config custom_css is too large"}
 	}
 	if preset, ok := cfg["preset"].(string); ok && len(preset) > 80 {
 		return &badRequestError{"theme_config preset is too long"}
 	}
+	if mode, ok := cfg["mode"].(string); ok && mode != "" {
+		switch mode {
+		case "light", "dark", "system":
+		default:
+			return &badRequestError{"theme_config mode is invalid"}
+		}
+	}
 	if public, ok := cfg["public"].(map[string]any); ok {
 		if backgroundImage := stringValue(public["background_image"]); backgroundImage != "" {
 			if err := validateOptionalURL(backgroundImage); err != nil {
 				return &badRequestError{"theme_config background_image is invalid"}
+			}
+		}
+		if style := stringValue(public["background_style"]); style != "" {
+			switch style {
+			case "soft", "clean", "image":
+			default:
+				return &badRequestError{"theme_config background_style is invalid"}
+			}
+		}
+		if logoShape := stringValue(public["logo_shape"]); logoShape != "" {
+			switch logoShape {
+			case "rounded", "circle", "square":
+			default:
+				return &badRequestError{"theme_config logo_shape is invalid"}
+			}
+		}
+		for _, field := range []struct {
+			key    string
+			values []string
+		}{
+			{"upload_style", []string{"dashed", "solid", "glass"}},
+			{"card_style", []string{"flat", "elevated", "glass"}},
+			{"button_style", []string{"default", "pill", "sharp"}},
+			{"density", []string{"compact", "comfortable", "spacious"}},
+			{"motion", []string{"none", "subtle", "playful"}},
+		} {
+			raw := stringValue(public[field.key])
+			if raw == "" {
+				continue
+			}
+			ok := false
+			for _, allowed := range field.values {
+				if raw == allowed {
+					ok = true
+					break
+				}
+			}
+			if !ok {
+				return &badRequestError{"theme_config " + field.key + " is invalid"}
 			}
 		}
 	}
@@ -319,6 +395,18 @@ func validateThemeConfig(raw json.RawMessage) error {
 				}
 			}
 		}
+	}
+	return nil
+}
+
+func validateCopySettings(format, template string) error {
+	switch format {
+	case "url", "markdown", "html", "bbcode", "thumbnail", "custom":
+	default:
+		return &badRequestError{"invalid default_copy_format"}
+	}
+	if len(template) > 4000 {
+		return &badRequestError{"copy_template is too large"}
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { uploadImageAuth } from '@/lib/console-api'
 import { fieldInputCls, fieldTextareaCls, useAdminSettingsForm } from './form'
 import {
@@ -26,6 +27,8 @@ export function AdminSiteSettingsPage() {
     footer_link_1: form.footer_link_1,
     footer_text_2: form.footer_text_2,
     footer_link_2: form.footer_link_2,
+    default_copy_format: form.default_copy_format,
+    copy_template: form.copy_template,
   }))
 
   const onPickFavicon = async (files: FileList | null) => {
@@ -124,6 +127,49 @@ export function AdminSiteSettingsPage() {
               <input {...register('footer_link_2')} placeholder="https://" className={fieldInputCls} />
             </SettingField>
           </div>
+        </div>
+      </div>
+
+      <div className="border-t border-border/40 pt-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.sectionLinkCopy')}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.sectionLinkCopyDesc')}</p>
+        </div>
+        <div className="space-y-5">
+          <SettingField label={t('admin.defaultCopyFormat')} hint={t('admin.defaultCopyFormatHint')}>
+            <Select
+              items={{
+                markdown: t('copy.formatMarkdown'),
+                url: t('copy.formatUrl'),
+                html: t('copy.formatHtml'),
+                bbcode: t('copy.formatBbcode'),
+                thumbnail: t('copy.formatThumbnail'),
+                custom: t('copy.formatCustom'),
+              }}
+              value={watch('default_copy_format')}
+              onValueChange={(value) => setValue('default_copy_format', String(value), { shouldDirty: true })}
+            >
+              <SelectTrigger className="w-full sm:w-72">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="markdown">{t('copy.formatMarkdown')}</SelectItem>
+                <SelectItem value="url">{t('copy.formatUrl')}</SelectItem>
+                <SelectItem value="html">{t('copy.formatHtml')}</SelectItem>
+                <SelectItem value="bbcode">{t('copy.formatBbcode')}</SelectItem>
+                <SelectItem value="thumbnail">{t('copy.formatThumbnail')}</SelectItem>
+                <SelectItem value="custom">{t('copy.formatCustom')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingField>
+          <SettingField label={t('admin.copyTemplate')} hint={t('admin.copyTemplateHint')}>
+            <textarea
+              {...register('copy_template')}
+              spellCheck={false}
+              placeholder={'![{name}]({url})'}
+              className={`${fieldTextareaCls} min-h-28 font-mono`}
+            />
+          </SettingField>
         </div>
       </div>
 

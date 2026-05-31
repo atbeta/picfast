@@ -41,6 +41,8 @@ export interface SettingsForm {
   theme_background_style: string
   theme_logo_shape: string
   theme_custom_css: string
+  default_copy_format: string
+  copy_template: string
 }
 
 export const fieldInputCls = 'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20'
@@ -80,6 +82,8 @@ const defaultValues: SettingsForm = {
   theme_background_style: defaultThemeConfig.public?.background_style || 'soft',
   theme_logo_shape: defaultThemeConfig.public?.logo_shape || 'rounded',
   theme_custom_css: '',
+  default_copy_format: 'markdown',
+  copy_template: '',
 }
 
 const ttlOptions = new Set(['0', '24h', '168h', '720h', '2160h'])
@@ -141,6 +145,8 @@ function settingsToForm(data: AdminSettings): SettingsForm {
     theme_background_style: theme.public?.background_style || 'soft',
     theme_logo_shape: theme.public?.logo_shape || 'rounded',
     theme_custom_css: theme.custom_css || '',
+    default_copy_format: data.default_copy_format || 'markdown',
+    copy_template: data.copy_template || '',
   }
 }
 

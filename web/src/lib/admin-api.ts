@@ -235,6 +235,8 @@ export interface AdminSettings {
   analytics_provider: string
   analytics_config: Record<string, unknown>
   theme_config: ThemeConfig
+  default_copy_format: string
+  copy_template: string
 }
 
 export async function getAdminSettings(): Promise<AdminSettings> {

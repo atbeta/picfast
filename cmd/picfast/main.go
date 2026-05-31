@@ -250,5 +250,7 @@ func applyPersistedSiteSettings(ctx context.Context, queries *sqlc.Queries, cfg 
 	cfg.App.AnalyticsProvider = settings.AnalyticsProvider
 	cfg.App.AnalyticsConfig = settings.AnalyticsConfig
 	cfg.App.ThemeConfig = settings.ThemeConfig
+	cfg.App.DefaultCopyFormat = settings.DefaultCopyFormat
+	cfg.App.CopyTemplate = settings.CopyTemplate
 	return nil
 }

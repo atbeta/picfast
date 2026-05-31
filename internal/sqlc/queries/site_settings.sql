@@ -23,9 +23,11 @@ INSERT INTO site_settings (
     analytics_provider,
     analytics_config,
     allow_user_image_processing,
-    theme_config
+    theme_config,
+    default_copy_format,
+    copy_template
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
@@ -47,5 +49,7 @@ ON CONFLICT (id) DO UPDATE SET
     analytics_config = EXCLUDED.analytics_config,
     allow_user_image_processing = EXCLUDED.allow_user_image_processing,
     theme_config = EXCLUDED.theme_config,
+    default_copy_format = EXCLUDED.default_copy_format,
+    copy_template = EXCLUDED.copy_template,
     updated_at = NOW()
 RETURNING *;

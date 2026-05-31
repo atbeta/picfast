@@ -85,6 +85,8 @@ type AppConfig struct {
 	AnalyticsProvider        string          `mapstructure:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `mapstructure:"analytics_config"`
 	ThemeConfig              json.RawMessage `mapstructure:"theme_config"`
+	DefaultCopyFormat        string          `mapstructure:"default_copy_format"`
+	CopyTemplate             string          `mapstructure:"copy_template"`
 }
 
 type Setter struct {
@@ -195,6 +197,18 @@ func (s *Setter) SetThemeConfig(cfg json.RawMessage) {
 	s.cfg.App.ThemeConfig = cfg
 }
 
+func (s *Setter) SetDefaultCopyFormat(format string) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.DefaultCopyFormat = strings.TrimSpace(format)
+}
+
+func (s *Setter) SetCopyTemplate(template string) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.CopyTemplate = template
+}
+
 func (c *Config) AppSnapshot() AppConfig {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -266,6 +280,9 @@ func Load() (*Config, error) {
 	if len(cfg.App.ThemeConfig) == 0 {
 		cfg.App.ThemeConfig = json.RawMessage(`{}`)
 	}
+	if strings.TrimSpace(cfg.App.DefaultCopyFormat) == "" {
+		cfg.App.DefaultCopyFormat = "markdown"
+	}
 	if strings.TrimSpace(cfg.Server.MetricsAddr) == "" {
 		cfg.Server.MetricsAddr = fmt.Sprintf("127.0.0.1:%d", cfg.Server.MetricsPort)
 	}
@@ -323,4 +340,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.footer_text_2", "")
 	v.SetDefault("app.footer_link_2", "")
 	v.SetDefault("app.analytics_provider", "")
+	v.SetDefault("app.default_copy_format", "markdown")
+	v.SetDefault("app.copy_template", "")
 }

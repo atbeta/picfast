@@ -65,6 +65,8 @@ type UserSettings struct {
 	DefaultStrategy   int64                        `json:"default_strategy,omitempty"`
 	DefaultPermission *int16                       `json:"default_permission,omitempty"`
 	ImageProcessing   *UserImageProcessingSettings `json:"image_processing,omitempty"`
+	DefaultCopyFormat *string                      `json:"default_copy_format,omitempty"`
+	CopyTemplate      *string                      `json:"copy_template,omitempty"`
 }
 
 type UserImageProcessingSettings struct {

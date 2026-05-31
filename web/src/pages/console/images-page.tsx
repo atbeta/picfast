@@ -3,13 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Trash2, Image as ImageIcon, ChevronLeft, ChevronRight, Check, Download } from 'lucide-react'
+import { Trash2, Image as ImageIcon, ChevronLeft, ChevronRight, Check, Download, Copy } from 'lucide-react'
 
 import { deleteImage, getImage, listImages, updateImage, listAlbums, batchDeleteImages } from '@/lib/console-api'
 import type { ImageItem, Album } from '@/lib/console-api'
 import { extractErrorMessage, logError } from '@/lib/error-handler'
 import { formatFileSize } from '@/lib/upload'
 import { copyToClipboard } from '@/lib/clipboard'
+import { batchCopyHTML, batchCopyMarkdown } from '@/lib/copy-template'
 import { ImageDetailDialog } from '@/components/console/image-detail-dialog'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, LoadingState } from '@/components/page-states'
@@ -222,6 +223,24 @@ export function ImagesPage() {
     await qc.invalidateQueries({ queryKey: ['images'] })
   }
 
+  const batchCopyLinks = async (mode: 'markdown' | 'html') => {
+    if (!data) return
+    const selected = data.items.filter((img) => selectedKeys.has(img.key))
+    const payload = selected.map((img) => ({
+      name: img.origin_name,
+      links: {
+        url: img.links?.url ?? img.url ?? '',
+        markdown: img.links?.markdown ?? `![${img.origin_name}](${img.links?.url ?? img.url ?? ''})`,
+        html: img.links?.html ?? `<img src="${img.links?.url ?? img.url ?? ''}" alt="${img.origin_name}" />`,
+        bbcode: img.links?.bbcode ?? `[img]${img.links?.url ?? img.url ?? ''}[/img]`,
+        thumbnail_url: img.links?.thumbnail_url,
+      },
+    }))
+    const text = mode === 'markdown' ? batchCopyMarkdown(payload) : batchCopyHTML(payload)
+    await copyToClipboard(text)
+    toast.success(t('upload.copied'))
+  }
+
   const onCopy = async (text: string) => {
     await copyToClipboard(text)
     toast.success(t('upload.copied'))
@@ -314,6 +333,14 @@ export function ImagesPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button type="button" size="sm" variant="outline" onClick={() => batchCopyLinks('markdown')} disabled={selectedKeys.size === 0 || batchProcessing}>
+              <Copy className="size-3.5" />
+              {t('images.batchCopyMarkdown', { defaultValue: '复制 Markdown' })}
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => batchCopyLinks('html')} disabled={selectedKeys.size === 0 || batchProcessing}>
+              <Copy className="size-3.5" />
+              {t('images.batchCopyHtml', { defaultValue: '复制 HTML' })}
+            </Button>
             <Button type="button" size="sm" variant="outline" onClick={batchDownload} disabled={selectedKeys.size === 0 || batchProcessing}>
               <Download className="size-3.5" />
               {t('images.batchDownload', { defaultValue: '下载' })}

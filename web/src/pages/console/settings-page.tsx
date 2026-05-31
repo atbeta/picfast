@@ -67,6 +67,8 @@ export function SettingsPage() {
   const [watermarkFontSize, setWatermarkFontSize] = useState(28)
   const [watermarkColor, setWatermarkColor] = useState('#FFFFFF')
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.6)
+  const [defaultCopyFormat, setDefaultCopyFormat] = useState('')
+  const [copyTemplate, setCopyTemplate] = useState('')
 
   const { data: siteConfig } = useQuery({
     queryKey: ['site-config'],
@@ -93,6 +95,8 @@ export function SettingsPage() {
         setWatermarkFontSize(Number(watermark.font_size ?? 28))
         setWatermarkColor(String(watermark.color ?? '#FFFFFF'))
         setWatermarkOpacity(Number(watermark.opacity ?? 0.6))
+        setDefaultCopyFormat(String(settings.default_copy_format ?? ''))
+        setCopyTemplate(String(settings.copy_template ?? ''))
       })
       .catch(() => {})
   }, [user])
@@ -135,6 +139,8 @@ export function SettingsPage() {
         ...currentSettings,
         default_strategy: defaultStrategy && defaultStrategy !== 0 ? defaultStrategy : null,
         image_processing: imageProcessing,
+        default_copy_format: defaultCopyFormat.trim() || undefined,
+        copy_template: copyTemplate.trim() || undefined,
       }
       await updateProfile(payload)
       toast.success(t('settings.saved'))
@@ -399,6 +405,49 @@ export function SettingsPage() {
                   </>
                 )}
               </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">{t('settings.copyPreferences')}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{t('settings.copyPreferencesDesc')}</p>
+              </div>
+              <SettingField label={t('settings.userDefaultCopyFormat')}>
+                <Select
+                  items={{
+                    '': t('settings.followGroupDefault'),
+                    markdown: t('copy.formatMarkdown'),
+                    url: t('copy.formatUrl'),
+                    html: t('copy.formatHtml'),
+                    bbcode: t('copy.formatBbcode'),
+                    thumbnail: t('copy.formatThumbnail'),
+                    custom: t('copy.formatCustom'),
+                  }}
+                  value={defaultCopyFormat}
+                  onValueChange={(value) => setDefaultCopyFormat(String(value ?? ''))}
+                >
+                  <SelectTrigger className="h-10 w-full bg-background border-input">
+                    <SelectValue placeholder={t('settings.followGroupDefault')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">{t('settings.followGroupDefault')}</SelectItem>
+                    <SelectItem value="markdown">{t('copy.formatMarkdown')}</SelectItem>
+                    <SelectItem value="url">{t('copy.formatUrl')}</SelectItem>
+                    <SelectItem value="html">{t('copy.formatHtml')}</SelectItem>
+                    <SelectItem value="bbcode">{t('copy.formatBbcode')}</SelectItem>
+                    <SelectItem value="thumbnail">{t('copy.formatThumbnail')}</SelectItem>
+                    <SelectItem value="custom">{t('copy.formatCustom')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </SettingField>
+              <SettingField label={t('settings.userCopyTemplate')}>
+                <textarea
+                  value={copyTemplate}
+                  onChange={(e) => setCopyTemplate(e.target.value)}
+                  placeholder={'![{name}]({url})'}
+                  className={`${fieldInputCls} min-h-24 font-mono`}
+                />
+              </SettingField>
             </div>
 
             <div className="pt-2">

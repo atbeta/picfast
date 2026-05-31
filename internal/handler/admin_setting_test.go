@@ -280,6 +280,24 @@ func TestAdminSettingsRejectsOversizedThemeCSS(t *testing.T) {
 	}
 }
 
+func TestAdminSettingsRejectsUnknownThemeField(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, admin := env.seedSetup(t)
+	makeAdmin(t, env, admin.ID)
+
+	body := map[string]interface{}{
+		"theme_config": map[string]interface{}{
+			"app_name": "evil",
+		},
+	}
+	req := env.authReq(t, http.MethodPut, "/api/v1/admin/settings", body, admin.ID, domain.RoleAdmin, group.ID)
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestAdminSettingsRejectsInvalidThemeColor(t *testing.T) {
 	env := newTestEnv(t)
 	_, group, admin := env.seedSetup(t)
