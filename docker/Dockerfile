@@ -46,6 +46,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get install -y --no-install-recommends postgresql-client-16 \
     && rm -rf /var/lib/apt/lists/*
 
+# Apply security patches (e.g. libgnutls30 CVEs) after base installs
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system --gid 10001 picfast \
     && useradd --system --uid 10001 --gid picfast --home-dir /home/picfast --create-home --shell /usr/sbin/nologin picfast \
     && mkdir -p /app/data/uploads /app/data/thumbnails /app/data/backups
