@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.0](https://github.com/atbeta/picfast/compare/v0.8.0...v0.9.0) (2026-06-03)
+
+
+### Features
+
+* **admin:** add copy templates and batch link export ([e83e23f](https://github.com/atbeta/picfast/commit/e83e23f37091427f93f93b522dbfdd484c8592fc))
+* **theme:** add theme packages and semantic preset surfaces ([32d1b3d](https://github.com/atbeta/picfast/commit/32d1b3d41965ee90302473f441242023f7d143e1))
+
+
+### Bug Fixes
+
+* **security:** harden auth cookies and upload validation ([6abe61c](https://github.com/atbeta/picfast/commit/6abe61c6473a2c4d502f18c87349190b2e8547cf))
+* **store:** local storage image URLs redirect to homepage ([#42](https://github.com/atbeta/picfast/issues/42)) ([da1e2ba](https://github.com/atbeta/picfast/commit/da1e2baca87f9ffceb88f159cc770b44b0a57562))
+
 ## [0.8.0](https://github.com/atbeta/picfast/compare/v0.7.0...v0.8.0) (2026-05-10)
 
 
