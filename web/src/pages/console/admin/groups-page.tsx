@@ -31,6 +31,8 @@ interface GroupForm {
   is_default: boolean
   max_size: number
   extensions: string
+  limit_per_minute: number
+  limit_per_hour: number
   limit_per_day: number
   limit_per_month: number
   strategy_ids: number[]
@@ -57,6 +59,8 @@ function emptyForm(): GroupForm {
     is_default: false,
     max_size: 5,
     extensions: 'jpg,jpeg,png,gif,webp,bmp,svg',
+    limit_per_minute: 60,
+    limit_per_hour: 500,
     limit_per_day: 300,
     limit_per_month: 9999,
     strategy_ids: [],
@@ -72,8 +76,10 @@ function groupToForm(g: AdminGroup): GroupForm {
     is_default: g.is_default,
     max_size: Math.round(((c.maximum_file_size as number) || 5242880) / 1048576),
     extensions: ((c.accepted_extensions as string[]) || []).join(','),
-    limit_per_day: (c.limit_per_day as number) || 300,
-    limit_per_month: (c.limit_per_month as number) || 9999,
+    limit_per_minute: typeof c.limit_per_minute === 'number' ? c.limit_per_minute : 60,
+    limit_per_hour: typeof c.limit_per_hour === 'number' ? c.limit_per_hour : 500,
+    limit_per_day: typeof c.limit_per_day === 'number' ? c.limit_per_day : 300,
+    limit_per_month: typeof c.limit_per_month === 'number' ? c.limit_per_month : 9999,
     strategy_ids: (g.strategy_ids || []).map(Number),
     default_strategy_id: Number(c.default_strategy_id || 0),
     raw_configs: c,
@@ -96,6 +102,8 @@ function formToConfigs(form: GroupForm) {
     maximum_file_size: form.max_size * 1048576,
     accepted_extensions: parseExtensions(form.extensions),
     default_strategy_id: normalizedDefaultStrategyID,
+    limit_per_minute: form.limit_per_minute,
+    limit_per_hour: form.limit_per_hour,
     limit_per_day: form.limit_per_day,
     limit_per_month: form.limit_per_month,
   }
@@ -258,12 +266,22 @@ export function AdminGroupsPage() {
               </div>
 
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</label>
+                <label className="text-sm font-medium text-foreground">{t('admin.limitPerMinute')}</label>
+                <input type="number" min={0} value={form.limit_per_minute} onChange={(e) => update('limit_per_minute', Number(e.target.value))} className={inputCls} />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">{t('admin.limitPerHour')}</label>
+                <input type="number" min={0} value={form.limit_per_hour} onChange={(e) => update('limit_per_hour', Number(e.target.value))} className={inputCls} />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">{t('admin.limitPerDay')}</label>
                 <input type="number" min={0} value={form.limit_per_day} onChange={(e) => update('limit_per_day', Number(e.target.value))} className={inputCls} />
               </div>
 
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">{t('admin.limitPerMonth', { defaultValue: '每月上限' })}</label>
+                <label className="text-sm font-medium text-foreground">{t('admin.limitPerMonth')}</label>
                 <input type="number" min={0} value={form.limit_per_month} onChange={(e) => update('limit_per_month', Number(e.target.value))} className={inputCls} />
               </div>
 
