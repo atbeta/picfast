@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/atbeta/picfast/compare/v0.9.0...v0.10.0) (2026-06-04)
+
+
+### Features
+
+* **admin:** edit per-minute and per-hour upload limits in groups ([e81eebf](https://github.com/atbeta/picfast/commit/e81eebf04fe364a0f5c11bfe3cd6c2200a25626b))
+
+
+### Bug Fixes
+
+* **docker:** apply security patches to resolve libgnutls30 CVEs ([232c459](https://github.com/atbeta/picfast/commit/232c459dc6feb609791351dd0c53b354947e9393))
+
 ## [0.9.0](https://github.com/atbeta/picfast/compare/v0.8.0...v0.9.0) (2026-06-03)
 
 
