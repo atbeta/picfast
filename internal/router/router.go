@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/atbeta/picfast/internal/config"
+	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/handler"
 	"github.com/atbeta/picfast/internal/handler/middleware"
 	"github.com/atbeta/picfast/internal/service"
@@ -39,6 +40,12 @@ func New(
 	r.Use(middleware.StructuredLogger)
 	r.Use(middleware.SecurityHeaders)
 	r.Use(chimw.Recoverer)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), domain.ContextKeyOriginalAddr, r.RemoteAddr)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	})
 	r.Use(chimw.RealIP)
 	r.Use(chimw.RequestID)
 	if cfg.Server.ReadTimeout > 0 {
@@ -176,6 +183,7 @@ func New(
 
 	// Handlers
 	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg, mailSender)
+	oauthHandler := handler.NewOAuthHandler(queries, pool, jwtSvc, cfg)
 	setupHandler := handler.NewSetupHandler(queries, pool, jwtSvc, cfg)
 	userHandler := handler.NewUserHandler(queries)
 	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL, cfg.App.AuditUploadLogs, cfg.App.MaxUploadBytes)
@@ -211,6 +219,9 @@ func New(
 
 	loginLimiter := middleware.NewRateLimiter(5, time.Minute)
 	mailActionLimiter := middleware.NewRateLimiter(3, 10*time.Minute)
+	oauthStartLimiter := middleware.NewRateLimiter(10, time.Minute)
+	oauthCallbackLimiter := middleware.NewRateLimiter(5, time.Minute)
+	oauthLinkLimiter := middleware.NewRateLimiter(10, time.Minute)
 	clientIPKey := func(r *http.Request) string {
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil || host == "" {
@@ -241,6 +252,7 @@ func New(
 			} else {
 				setupRequired = count == 0
 			}
+			providerList := cfg.OAuthProviderList()
 			handler.Success(w, map[string]interface{}{
 				"app_name":                    app.Name,
 				"site_description":            app.SiteDescription,
@@ -262,8 +274,9 @@ func New(
 				"theme_config":                normalizeJSON(app.ThemeConfig),
 				"default_copy_format":           app.DefaultCopyFormat,
 				"copy_template":                 app.CopyTemplate,
-				"github_url":                  version.DefaultGitHubURL(),
+					"github_url":                  version.DefaultGitHubURL(),
 				"setup_required":              setupRequired,
+				"oauth_providers":             providerList,
 			})
 		})
 		r.Get("/version", func(w http.ResponseWriter, r *http.Request) {
@@ -286,6 +299,15 @@ func New(
 			r.With(middleware.RateLimit(loginLimiter, clientIPKey)).
 				Post("/login", authHandler.Login)
 			r.Post("/refresh", authHandler.Refresh)
+
+			// OAuth
+			r.Route("/oauth", func(r chi.Router) {
+				r.Get("/providers", oauthHandler.Providers)
+				r.With(middleware.RateLimit(oauthStartLimiter, clientIPKey)).
+					Get("/{provider}", oauthHandler.Start)
+				r.With(middleware.RateLimit(oauthCallbackLimiter, clientIPKey)).
+					Get("/{provider}/callback", oauthHandler.Callback)
+			})
 		})
 
 		// Authenticated user routes: MCP-accessible routes accept both JWT and API Token;
@@ -322,6 +344,13 @@ func New(
 
 			r.Post("/auth/logout", authHandler.Logout)
 			r.Put("/users/me", userHandler.UpdateProfile)
+
+			// OAuth link/unlink
+			r.With(middleware.RateLimit(oauthLinkLimiter, clientIPKey)).
+				Get("/auth/oauth/{provider}/link", oauthHandler.Link)
+			r.With(middleware.RateLimit(oauthLinkLimiter, clientIPKey)).
+				Delete("/auth/oauth/{provider}", oauthHandler.Unlink)
+			r.Get("/auth/oauth/identities", oauthHandler.Identities)
 
 			// API Tokens (for API / MCP integration)
 			apiTokenHandler := handler.NewAPITokenHandler(queries)

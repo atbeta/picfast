@@ -17,6 +17,7 @@ import (
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -156,7 +157,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		user, err = qtx.CreateUser(r.Context(), sqlc.CreateUserParams{
 			GroupID:       domain.PgInt8(group.ID),
 			Email:         req.Email,
-			Password:      string(hash),
+			Password:      pgtype.Text{String: string(hash), Valid: true},
 			Name:          req.Name,
 			Role:          string(domain.RoleUser),
 			CapacityBytes: app.UserInitialCapacity,
@@ -239,7 +240,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password.String), []byte(req.Password)); err != nil {
 		h.auditAdminLogin(r, user, false, "invalid_credentials")
 		Fail(w, http.StatusUnauthorized, "invalid email or password")
 		return
@@ -495,7 +496,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := qtx.UpdateUserPasswordByID(r.Context(), sqlc.UpdateUserPasswordByIDParams{
 			ID:       stored.UserID,
-			Password: string(hash),
+			Password: pgtype.Text{String: string(hash), Valid: true},
 		}); err != nil {
 			return err
 		}
@@ -514,8 +515,20 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req RefreshRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		Fail(w, http.StatusBadRequest, "invalid request body")
+	if r.ContentLength > 0 {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			Fail(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+	}
+
+	if req.RefreshToken == "" {
+		if c, err := r.Cookie(oauthRefreshCookie); err == nil {
+			req.RefreshToken = c.Value
+		}
+	}
+	if req.RefreshToken == "" {
+		Fail(w, http.StatusUnauthorized, "refresh token required")
 		return
 	}
 
@@ -559,6 +572,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeAuthTokens(w, r, tokens)
+	setRefreshTokenCookie(w, r, tokens.RefreshToken, h.config.JWT.RefreshTTL)
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -570,6 +584,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	h.db.DeleteAllUserRefreshTokens(r.Context(), userID)
 	clearAccessTokenCookie(w, r)
+	clearRefreshTokenCookie(w, r)
 	SuccessMessage(w, "logged out")
 }
 

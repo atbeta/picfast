@@ -96,7 +96,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			Fail(w, http.StatusInternalServerError, "failed to hash password")
 			return
 		}
-		password = string(hash)
+		password = pgtype.Text{String: string(hash), Valid: true}
 	}
 	if req.Settings != nil {
 		settings = *req.Settings

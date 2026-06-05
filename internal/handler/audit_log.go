@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -31,7 +32,7 @@ func writeAuditLog(db *sqlc.Queries, r *http.Request, action, resourceType, reso
 
 	ip := realIPFromRequest(r)
 
-	_ = db.CreateAuditLog(r.Context(), sqlc.CreateAuditLogParams{
+	if err := db.CreateAuditLog(r.Context(), sqlc.CreateAuditLogParams{
 		ActorUserID:  pgtype.Int8{Int64: actorUserID, Valid: hasActor},
 		Action:       action,
 		ResourceType: resourceType,
@@ -40,7 +41,9 @@ func writeAuditLog(db *sqlc.Queries, r *http.Request, action, resourceType, reso
 		Details:      detailsJSON,
 		Ip:           ip,
 		UserAgent:    r.UserAgent(),
-	})
+	}); err != nil {
+		slog.Warn("audit log insert failed", "action", action, "resource_type", resourceType, "error", err)
+	}
 }
 
 func pgText(v string) pgtype.Text {
@@ -51,28 +54,59 @@ func pgText(v string) pgtype.Text {
 }
 
 func realIPFromRequest(r *http.Request) string {
+	if !isTrustedProxy(originalAddr(r)) {
+		return remoteHost(r.RemoteAddr)
+	}
 	if cfIP := strings.TrimSpace(r.Header.Get("CF-Connecting-IP")); cfIP != "" {
-		if net.ParseIP(cfIP) != nil {
-			return cfIP
+		if ip := net.ParseIP(cfIP); ip != nil {
+			return ip.String()
 		}
 	}
 	if forwarded := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); forwarded != "" {
-		parts := strings.Split(forwarded, ",")
-		if len(parts) > 0 {
-			first := strings.TrimSpace(parts[0])
-			if net.ParseIP(first) != nil {
-				return first
-			}
+		if ip := rightmostUntrustedIP(forwarded); ip != "" {
+			return ip
 		}
 	}
 	if realIP := strings.TrimSpace(r.Header.Get("X-Real-IP")); realIP != "" {
-		if net.ParseIP(realIP) != nil {
-			return realIP
+		if ip := net.ParseIP(realIP); ip != nil {
+			return ip.String()
 		}
 	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	return remoteHost(r.RemoteAddr)
+}
+
+func rightmostUntrustedIP(forwarded string) string {
+	parts := strings.Split(forwarded, ",")
+	for i := len(parts) - 1; i >= 0; i-- {
+		ip := net.ParseIP(strings.TrimSpace(parts[i]))
+		if ip == nil {
+			continue
+		}
+		if v4 := ip.To4(); v4 != nil {
+			ip = v4
+		}
+		if !ipInTrustedCIDRs(ip) {
+			return ip.String()
+		}
+	}
+	return ""
+}
+
+func ipInTrustedCIDRs(ip net.IP) bool {
+	trustedProxyMu.RLock()
+	defer trustedProxyMu.RUnlock()
+	for _, cidr := range trustedProxyCIDRs {
+		if cidr.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+func remoteHost(addr string) string {
+	host, _, err := net.SplitHostPort(addr)
 	if err == nil && host != "" {
 		return host
 	}
-	return r.RemoteAddr
+	return addr
 }

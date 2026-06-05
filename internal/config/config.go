@@ -12,13 +12,16 @@ import (
 )
 
 type Config struct {
-	mu       sync.RWMutex
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
-	Storage  StorageConfig  `mapstructure:"storage"`
-	Mail     MailConfig     `mapstructure:"mail"`
-	App      AppConfig      `mapstructure:"app"`
+	mu          sync.RWMutex
+	Server      ServerConfig      `mapstructure:"server"`
+	Database    DatabaseConfig    `mapstructure:"database"`
+	JWT         JWTConfig         `mapstructure:"jwt"`
+	Storage     StorageConfig     `mapstructure:"storage"`
+	Mail        MailConfig        `mapstructure:"mail"`
+	App         AppConfig         `mapstructure:"app"`
+	OAuth       OAuthConfig       `mapstructure:"oauth"`
+	SecretKey   string            `mapstructure:"secret_key"`
+	secretBytes []byte
 }
 
 type ServerConfig struct {
@@ -30,6 +33,7 @@ type ServerConfig struct {
 	EnablePprof             bool          `mapstructure:"pprof_enabled"`
 	ReadTimeout             time.Duration `mapstructure:"read_timeout"`
 	ExpiredCleanupBatchSize int           `mapstructure:"expired_cleanup_batch_size"`
+	TrustedProxies          []string      `mapstructure:"trusted_proxies"`
 }
 
 type DatabaseConfig struct {
@@ -58,6 +62,25 @@ type MailConfig struct {
 	FromEmail  string `mapstructure:"from_email"`
 	FromName   string `mapstructure:"from_name"`
 	Encryption string `mapstructure:"encryption"` // starttls, tls, none
+}
+
+type OAuthConfig struct {
+	Providers []OAuthProviderConfig `mapstructure:"providers"`
+}
+
+type OAuthProviderConfig struct {
+	ID           string   `mapstructure:"id"`
+	DisplayName  string   `mapstructure:"display_name"`
+	Type         string   `mapstructure:"type"` // "oidc" (default) or "github"
+	ClientID     string   `mapstructure:"client_id"`
+	ClientSecret string   `mapstructure:"client_secret"`
+	Issuer       string   `mapstructure:"issuer"`
+	AuthURL      string   `mapstructure:"auth_url"`
+	TokenURL     string   `mapstructure:"token_url"`
+	UserInfoURL  string   `mapstructure:"userinfo_url"`
+	EmailURL     string   `mapstructure:"email_url"`
+	Scopes       []string `mapstructure:"scopes"`
+	Enabled      bool     `mapstructure:"enabled"`
 }
 
 type AppConfig struct {
@@ -233,6 +256,57 @@ func (c *Config) UsesDefaultJWTSecret() bool {
 	return c.JWT.Secret == DefaultJWTSecret
 }
 
+func (c *Config) SecretKeyBytes() []byte {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.secretBytes
+}
+
+func (c *Config) SetSecretKeyBytes(key []byte) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.secretBytes = key
+}
+
+func (c *Config) EnabledOAuthProviders() []OAuthProviderConfig {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	var out []OAuthProviderConfig
+	for _, p := range c.OAuth.Providers {
+		if p.Enabled {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func (c *Config) OAuthProviderByID(id string) (OAuthProviderConfig, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	for _, p := range c.OAuth.Providers {
+		if p.ID == id && p.Enabled {
+			return p, true
+		}
+	}
+	return OAuthProviderConfig{}, false
+}
+
+func (c *Config) OAuthProviderList() []map[string]string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	out := make([]map[string]string, 0, len(c.OAuth.Providers))
+	for _, p := range c.OAuth.Providers {
+		if !p.Enabled {
+			continue
+		}
+		out = append(out, map[string]string{
+			"id":           p.ID,
+			"display_name": p.DisplayName,
+		})
+	}
+	return out
+}
+
 func (c MailConfig) IsConfigured() bool {
 	return strings.TrimSpace(c.Host) != "" &&
 		c.Port > 0 &&
@@ -342,4 +416,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.analytics_provider", "")
 	v.SetDefault("app.default_copy_format", "markdown")
 	v.SetDefault("app.copy_template", "")
+
+	v.SetDefault("secret_key", "")
 }

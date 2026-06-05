@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/atbeta/picfast/internal/domain"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -128,7 +129,7 @@ func (h *AdminUserHandler) Update(w http.ResponseWriter, r *http.Request) {
 			Fail(w, http.StatusInternalServerError, "failed to hash password")
 			return
 		}
-		password = string(hash)
+		password = pgtype.Text{String: string(hash), Valid: true}
 	}
 	if req.GroupID != nil {
 		groupID = domain.PgInt8(*req.GroupID)

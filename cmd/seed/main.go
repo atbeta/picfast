@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
@@ -121,7 +122,7 @@ func main() {
 		user, err := queries.CreateUser(ctx, sqlc.CreateUserParams{
 			GroupID:       domain.PgInt8(defaultGroup.ID),
 			Email:         testEmail,
-			Password:      string(hash),
+			Password:      pgTextVal(string(hash)),
 			Name:          "Test User",
 			Role:          string(domain.RoleUser),
 			CapacityBytes: 524288000,
@@ -151,7 +152,7 @@ func main() {
 		admin, err := queries.CreateAdminUser(ctx, sqlc.CreateAdminUserParams{
 			GroupID:       domain.PgInt8(defaultGroup.ID),
 			Email:         adminEmail,
-			Password:      string(hash),
+			Password:      pgTextVal(string(hash)),
 			Name:          "Admin",
 			Role:          string(domain.RoleAdmin),
 			CapacityBytes: 0,
@@ -195,4 +196,8 @@ func localStrategyConfig(root, url string) []byte {
 	cfg := domain.LocalStrategyConfig{Root: root, URL: url}
 	b, _ := json.Marshal(cfg)
 	return b
+}
+
+func pgTextVal(s string) pgtype.Text {
+	return pgtype.Text{String: s, Valid: true}
 }

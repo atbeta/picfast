@@ -20,7 +20,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (!authApi.hasToken()) return
     let mounted = true
     const fetchProfile = async () => {
       setIsLoading(true)
@@ -29,7 +28,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (mounted) setUser(profile)
       } catch (err: unknown) {
         logError('auth.fetchProfile', err)
-        authApi.clearTokens()
+        if (authApi.hasToken()) {
+          authApi.clearTokens()
+        }
         if (mounted) setUser(null)
       } finally {
         if (mounted) setIsLoading(false)

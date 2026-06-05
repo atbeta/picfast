@@ -6,6 +6,7 @@ import (
 
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -74,7 +75,7 @@ func SeedUser(t *testing.T, q *sqlc.Queries, groupID int64, email, password, rol
 	user, err := q.CreateUser(t.Context(), sqlc.CreateUserParams{
 		GroupID:       domain.PgInt8(groupID),
 		Email:         email,
-		Password:      string(hash),
+		Password:      pgtype.Text{String: string(hash), Valid: true},
 		Name:          email,
 		Role:          role,
 		CapacityBytes: 524288000,

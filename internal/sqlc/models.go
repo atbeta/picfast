@@ -166,7 +166,7 @@ type User struct {
 	ID            int64           `json:"id"`
 	GroupID       pgtype.Int8     `json:"group_id"`
 	Email         string          `json:"email"`
-	Password      string          `json:"password"`
+	Password      pgtype.Text     `json:"password"`
 	Name          string          `json:"name"`
 	Role          string          `json:"role"`
 	CapacityBytes int64           `json:"capacity_bytes"`
@@ -178,4 +178,13 @@ type User struct {
 	RegisteredIp  string          `json:"registered_ip"`
 	CreatedAt     time.Time       `json:"created_at"`
 	UpdatedAt     time.Time       `json:"updated_at"`
+}
+
+type UserIdentity struct {
+	ID              int64     `json:"id"`
+	UserID          int64     `json:"user_id"`
+	Provider        string    `json:"provider"`
+	ProviderSubject string    `json:"provider_subject"`
+	Email           string    `json:"email"`
+	LinkedAt        time.Time `json:"linked_at"`
 }

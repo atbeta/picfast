@@ -77,6 +77,7 @@ func newTestEnv(t *testing.T) *testEnv {
 	}
 
 	jwtSvc := handler.NewJWTService(&cfg.JWT)
+	handler.SetTrustedProxies([]string{"192.0.2.0/24", "127.0.0.0/8"})
 	sender := &fakeMailSender{}
 	r := router.New(db, pool, cfg, jwtSvc, nil, sender)
 

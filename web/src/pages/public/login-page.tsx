@@ -5,6 +5,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod/v4'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQuery } from '@tanstack/react-query'
 import { resendVerification } from '../../lib/auth'
 import { useAuth } from '../../lib/auth-context'
 import { getSiteConfig } from '../../lib/site-config'
@@ -33,21 +34,24 @@ export function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [serverError, setServerError] = useState('')
-  const [allowRegister, setAllowRegister] = useState(false)
-  const [requireVerification, setRequireVerification] = useState(false)
   const [resendState, setResendState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const isVerificationPendingUrl = searchParams.get('verification') === 'pending'
   const [loginFailedVerification, setLoginFailedVerification] = useState(false)
   const showResendVerification = isVerificationPendingUrl || loginFailedVerification
+  const oauthError = searchParams.get('oauth_error')
+
+  const { data: siteConfig } = useQuery({ queryKey: ['site-config'], queryFn: getSiteConfig })
+  const oauthProviders = siteConfig?.oauth_providers ?? []
+  const allowRegister = siteConfig?.allow_registration ?? false
+  const requireVerification = siteConfig?.require_email_verification ?? false
 
   useEffect(() => {
-    getSiteConfig()
-      .then((cfg) => {
-        setAllowRegister(cfg.allow_registration)
-        setRequireVerification(cfg.require_email_verification)
-      })
-      .catch(() => {})
-  }, [])
+    if (oauthError) {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('oauth_error')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [oauthError])
 
   const {
     control,
@@ -106,6 +110,43 @@ export function LoginPage() {
         <p className="mt-4 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
           {t('auth.verificationPending')}
         </p>
+      )}
+
+      {oauthError && (
+        <p className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {t(`auth.oauthError.${oauthError}`, {
+            defaultValue: t('auth.oauthError.generic'),
+          })}
+        </p>
+      )}
+
+      {oauthProviders.length > 0 && (
+        <div className="mt-6 space-y-3">
+          {oauthProviders.map((p) => (
+            <a
+              key={p.id}
+              href={`/api/v1/auth/oauth/${p.id}`}
+              className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <svg className="h-5 w-5 shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+              {t('auth.oauthSignInWith', { provider: p.display_name })}
+            </a>
+          ))}
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">
+                {t('auth.oauthOrContinue')}
+              </span>
+            </div>
+          </div>
+        </div>
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">

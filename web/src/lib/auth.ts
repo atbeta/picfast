@@ -120,3 +120,20 @@ export function clearTokens() {
 export function hasToken(): boolean {
   return !!localStorage.getItem('token')
 }
+
+// --- OAuth ---
+
+export interface OAuthIdentity {
+  provider: string
+  email: string
+  linked_at: string
+}
+
+export async function getOAuthIdentities(): Promise<OAuthIdentity[]> {
+  const res = await api.get<ApiResponse<OAuthIdentity[]>>('/auth/oauth/identities')
+  return res.data.data
+}
+
+export async function unlinkOAuth(provider: string): Promise<void> {
+  await api.delete(`/auth/oauth/${provider}`)
+}

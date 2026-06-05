@@ -9,6 +9,7 @@ import (
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -160,7 +161,7 @@ func ensureAdminUser(ctx context.Context, queries *sqlc.Queries, cfg *config.Con
 	_, err = queries.CreateAdminUser(ctx, sqlc.CreateAdminUserParams{
 		GroupID:       domain.PgInt8(groupID),
 		Email:         cfg.App.AdminEmail,
-		Password:      string(hash),
+		Password:      pgtype.Text{String: string(hash), Valid: true},
 		Name:          "Admin",
 		Role:          string(domain.RoleAdmin),
 		CapacityBytes: 0,

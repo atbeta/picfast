@@ -43,7 +43,7 @@ RETURNING id, group_id, email, password, name, role, capacity_bytes, image_num, 
 type CreateAdminUserParams struct {
 	GroupID       pgtype.Int8     `json:"group_id"`
 	Email         string          `json:"email"`
-	Password      string          `json:"password"`
+	Password      pgtype.Text     `json:"password"`
 	Name          string          `json:"name"`
 	Role          string          `json:"role"`
 	CapacityBytes int64           `json:"capacity_bytes"`
@@ -94,7 +94,7 @@ RETURNING id, group_id, email, password, name, role, capacity_bytes, image_num, 
 type CreateUserParams struct {
 	GroupID       pgtype.Int8     `json:"group_id"`
 	Email         string          `json:"email"`
-	Password      string          `json:"password"`
+	Password      pgtype.Text     `json:"password"`
 	Name          string          `json:"name"`
 	Role          string          `json:"role"`
 	CapacityBytes int64           `json:"capacity_bytes"`
@@ -333,7 +333,7 @@ RETURNING id, group_id, email, password, name, role, capacity_bytes, image_num, 
 type UpdateUserParams struct {
 	ID            int64           `json:"id"`
 	Name          string          `json:"name"`
-	Password      string          `json:"password"`
+	Password      pgtype.Text     `json:"password"`
 	GroupID       pgtype.Int8     `json:"group_id"`
 	CapacityBytes int64           `json:"capacity_bytes"`
 	Status        int16           `json:"status"`
@@ -389,8 +389,8 @@ WHERE id = $1
 `
 
 type UpdateUserPasswordByIDParams struct {
-	ID       int64  `json:"id"`
-	Password string `json:"password"`
+	ID       int64       `json:"id"`
+	Password pgtype.Text `json:"password"`
 }
 
 func (q *Queries) UpdateUserPasswordByID(ctx context.Context, arg UpdateUserPasswordByIDParams) error {

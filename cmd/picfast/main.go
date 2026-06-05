@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -52,6 +53,16 @@ func main() {
 	if cfg.App.RequireEmailVerification && !cfg.Mail.IsConfigured() {
 		slog.Warn("email verification is enabled but mail delivery is not configured; the requirement will stay inactive")
 	}
+	if len(cfg.EnabledOAuthProviders()) > 0 && strings.TrimSpace(cfg.App.WebBaseURL) == "" {
+		slog.Warn("OAuth is enabled but app.web_base_url is empty; post-login redirects will likely 404 unless backend serves the SPA. Set PICFAST_APP_WEB_BASE_URL to the frontend origin")
+	}
+	if len(cfg.EnabledOAuthProviders()) > 0 && strings.TrimSpace(cfg.Server.BaseURL) == "" {
+		slog.Error("OAuth requires server.base_url to be set; refusing to start")
+		os.Exit(1)
+	}
+	if strings.HasPrefix(strings.ToLower(cfg.Server.BaseURL), "https://") && len(cfg.Server.TrustedProxies) == 0 {
+		slog.Warn("server.base_url is https but no trusted_proxies configured; X-Forwarded-Proto from reverse proxy will be ignored, cookies may not be marked Secure")
+	}
 
 	slog.Info("starting picfast", "port", cfg.Server.Port)
 
@@ -75,6 +86,7 @@ func main() {
 		os.Exit(1)
 	}
 	jwtSvc := handler.NewJWTService(&cfg.JWT)
+	handler.SetTrustedProxies(cfg.Server.TrustedProxies)
 	mailSender := mailservice.NewSender(&cfg.Mail)
 
 	if err := bootstrapCoreData(context.Background(), queries, cfg); err != nil {

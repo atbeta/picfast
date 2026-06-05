@@ -1,9 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import { Controller } from 'react-hook-form'
 import { AlertCircle } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { getSiteConfig } from '@/lib/site-config'
 import { fieldInputCls, useAdminSettingsForm } from './form'
 import {
   SettingField,
@@ -15,6 +17,12 @@ export function AdminAccessSettingsPage() {
   const state = useAdminSettingsForm()
   const { data, form } = state
   const { register, control, handleSubmit } = form
+
+  const { data: siteConfig } = useQuery({
+    queryKey: ['site-config'],
+    queryFn: getSiteConfig,
+  })
+  const oauthProviders = siteConfig?.oauth_providers ?? []
 
   const onSubmit = handleSubmit((values) => state.saveSettings({
     allow_guest_upload: Boolean(values.allow_guest_upload),
@@ -211,6 +219,31 @@ export function AdminAccessSettingsPage() {
           )}
         />
       </SettingField>
+
+      {oauthProviders.length > 0 && (
+        <>
+          <div className="pt-4 border-t border-border/40">
+            <h2 className="text-base font-semibold tracking-tight text-foreground">
+              {t('admin.oauthStatus')}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t('admin.oauthStatusDesc')}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <div className="space-y-3">
+              {oauthProviders.map((p) => (
+                <div key={p.id} className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-foreground">{p.display_name}</span>
+                  <span className="rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
+                    {t('admin.statusEnabled')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </SettingsPageLayout>
   )
 }

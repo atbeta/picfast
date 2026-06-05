@@ -60,13 +60,45 @@ api.interceptors.response.use(
     const isAuthEndpoint = originalRequest?.url?.startsWith('/auth/login') || originalRequest?.url?.startsWith('/auth/register')
     if (err.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthEndpoint) {
       const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
-      if (!refreshToken) {
-        localStorage.removeItem(ACCESS_TOKEN_KEY)
-        localStorage.removeItem(REFRESH_TOKEN_KEY)
-        window.location.href = '/login'
-        return Promise.reject(err)
+
+      if (refreshToken) {
+        originalRequest._retry = true
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            subscribe(
+              (nextToken) => {
+                originalRequest.headers.Authorization = `Bearer ${nextToken}`
+                resolve(api(originalRequest))
+              },
+              (refreshError) => {
+                reject(refreshError)
+              },
+            )
+          })
+        }
+
+        isRefreshing = true
+        try {
+          const res = await api.post('/auth/refresh', { refresh_token: refreshToken })
+          const { access_token, refresh_token } = res.data.data
+          localStorage.setItem(ACCESS_TOKEN_KEY, access_token)
+          localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token)
+          api.defaults.headers.common.Authorization = `Bearer ${access_token}`
+          flushSubscribers(access_token)
+          originalRequest.headers.Authorization = `Bearer ${access_token}`
+          return api(originalRequest)
+        } catch (refreshError) {
+          localStorage.removeItem(ACCESS_TOKEN_KEY)
+          localStorage.removeItem(REFRESH_TOKEN_KEY)
+          rejectSubscribers(refreshError)
+          window.location.href = '/login'
+          return Promise.reject(refreshError)
+        } finally {
+          isRefreshing = false
+        }
       }
 
+      // No localStorage token — try cookie-based refresh (OAuth path)
       originalRequest._retry = true
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -84,7 +116,7 @@ api.interceptors.response.use(
 
       isRefreshing = true
       try {
-        const res = await api.post('/auth/refresh', { refresh_token: refreshToken })
+        const res = await api.post('/auth/refresh')
         const { access_token, refresh_token } = res.data.data
         localStorage.setItem(ACCESS_TOKEN_KEY, access_token)
         localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token)
@@ -93,8 +125,6 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${access_token}`
         return api(originalRequest)
       } catch (refreshError) {
-        localStorage.removeItem(ACCESS_TOKEN_KEY)
-        localStorage.removeItem(REFRESH_TOKEN_KEY)
         rejectSubscribers(refreshError)
         window.location.href = '/login'
         return Promise.reject(refreshError)

@@ -24,6 +24,7 @@ export interface SiteConfig {
   copy_template: string
   github_url: string
   setup_required: boolean
+  oauth_providers?: Array<{ id: string; display_name: string }>
 }
 
 export async function getSiteConfig(): Promise<SiteConfig> {

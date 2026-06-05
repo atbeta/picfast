@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod/v4'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,6 +14,7 @@ import { getStrategies, type Strategy } from '../../lib/console-api'
 import { extractErrorMessage } from '../../lib/error-handler'
 import { storageStrategyLabel } from '../../lib/storage-strategy'
 import { getSiteConfig } from '../../lib/site-config'
+import { getOAuthIdentities, unlinkOAuth, type OAuthIdentity } from '../../lib/auth'
 
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -54,6 +56,8 @@ function SettingField({
 export function SettingsPage() {
   const { t } = useTranslation()
   const { user, updateProfile } = useAuth()
+  const [searchParams] = useSearchParams()
+  const oauthError = searchParams.get('oauth_error')
 
   const [saving, setSaving] = useState(false)
   const [strategies, setStrategies] = useState<Strategy[]>([])
@@ -69,6 +73,16 @@ export function SettingsPage() {
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.6)
   const [defaultCopyFormat, setDefaultCopyFormat] = useState('')
   const [copyTemplate, setCopyTemplate] = useState('')
+  const [oauthIdentities, setOauthIdentities] = useState<OAuthIdentity[]>([])
+  const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (oauthError) {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('oauth_error')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [oauthError])
 
   const { data: siteConfig } = useQuery({
     queryKey: ['site-config'],
@@ -100,6 +114,12 @@ export function SettingsPage() {
       })
       .catch(() => {})
   }, [user])
+
+  useEffect(() => {
+    getOAuthIdentities()
+      .then(setOauthIdentities)
+      .catch(() => {})
+  }, [])
 
   const {
     register,
@@ -153,12 +173,43 @@ export function SettingsPage() {
 
   if (!user) return null
 
+  const handleUnlink = async (provider: string) => {
+    if (!window.confirm(t('settings.confirmUnlinkProvider', { provider }))) return
+    setUnlinkingProvider(provider)
+    try {
+      await unlinkOAuth(provider)
+      setOauthIdentities((prev) => prev.filter((i) => i.provider !== provider))
+      toast.success(t('settings.unlinkSuccess'))
+    } catch (err: unknown) {
+      const msg = extractErrorMessage(err, t('settings.unlinkFailed'))
+      if (msg.includes('lock out') || msg.includes('set a password')) {
+        toast.error(t('settings.oauthError.lockoutPrevented', { defaultValue: t('settings.unlinkFailed') }))
+      } else {
+        toast.error(msg)
+      }
+    } finally {
+      setUnlinkingProvider(null)
+    }
+  }
+
+  const linkedProviders = new Set(oauthIdentities.map((i) => i.provider))
+  const oauthProviders = siteConfig?.oauth_providers ?? []
+  const unlinkedProviders = oauthProviders.filter((p) => !linkedProviders.has(p.id))
+
   const usagePercent = user.capacity_bytes > 0 ? Math.round((user.used_bytes / user.capacity_bytes) * 100) : 0
   const isUnlimitedCapacity = user.capacity_bytes <= 0
 
   return (
     <section className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">{t('page.settings.title')}</h1>
+
+      {oauthError && (
+        <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {t(`settings.oauthError.${oauthError}`, {
+            defaultValue: t('settings.oauthError.generic'),
+          })}
+        </p>
+      )}
 
       <div className="space-y-6 pb-8">
         
@@ -449,6 +500,50 @@ export function SettingsPage() {
                 />
               </SettingField>
             </div>
+
+            {(linkedProviders.size > 0 || unlinkedProviders.length > 0) && (
+              <>
+                <div className="pt-4 border-t border-border/40">
+                  <h2 className="text-base font-semibold tracking-tight text-foreground">
+                    {t('settings.connectedAccounts')}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.connectedAccountsDesc')}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                  <div className="space-y-4">
+                    {oauthIdentities.map((identity) => (
+                      <div key={identity.provider} className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{identity.provider}</p>
+                          <p className="text-xs text-muted-foreground">{identity.email}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={unlinkingProvider === identity.provider}
+                          onClick={() => handleUnlink(identity.provider)}
+                        >
+                          {unlinkingProvider === identity.provider ? t('settings.saving') : t('settings.unlinkProvider')}
+                        </Button>
+                      </div>
+                    ))}
+                    {unlinkedProviders.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-foreground">{p.display_name}</p>
+                        <a
+                          href={`/api/v1/auth/oauth/${p.id}/link`}
+                          className="inline-flex items-center justify-center rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          {t('settings.connectProvider', { provider: p.display_name })}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="pt-2">
               <div className="flex justify-end mt-6">

@@ -12,6 +12,7 @@ import (
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -109,7 +110,7 @@ func (h *SetupHandler) CreateAdmin(w http.ResponseWriter, r *http.Request) {
 	user, err := qtx.CreateAdminUser(r.Context(), sqlc.CreateAdminUserParams{
 		GroupID:       domain.PgInt8(group.ID),
 		Email:         req.Email,
-		Password:      string(hash),
+		Password:      pgtype.Text{String: string(hash), Valid: true},
 		Name:          req.Name,
 		Role:          string(domain.RoleAdmin),
 		CapacityBytes: h.config.AppSnapshot().UserInitialCapacity,
