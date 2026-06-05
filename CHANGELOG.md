@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.11.0](https://github.com/atbeta/picfast/compare/v0.10.0...v0.11.0) (2026-06-05)
+
+
+### Features
+
+* **auth:** add OAuth2/OIDC support with PKCE, GitHub provider, and full UI ([c35c795](https://github.com/atbeta/picfast/commit/c35c79546163d7360e1d6076fed42d5cef1ee11f))
+
+
+### Bug Fixes
+
+* **docker:** set MALLOC_ARENA_MAX=2 to reduce vips memory fragmentation ([9c58d8c](https://github.com/atbeta/picfast/commit/9c58d8cbdbc3816ed41449fa848aebb838c559f3))
+
 ## [0.10.0](https://github.com/atbeta/picfast/compare/v0.9.0...v0.10.0) (2026-06-04)
 
 
