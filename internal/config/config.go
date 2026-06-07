@@ -77,9 +77,10 @@ type OAuthProviderConfig struct {
 	Issuer       string   `mapstructure:"issuer"`
 	AuthURL      string   `mapstructure:"auth_url"`
 	TokenURL     string   `mapstructure:"token_url"`
-	UserInfoURL  string   `mapstructure:"userinfo_url"`
+	UserInfoURL  string   `mapstructure:"userinfo_url"` // optional; when set, overrides the userinfo endpoint in both manual and discovery modes
 	EmailURL     string   `mapstructure:"email_url"`
 	Scopes       []string `mapstructure:"scopes"`
+	JWKSURL      string   `mapstructure:"jwks_url"`
 	Enabled      bool     `mapstructure:"enabled"`
 }
 

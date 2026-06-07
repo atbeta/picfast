@@ -80,8 +80,12 @@ func (h *OAuthHandler) loadProvider(ctx context.Context, providerID string) (oau
 			ClientID:     pc.ClientID,
 			ClientSecret: pc.ClientSecret,
 			Issuer:       pc.Issuer,
+			AuthURL:      pc.AuthURL,
+			TokenURL:     pc.TokenURL,
+			UserInfoURL:  pc.UserInfoURL,
 			Scopes:       pc.Scopes,
 			RedirectURI:  redirectURI,
+			JWKSURL:      pc.JWKSURL,
 		})
 	case "github":
 		p, err = oauth.NewGitHubProvider(ctx, oauth.GitHubProviderConfig{
