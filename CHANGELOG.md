@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/atbeta/picfast/compare/v0.11.0...v0.11.1) (2026-06-07)
+
+
+### Bug Fixes
+
+* **oauth:** correct JWKS URL handling and support manual OIDC configuration ([3cbff41](https://github.com/atbeta/picfast/commit/3cbff412cddc16ba85b49dc3b222b1de77a5d165))
+
 ## [0.11.0](https://github.com/atbeta/picfast/compare/v0.10.0...v0.11.0) (2026-06-05)
 
 
