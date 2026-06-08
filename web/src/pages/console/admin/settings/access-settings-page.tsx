@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Controller } from 'react-hook-form'
+import { Controller, useWatch } from 'react-hook-form'
 import { AlertCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 
@@ -18,16 +18,21 @@ export function AdminAccessSettingsPage() {
   const { data, form } = state
   const { register, control, handleSubmit } = form
 
+  const watchedAllowRegistration = useWatch({ control, name: 'allow_registration' })
+  const watchedAllowOauthRegistration = useWatch({ control, name: 'allow_oauth_registration' })
+
   const { data: siteConfig } = useQuery({
     queryKey: ['site-config'],
     queryFn: getSiteConfig,
   })
   const oauthProviders = siteConfig?.oauth_providers ?? []
+  const oauthOnlyActive = oauthProviders.length > 0 && !watchedAllowRegistration && watchedAllowOauthRegistration
 
   const onSubmit = handleSubmit((values) => state.saveSettings({
     allow_guest_upload: Boolean(values.allow_guest_upload),
     guest_capacity_bytes: values.guest_capacity_mb * 1024 * 1024,
     allow_registration: Boolean(values.allow_registration),
+    allow_oauth_registration: Boolean(values.allow_oauth_registration),
     allow_user_image_processing: Boolean(values.allow_user_image_processing),
     require_email_verification: Boolean(values.require_email_verification),
     user_initial_capacity: values.user_initial_capacity_mb * 1024 * 1024,
@@ -79,6 +84,32 @@ export function AdminAccessSettingsPage() {
           />
         </div>
       </SettingField>
+
+      {oauthProviders.length > 0 && (
+        <SettingField
+          label={t('admin.allowOauthRegistration')}
+          hint={t('admin.allowOauthRegistrationDesc')}
+        >
+          <div className="flex h-11 items-center justify-end">
+            <Controller
+              name="allow_oauth_registration"
+              control={control}
+              render={({ field }) => (
+                <Switch checked={field.value} onCheckedChange={field.onChange} id="oauthRegistration" />
+              )}
+            />
+          </div>
+        </SettingField>
+      )}
+
+      {oauthOnlyActive && (
+        <div className="flex items-start gap-3 rounded-xl bg-primary/10 px-4 py-3 text-sm text-primary">
+          <div className="mt-0.5 shrink-0">
+            <AlertCircle className="size-4" />
+          </div>
+          <p>{t('admin.oauthOnlyHint')}</p>
+        </div>
+      )}
 
       <SettingField
         label={t('admin.allowUserImageProcessing', { defaultValue: '允许用户自定义图片处理' })}

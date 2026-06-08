@@ -221,6 +221,7 @@ export interface AdminSettings {
   allow_guest_upload: boolean
   guest_capacity_bytes: number
   allow_registration: boolean
+  allow_oauth_registration: boolean
   allow_user_image_processing: boolean
   require_email_verification: boolean
   email_verification_ready: boolean

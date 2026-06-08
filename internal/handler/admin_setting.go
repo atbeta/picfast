@@ -41,6 +41,7 @@ type updateSettingsRequest struct {
 	AllowGuestUpload         *bool            `json:"allow_guest_upload"`
 	GuestCapacityBytes       *int64           `json:"guest_capacity_bytes"`
 	AllowRegistration        *bool            `json:"allow_registration"`
+	AllowOauthRegistration   *bool            `json:"allow_oauth_registration"`
 	AllowUserImageProcessing *bool            `json:"allow_user_image_processing"`
 	RequireEmailVerification *bool            `json:"require_email_verification"`
 	UserInitialCapacity      *int64           `json:"user_initial_capacity"`
@@ -98,6 +99,9 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.AllowRegistration != nil {
 		h.setter.SetAllowRegistration(*req.AllowRegistration)
+	}
+	if req.AllowOauthRegistration != nil {
+		h.setter.SetAllowOauthRegistration(*req.AllowOauthRegistration)
 	}
 	if req.AllowUserImageProcessing != nil {
 		h.setter.SetAllowUserImageProcessing(*req.AllowUserImageProcessing)
@@ -247,6 +251,7 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 		AllowGuestUpload:         app.AllowGuestUpload,
 		GuestCapacityBytes:       app.GuestCapacityBytes,
 		AllowRegistration:        app.AllowRegistration,
+		AllowOauthRegistration:   app.AllowOauthRegistration,
 		AllowUserImageProcessing: app.AllowUserImageProcessing,
 		RequireEmailVerification: app.RequireEmailVerification,
 		UserInitialCapacity:      app.UserInitialCapacity,
@@ -278,6 +283,7 @@ func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string
 		"allow_guest_upload":          app.AllowGuestUpload,
 		"guest_capacity_bytes":        app.GuestCapacityBytes,
 		"allow_registration":          app.AllowRegistration,
+		"allow_oauth_registration":    app.AllowOauthRegistration,
 		"allow_user_image_processing": app.AllowUserImageProcessing,
 		"require_email_verification":  app.RequireEmailVerification,
 		"user_initial_capacity":       app.UserInitialCapacity,

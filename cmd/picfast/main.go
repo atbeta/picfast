@@ -233,6 +233,7 @@ func applyPersistedSiteSettings(ctx context.Context, queries *sqlc.Queries, cfg 
 	cfg.App.AllowGuestUpload = settings.AllowGuestUpload
 	cfg.App.GuestCapacityBytes = settings.GuestCapacityBytes
 	cfg.App.AllowRegistration = settings.AllowRegistration
+	cfg.App.AllowOauthRegistration = settings.AllowOauthRegistration
 	cfg.App.AllowUserImageProcessing = settings.AllowUserImageProcessing
 	cfg.App.RequireEmailVerification = settings.RequireEmailVerification
 	cfg.App.UserInitialCapacity = settings.UserInitialCapacity

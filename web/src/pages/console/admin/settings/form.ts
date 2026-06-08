@@ -15,6 +15,7 @@ export interface SettingsForm {
   allow_guest_upload: boolean
   guest_capacity_mb: number
   allow_registration: boolean
+  allow_oauth_registration: boolean
   allow_user_image_processing: boolean
   require_email_verification: boolean
   user_initial_capacity_mb: number
@@ -56,6 +57,7 @@ const defaultValues: SettingsForm = {
   allow_guest_upload: false,
   guest_capacity_mb: 10240,
   allow_registration: false,
+  allow_oauth_registration: false,
   allow_user_image_processing: true,
   require_email_verification: false,
   user_initial_capacity_mb: 500,
@@ -119,6 +121,7 @@ function settingsToForm(data: AdminSettings): SettingsForm {
     allow_guest_upload: data.allow_guest_upload,
     guest_capacity_mb: Math.round(data.guest_capacity_bytes / 1024 / 1024),
     allow_registration: data.allow_registration,
+    allow_oauth_registration: data.allow_oauth_registration,
     allow_user_image_processing: data.allow_user_image_processing,
     require_email_verification: data.require_email_verification,
     user_initial_capacity_mb: Math.round(data.user_initial_capacity / 1024 / 1024),

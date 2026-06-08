@@ -151,6 +151,7 @@ type SiteSetting struct {
 	ThemeConfig              json.RawMessage `json:"theme_config"`
 	DefaultCopyFormat        string          `json:"default_copy_format"`
 	CopyTemplate             string          `json:"copy_template"`
+	AllowOauthRegistration   bool            `json:"allow_oauth_registration"`
 }
 
 type Strategy struct {

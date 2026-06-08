@@ -38,6 +38,7 @@ const (
 )
 
 var errAccountDisabled = errors.New("user account is not active")
+var errOAuthRegistrationDisabled = errors.New("oauth registration is disabled")
 
 type OAuthHandler struct {
 	db        *sqlc.Queries
@@ -258,6 +259,10 @@ func (h *OAuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("oauth callback: find or create user", "provider", providerID, "error", err)
 		if errors.Is(err, errAccountDisabled) {
 			http.Redirect(w, r, h.loginErrorURL(r, "account_disabled"), http.StatusFound)
+			return
+		}
+		if errors.Is(err, errOAuthRegistrationDisabled) {
+			http.Redirect(w, r, h.loginErrorURL(r, "registration_disabled"), http.StatusFound)
 			return
 		}
 		http.Redirect(w, r, h.loginErrorURL(r, "user_lookup_failed"), http.StatusFound)
@@ -504,8 +509,8 @@ func (h *OAuthHandler) findOrCreateUser(r *http.Request, providerID string, iden
 	}
 
 	app := h.config.AppSnapshot()
-	if !app.AllowRegistration {
-		return sqlc.User{}, fmt.Errorf("registration is disabled")
+	if !app.AllowOauthRegistration {
+		return sqlc.User{}, fmt.Errorf("%w", errOAuthRegistrationDisabled)
 	}
 
 	group, err := h.db.GetDefaultGroup(ctx)

@@ -81,8 +81,13 @@ export function AdminDashboardPage() {
         },
         {
           label: t('admin.allowRegistration'),
-          value: settings.allow_registration ? t('admin.statusEnabled', { defaultValue: '已开启' }) : t('admin.statusDisabled', { defaultValue: '已关闭' }),
-          tone: settings.allow_registration ? 'text-white border-transparent bg-success' : 'text-muted-foreground border-transparent bg-muted',
+          value: (() => {
+            const parts: string[] = []
+            if (settings.allow_registration) parts.push(t('admin.statusEmail', { defaultValue: '邮箱' }))
+            if (settings.allow_oauth_registration) parts.push(t('admin.statusOAuth', { defaultValue: 'OAuth' }))
+            return parts.length > 0 ? parts.join(' / ') : t('admin.statusDisabled', { defaultValue: '已关闭' })
+          })(),
+          tone: (settings.allow_registration || settings.allow_oauth_registration) ? 'text-white border-transparent bg-success' : 'text-muted-foreground border-transparent bg-muted',
         },
         {
           label: t('admin.requireEmailVerification'),

@@ -43,7 +43,12 @@ export function LoginPage() {
   const { data: siteConfig } = useQuery({ queryKey: ['site-config'], queryFn: getSiteConfig })
   const oauthProviders = siteConfig?.oauth_providers ?? []
   const allowRegister = siteConfig?.allow_registration ?? false
+  const allowOauthRegister = siteConfig?.allow_oauth_registration ?? false
   const requireVerification = siteConfig?.require_email_verification ?? false
+  const oauthOnly = oauthProviders.length > 0 && !allowRegister && allowOauthRegister
+  const [showEmailLogin, setShowEmailLogin] = useState(false)
+
+  const showEmailForm = oauthOnly ? showEmailLogin : true
 
   useEffect(() => {
     if (oauthError) {
@@ -136,19 +141,34 @@ export function LoginPage() {
               {t('auth.oauthSignInWith', { provider: p.display_name })}
             </a>
           ))}
-          <div className="relative py-2">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
+          {!oauthOnly && (
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  {t('auth.oauthOrContinue')}
+                </span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
-                {t('auth.oauthOrContinue')}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
+      {oauthOnly && !showEmailLogin && (
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => setShowEmailLogin(true)}
+            className="text-primary hover:underline transition-colors"
+          >
+            {t('auth.signInWithEmail')}
+          </button>
+        </div>
+      )}
+
+      {showEmailForm && (
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
         <div>
           <label htmlFor="email" className="mb-1 block text-sm font-medium text-foreground">
@@ -213,6 +233,19 @@ export function LoginPage() {
           {isSubmitting ? t('auth.loggingIn') : t('auth.login')}
         </button>
       </form>
+      )}
+
+      {oauthOnly && showEmailLogin && (
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => setShowEmailLogin(false)}
+            className="text-primary hover:underline transition-colors"
+          >
+            {t('auth.backToOAuth')}
+          </button>
+        </div>
+      )}
 
       {allowRegister && (
         <p className="mt-4 text-center text-sm text-muted-foreground">

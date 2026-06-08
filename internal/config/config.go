@@ -106,6 +106,7 @@ type AppConfig struct {
 	FooterLink1              string          `mapstructure:"footer_link_1"`
 	FooterText2              string          `mapstructure:"footer_text_2"`
 	FooterLink2              string          `mapstructure:"footer_link_2"`
+	AllowOauthRegistration   bool            `mapstructure:"allow_oauth_registration"`
 	AnalyticsProvider        string          `mapstructure:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `mapstructure:"analytics_config"`
 	ThemeConfig              json.RawMessage `mapstructure:"theme_config"`
@@ -161,6 +162,12 @@ func (s *Setter) SetAllowRegistration(v bool) {
 	s.cfg.mu.Lock()
 	defer s.cfg.mu.Unlock()
 	s.cfg.App.AllowRegistration = v
+}
+
+func (s *Setter) SetAllowOauthRegistration(v bool) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.AllowOauthRegistration = v
 }
 
 func (s *Setter) SetAllowUserImageProcessing(v bool) {
@@ -400,6 +407,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.allow_guest_upload", false)
 	v.SetDefault("app.guest_capacity_bytes", int64(10737418240))
 	v.SetDefault("app.allow_registration", false)
+	v.SetDefault("app.allow_oauth_registration", false)
 	v.SetDefault("app.allow_user_image_processing", true)
 	v.SetDefault("app.require_email_verification", false)
 	v.SetDefault("app.audit_upload_logs", false)

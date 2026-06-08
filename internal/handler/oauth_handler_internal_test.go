@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -446,6 +447,114 @@ func TestOAuthLinkRequiresAuth(t *testing.T) {
 	}
 }
 
+func TestOAuthRegistrationDisabledRejectsNewUser(t *testing.T) {
+	pool, db := testutil.SetupDB(t)
+	cfg := testOAuthConfig()
+	cfg.App.AllowOauthRegistration = false
+	jwtSvc := NewJWTService(&cfg.JWT)
+
+	testutil.SeedDefaultGroup(t, db)
+
+	h := &OAuthHandler{db: db, pool: pool, jwt: jwtSvc, config: cfg}
+
+	identity := oauth.Identity{
+		Subject:       "new-oauth-user-disabled",
+		Email:         "newuser@example.com",
+		EmailVerified: true,
+		Name:          "New OAuth User",
+	}
+
+	req, _ := http.NewRequestWithContext(t.Context(), "GET", "/", nil)
+	_, err := h.findOrCreateUser(req, "keycloak", identity)
+	if err == nil {
+		t.Fatal("expected error when oauth registration is disabled, got nil")
+	}
+	if !errors.Is(err, errOAuthRegistrationDisabled) {
+		t.Fatalf("expected errOAuthRegistrationDisabled, got: %v", err)
+	}
+}
+
+func TestOAuthRegistrationEnabledCreatesNewUser(t *testing.T) {
+	pool, db := testutil.SetupDB(t)
+	cfg := testOAuthConfig()
+	jwtSvc := NewJWTService(&cfg.JWT)
+
+	testutil.SeedDefaultGroup(t, db)
+
+	h := &OAuthHandler{db: db, pool: pool, jwt: jwtSvc, config: cfg}
+
+	identity := oauth.Identity{
+		Subject:       "new-oauth-user-enabled",
+		Email:         "newoauth@example.com",
+		EmailVerified: true,
+		Name:          "New OAuth User",
+	}
+
+	req, _ := http.NewRequestWithContext(t.Context(), "GET", "/", nil)
+	user, err := h.findOrCreateUser(req, "keycloak", identity)
+	if err != nil {
+		t.Fatalf("unexpected error when oauth registration is enabled: %v", err)
+	}
+	if user.Email != "newoauth@example.com" {
+		t.Fatalf("expected new user email newoauth@example.com, got %s", user.Email)
+	}
+}
+
+func TestOAuthRegistrationDisabledAllowsAutoLink(t *testing.T) {
+	pool, db := testutil.SetupDB(t)
+	cfg := testOAuthConfig()
+	cfg.App.AllowOauthRegistration = false
+	jwtSvc := NewJWTService(&cfg.JWT)
+
+	group := testutil.SeedDefaultGroup(t, db)
+	user := testutil.SeedUser(t, db, group.ID, "existing@example.com", "password123", string(domain.RoleUser))
+
+	h := &OAuthHandler{db: db, pool: pool, jwt: jwtSvc, config: cfg}
+
+	identity := oauth.Identity{
+		Subject:       "new-oauth-subject-autolink",
+		Email:         "existing@example.com",
+		EmailVerified: true,
+		Name:          "AutoLink User",
+	}
+
+	req, _ := http.NewRequestWithContext(t.Context(), "GET", "/", nil)
+	result, err := h.findOrCreateUser(req, "keycloak", identity)
+	if err != nil {
+		t.Fatalf("auto-link should succeed even when oauth registration is disabled: %v", err)
+	}
+	if result.ID != user.ID {
+		t.Fatalf("expected existing user %d, got %d", user.ID, result.ID)
+	}
+}
+
+func TestOAuthEmailCollisionRejectsUnverifiedIdentity(t *testing.T) {
+	pool, db := testutil.SetupDB(t)
+	cfg := testOAuthConfig()
+	jwtSvc := NewJWTService(&cfg.JWT)
+
+	group := testutil.SeedDefaultGroup(t, db)
+	testutil.SeedUser(t, db, group.ID, "collision@example.com", "password123", string(domain.RoleUser))
+
+	h := &OAuthHandler{db: db, pool: pool, jwt: jwtSvc, config: cfg}
+
+	identity := oauth.Identity{
+		Subject:       "new-oauth-subject-collision",
+		Email:         "collision@example.com",
+		EmailVerified: false,
+		Name:          "Collision User",
+	}
+
+	req, _ := http.NewRequestWithContext(t.Context(), "GET", "/", nil)
+	_, err := h.findOrCreateUser(req, "keycloak", identity)
+	if err == nil {
+		t.Fatal("expected error for unverified identity with existing email, got nil")
+	}
+	if !strings.Contains(err.Error(), "email already registered") {
+		t.Fatalf("expected email collision error, got: %v", err)
+	}
+}
+
 func clearUserPassword(t *testing.T, db *sqlc.Queries, user sqlc.User) {
 	t.Helper()
 	_, err := db.UpdateUser(t.Context(), sqlc.UpdateUserParams{
@@ -470,9 +579,10 @@ func testOAuthConfig() *config.Config {
 			RefreshTTL: 604800,
 		},
 		App: config.AppConfig{
-			Name:                "TestApp",
-			AllowRegistration:   true,
-			UserInitialCapacity: 524288000,
+			Name:                  "TestApp",
+			AllowRegistration:     true,
+			AllowOauthRegistration: true,
+			UserInitialCapacity:   524288000,
 		},
 		OAuth: config.OAuthConfig{
 			Providers: []config.OAuthProviderConfig{

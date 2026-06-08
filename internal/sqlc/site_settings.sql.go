@@ -11,7 +11,7 @@ import (
 )
 
 const getSiteSettings = `-- name: GetSiteSettings :one
-SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, default_copy_format, copy_template FROM site_settings WHERE id = 1
+SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, default_copy_format, copy_template, allow_oauth_registration FROM site_settings WHERE id = 1
 `
 
 func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
@@ -43,6 +43,7 @@ func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
 		&i.ThemeConfig,
 		&i.DefaultCopyFormat,
 		&i.CopyTemplate,
+		&i.AllowOauthRegistration,
 	)
 	return i, err
 }
@@ -55,6 +56,7 @@ INSERT INTO site_settings (
     allow_guest_upload,
     guest_capacity_bytes,
     allow_registration,
+    allow_oauth_registration,
     require_email_verification,
     user_initial_capacity,
     default_image_ttl,
@@ -73,13 +75,14 @@ INSERT INTO site_settings (
     default_copy_format,
     copy_template
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
     allow_guest_upload = EXCLUDED.allow_guest_upload,
     guest_capacity_bytes = EXCLUDED.guest_capacity_bytes,
     allow_registration = EXCLUDED.allow_registration,
+    allow_oauth_registration = EXCLUDED.allow_oauth_registration,
     require_email_verification = EXCLUDED.require_email_verification,
     user_initial_capacity = EXCLUDED.user_initial_capacity,
     default_image_ttl = EXCLUDED.default_image_ttl,
@@ -98,7 +101,7 @@ ON CONFLICT (id) DO UPDATE SET
     default_copy_format = EXCLUDED.default_copy_format,
     copy_template = EXCLUDED.copy_template,
     updated_at = NOW()
-RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, default_copy_format, copy_template
+RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, default_copy_format, copy_template, allow_oauth_registration
 `
 
 type UpsertSiteSettingsParams struct {
@@ -107,6 +110,7 @@ type UpsertSiteSettingsParams struct {
 	AllowGuestUpload         bool            `json:"allow_guest_upload"`
 	GuestCapacityBytes       int64           `json:"guest_capacity_bytes"`
 	AllowRegistration        bool            `json:"allow_registration"`
+	AllowOauthRegistration   bool            `json:"allow_oauth_registration"`
 	RequireEmailVerification bool            `json:"require_email_verification"`
 	UserInitialCapacity      int64           `json:"user_initial_capacity"`
 	DefaultImageTtl          string          `json:"default_image_ttl"`
@@ -133,6 +137,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		arg.AllowGuestUpload,
 		arg.GuestCapacityBytes,
 		arg.AllowRegistration,
+		arg.AllowOauthRegistration,
 		arg.RequireEmailVerification,
 		arg.UserInitialCapacity,
 		arg.DefaultImageTtl,
@@ -178,6 +183,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		&i.ThemeConfig,
 		&i.DefaultCopyFormat,
 		&i.CopyTemplate,
+		&i.AllowOauthRegistration,
 	)
 	return i, err
 }
