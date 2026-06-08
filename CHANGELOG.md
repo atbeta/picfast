@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.12.0](https://github.com/atbeta/picfast/compare/v0.11.1...v0.12.0) (2026-06-08)
+
+
+### Features
+
+* **auth:** separate allow_oauth_registration from allow_registration ([a5a385a](https://github.com/atbeta/picfast/commit/a5a385a5a475a7086406af09cc82e16874ffe4fb))
+* **upload:** add skip_image_processing to preserve original images ([79a5ff2](https://github.com/atbeta/picfast/commit/79a5ff2943dbb05c68cc417ba121b9b27ccad2be))
+
+
+### Bug Fixes
+
+* **middleware:** allow analytics scripts through CSP ([783b415](https://github.com/atbeta/picfast/commit/783b4152fd67026999d1012ad8c19b5bf58aff9c))
+
 ## [0.11.1](https://github.com/atbeta/picfast/compare/v0.11.0...v0.11.1) (2026-06-07)
 
 
