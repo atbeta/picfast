@@ -34,6 +34,7 @@ export function AdminAccessSettingsPage() {
     allow_registration: Boolean(values.allow_registration),
     allow_oauth_registration: Boolean(values.allow_oauth_registration),
     allow_user_image_processing: Boolean(values.allow_user_image_processing),
+    skip_image_processing: Boolean(values.skip_image_processing),
     require_email_verification: Boolean(values.require_email_verification),
     user_initial_capacity: values.user_initial_capacity_mb * 1024 * 1024,
     default_image_ttl: values.default_image_ttl,
@@ -121,6 +122,21 @@ export function AdminAccessSettingsPage() {
             control={control}
             render={({ field }) => (
               <Switch checked={field.value} onCheckedChange={field.onChange} id="allowUserImageProcessing" />
+            )}
+          />
+        </div>
+      </SettingField>
+
+      <SettingField
+        label={t('admin.skipImageProcessing')}
+        hint={t('admin.skipImageProcessingDesc')}
+      >
+        <div className="flex h-11 items-center justify-end">
+          <Controller
+            name="skip_image_processing"
+            control={control}
+            render={({ field }) => (
+              <Switch checked={field.value} onCheckedChange={field.onChange} id="skipImageProcessing" />
             )}
           />
         </div>

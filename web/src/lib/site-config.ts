@@ -10,6 +10,7 @@ export interface SiteConfig {
   allow_registration: boolean
   allow_oauth_registration: boolean
   allow_user_image_processing: boolean
+  skip_image_processing: boolean
   require_email_verification: boolean
   base_url: string
   default_image_ttl: string

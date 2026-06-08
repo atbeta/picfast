@@ -52,6 +52,7 @@ type imageProcessingConfig struct {
 	StripExif        bool
 	EnableWatermark  bool
 	WatermarkConfigs *domain.WatermarkConfig
+	SkipProcessing   bool
 }
 
 type processedUploadImage struct {
@@ -486,6 +487,13 @@ func findStrategyByID(strategies []sqlc.Strategy, id int64) (sqlc.Strategy, bool
 
 func processUploadImage(fileData []byte, ext string, cfg imageProcessingConfig) processedUploadImage {
 	result := processedUploadImage{data: fileData}
+	if cfg.SkipProcessing {
+		if w, h, err := ReadImageDimensions(fileData); err == nil {
+			result.width = w
+			result.height = h
+		}
+		return result
+	}
 	skipExts := map[string]bool{"gif": true, "svg": true, "ico": true}
 	if skipExts[ext] {
 		return result
@@ -530,6 +538,7 @@ func resolveImageProcessingConfig(appCfg config.AppConfig, userCfg *domain.UserI
 		StripExif:        true,
 		EnableWatermark:  false,
 		WatermarkConfigs: nil,
+		SkipProcessing:   appCfg.SkipImageProcessing,
 	}
 
 	if !appCfg.AllowUserImageProcessing || userCfg == nil {

@@ -26,6 +26,22 @@ func RegisterExporter(e FormatExporter) {
 	exportRegistry[e.Name()] = e
 }
 
+// ReadImageDimensions loads an image and returns its width/height.
+// This is a header-only probe (no pixel re-encoding).
+func ReadImageDimensions(data []byte) (int, int, error) {
+	params := vips.NewImportParams()
+	params.AutoRotate.Set(true)
+	params.FailOnError.Set(true)
+
+	img, err := vips.LoadImageFromBuffer(data, params)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer img.Close()
+
+	return img.Width(), img.Height(), nil
+}
+
 func ProcessImage(data []byte, saveFormat string, quality int, stripExif bool) (*ProcessedImage, error) {
 	params := vips.NewImportParams()
 	params.AutoRotate.Set(true)

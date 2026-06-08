@@ -262,6 +262,7 @@ func New(
 				"allow_registration":          app.AllowRegistration,
 				"allow_oauth_registration":    app.AllowOauthRegistration,
 				"allow_user_image_processing": app.AllowUserImageProcessing,
+				"skip_image_processing":       app.SkipImageProcessing,
 				"require_email_verification":  app.RequireEmailVerification && mailSender != nil && mailSender.Ready(),
 				"base_url":                    server.BaseURL,
 				"default_image_ttl":           app.DefaultImageTTL.String(),

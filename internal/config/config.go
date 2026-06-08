@@ -13,14 +13,14 @@ import (
 
 type Config struct {
 	mu          sync.RWMutex
-	Server      ServerConfig      `mapstructure:"server"`
-	Database    DatabaseConfig    `mapstructure:"database"`
-	JWT         JWTConfig         `mapstructure:"jwt"`
-	Storage     StorageConfig     `mapstructure:"storage"`
-	Mail        MailConfig        `mapstructure:"mail"`
-	App         AppConfig         `mapstructure:"app"`
-	OAuth       OAuthConfig       `mapstructure:"oauth"`
-	SecretKey   string            `mapstructure:"secret_key"`
+	Server      ServerConfig   `mapstructure:"server"`
+	Database    DatabaseConfig `mapstructure:"database"`
+	JWT         JWTConfig      `mapstructure:"jwt"`
+	Storage     StorageConfig  `mapstructure:"storage"`
+	Mail        MailConfig     `mapstructure:"mail"`
+	App         AppConfig      `mapstructure:"app"`
+	OAuth       OAuthConfig    `mapstructure:"oauth"`
+	SecretKey   string         `mapstructure:"secret_key"`
 	secretBytes []byte
 }
 
@@ -93,6 +93,7 @@ type AppConfig struct {
 	GuestCapacityBytes       int64           `mapstructure:"guest_capacity_bytes"`
 	AllowRegistration        bool            `mapstructure:"allow_registration"`
 	AllowUserImageProcessing bool            `mapstructure:"allow_user_image_processing"`
+	SkipImageProcessing      bool            `mapstructure:"skip_image_processing"`
 	RequireEmailVerification bool            `mapstructure:"require_email_verification"`
 	AuditUploadLogs          bool            `mapstructure:"audit_upload_logs"`
 	MaxUploadBytes           int64           `mapstructure:"max_upload_bytes"`
@@ -174,6 +175,12 @@ func (s *Setter) SetAllowUserImageProcessing(v bool) {
 	s.cfg.mu.Lock()
 	defer s.cfg.mu.Unlock()
 	s.cfg.App.AllowUserImageProcessing = v
+}
+
+func (s *Setter) SetSkipImageProcessing(v bool) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.SkipImageProcessing = v
 }
 
 func (s *Setter) SetRequireEmailVerification(v bool) {
@@ -409,6 +416,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.allow_registration", false)
 	v.SetDefault("app.allow_oauth_registration", false)
 	v.SetDefault("app.allow_user_image_processing", true)
+	v.SetDefault("app.skip_image_processing", false)
 	v.SetDefault("app.require_email_verification", false)
 	v.SetDefault("app.audit_upload_logs", false)
 	v.SetDefault("app.max_upload_bytes", int64(50<<20))

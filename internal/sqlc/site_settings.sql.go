@@ -11,7 +11,7 @@ import (
 )
 
 const getSiteSettings = `-- name: GetSiteSettings :one
-SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, default_copy_format, copy_template, allow_oauth_registration FROM site_settings WHERE id = 1
+SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, default_copy_format, copy_template, allow_oauth_registration, skip_image_processing FROM site_settings WHERE id = 1
 `
 
 func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
@@ -44,6 +44,7 @@ func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
 		&i.DefaultCopyFormat,
 		&i.CopyTemplate,
 		&i.AllowOauthRegistration,
+		&i.SkipImageProcessing,
 	)
 	return i, err
 }
@@ -71,11 +72,12 @@ INSERT INTO site_settings (
     analytics_provider,
     analytics_config,
     allow_user_image_processing,
+    skip_image_processing,
     theme_config,
     default_copy_format,
     copy_template
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
@@ -97,11 +99,12 @@ ON CONFLICT (id) DO UPDATE SET
     analytics_provider = EXCLUDED.analytics_provider,
     analytics_config = EXCLUDED.analytics_config,
     allow_user_image_processing = EXCLUDED.allow_user_image_processing,
+    skip_image_processing = EXCLUDED.skip_image_processing,
     theme_config = EXCLUDED.theme_config,
     default_copy_format = EXCLUDED.default_copy_format,
     copy_template = EXCLUDED.copy_template,
     updated_at = NOW()
-RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, default_copy_format, copy_template, allow_oauth_registration
+RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, default_copy_format, copy_template, allow_oauth_registration, skip_image_processing
 `
 
 type UpsertSiteSettingsParams struct {
@@ -125,6 +128,7 @@ type UpsertSiteSettingsParams struct {
 	AnalyticsProvider        string          `json:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `json:"analytics_config"`
 	AllowUserImageProcessing bool            `json:"allow_user_image_processing"`
+	SkipImageProcessing      bool            `json:"skip_image_processing"`
 	ThemeConfig              json.RawMessage `json:"theme_config"`
 	DefaultCopyFormat        string          `json:"default_copy_format"`
 	CopyTemplate             string          `json:"copy_template"`
@@ -152,6 +156,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		arg.AnalyticsProvider,
 		arg.AnalyticsConfig,
 		arg.AllowUserImageProcessing,
+		arg.SkipImageProcessing,
 		arg.ThemeConfig,
 		arg.DefaultCopyFormat,
 		arg.CopyTemplate,
@@ -184,6 +189,7 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		&i.DefaultCopyFormat,
 		&i.CopyTemplate,
 		&i.AllowOauthRegistration,
+		&i.SkipImageProcessing,
 	)
 	return i, err
 }

@@ -235,6 +235,7 @@ func applyPersistedSiteSettings(ctx context.Context, queries *sqlc.Queries, cfg 
 	cfg.App.AllowRegistration = settings.AllowRegistration
 	cfg.App.AllowOauthRegistration = settings.AllowOauthRegistration
 	cfg.App.AllowUserImageProcessing = settings.AllowUserImageProcessing
+	cfg.App.SkipImageProcessing = settings.SkipImageProcessing
 	cfg.App.RequireEmailVerification = settings.RequireEmailVerification
 	cfg.App.UserInitialCapacity = settings.UserInitialCapacity
 	if settings.DefaultImageTtl == "" {

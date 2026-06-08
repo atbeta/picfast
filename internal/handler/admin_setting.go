@@ -43,6 +43,7 @@ type updateSettingsRequest struct {
 	AllowRegistration        *bool            `json:"allow_registration"`
 	AllowOauthRegistration   *bool            `json:"allow_oauth_registration"`
 	AllowUserImageProcessing *bool            `json:"allow_user_image_processing"`
+	SkipImageProcessing      *bool            `json:"skip_image_processing"`
 	RequireEmailVerification *bool            `json:"require_email_verification"`
 	UserInitialCapacity      *int64           `json:"user_initial_capacity"`
 	DefaultImageTTL          *string          `json:"default_image_ttl"`
@@ -105,6 +106,9 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.AllowUserImageProcessing != nil {
 		h.setter.SetAllowUserImageProcessing(*req.AllowUserImageProcessing)
+	}
+	if req.SkipImageProcessing != nil {
+		h.setter.SetSkipImageProcessing(*req.SkipImageProcessing)
 	}
 	if req.RequireEmailVerification != nil {
 		if *req.RequireEmailVerification && !h.mailReady {
@@ -253,6 +257,7 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 		AllowRegistration:        app.AllowRegistration,
 		AllowOauthRegistration:   app.AllowOauthRegistration,
 		AllowUserImageProcessing: app.AllowUserImageProcessing,
+		SkipImageProcessing:      app.SkipImageProcessing,
 		RequireEmailVerification: app.RequireEmailVerification,
 		UserInitialCapacity:      app.UserInitialCapacity,
 		DefaultImageTtl:          app.DefaultImageTTL.String(),
@@ -285,6 +290,7 @@ func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string
 		"allow_registration":          app.AllowRegistration,
 		"allow_oauth_registration":    app.AllowOauthRegistration,
 		"allow_user_image_processing": app.AllowUserImageProcessing,
+		"skip_image_processing":       app.SkipImageProcessing,
 		"require_email_verification":  app.RequireEmailVerification,
 		"user_initial_capacity":       app.UserInitialCapacity,
 		"default_image_ttl":           app.DefaultImageTTL.String(),

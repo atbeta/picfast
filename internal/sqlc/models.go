@@ -152,6 +152,7 @@ type SiteSetting struct {
 	DefaultCopyFormat        string          `json:"default_copy_format"`
 	CopyTemplate             string          `json:"copy_template"`
 	AllowOauthRegistration   bool            `json:"allow_oauth_registration"`
+	SkipImageProcessing      bool            `json:"skip_image_processing"`
 }
 
 type Strategy struct {

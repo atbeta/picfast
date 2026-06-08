@@ -17,6 +17,7 @@ export interface SettingsForm {
   allow_registration: boolean
   allow_oauth_registration: boolean
   allow_user_image_processing: boolean
+  skip_image_processing: boolean
   require_email_verification: boolean
   user_initial_capacity_mb: number
   default_image_ttl: string
@@ -59,6 +60,7 @@ const defaultValues: SettingsForm = {
   allow_registration: false,
   allow_oauth_registration: false,
   allow_user_image_processing: true,
+  skip_image_processing: false,
   require_email_verification: false,
   user_initial_capacity_mb: 500,
   default_image_ttl: '0',
@@ -123,6 +125,7 @@ function settingsToForm(data: AdminSettings): SettingsForm {
     allow_registration: data.allow_registration,
     allow_oauth_registration: data.allow_oauth_registration,
     allow_user_image_processing: data.allow_user_image_processing,
+    skip_image_processing: data.skip_image_processing,
     require_email_verification: data.require_email_verification,
     user_initial_capacity_mb: Math.round(data.user_initial_capacity / 1024 / 1024),
     default_image_ttl: normalizeTTL(data.default_image_ttl),

@@ -223,6 +223,7 @@ export interface AdminSettings {
   allow_registration: boolean
   allow_oauth_registration: boolean
   allow_user_image_processing: boolean
+  skip_image_processing: boolean
   require_email_verification: boolean
   email_verification_ready: boolean
   user_initial_capacity: number
