@@ -89,6 +89,7 @@ export function SettingsPage() {
     queryFn: getSiteConfig,
   })
   const allowUserImageProcessing = siteConfig?.allow_user_image_processing ?? true
+  const skipImageProcessing = siteConfig?.skip_image_processing ?? false
 
   useEffect(() => {
     getStrategies()
@@ -314,6 +315,8 @@ export function SettingsPage() {
               </div>
             </div>
 
+            {!skipImageProcessing && (
+            <>
             <div className="pt-4 border-t border-border/40">
               <h2 className="text-base font-semibold tracking-tight text-foreground">
                 {t('settings.imageProcessing', { defaultValue: '上传处理偏好' })}
@@ -457,6 +460,8 @@ export function SettingsPage() {
                 )}
               </div>
             </div>
+            </>
+            )}
 
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
               <div>
