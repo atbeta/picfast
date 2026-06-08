@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/atbeta/picfast/compare/v0.12.0...v0.12.1) (2026-06-08)
+
+
+### Bug Fixes
+
+* **upload:** hide image processing settings when skip processing is enabled ([bfde8e3](https://github.com/atbeta/picfast/commit/bfde8e30b849bb5b4204640b8051c87fda9db1db))
+
 ## [0.12.0](https://github.com/atbeta/picfast/compare/v0.11.1...v0.12.0) (2026-06-08)
 
 
