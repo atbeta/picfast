@@ -38,7 +38,7 @@ func New(
 	r := chi.NewRouter()
 
 	r.Use(middleware.StructuredLogger)
-	r.Use(middleware.SecurityHeaders)
+	r.Use(middleware.SecurityHeaders(cfg))
 	r.Use(chimw.Recoverer)
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -260,6 +260,7 @@ func New(
 				"allow_guest_upload":          app.AllowGuestUpload,
 				"guest_capacity_bytes":        app.GuestCapacityBytes,
 				"allow_registration":          app.AllowRegistration,
+				"allow_oauth_registration":    app.AllowOauthRegistration,
 				"allow_user_image_processing": app.AllowUserImageProcessing,
 				"require_email_verification":  app.RequireEmailVerification && mailSender != nil && mailSender.Ready(),
 				"base_url":                    server.BaseURL,
