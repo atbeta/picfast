@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -29,7 +30,7 @@ func StructuredLogger(next http.Handler) http.Handler {
 			slog.Int("bytes", ww.BytesWritten()),
 			slog.Duration("duration", duration),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
-			slog.String("client_ip", r.RemoteAddr),
+			slog.String("client_ip", clientip.FromRequest(r)),
 		}
 
 		if userID != 0 {

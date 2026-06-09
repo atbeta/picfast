@@ -1,67 +1,21 @@
 package handler
 
 import (
-	"log/slog"
-	"net"
 	"net/http"
 	"strings"
-	"sync"
 
+	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/domain"
 )
 
 const accessTokenCookieName = "picfast_token"
 
-var (
-	trustedProxyMu    sync.RWMutex
-	trustedProxyCIDRs []*net.IPNet
-)
-
 func SetTrustedProxies(proxies []string) {
-	trustedProxyMu.Lock()
-	defer trustedProxyMu.Unlock()
-	trustedProxyCIDRs = nil
-	for _, p := range proxies {
-		p = strings.TrimSpace(p)
-		if p == "" {
-			continue
-		}
-		if !strings.Contains(p, "/") {
-			if strings.Contains(p, ":") {
-				p += "/128"
-			} else {
-				p += "/32"
-			}
-		}
-		_, cidr, err := net.ParseCIDR(p)
-		if err != nil {
-			slog.Warn("ignoring invalid trusted_proxies entry", "entry", p, "error", err)
-			continue
-		}
-		trustedProxyCIDRs = append(trustedProxyCIDRs, cidr)
-	}
+	clientip.SetTrustedProxies(proxies)
 }
 
 func isTrustedProxy(addr string) bool {
-	trustedProxyMu.RLock()
-	defer trustedProxyMu.RUnlock()
-	host, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		host = addr
-	}
-	ip := net.ParseIP(host)
-	if ip == nil {
-		return false
-	}
-	if v4 := ip.To4(); v4 != nil {
-		ip = v4
-	}
-	for _, cidr := range trustedProxyCIDRs {
-		if cidr.Contains(ip) {
-			return true
-		}
-	}
-	return false
+	return clientip.IsTrustedProxy(addr)
 }
 
 func originalAddr(r *http.Request) string {

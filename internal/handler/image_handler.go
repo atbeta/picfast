@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/domain"
 	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/service"
@@ -135,7 +136,7 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		AlbumID:    albumID,
 		Permission: perm,
 		UserID:     userID,
-		ClientIP:   r.RemoteAddr,
+		ClientIP:   clientip.FromRequest(r),
 		ExpiresAt:  expiresAt,
 	})
 	if err != nil {

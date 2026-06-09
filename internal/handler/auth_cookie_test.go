@@ -51,29 +51,6 @@ func TestSetTrustedProxies(t *testing.T) {
 	}
 }
 
-func TestRightmostUntrustedIP(t *testing.T) {
-	SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12"})
-
-	tests := []struct {
-		header string
-		want   string
-	}{
-		{"1.2.3.4", "1.2.3.4"},
-		{"1.2.3.4, 10.0.0.1", "1.2.3.4"},
-		{"1.2.3.4, 10.0.0.1, 10.0.0.2", "1.2.3.4"},
-		{"10.0.0.1, 1.2.3.4", "1.2.3.4"},
-		{"10.0.0.1, 10.0.0.2", ""},
-		{"garbage, 1.2.3.4", "1.2.3.4"},
-		{"10.0.5.1, 172.16.0.1, 1.2.3.4", "1.2.3.4"},
-	}
-	for _, tc := range tests {
-		got := rightmostUntrustedIP(tc.header)
-		if got != tc.want {
-			t.Errorf("rightmostUntrustedIP(%q) = %q, want %q", tc.header, got, tc.want)
-		}
-	}
-}
-
 func TestSetAccessTokenCookieFlags(t *testing.T) {
 	SetTrustedProxies([]string{"192.0.2.0/24", "127.0.0.0/8"})
 

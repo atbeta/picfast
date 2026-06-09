@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
@@ -164,7 +165,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			Settings:      settings,
 			Status:        int16(domain.UserStatusActive),
 			EmailVerified: false,
-			RegisteredIp:  r.RemoteAddr,
+			RegisteredIp:  clientip.FromRequest(r),
 		})
 		if err != nil {
 			return err

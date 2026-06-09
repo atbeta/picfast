@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/domain"
 	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/service"
@@ -74,7 +75,7 @@ func (h *FlatUploadHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		FileName: header.Filename,
 		FileSize: header.Size,
 		UserID:   userID,
-		ClientIP: r.RemoteAddr,
+		ClientIP: clientip.FromRequest(r),
 	})
 	if err != nil {
 		observeUpload("error", picmetrics.ClassifyUploadError(err), int64(len(fileData)))

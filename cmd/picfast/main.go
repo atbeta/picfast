@@ -20,6 +20,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/handler"
 	"github.com/atbeta/picfast/internal/router"
@@ -86,7 +87,7 @@ func main() {
 		os.Exit(1)
 	}
 	jwtSvc := handler.NewJWTService(&cfg.JWT)
-	handler.SetTrustedProxies(cfg.Server.TrustedProxies)
+	clientip.SetTrustedProxies(cfg.Server.TrustedProxies)
 	mailSender := mailservice.NewSender(&cfg.Mail)
 
 	if err := bootstrapCoreData(context.Background(), queries, cfg); err != nil {

@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/handler"
@@ -46,7 +46,15 @@ func New(
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	})
-	r.Use(chimw.RealIP)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if clientip.IsTrustedProxy(r.RemoteAddr) {
+				chimw.RealIP(next).ServeHTTP(w, r)
+			} else {
+				next.ServeHTTP(w, r)
+			}
+		})
+	})
 	r.Use(chimw.RequestID)
 	if cfg.Server.ReadTimeout > 0 {
 		r.Use(chimw.Timeout(cfg.Server.ReadTimeout))
@@ -223,11 +231,7 @@ func New(
 	oauthCallbackLimiter := middleware.NewRateLimiter(5, time.Minute)
 	oauthLinkLimiter := middleware.NewRateLimiter(10, time.Minute)
 	clientIPKey := func(r *http.Request) string {
-		host, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil || host == "" {
-			return r.RemoteAddr
-		}
-		return host
+		return clientip.FromRequest(r)
 	}
 
 	// Image file serving: /i/{key}.{ext} — with OptionalAuth so private images can be accessed by owner

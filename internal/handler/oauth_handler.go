@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/service/oauth"
@@ -588,7 +589,7 @@ func (h *OAuthHandler) findOrCreateUser(r *http.Request, providerID string, iden
 			Settings:      settings,
 			Status:        int16(domain.UserStatusActive),
 			EmailVerified: emailVerified,
-			RegisteredIp:  realIPFromRequest(r),
+			RegisteredIp:  clientip.FromRequest(r),
 		})
 		if err != nil {
 			return fmt.Errorf("create user: %w", err)
