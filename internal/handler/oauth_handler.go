@@ -585,7 +585,7 @@ func (h *OAuthHandler) findOrCreateUser(r *http.Request, providerID string, iden
 			Password:      pgtype.Text{},
 			Name:          name,
 			Role:          string(domain.RoleUser),
-			CapacityBytes: app.UserInitialCapacity,
+			CapacityBytes: resolveUserCapacity(group, app),
 			Settings:      settings,
 			Status:        int16(domain.UserStatusActive),
 			EmailVerified: emailVerified,

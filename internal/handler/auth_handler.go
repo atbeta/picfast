@@ -161,7 +161,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			Password:      pgtype.Text{String: string(hash), Valid: true},
 			Name:          req.Name,
 			Role:          string(domain.RoleUser),
-			CapacityBytes: app.UserInitialCapacity,
+			CapacityBytes: resolveUserCapacity(group, app),
 			Settings:      settings,
 			Status:        int16(domain.UserStatusActive),
 			EmailVerified: false,

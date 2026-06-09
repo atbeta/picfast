@@ -42,6 +42,7 @@ type GroupConfig struct {
 	LimitPerHour               int             `json:"limit_per_hour"`
 	LimitPerDay                int             `json:"limit_per_day"`
 	LimitPerMonth              int             `json:"limit_per_month"`
+	UserCapacityBytes          int64           `json:"user_capacity_bytes"`
 	PathNamingRule             string          `json:"path_naming_rule"`
 	FileNamingRule             string          `json:"file_naming_rule"`
 	ImageSaveQuality           int             `json:"image_save_quality"`

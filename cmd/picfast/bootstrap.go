@@ -183,6 +183,7 @@ func defaultBootstrapGroupConfig() []byte {
 		LimitPerHour:               500,
 		LimitPerDay:                2000,
 		LimitPerMonth:              50000,
+		UserCapacityBytes:          0,
 		PathNamingRule:             "{Y}/{m}/{d}",
 		FileNamingRule:             "{uniqid}",
 		ImageSaveQuality:           85,

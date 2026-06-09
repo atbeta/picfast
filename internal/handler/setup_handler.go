@@ -113,7 +113,7 @@ func (h *SetupHandler) CreateAdmin(w http.ResponseWriter, r *http.Request) {
 		Password:      pgtype.Text{String: string(hash), Valid: true},
 		Name:          req.Name,
 		Role:          string(domain.RoleAdmin),
-		CapacityBytes: h.config.AppSnapshot().UserInitialCapacity,
+		CapacityBytes: resolveUserCapacity(group, h.config.AppSnapshot()),
 		Settings:      settings,
 		Status:        int16(domain.UserStatusActive),
 		EmailVerified: true,

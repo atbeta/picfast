@@ -30,6 +30,7 @@ interface GroupForm {
   name: string
   is_default: boolean
   max_size: number
+  user_capacity_mb: number
   extensions: string
   limit_per_minute: number
   limit_per_hour: number
@@ -58,6 +59,7 @@ function emptyForm(): GroupForm {
     name: '',
     is_default: false,
     max_size: 5,
+    user_capacity_mb: 0,
     extensions: 'jpg,jpeg,png,gif,webp,bmp,svg',
     limit_per_minute: 60,
     limit_per_hour: 500,
@@ -71,10 +73,12 @@ function emptyForm(): GroupForm {
 
 function groupToForm(g: AdminGroup): GroupForm {
   const c = g.configs || {}
+  const userCapBytes = typeof c.user_capacity_bytes === 'number' ? c.user_capacity_bytes : 0
   return {
     name: g.name,
     is_default: g.is_default,
     max_size: Math.round(((c.maximum_file_size as number) || 5242880) / 1048576),
+    user_capacity_mb: userCapBytes < 0 ? -1 : Math.round(userCapBytes / 1048576),
     extensions: ((c.accepted_extensions as string[]) || []).join(','),
     limit_per_minute: typeof c.limit_per_minute === 'number' ? c.limit_per_minute : 60,
     limit_per_hour: typeof c.limit_per_hour === 'number' ? c.limit_per_hour : 500,
@@ -100,6 +104,7 @@ function formToConfigs(form: GroupForm) {
   return {
     ...nextConfigs,
     maximum_file_size: form.max_size * 1048576,
+    user_capacity_bytes: form.user_capacity_mb < 0 ? -1 : form.user_capacity_mb * 1048576,
     accepted_extensions: parseExtensions(form.extensions),
     default_strategy_id: normalizedDefaultStrategyID,
     limit_per_minute: form.limit_per_minute,
@@ -261,6 +266,15 @@ export function AdminGroupsPage() {
                 <label className="text-sm font-medium text-foreground">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</label>
                 <div className="flex items-center gap-2">
                   <input type="number" min={1} value={form.max_size} onChange={(e) => update('max_size', Number(e.target.value))} className={`${inputCls} w-32`} />
+                  <span className="text-sm text-muted-foreground">MB</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">{t('admin.userStorageCapacity', { defaultValue: '用户存储容量' })}</label>
+                <p className="text-xs text-muted-foreground">{t('admin.userStorageCapacityHint', { defaultValue: '该分组内每用户的存储空间上限，0 表示继承站点全局默认值，-1 表示不限制。' })}</p>
+                <div className="flex items-center gap-2">
+                  <input type="number" min={-1} value={form.user_capacity_mb} onChange={(e) => update('user_capacity_mb', Number(e.target.value))} className={`${inputCls} w-32`} />
                   <span className="text-sm text-muted-foreground">MB</span>
                 </div>
               </div>
