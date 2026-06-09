@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.13.0](https://github.com/atbeta/picfast/compare/v0.12.1...v0.13.0) (2026-06-09)
+
+
+### Features
+
+* **group:** add per-group user storage capacity quota ([079f354](https://github.com/atbeta/picfast/commit/079f354ad6935f34167a5c5d0ebf068e5abea41b))
+
+
+### Bug Fixes
+
+* **server:** unify client IP extraction behind reverse proxies ([4074995](https://github.com/atbeta/picfast/commit/40749953b59c157ab5a8c1238a73fdc3eecdd0d6))
+
 ## [0.12.1](https://github.com/atbeta/picfast/compare/v0.12.0...v0.12.1) (2026-06-08)
 
 
