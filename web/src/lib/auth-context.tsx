@@ -17,17 +17,23 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     let mounted = true
     const fetchProfile = async () => {
       setIsLoading(true)
       try {
+        if (!authApi.hasToken()) {
+          const tokens = await authApi.refreshTokens()
+          authApi.saveTokens(tokens)
+        }
         const profile = await authApi.getProfile()
         if (mounted) setUser(profile)
       } catch (err: unknown) {
-        logError('auth.fetchProfile', err)
+        if (authApi.hasToken()) {
+          logError('auth.fetchProfile', err)
+        }
         if (authApi.hasToken()) {
           authApi.clearTokens()
         }
@@ -41,25 +47,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
-    const tokens = await authApi.login(email, password)
-    authApi.saveTokens(tokens)
-    const profile = await authApi.getProfile()
-    setUser(profile)
+    setIsLoading(true)
+    try {
+      const tokens = await authApi.login(email, password)
+      authApi.saveTokens(tokens)
+      const profile = await authApi.getProfile()
+      setUser(profile)
+    } finally {
+      setIsLoading(false)
+    }
   }, [])
 
   const register = useCallback(async (email: string, password: string, name: string, language?: string) => {
-    const result = await authApi.register(email, password, name, language)
-    if (result.tokens) {
-      authApi.saveTokens(result.tokens)
-      const profile = await authApi.getProfile()
-      setUser(profile)
-    } else {
-      authApi.clearTokens()
-      setUser(null)
+    setIsLoading(true)
+    try {
+      const result = await authApi.register(email, password, name, language)
+      if (result.tokens) {
+        authApi.saveTokens(result.tokens)
+        const profile = await authApi.getProfile()
+        setUser(profile)
+      } else {
+        authApi.clearTokens()
+        setUser(null)
+      }
+      return result
+    } finally {
+      setIsLoading(false)
     }
-    return result
   }, [])
-
   const logout = useCallback(async () => {
     await authApi.logout()
     authApi.clearTokens()

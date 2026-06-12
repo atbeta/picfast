@@ -91,6 +91,11 @@ export async function logout(): Promise<void> {
   }
 }
 
+export async function refreshTokens(): Promise<AuthTokens> {
+  const res = await api.post<ApiResponse<AuthTokens>>('/auth/refresh')
+  return res.data.data
+}
+
 export async function getProfile(): Promise<UserProfile> {
   const res = await api.get<ApiResponse<UserProfile>>('/users/me')
   return res.data.data
