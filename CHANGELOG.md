@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/atbeta/picfast/compare/v0.13.0...v0.13.1) (2026-06-12)
+
+
+### Bug Fixes
+
+* **web:** resolve auth routing and state loading issues ([0bbc128](https://github.com/atbeta/picfast/commit/0bbc128baed66165d70e2edf3f89bdbc28698cfa))
+
 ## [0.13.0](https://github.com/atbeta/picfast/compare/v0.12.1...v0.13.0) (2026-06-09)
 
 
