@@ -41,6 +41,14 @@ function PageLoader() {
   return <LoadingState className="min-h-[40vh]" compact />
 }
 
+function FullScreenLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  )
+}
+
 function LazyPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>
 }
@@ -48,11 +56,7 @@ function LazyPage({ children }: { children: ReactNode }) {
 function RequireAuth() {
   const { isAuthenticated, isLoading } = useAuth()
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
+    return <FullScreenLoader />
   }
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
@@ -63,16 +67,43 @@ function RequireAuth() {
 function RequireAdmin() {
   const { user, isLoading } = useAuth()
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
+    return <FullScreenLoader />
   }
   if (user?.role !== 'admin') {
     return <Navigate to="/console" replace />
   }
   return <Outlet />
+}
+
+function RequireGuest() {
+  const { isAuthenticated, isLoading } = useAuth()
+  if (isLoading) {
+    return <FullScreenLoader />
+  }
+  if (isAuthenticated) {
+    return <Navigate to="/console/upload" replace />
+  }
+  return <Outlet />
+}
+
+function HomeRoute({ config }: { config: SiteConfig | undefined }) {
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (isLoading) {
+    return <FullScreenLoader />
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/console/upload" replace />
+  }
+
+  return config?.allow_guest_upload ? (
+    <LazyPage>
+      <GuestUploadPage />
+    </LazyPage>
+  ) : (
+    <Navigate to="/login" replace />
+  )
 }
 
 function PublicRoutes() {
@@ -83,11 +114,7 @@ function PublicRoutes() {
   })
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
+    return <FullScreenLoader />
   }
 
   if (config?.setup_required) {
@@ -117,32 +144,26 @@ function PublicRoutes() {
           <Route element={<PublicLayout />}>
             <Route
               path="/"
-              element={
-                config?.allow_guest_upload ? (
-                  <LazyPage>
-                    <GuestUploadPage />
-                  </LazyPage>
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
+              element={<HomeRoute config={config} />}
             />
-            <Route path="/login" element={<LazyPage><LoginPage /></LazyPage>} />
-            <Route path="/forgot-password" element={<LazyPage><ForgotPasswordPage /></LazyPage>} />
             <Route path="/reset-password" element={<LazyPage><ResetPasswordPage /></LazyPage>} />
             <Route path="/verify-email" element={<LazyPage><VerifyEmailPage /></LazyPage>} />
-            <Route
-              path="/register"
-              element={
-                config?.allow_registration ? (
-                  <LazyPage>
-                    <RegisterPage />
-                  </LazyPage>
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
+            <Route element={<RequireGuest />}>
+              <Route path="/login" element={<LazyPage><LoginPage /></LazyPage>} />
+              <Route path="/forgot-password" element={<LazyPage><ForgotPasswordPage /></LazyPage>} />
+              <Route
+                path="/register"
+                element={
+                  config?.allow_registration ? (
+                    <LazyPage>
+                      <RegisterPage />
+                    </LazyPage>
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+            </Route>
           </Route>
 
           <Route element={<RequireAuth />}>
