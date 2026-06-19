@@ -87,6 +87,10 @@ func (h *ModerationHandler) Approve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	writeAuditLog(h.db, r, "admin.moderation.approve", "image", idStr, "", map[string]any{
+		"moderation_status": "approved",
+	})
+
 	SuccessMessage(w, "image approved")
 }
 
@@ -116,6 +120,12 @@ func (h *ModerationHandler) Reject(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, "failed to reject image")
 		return
 	}
+
+	details := map[string]any{"moderation_status": "rejected"}
+	if reqBody.Reason != "" {
+		details["reason"] = reqBody.Reason
+	}
+	writeAuditLog(h.db, r, "admin.moderation.reject", "image", idStr, "", details)
 
 	SuccessMessage(w, "image rejected")
 }

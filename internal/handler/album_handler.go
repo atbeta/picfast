@@ -99,6 +99,8 @@ func (h *AlbumHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ImageNum:  album.ImageNum,
 		CreatedAt: album.CreatedAt,
 	})
+
+	writeAuditLog(h.db, r, "album.create", "album", strconv.FormatInt(album.ID, 10), album.Name, nil)
 }
 
 type updateAlbumRequest struct {
@@ -162,6 +164,8 @@ func (h *AlbumHandler) Update(w http.ResponseWriter, r *http.Request) {
 		ImageNum:  updated.ImageNum,
 		UpdatedAt: updated.UpdatedAt,
 	})
+
+	writeAuditLog(h.db, r, "album.update", "album", strconv.FormatInt(updated.ID, 10), updated.Name, nil)
 }
 
 func (h *AlbumHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -198,6 +202,8 @@ func (h *AlbumHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, "failed to delete album")
 		return
 	}
+
+	writeAuditLog(h.db, r, "album.delete", "album", strconv.FormatInt(id, 10), album.Name, nil)
 
 	SuccessMessage(w, "deleted")
 }

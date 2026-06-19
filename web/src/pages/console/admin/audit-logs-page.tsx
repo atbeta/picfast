@@ -19,6 +19,7 @@ const AUDIT_ACTION_FILTER_CODES = [
   'image.upload',
   'image.delete',
   'image.update',
+  'image.batch_delete',
   'api_token.create',
   'api_token.delete',
   'admin.auth.login.success',
@@ -34,6 +35,14 @@ const AUDIT_ACTION_FILTER_CODES = [
   'admin.strategy.create',
   'admin.strategy.update',
   'admin.strategy.delete',
+  'admin.moderation.approve',
+  'admin.moderation.reject',
+  'album.create',
+  'album.update',
+  'album.delete',
+  'oauth.login',
+  'oauth.link',
+  'oauth.unlink',
 ] as const
 
 const AUDIT_RESOURCE_FILTER_CODES = [
@@ -44,7 +53,9 @@ const AUDIT_RESOURCE_FILTER_CODES = [
   'strategy',
   'api_token',
   'auth',
-  'setting',
+  'site_settings',
+  'user_identity',
+  'album',
 ] as const
 
 export function AdminAuditLogsPage() {
@@ -74,7 +85,9 @@ export function AdminAuditLogsPage() {
       strategy: t('admin.auditResourceStrategy', { defaultValue: '存储策略' }),
       api_token: t('admin.auditResourceApiToken', { defaultValue: 'API 令牌' }),
       auth: t('admin.auditResourceAuth', { defaultValue: '认证' }),
-      setting: t('admin.auditResourceSetting', { defaultValue: '站点设置' }),
+      site_settings: t('admin.auditResourceSiteSettings', { defaultValue: '站点设置' }),
+      user_identity: t('admin.auditResourceUserIdentity', { defaultValue: '用户身份' }),
+      album: t('admin.auditResourceAlbum', { defaultValue: '相册' }),
     }),
     [t],
   )
