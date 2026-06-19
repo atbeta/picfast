@@ -84,15 +84,12 @@ func (h *FlatUploadHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 	observeUpload("success", picmetrics.ReasonNone, result.OriginalSizeBytes)
 
-	imageURL := h.baseURL + "/i/" + result.Image.Key + "." + result.Image.Extension
-	thumbURL := h.baseURL + "/t/" + result.Image.Md5 + ".png"
-
 	resp := flatUploadResponse{
-		URL:          imageURL,
-		ThumbnailURL: thumbURL,
-		Markdown:     "![" + result.Image.OriginName + "](" + imageURL + ")",
-		BBCode:       "[img]" + imageURL + "[/img]",
-		HTML:         `<img src="` + imageURL + `" alt="` + result.Image.OriginName + `" />`,
+		URL:          result.Links.URL,
+		ThumbnailURL: result.Links.ThumbnailURL,
+		Markdown:     result.Links.Markdown,
+		BBCode:       result.Links.BBCode,
+		HTML:         result.Links.HTML,
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

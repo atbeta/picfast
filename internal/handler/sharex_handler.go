@@ -82,12 +82,9 @@ func (h *ShareXHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 	observeUpload("success", picmetrics.ReasonNone, result.OriginalSizeBytes)
 
-	imageURL := h.baseURL + "/i/" + result.Image.Key + "." + result.Image.Extension
-	thumbURL := h.baseURL + "/t/" + result.Image.Md5 + ".png"
-
 	resp := shareXResponse{
-		URL:          imageURL,
-		ThumbnailURL: thumbURL,
+		URL:          result.Links.URL,
+		ThumbnailURL: result.Links.ThumbnailURL,
 	}
 
 	// ShareX expects URL fields at the top level of JSON response.
