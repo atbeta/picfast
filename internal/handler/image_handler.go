@@ -20,9 +20,12 @@ import (
 )
 
 // extractStrategyURL resolves a direct storage URL from a strategy's configs for non-local strategies.
-// Returns empty string for local storage (fallback to proxy URLs).
+// Returns empty string for local/webdav strategies or when link_mode is "proxy".
 func extractStrategyURL(strategyType string, configs []byte) string {
 	if strategyType == "" || strategyType == "local" || strategyType == "webdav" {
+		return ""
+	}
+	if service.IsProxyLinkMode(configs) {
 		return ""
 	}
 	var raw map[string]string

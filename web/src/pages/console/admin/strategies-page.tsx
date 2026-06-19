@@ -59,6 +59,8 @@ interface StrategyForm {
   webdavUsername: string
   webdavPassword: string
   webdavURL: string
+  // link mode (cloud backends only)
+  linkModeProxy: boolean
 }
 
 function emptyForm(): StrategyForm {
@@ -91,10 +93,12 @@ function emptyForm(): StrategyForm {
     webdavUsername: '',
     webdavPassword: '',
     webdavURL: '',
+    linkModeProxy: false,
   }
 }
 
 function formToConfigs(form: StrategyForm): Record<string, unknown> {
+  const linkMode = form.linkModeProxy ? 'proxy' : undefined
   switch (form.type) {
     case 'local':
       return { root: form.localRoot, url: '/i' }
@@ -106,6 +110,7 @@ function formToConfigs(form: StrategyForm): Record<string, unknown> {
         access_key: form.s3AccessKey,
         secret_key: form.s3SecretKey,
         url: form.s3URL,
+        ...(linkMode && { link_mode: linkMode }),
       }
     case 'kodo':
       return {
@@ -115,6 +120,7 @@ function formToConfigs(form: StrategyForm): Record<string, unknown> {
         domain: form.kodoDomain,
         zone: form.kodoZone,
         private: form.kodoPrivate,
+        ...(linkMode && { link_mode: linkMode }),
       }
     case 'oss':
       return {
@@ -123,6 +129,7 @@ function formToConfigs(form: StrategyForm): Record<string, unknown> {
         access_key: form.ossAccessKey,
         secret_key: form.ossSecretKey,
         url: form.ossURL,
+        ...(linkMode && { link_mode: linkMode }),
       }
     case 'cos':
       return {
@@ -130,6 +137,7 @@ function formToConfigs(form: StrategyForm): Record<string, unknown> {
         secret_id: form.cosSecretID,
         secret_key: form.cosSecretKey,
         url: form.cosURL,
+        ...(linkMode && { link_mode: linkMode }),
       }
     case 'webdav':
       return {
@@ -174,6 +182,7 @@ function strategyToForm(s: AdminStrategy): StrategyForm {
     webdavUsername: (c.username as string) || '',
     webdavPassword: (c.password as string) || '',
     webdavURL: (c.url as string) || '',
+    linkModeProxy: c.link_mode === 'proxy',
   }
 }
 
@@ -460,6 +469,21 @@ export function AdminStrategiesPage() {
                 </div>
               </div>
             )}
+
+            {['s3', 'oss', 'cos', 'kodo'].includes(form.type) && (
+              <label className="flex items-start gap-3 rounded-lg border border-border/60 p-3 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  checked={form.linkModeProxy}
+                  onChange={(e) => update('linkModeProxy', e.target.checked)}
+                  className="mt-0.5 size-4 rounded border-input"
+                />
+                <div className="space-y-1">
+                  <span className="font-medium">{t('admin.linkModeProxy')}</span>
+                  <p className="text-xs text-muted-foreground">{t('admin.linkModeProxyHint')}</p>
+                </div>
+              </label>
+            )}
           </div>
 
           <div className="mt-5 flex justify-end gap-2 border-t border-border/60 pt-4">
@@ -489,9 +513,14 @@ export function AdminStrategiesPage() {
             <div key={s.id} className="group relative flex flex-col justify-between rounded-xl border border-border bg-card/80 p-5 shadow-sm transition-colors duration-150 hover:shadow-sm">
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className={['rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider', s.strategy_type === 'local' ? 'bg-primary/10 text-primary' : 'bg-info/10 text-info'].join(' ')}>
-                    {storageStrategyLabel(t, s.strategy_type)}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={['rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider', s.strategy_type === 'local' ? 'bg-primary/10 text-primary' : 'bg-info/10 text-info'].join(' ')}>
+                      {storageStrategyLabel(t, s.strategy_type)}
+                    </span>
+                    {s.configs?.link_mode === 'proxy' && (
+                      <span className="rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-warning/10 text-warning">PROXY</span>
+                    )}
+                  </div>
                   <span className="text-xs text-muted-foreground/60">{new Date(s.created_at).toLocaleDateString()}</span>
                 </div>
                 <h3 className="text-lg font-bold tracking-tight text-foreground truncate">{s.name}</h3>

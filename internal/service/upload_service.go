@@ -181,11 +181,9 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 			return nil, fmt.Errorf("failed to write file: %w", err)
 		}
 		strategyPublicURL = store.URL(pathname)
-		// local/webdav strategies serve files through the /i/{key}.{ext} proxy
-		// route on the picfast backend, not via the raw on-disk / remote path
-		// returned by store.URL. Clear strategyPublicURL so LinkBuilder falls
-		// through to the proxy URL (see internal/service/link_builder.go).
-		if strategy.StrategyType == "local" || strategy.StrategyType == "webdav" {
+		// local/webdav strategies always serve through the /i/{key}.{ext} proxy.
+		// Other strategies do so only when link_mode is "proxy".
+		if strategy.StrategyType == "local" || strategy.StrategyType == "webdav" || IsProxyLinkMode(strategy.Configs) {
 			strategyPublicURL = ""
 		}
 	} else {
@@ -193,9 +191,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		// Reuse existing file path so all dedup records point to the same file
 		pathname = existing.Path + "/" + existing.Name
 		strategyPublicURL = store.URL(pathname)
-		// Same rationale as above; dedup records must also fall through to the
-		// proxy URL so all dedup'd image responses are consistent.
-		if strategy.StrategyType == "local" || strategy.StrategyType == "webdav" {
+		if strategy.StrategyType == "local" || strategy.StrategyType == "webdav" || IsProxyLinkMode(strategy.Configs) {
 			strategyPublicURL = ""
 		}
 	}

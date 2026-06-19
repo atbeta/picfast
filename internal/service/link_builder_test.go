@@ -1,6 +1,9 @@
 package service
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestLinkBuilderBuildImageLinks(t *testing.T) {
 	builder := LinkBuilder{BaseURL: "https://img.example.com"}
@@ -46,5 +49,28 @@ func TestLinkBuilderBuildImageLinksWithStrategyURL(t *testing.T) {
 	// ThumbnailURL is always derived from BaseURL regardless of StrategyURL.
 	if links.ThumbnailURL != "https://img.example.com/t/md5hash.png" {
 		t.Fatalf("ThumbnailURL = %q, want proxy URL", links.ThumbnailURL)
+	}
+}
+
+func TestIsProxyLinkMode(t *testing.T) {
+	tests := []struct {
+		name    string
+		configs json.RawMessage
+		want    bool
+	}{
+		{"nil configs", nil, false},
+		{"empty object", json.RawMessage(`{}`), false},
+		{"explicit direct", json.RawMessage(`{"link_mode":"direct"}`), false},
+		{"proxy", json.RawMessage(`{"link_mode":"proxy"}`), true},
+		{"other fields only", json.RawMessage(`{"bucket":"b","url":"https://cdn.example.com"}`), false},
+		{"proxy with other fields", json.RawMessage(`{"bucket":"b","link_mode":"proxy"}`), true},
+		{"invalid json", json.RawMessage(`not-json`), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsProxyLinkMode(tt.configs); got != tt.want {
+				t.Fatalf("IsProxyLinkMode(%s) = %v, want %v", tt.configs, got, tt.want)
+			}
+		})
 	}
 }
