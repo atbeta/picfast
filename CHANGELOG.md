@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.15.0](https://github.com/atbeta/picfast/compare/v0.14.1...v0.15.0) (2026-06-19)
+
+
+### Features
+
+* **admin:** add CSP override fields in analytics settings ([0e776dc](https://github.com/atbeta/picfast/commit/0e776dc16e5487d5108dc0fc2249a14c87ae88e7))
+
+
+### Bug Fixes
+
+* **csp:** update umami defaults and add config-driven CSP overrides ([51de6a1](https://github.com/atbeta/picfast/commit/51de6a12889847c4b87be7caf53c43f36f21386f))
+
 ## [0.14.1](https://github.com/atbeta/picfast/compare/v0.14.0...v0.14.1) (2026-06-19)
 
 
