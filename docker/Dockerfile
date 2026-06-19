@@ -3,7 +3,7 @@ FROM node:24-slim AS frontend-builder
 
 WORKDIR /web
 COPY web/package.json web/pnpm-lock.yaml* ./
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate && pnpm install --frozen-lockfile
+RUN npm install -g pnpm@10.33.0 && pnpm install --frozen-lockfile
 
 COPY web/ .
 RUN pnpm build && mv dist /web-dist
