@@ -14,8 +14,8 @@ func testConfig() *config.Config {
 	return &config.Config{}
 }
 
-func extractScriptSrc(csp string) string {
-	start := strings.Index(csp, "script-src ")
+func extractDirective(csp, directive string) string {
+	start := strings.Index(csp, directive+" ")
 	if start < 0 {
 		return ""
 	}
@@ -63,6 +63,15 @@ func TestCSPWithoutAnalytics(t *testing.T) {
 	if !strings.Contains(csp, "script-src 'self' 'unsafe-inline';") {
 		t.Fatalf("CSP script-src without analytics should be default, got: %s", csp)
 	}
+	if !strings.Contains(csp, "object-src 'none';") {
+		t.Fatalf("CSP should include object-src 'none', got: %s", csp)
+	}
+	if !strings.Contains(csp, "script-src-attr 'none';") {
+		t.Fatalf("CSP should include script-src-attr 'none', got: %s", csp)
+	}
+	if !strings.Contains(csp, "connect-src 'self';") {
+		t.Fatalf("CSP connect-src without analytics should be 'self' only, got: %s", csp)
+	}
 }
 
 func TestCSPWithUmami(t *testing.T) {
@@ -79,6 +88,10 @@ func TestCSPWithUmami(t *testing.T) {
 	csp := rec.Header().Get("Content-Security-Policy")
 	if !strings.Contains(csp, "https://stats.example.com") {
 		t.Fatalf("CSP should include umami script origin, got: %s", csp)
+	}
+	connectSrc := extractDirective(csp, "connect-src")
+	if !strings.Contains(connectSrc, "https://stats.example.com") {
+		t.Fatalf("CSP connect-src should include umami origin, got: %s", connectSrc)
 	}
 }
 
@@ -99,9 +112,72 @@ func TestCSPWithGA4(t *testing.T) {
 	if !strings.Contains(csp, "https://www.google-analytics.com") {
 		t.Fatalf("CSP should include google-analytics.com for GA4, got: %s", csp)
 	}
+	connectSrc := extractDirective(csp, "connect-src")
+	if !strings.Contains(connectSrc, "https://region1.google-analytics.com") {
+		t.Fatalf("CSP connect-src should include region1.google-analytics.com for GA4, got: %s", connectSrc)
+	}
+	if !strings.Contains(connectSrc, "https://www.googletagmanager.com") {
+		t.Fatalf("CSP connect-src should include www.googletagmanager.com for GA4, got: %s", connectSrc)
+	}
 }
 
-func TestCSPWithCustom(t *testing.T) {
+func TestCSPWithPlausible(t *testing.T) {
+	cfg := testConfig()
+	cfg.App.AnalyticsProvider = "plausible"
+	cfg.App.AnalyticsConfig = json.RawMessage(`{"domain":"example.com","script_url":"https://plausible.io/js/script.js"}`)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	SecurityHeaders(cfg)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(rec, req)
+
+	csp := rec.Header().Get("Content-Security-Policy")
+	if !strings.Contains(csp, "https://plausible.io") {
+		t.Fatalf("CSP should include plausible.io, got: %s", csp)
+	}
+	connectSrc := extractDirective(csp, "connect-src")
+	if !strings.Contains(connectSrc, "https://plausible.io") {
+		t.Fatalf("CSP connect-src should include plausible.io, got: %s", connectSrc)
+	}
+}
+
+func TestCSPWithBaidu(t *testing.T) {
+	cfg := testConfig()
+	cfg.App.AnalyticsProvider = "baidu"
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	SecurityHeaders(cfg)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(rec, req)
+
+	csp := rec.Header().Get("Content-Security-Policy")
+	if !strings.Contains(csp, "https://hm.baidu.com") {
+		t.Fatalf("CSP should include hm.baidu.com, got: %s", csp)
+	}
+	connectSrc := extractDirective(csp, "connect-src")
+	if !strings.Contains(connectSrc, "https://hm.baidu.com") {
+		t.Fatalf("CSP connect-src should include hm.baidu.com, got: %s", connectSrc)
+	}
+}
+
+func TestCSPConnectSrcNoBroadWildcard(t *testing.T) {
+	cfg := testConfig()
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	SecurityHeaders(cfg)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(rec, req)
+
+	csp := rec.Header().Get("Content-Security-Policy")
+	connectSrc := extractDirective(csp, "connect-src")
+	if strings.Contains(connectSrc, "https:") || strings.Contains(connectSrc, "http:") {
+		t.Fatalf("CSP connect-src should NOT contain broad https:/http: scheme sources, got: %s", connectSrc)
+	}
+}
+
+func TestCSPScriptSrcNoBroadWildcard(t *testing.T) {
 	cfg := testConfig()
 	cfg.App.AnalyticsProvider = "custom"
 	cfg.App.AnalyticsConfig = json.RawMessage(`{"script":"<script src=\"https://tracker.example.com/analytics.js\"></script><script>console.log(1)</script>"}`)
@@ -113,15 +189,16 @@ func TestCSPWithCustom(t *testing.T) {
 	})).ServeHTTP(rec, req)
 
 	csp := rec.Header().Get("Content-Security-Policy")
-	if strings.Contains(csp, "https://tracker.example.com") {
-		// the origin was found — good
-	} else {
+	if !strings.Contains(csp, "https://tracker.example.com") {
 		t.Fatalf("CSP should include extracted custom script origin, got: %s", csp)
 	}
-	// script-src should not contain broad https: scheme-source
-	scriptSrc := extractScriptSrc(csp)
+	scriptSrc := extractDirective(csp, "script-src")
 	if strings.Contains(scriptSrc, "https:") && !strings.Contains(scriptSrc, "https://") {
 		t.Fatalf("CSP script-src should NOT include broad https: for custom analytics, got: %s", csp)
+	}
+	connectSrc := extractDirective(csp, "connect-src")
+	if !strings.Contains(connectSrc, "https://tracker.example.com") {
+		t.Fatalf("CSP connect-src should include custom script origin, got: %s", connectSrc)
 	}
 }
 
@@ -137,7 +214,7 @@ func TestCSPWithCustomInlineOnly(t *testing.T) {
 	})).ServeHTTP(rec, req)
 
 	csp := rec.Header().Get("Content-Security-Policy")
-	scriptSrc := extractScriptSrc(csp)
+	scriptSrc := extractDirective(csp, "script-src")
 	if scriptSrc != "script-src 'self' 'unsafe-inline'" {
 		t.Fatalf("inline-only custom analytics should keep strict script-src, got: %s", scriptSrc)
 	}
@@ -155,7 +232,7 @@ func TestCSPWithUmamiNoScriptURL(t *testing.T) {
 	})).ServeHTTP(rec, req)
 
 	csp := rec.Header().Get("Content-Security-Policy")
-	scriptSrc := extractScriptSrc(csp)
+	scriptSrc := extractDirective(csp, "script-src")
 	if scriptSrc != "script-src 'self' 'unsafe-inline'" {
 		t.Fatalf("umami without script_url should keep strict script-src, got: %s", scriptSrc)
 	}
@@ -179,11 +256,10 @@ func TestCSPWithPlausibleNoScriptURL(t *testing.T) {
 }
 
 func TestExtractCustomScriptOrigins_Malicious(t *testing.T) {
-	// HTML comment containing fake script src should be ignored
 	cases := []struct {
 		name   string
 		script string
-		expect int // expected number of origins
+		expect int
 	}{
 		{
 			name:   "script inside HTML comment (known limitation)",

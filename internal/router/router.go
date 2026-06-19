@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"net/http/pprof"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/config"
+	"github.com/atbeta/picfast/internal/docsui"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/handler"
 	"github.com/atbeta/picfast/internal/handler/middleware"
@@ -165,12 +167,21 @@ func New(
   </head>
   <body>
     <script id="api-reference" data-url="%s"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    <script src="/docs/assets/scalar-api-reference.js"></script>
   </body>
 </html>`, server.BaseURL+"/openapi.yaml"))); err != nil {
 			slog.Warn("failed to write docs page", "error", err)
 		}
 	})
+	docsAssets, err := fs.Sub(docsui.Assets, "static")
+	if err != nil {
+		slog.Error("failed to load embedded docs assets", "error", err)
+	} else {
+		docsFS := http.StripPrefix("/docs/assets/", http.FileServerFS(docsAssets))
+		r.Get("/docs/assets/*", func(w http.ResponseWriter, r *http.Request) {
+			docsFS.ServeHTTP(w, r)
+		})
+	}
 
 	// Services
 	uploadSvc := service.NewUploadService(queries, pool, cfg)

@@ -11,14 +11,11 @@ import (
 	"github.com/atbeta/picfast/internal/config"
 )
 
-// SecurityHeaders sets baseline HTTP security headers for HTML and API responses.
-// It reads analytics configuration to allow external script sources in CSP.
-// CSP string is cached and only rebuilt when the analytics config changes.
 func SecurityHeaders(cfg *config.Config) func(next http.Handler) http.Handler {
 	var (
 		mu        sync.Mutex
 		cachedCSP string
-		cacheKey  string // provider + string(config)
+		cacheKey  string
 	)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -31,13 +28,11 @@ func SecurityHeaders(cfg *config.Config) func(next http.Handler) http.Handler {
 			key := app.AnalyticsProvider + "\x00" + string(app.AnalyticsConfig)
 
 			mu.Lock()
-			csp := cachedCSP
-			hit := key == cacheKey
-			if !hit {
-				csp = buildCSP(app)
-				cachedCSP = csp
+			if key != cacheKey {
+				cachedCSP = buildCSP(app)
 				cacheKey = key
 			}
+			csp := cachedCSP
 			mu.Unlock()
 			w.Header().Set("Content-Security-Policy", csp)
 			next.ServeHTTP(w, r)
@@ -46,19 +41,57 @@ func SecurityHeaders(cfg *config.Config) func(next http.Handler) http.Handler {
 }
 
 func buildCSP(app config.AppConfig) string {
-	scriptSrc := "'self' 'unsafe-inline'"
+	scriptSrc := []string{"'self'", "'unsafe-inline'"}
 	for _, src := range analyticsScriptSources(app.AnalyticsProvider, app.AnalyticsConfig) {
-		scriptSrc += " " + src
+		scriptSrc = append(scriptSrc, src)
 	}
+
+	connectSrc := []string{"'self'"}
+	for _, src := range analyticsConnectSources(app.AnalyticsProvider, app.AnalyticsConfig) {
+		connectSrc = append(connectSrc, src)
+	}
+
 	return "default-src 'self'; " +
-		"script-src " + scriptSrc + "; " +
+		"script-src " + strings.Join(scriptSrc, " ") + "; " +
+		"script-src-attr 'none'; " +
 		"style-src 'self' 'unsafe-inline'; " +
 		"img-src 'self' data: blob: https: http:; " +
 		"font-src 'self' data:; " +
-		"connect-src 'self' https: http:; " +
+		"connect-src " + strings.Join(connectSrc, " ") + "; " +
+		"object-src 'none'; " +
 		"frame-ancestors 'none'; " +
 		"base-uri 'self'; " +
 		"form-action 'self'"
+}
+
+func analyticsConnectSources(provider string, raw json.RawMessage) []string {
+	switch provider {
+	case "":
+		return nil
+	case "plausible":
+		if origin := extractScriptOrigin(raw); origin != "" {
+			return []string{origin}
+		}
+		return []string{"https://plausible.io"}
+	case "umami":
+		if origin := extractScriptOrigin(raw); origin != "" {
+			return []string{origin}
+		}
+		return nil
+	case "ga4":
+		return []string{
+			"https://www.googletagmanager.com",
+			"https://www.google-analytics.com",
+			"https://region1.google-analytics.com",
+			"https://analytics.google.com",
+		}
+	case "baidu":
+		return []string{"https://hm.baidu.com"}
+	case "custom":
+		return extractCustomScriptOrigins(raw)
+	default:
+		return nil
+	}
 }
 
 func analyticsScriptSources(provider string, raw json.RawMessage) []string {
