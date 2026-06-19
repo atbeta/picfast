@@ -34,6 +34,8 @@ export interface SettingsForm {
   analytics_measurement_id: string
   analytics_site_id: string
   analytics_custom_script: string
+  analytics_connect_src: string
+  analytics_script_src: string
   theme_preset: string
   theme_mode: string
   theme_primary: string
@@ -77,6 +79,8 @@ const defaultValues: SettingsForm = {
   analytics_measurement_id: '',
   analytics_site_id: '',
   analytics_custom_script: '',
+  analytics_connect_src: '',
+  analytics_script_src: '',
   theme_preset: defaultThemeConfig.preset || 'default',
   theme_mode: defaultThemeConfig.mode || 'system',
   theme_primary: '',
@@ -142,6 +146,8 @@ function settingsToForm(data: AdminSettings): SettingsForm {
     analytics_measurement_id: settingString(data.analytics_config?.measurement_id),
     analytics_site_id: settingString(data.analytics_config?.site_id),
     analytics_custom_script: settingString(data.analytics_config?.script),
+    analytics_connect_src: Array.isArray(data.analytics_config?.connect_src) ? (data.analytics_config.connect_src as string[]).join(', ') : '',
+    analytics_script_src: Array.isArray(data.analytics_config?.script_src) ? (data.analytics_config.script_src as string[]).join(', ') : '',
     theme_preset: theme.preset || 'default',
     theme_mode: theme.mode || 'system',
     theme_primary: lightTokenOverrides.primary || '',
@@ -157,26 +163,38 @@ function settingsToForm(data: AdminSettings): SettingsForm {
 }
 
 export function analyticsPayload(form: SettingsForm): Record<string, unknown> {
+  const overrides: Record<string, unknown> = {}
+  const connectSrc = parseCommaList(form.analytics_connect_src)
+  if (connectSrc.length > 0) overrides.connect_src = connectSrc
+  const scriptSrc = parseCommaList(form.analytics_script_src)
+  if (scriptSrc.length > 0) overrides.script_src = scriptSrc
+
   switch (form.analytics_provider) {
     case 'plausible':
       return {
         domain: form.analytics_domain.trim(),
         script_url: form.analytics_script_url.trim() || 'https://plausible.io/js/script.js',
+        ...overrides,
       }
     case 'umami':
       return {
         script_url: form.analytics_script_url.trim(),
         website_id: form.analytics_website_id.trim(),
+        ...overrides,
       }
     case 'ga4':
-      return { measurement_id: form.analytics_measurement_id.trim() }
+      return { measurement_id: form.analytics_measurement_id.trim(), ...overrides }
     case 'baidu':
-      return { site_id: form.analytics_site_id.trim() }
+      return { site_id: form.analytics_site_id.trim(), ...overrides }
     case 'custom':
-      return { script: form.analytics_custom_script.trim() }
+      return { script: form.analytics_custom_script.trim(), ...overrides }
     default:
       return {}
   }
+}
+
+function parseCommaList(s: string): string[] {
+  return s.split(',').map((item) => item.trim()).filter((item) => item.length > 0)
 }
 
 export function themePayload(form: SettingsForm): ThemeConfig {

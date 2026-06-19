@@ -103,6 +103,31 @@ export function AdminAnalyticsSettingsPage() {
           <textarea {...register('analytics_custom_script')} className={fieldTextareaCls} />
         </SettingField>
       )}
+
+      {analyticsProvider && (
+        <details className="space-y-4 rounded-lg border border-border/60 p-4">
+          <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+            {t('admin.analyticsAdvanced', { defaultValue: 'CSP 高级配置' })}
+          </summary>
+          <p className="text-xs text-muted-foreground">
+            {t('admin.analyticsAdvancedDesc', { defaultValue: '仅在默认 CSP 规则不满足时填写，多个域名用逗号分隔。' })}
+          </p>
+          <SettingField label="connect-src">
+            <input
+              {...register('analytics_connect_src')}
+              placeholder="https://custom-api.example.com"
+              className={fieldInputCls}
+            />
+          </SettingField>
+          <SettingField label="script-src">
+            <input
+              {...register('analytics_script_src')}
+              placeholder="https://cdn.example.com"
+              className={fieldInputCls}
+            />
+          </SettingField>
+        </details>
+      )}
     </SettingsPageLayout>
   )
 }
