@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/atbeta/picfast/compare/v0.14.0...v0.14.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* **docker:** replace corepack with npm install to fix arm64 CI build ([32216eb](https://github.com/atbeta/picfast/commit/32216eb86df6f72771b84b3a4570feca742adc4c))
+
 ## [0.14.0](https://github.com/atbeta/picfast/compare/v0.13.1...v0.14.0) (2026-06-19)
 
 
