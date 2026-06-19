@@ -233,8 +233,8 @@ func TestCSPWithUmamiNoScriptURL(t *testing.T) {
 
 	csp := rec.Header().Get("Content-Security-Policy")
 	scriptSrc := extractDirective(csp, "script-src")
-	if scriptSrc != "script-src 'self' 'unsafe-inline'" {
-		t.Fatalf("umami without script_url should keep strict script-src, got: %s", scriptSrc)
+	if scriptSrc != "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cloud.umami.is https://gateway.umami.is" {
+		t.Fatalf("umami without script_url should include umami defaults, got: %s", scriptSrc)
 	}
 }
 
@@ -252,6 +252,44 @@ func TestCSPWithPlausibleNoScriptURL(t *testing.T) {
 	csp := rec.Header().Get("Content-Security-Policy")
 	if !strings.Contains(csp, "https://plausible.io") {
 		t.Fatalf("plausible without script_url should still include default plausible.io, got: %s", csp)
+	}
+}
+
+func TestCSPConnectSrcOverride(t *testing.T) {
+	cfg := testConfig()
+	cfg.App.AnalyticsProvider = "umami"
+	cfg.App.AnalyticsConfig = json.RawMessage(`{"website_id":"abc","connect_src":["https://custom.api.example.com"]}`)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	SecurityHeaders(cfg)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(rec, req)
+
+	csp := rec.Header().Get("Content-Security-Policy")
+	if !strings.Contains(csp, "https://custom.api.example.com") {
+		t.Fatalf("CSP connect-src should include custom override, got: %s", csp)
+	}
+}
+
+func TestCSPUmamiWithScriptURLOnly(t *testing.T) {
+	cfg := testConfig()
+	cfg.App.AnalyticsProvider = "umami"
+	cfg.App.AnalyticsConfig = json.RawMessage(`{"script_url":"https://analytics.example.com/script.js","website_id":"abc"}`)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	SecurityHeaders(cfg)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(rec, req)
+
+	csp := rec.Header().Get("Content-Security-Policy")
+	connectSrc := extractDirective(csp, "connect-src")
+	if !strings.Contains(connectSrc, "https://analytics.example.com") {
+		t.Fatalf("connect-src should include custom origin, got: %s", connectSrc)
+	}
+	if strings.Contains(connectSrc, "cloud.umami.is") {
+		t.Fatalf("connect-src should NOT include default umami domains when script_url is set, got: %s", connectSrc)
 	}
 }
 

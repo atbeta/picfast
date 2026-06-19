@@ -42,14 +42,12 @@ func SecurityHeaders(cfg *config.Config) func(next http.Handler) http.Handler {
 
 func buildCSP(app config.AppConfig) string {
 	scriptSrc := []string{"'self'", "'unsafe-inline'"}
-	for _, src := range analyticsScriptSources(app.AnalyticsProvider, app.AnalyticsConfig) {
-		scriptSrc = append(scriptSrc, src)
-	}
+	scriptSrc = append(scriptSrc, analyticsScriptSources(app.AnalyticsProvider, app.AnalyticsConfig)...)
+	scriptSrc = append(scriptSrc, configOverrides(app.AnalyticsConfig, "script_src")...)
 
 	connectSrc := []string{"'self'"}
-	for _, src := range analyticsConnectSources(app.AnalyticsProvider, app.AnalyticsConfig) {
-		connectSrc = append(connectSrc, src)
-	}
+	connectSrc = append(connectSrc, analyticsConnectSources(app.AnalyticsProvider, app.AnalyticsConfig)...)
+	connectSrc = append(connectSrc, configOverrides(app.AnalyticsConfig, "connect_src")...)
 
 	return "default-src 'self'; " +
 		"script-src " + strings.Join(scriptSrc, " ") + "; " +
@@ -62,6 +60,30 @@ func buildCSP(app config.AppConfig) string {
 		"frame-ancestors 'none'; " +
 		"base-uri 'self'; " +
 		"form-action 'self'"
+}
+
+// configOverrides reads an optional string array field from the analytics
+// config JSON.  This lets operators add CSP domains without code changes
+// (e.g. {"connect_src": ["https://custom.umami.is"]}).
+func configOverrides(raw json.RawMessage, field string) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	var m map[string]interface{}
+	if json.Unmarshal(raw, &m) != nil {
+		return nil
+	}
+	arr, ok := m[field].([]interface{})
+	if !ok {
+		return nil
+	}
+	var out []string
+	for _, v := range arr {
+		if s, ok := v.(string); ok && s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 func analyticsConnectSources(provider string, raw json.RawMessage) []string {
@@ -77,7 +99,7 @@ func analyticsConnectSources(provider string, raw json.RawMessage) []string {
 		if origin := extractScriptOrigin(raw); origin != "" {
 			return []string{origin}
 		}
-		return nil
+		return []string{"https://cloud.umami.is", "https://gateway.umami.is"}
 	case "ga4":
 		return []string{
 			"https://www.googletagmanager.com",
@@ -106,9 +128,9 @@ func analyticsScriptSources(provider string, raw json.RawMessage) []string {
 		return sources
 	case "umami":
 		if origin := extractScriptOrigin(raw); origin != "" {
-			return []string{origin}
+			return []string{"'unsafe-eval'", origin}
 		}
-		return nil
+		return []string{"'unsafe-eval'", "https://cloud.umami.is", "https://gateway.umami.is"}
 	case "ga4":
 		return []string{"https://www.googletagmanager.com", "https://www.google-analytics.com"}
 	case "baidu":
