@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.14.0](https://github.com/atbeta/picfast/compare/v0.13.1...v0.14.0) (2026-06-19)
+
+
+### Features
+
+* **audit:** add audit logs for album CRUD and moderation review ([c6b33d4](https://github.com/atbeta/picfast/commit/c6b33d4ff22164e94653f1509d89e903284a5ecf))
+* **image:** support on-the-fly processing via URL params ([380578e](https://github.com/atbeta/picfast/commit/380578e9ffb0de3f665717060bf097edcf6c2023))
+* **strategy:** support link_mode=proxy for cloud storage backends ([7f081f6](https://github.com/atbeta/picfast/commit/7f081f624815745cc59888a4a12bccc90b1314e7))
+
+
+### Bug Fixes
+
+* **csp:** bundle Scalar locally and tighten connect-src policy ([39057cb](https://github.com/atbeta/picfast/commit/39057cb17aab5d239b40943455d9d61e4ff23fb9))
+* **image:** prevent Content-Type mismatch on processing failure ([7884463](https://github.com/atbeta/picfast/commit/7884463a8b019adad38ad67705e2f848e5afea42))
+* **upload:** use result.Links in flat and sharex upload handlers ([762a591](https://github.com/atbeta/picfast/commit/762a591f1bf8669e0494b7c0e1aa41be069e3ac6))
+
 ## [0.13.1](https://github.com/atbeta/picfast/compare/v0.13.0...v0.13.1) (2026-06-12)
 
 
