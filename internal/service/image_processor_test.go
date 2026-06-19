@@ -119,3 +119,109 @@ func TestDecodeImageDimensions(t *testing.T) {
 		t.Fatalf("unexpected dimensions: %dx%d", w, h)
 	}
 }
+
+func TestProcessImageOnTheFlyEmpty(t *testing.T) {
+	data := createTestImage("jpeg", 400, 200)
+	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{})
+	if !bytes.Equal(out, data) {
+		t.Fatal("empty params should return original data unchanged")
+	}
+}
+
+func TestProcessImageOnTheFlyWidthOnly(t *testing.T) {
+	data := createTestImage("jpeg", 400, 200)
+	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Width: 200})
+	if len(out) == 0 {
+		t.Fatal("output is empty")
+	}
+	w, h, err := DecodeImageDimensions(bytes.NewReader(out))
+	if err != nil {
+		t.Fatalf("decode dimensions: %v", err)
+	}
+	if w != 200 || h != 100 {
+		t.Fatalf("unexpected dimensions: %dx%d", w, h)
+	}
+}
+
+func TestProcessImageOnTheFlyHeightOnly(t *testing.T) {
+	data := createTestImage("jpeg", 400, 200)
+	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Height: 100})
+	if len(out) == 0 {
+		t.Fatal("output is empty")
+	}
+	w, h, err := DecodeImageDimensions(bytes.NewReader(out))
+	if err != nil {
+		t.Fatalf("decode dimensions: %v", err)
+	}
+	if w != 200 || h != 100 {
+		t.Fatalf("unexpected dimensions: %dx%d", w, h)
+	}
+}
+
+func TestProcessImageOnTheFlyWidthAndHeight(t *testing.T) {
+	data := createTestImage("jpeg", 400, 200)
+	// 400x200 → fit in 100x100 → scale=min(100/400, 100/200)=0.25 → 100x50
+	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Width: 100, Height: 100})
+	if len(out) == 0 {
+		t.Fatal("output is empty")
+	}
+	w, h, err := DecodeImageDimensions(bytes.NewReader(out))
+	if err != nil {
+		t.Fatalf("decode dimensions: %v", err)
+	}
+	if w != 100 || h != 50 {
+		t.Fatalf("unexpected dimensions: %dx%d", w, h)
+	}
+}
+
+func TestProcessImageOnTheFlyQuality(t *testing.T) {
+	data := createTestImage("jpeg", 200, 200)
+	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Quality: 50})
+	if len(out) == 0 {
+		t.Fatal("output is empty")
+	}
+	// Quality compression should produce smaller output
+	if len(out) >= len(data) {
+		t.Fatalf("expected smaller output: got %d, original %d", len(out), len(data))
+	}
+}
+
+func TestProcessImageOnTheFlyFormat(t *testing.T) {
+	data := createTestImage("jpeg", 200, 200)
+	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Format: "webp"})
+	if len(out) == 0 {
+		t.Fatal("output is empty")
+	}
+	// Output should be valid webp (starts with RIFF)
+	if len(out) < 4 || string(out[:4]) != "RIFF" {
+		t.Fatal("output does not look like webp")
+	}
+}
+
+func TestProcessImageOnTheFlyGifSkipped(t *testing.T) {
+	data := createTestImage("jpeg", 200, 200)
+	out := ProcessImageOnTheFly(data, "gif", ProcessingParams{Width: 100})
+	if !bytes.Equal(out, data) {
+		t.Fatal("gif should be returned unchanged")
+	}
+}
+
+func TestMimeTypeForFormat(t *testing.T) {
+	tests := []struct {
+		format string
+		want   string
+	}{
+		{"jpeg", "image/jpeg"},
+		{"jpg", "image/jpeg"},
+		{"png", "image/png"},
+		{"webp", "image/webp"},
+		{"gif", "image/gif"},
+		{"unknown", ""},
+		{"", "image/jpeg"},
+	}
+	for _, tt := range tests {
+		if got := MimeTypeForFormat(tt.format); got != tt.want {
+			t.Errorf("MimeTypeForFormat(%q) = %q, want %q", tt.format, got, tt.want)
+		}
+	}
+}

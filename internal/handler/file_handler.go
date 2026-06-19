@@ -36,7 +36,7 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	key := chi.URLParam(r, "key")
-	ext, resizeWidth, _ := parseImageVariant(chi.URLParam(r, "ext"))
+	ext, params := parseProcessingParams(chi.URLParam(r, "ext"))
 
 	img, err := h.db.GetImageByKey(r.Context(), key)
 	if err != nil {
@@ -114,28 +114,31 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if resizeWidth > 0 {
-		// Optional best-effort variant; any processing failure falls back to original.
-		if resized, resizeErr := service.ResizeImageToWidth(data, img.Extension, resizeWidth); resizeErr != nil {
-			slog.Warn("image variant resize failed", "key", key, "width", resizeWidth, "error", resizeErr)
-		} else {
-			data = resized
+	if !params.IsEmpty() {
+		data = service.ProcessImageOnTheFly(data, img.Extension, params)
+	}
+
+	// Determine content type: use output format if specified, otherwise original
+	mimetype := img.Mimetype
+	if params.Format != "" {
+		if ct := service.MimeTypeForFormat(params.Format); ct != "" {
+			mimetype = ct
 		}
 	}
 
 	// Cache headers: 30 days
-	w.Header().Set("Content-Type", img.Mimetype)
+	w.Header().Set("Content-Type", mimetype)
 	if img.Permission == int16(domain.PermissionPrivate) {
 		w.Header().Set("Cache-Control", "private, no-cache, no-store, must-revalidate")
 	} else {
 		w.Header().Set("Cache-Control", "public, max-age=2592000, s-maxage=60")
 	}
-	if resizeWidth <= 0 {
+	if params.IsEmpty() {
 		w.Header().Set("ETag", `"`+img.Md5+`"`)
 	}
 
 	// Handle conditional request
-	if resizeWidth <= 0 {
+	if params.IsEmpty() {
 		if match := r.Header.Get("If-None-Match"); match != "" {
 			if strings.Contains(match, img.Md5) {
 				result = "success"
@@ -149,30 +152,57 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func parseImageVariant(extParam string) (ext string, resizeWidth int, hasVariant bool) {
-	baseExt, variant, hasVariant := strings.Cut(strings.ToLower(strings.TrimSpace(extParam)), "@")
+// parseProcessingParams extracts the file extension and image processing
+// parameters from the URL ext segment.  The format is:
+//
+//	{ext}[@w_{width},h_{height},q_{quality},f_{format}]
+//
+// Examples:
+//
+//	"jpg"                → ext="jpg", no processing
+//	"jpg@w_300"          → ext="jpg", resize width 300
+//	"png@w_800,h_600"    → ext="png", fit within 800×600
+//	"jpg@q_80,f_webp"    → ext="jpg", quality 80, output webp
+//	"jpg@w_300,q_60,f_webp" → all combined
+func parseProcessingParams(raw string) (ext string, params service.ProcessingParams) {
+	baseExt, variant, hasVariant := strings.Cut(strings.ToLower(strings.TrimSpace(raw)), "@")
 	ext = strings.TrimPrefix(baseExt, ".")
-	if !hasVariant {
-		return ext, 0, false
+	if !hasVariant || variant == "" {
+		return ext, params
 	}
 
-	width, ok := parseWidthVariant(variant)
-	if !ok {
-		return ext, 0, true
+	for _, part := range strings.Split(variant, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		k, v, ok := strings.Cut(part, "_")
+		if !ok || v == "" {
+			continue
+		}
+		switch k {
+		case "w":
+			if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 10000 {
+				params.Width = n
+			}
+		case "h":
+			if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 10000 {
+				params.Height = n
+			}
+		case "q":
+			if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= 100 {
+				params.Quality = n
+			}
+		case "f":
+			f := strings.ToLower(v)
+			if f == "jpg" {
+				f = "jpeg"
+			}
+			params.Format = f
+		}
 	}
-	return ext, width, true
-}
 
-func parseWidthVariant(variant string) (int, bool) {
-	if !strings.HasPrefix(variant, "w_") {
-		return 0, false
-	}
-	raw := strings.TrimSpace(strings.TrimPrefix(variant, "w_"))
-	width, err := strconv.Atoi(raw)
-	if err != nil || width <= 0 || width > 10000 {
-		return 0, false
-	}
-	return width, true
+	return ext, params
 }
 
 func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {

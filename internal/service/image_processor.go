@@ -116,6 +116,95 @@ func ResizeImageToWidth(data []byte, formatHint string, width int) ([]byte, erro
 	return exporter.Export(img, 100, false)
 }
 
+// ProcessingParams holds on-the-fly image processing parameters parsed from
+// the URL variant suffix (e.g. @w_300,h_200,q_80,f_webp).
+type ProcessingParams struct {
+	Width   int
+	Height  int
+	Quality int
+	Format  string
+}
+
+// IsEmpty reports whether no processing is requested.
+func (p ProcessingParams) IsEmpty() bool {
+	return p.Width <= 0 && p.Height <= 0 && p.Quality <= 0 && p.Format == ""
+}
+
+// ProcessImageOnTheFly applies resize, quality, and format conversion in a
+// single vips pipeline.  GIF images are skipped (returned as-is).  On any
+// processing error the original data is returned unchanged so callers can
+// always fall back to the source image.
+func ProcessImageOnTheFly(data []byte, sourceFormat string, p ProcessingParams) []byte {
+	if p.IsEmpty() {
+		return data
+	}
+
+	format := normalizeExportFormat(sourceFormat)
+	if format == "gif" {
+		return data
+	}
+
+	needResize := p.Width > 0 || p.Height > 0
+	needQuality := p.Quality > 0 && p.Quality < 100
+	needFormat := p.Format != "" && normalizeExportFormat(p.Format) != format
+
+	if !needResize && !needQuality && !needFormat {
+		return data
+	}
+
+	params := vips.NewImportParams()
+	params.AutoRotate.Set(true)
+	params.FailOnError.Set(true)
+
+	img, err := vips.LoadImageFromBuffer(data, params)
+	if err != nil {
+		return data
+	}
+	defer img.Close()
+
+	origW := img.Width()
+	origH := img.Height()
+
+	if needResize && origW > 0 && origH > 0 {
+		scaleW, scaleH := 1.0, 1.0
+		if p.Width > 0 && p.Width < origW {
+			scaleW = float64(p.Width) / float64(origW)
+		}
+		if p.Height > 0 && p.Height < origH {
+			scaleH = float64(p.Height) / float64(origH)
+		}
+		scale := scaleW
+		if scaleH < scaleW {
+			scale = scaleH
+		}
+		if scale < 1.0 {
+			if err := img.Resize(scale, vips.KernelAuto); err != nil {
+				return data
+			}
+		}
+	}
+
+	exportFormat := format
+	if needFormat {
+		exportFormat = normalizeExportFormat(p.Format)
+	}
+	exporter, ok := exportRegistry[exportFormat]
+	if !ok {
+		exporter = exportRegistry["jpeg"]
+	}
+
+	quality := 100
+	if needQuality {
+		quality = p.Quality
+	}
+
+	out, err := exporter.Export(img, quality, false)
+	if err != nil {
+		return data
+	}
+	return out
+}
+
 func normalizeExportFormat(format string) string {
 	switch format {
 	case "", "jpg":
@@ -124,6 +213,23 @@ func normalizeExportFormat(format string) string {
 		return "tiff"
 	default:
 		return format
+	}
+}
+
+// MimeTypeForFormat returns the MIME type for a given image format string.
+// Returns empty string for unknown formats.
+func MimeTypeForFormat(format string) string {
+	switch normalizeExportFormat(format) {
+	case "jpeg":
+		return "image/jpeg"
+	case "png":
+		return "image/png"
+	case "webp":
+		return "image/webp"
+	case "gif":
+		return "image/gif"
+	default:
+		return ""
 	}
 }
 
