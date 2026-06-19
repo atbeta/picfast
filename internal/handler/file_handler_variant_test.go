@@ -111,6 +111,17 @@ func TestParseProcessingParams(t *testing.T) {
 			wantE: "jpg",
 			wantP: service.ProcessingParams{Width: 300},
 		},
+		{
+			name:  "invalid format ignored",
+			input: "jpg@f_foo,w_300",
+			wantE: "jpg",
+			wantP: service.ProcessingParams{Width: 300},
+		},
+		{
+			name:  "format avif not in whitelist",
+			input: "jpg@f_avif",
+			wantE: "jpg",
+		},
 	}
 
 	for _, tt := range tests {

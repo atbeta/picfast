@@ -122,17 +122,23 @@ func TestDecodeImageDimensions(t *testing.T) {
 
 func TestProcessImageOnTheFlyEmpty(t *testing.T) {
 	data := createTestImage("jpeg", 400, 200)
-	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{})
+	out, ok := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{})
 	if !bytes.Equal(out, data) {
 		t.Fatal("empty params should return original data unchanged")
+	}
+	if ok {
+		t.Fatal("empty params should return ok=false")
 	}
 }
 
 func TestProcessImageOnTheFlyWidthOnly(t *testing.T) {
 	data := createTestImage("jpeg", 400, 200)
-	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Width: 200})
+	out, ok := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Width: 200})
 	if len(out) == 0 {
 		t.Fatal("output is empty")
+	}
+	if !ok {
+		t.Fatal("expected ok=true")
 	}
 	w, h, err := DecodeImageDimensions(bytes.NewReader(out))
 	if err != nil {
@@ -145,9 +151,12 @@ func TestProcessImageOnTheFlyWidthOnly(t *testing.T) {
 
 func TestProcessImageOnTheFlyHeightOnly(t *testing.T) {
 	data := createTestImage("jpeg", 400, 200)
-	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Height: 100})
+	out, ok := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Height: 100})
 	if len(out) == 0 {
 		t.Fatal("output is empty")
+	}
+	if !ok {
+		t.Fatal("expected ok=true")
 	}
 	w, h, err := DecodeImageDimensions(bytes.NewReader(out))
 	if err != nil {
@@ -161,9 +170,12 @@ func TestProcessImageOnTheFlyHeightOnly(t *testing.T) {
 func TestProcessImageOnTheFlyWidthAndHeight(t *testing.T) {
 	data := createTestImage("jpeg", 400, 200)
 	// 400x200 → fit in 100x100 → scale=min(100/400, 100/200)=0.25 → 100x50
-	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Width: 100, Height: 100})
+	out, ok := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Width: 100, Height: 100})
 	if len(out) == 0 {
 		t.Fatal("output is empty")
+	}
+	if !ok {
+		t.Fatal("expected ok=true")
 	}
 	w, h, err := DecodeImageDimensions(bytes.NewReader(out))
 	if err != nil {
@@ -176,9 +188,12 @@ func TestProcessImageOnTheFlyWidthAndHeight(t *testing.T) {
 
 func TestProcessImageOnTheFlyQuality(t *testing.T) {
 	data := createTestImage("jpeg", 200, 200)
-	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Quality: 50})
+	out, ok := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Quality: 50})
 	if len(out) == 0 {
 		t.Fatal("output is empty")
+	}
+	if !ok {
+		t.Fatal("expected ok=true")
 	}
 	// Quality compression should produce smaller output
 	if len(out) >= len(data) {
@@ -188,9 +203,12 @@ func TestProcessImageOnTheFlyQuality(t *testing.T) {
 
 func TestProcessImageOnTheFlyFormat(t *testing.T) {
 	data := createTestImage("jpeg", 200, 200)
-	out := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Format: "webp"})
+	out, ok := ProcessImageOnTheFly(data, "jpeg", ProcessingParams{Format: "webp"})
 	if len(out) == 0 {
 		t.Fatal("output is empty")
+	}
+	if !ok {
+		t.Fatal("expected ok=true")
 	}
 	// Output should be valid webp (starts with RIFF)
 	if len(out) < 4 || string(out[:4]) != "RIFF" {
@@ -200,9 +218,12 @@ func TestProcessImageOnTheFlyFormat(t *testing.T) {
 
 func TestProcessImageOnTheFlyGifSkipped(t *testing.T) {
 	data := createTestImage("jpeg", 200, 200)
-	out := ProcessImageOnTheFly(data, "gif", ProcessingParams{Width: 100})
+	out, ok := ProcessImageOnTheFly(data, "gif", ProcessingParams{Width: 100})
 	if !bytes.Equal(out, data) {
 		t.Fatal("gif should be returned unchanged")
+	}
+	if ok {
+		t.Fatal("gif should return ok=false")
 	}
 }
 

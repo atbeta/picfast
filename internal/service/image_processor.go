@@ -134,14 +134,18 @@ func (p ProcessingParams) IsEmpty() bool {
 // single vips pipeline.  GIF images are skipped (returned as-is).  On any
 // processing error the original data is returned unchanged so callers can
 // always fall back to the source image.
-func ProcessImageOnTheFly(data []byte, sourceFormat string, p ProcessingParams) []byte {
+//
+// The returned ok flag reports whether any processing was actually applied.
+// Callers MUST NOT assume the output format matches the requested format when
+// ok is false.
+func ProcessImageOnTheFly(data []byte, sourceFormat string, p ProcessingParams) ([]byte, bool) {
 	if p.IsEmpty() {
-		return data
+		return data, false
 	}
 
 	format := normalizeExportFormat(sourceFormat)
 	if format == "gif" {
-		return data
+		return data, false
 	}
 
 	needResize := p.Width > 0 || p.Height > 0
@@ -149,7 +153,7 @@ func ProcessImageOnTheFly(data []byte, sourceFormat string, p ProcessingParams) 
 	needFormat := p.Format != "" && normalizeExportFormat(p.Format) != format
 
 	if !needResize && !needQuality && !needFormat {
-		return data
+		return data, false
 	}
 
 	params := vips.NewImportParams()
@@ -158,7 +162,7 @@ func ProcessImageOnTheFly(data []byte, sourceFormat string, p ProcessingParams) 
 
 	img, err := vips.LoadImageFromBuffer(data, params)
 	if err != nil {
-		return data
+		return data, false
 	}
 	defer img.Close()
 
@@ -179,7 +183,7 @@ func ProcessImageOnTheFly(data []byte, sourceFormat string, p ProcessingParams) 
 		}
 		if scale < 1.0 {
 			if err := img.Resize(scale, vips.KernelAuto); err != nil {
-				return data
+				return data, false
 			}
 		}
 	}
@@ -200,9 +204,9 @@ func ProcessImageOnTheFly(data []byte, sourceFormat string, p ProcessingParams) 
 
 	out, err := exporter.Export(img, quality, false)
 	if err != nil {
-		return data
+		return data, false
 	}
-	return out
+	return out, true
 }
 
 func normalizeExportFormat(format string) string {

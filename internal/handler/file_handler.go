@@ -114,13 +114,16 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+
+	processed := false
 	if !params.IsEmpty() {
-		data = service.ProcessImageOnTheFly(data, img.Extension, params)
+		data, processed = service.ProcessImageOnTheFly(data, img.Extension, params)
 	}
 
-	// Determine content type: use output format if specified, otherwise original
+	// Determine content type: use output format only when processing succeeded,
+	// otherwise the data may still be the original and the MIME must match.
 	mimetype := img.Mimetype
-	if params.Format != "" {
+	if processed && params.Format != "" {
 		if ct := service.MimeTypeForFormat(params.Format); ct != "" {
 			mimetype = ct
 		}
@@ -198,7 +201,9 @@ func parseProcessingParams(raw string) (ext string, params service.ProcessingPar
 			if f == "jpg" {
 				f = "jpeg"
 			}
-			params.Format = f
+			if f == "jpeg" || f == "png" || f == "webp" || f == "gif" {
+				params.Format = f
+			}
 		}
 	}
 
