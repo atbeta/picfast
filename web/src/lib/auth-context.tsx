@@ -23,6 +23,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true
     const fetchProfile = async () => {
       if (!authApi.hasToken()) {
+        // No localStorage token — still attempt profile fetch via cookie
+        // (OAuth stores the access token in an HttpOnly cookie).
+        try {
+          const res = await fetch('/api/v1/users/me', { credentials: 'include' })
+          if (res.ok) {
+            const body = await res.json()
+            if (body?.data && mounted) {
+              setUser(body.data)
+              setIsLoading(false)
+              return
+            }
+          }
+        } catch {
+          // user is not authenticated — fall through
+        }
         if (mounted) setIsLoading(false)
         return
       }
