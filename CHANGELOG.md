@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.1](https://github.com/atbeta/picfast/compare/v0.15.0...v0.15.1) (2026-06-21)
+
+
+### Bug Fixes
+
+* **auth:** SSO login now correctly lands on console after OAuth callback ([7a48dd3](https://github.com/atbeta/picfast/commit/7a48dd3a2790c55183e947a95ff4d1a31f98cbdc)), closes [#70](https://github.com/atbeta/picfast/issues/70)
+
 ## [0.15.0](https://github.com/atbeta/picfast/compare/v0.14.1...v0.15.0) (2026-06-19)
 
 
