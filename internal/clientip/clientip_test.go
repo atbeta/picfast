@@ -45,8 +45,10 @@ func TestIsTrustedProxy(t *testing.T) {
 	}{
 		{"10.1.2.3:12345", true},
 		{"172.20.0.1:8080", true},
-		{"192.168.1.1:443", false},
-		{"127.0.0.1:9999", false},
+		{"192.168.1.1:443", true},  // private IP, auto-trusted
+		{"127.0.0.1:9999", true},   // loopback, auto-trusted
+		{"169.254.1.1:8080", true}, // link-local, auto-trusted
+		{"8.8.8.8:443", false},     // public IP, not in trusted CIDRs
 		{"invalid", false},
 	}
 	for _, tt := range tests {
@@ -127,14 +129,42 @@ func TestFromRequest_TrustedProxy_CFConnectingIP(t *testing.T) {
 func TestFromRequest_UntrustedProxy_IgnoresHeaders(t *testing.T) {
 	SetTrustedProxies([]string{"10.0.0.0/8"})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.RemoteAddr = "192.168.1.1:443"
+	req.RemoteAddr = "8.8.8.8:443"
 	req.Header.Set("X-Forwarded-For", "1.2.3.4")
+	req.Header.Set("X-Real-IP", "5.6.7.8")
+	ctx := context.WithValue(req.Context(), domain.ContextKeyOriginalAddr, "8.8.8.8:443")
+	req = req.WithContext(ctx)
+
+	if got := FromRequest(req); got != "8.8.8.8" {
+		t.Errorf("FromRequest(untrusted) = %q, want %q", got, "8.8.8.8")
+	}
+}
+
+func TestFromRequest_PrivateNetworkProxy_ParsesHeaders(t *testing.T) {
+	// Docker bridges and reverse proxies on private networks should be
+	// auto-trusted so that X-Forwarded-For is respected.
+	SetTrustedProxies([]string{})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "172.21.0.1:443"
+	req.Header.Set("X-Forwarded-For", "1.2.3.4, 10.0.0.5")
+	ctx := context.WithValue(req.Context(), domain.ContextKeyOriginalAddr, "172.21.0.1:443")
+	req = req.WithContext(ctx)
+
+	if got := FromRequest(req); got != "1.2.3.4" {
+		t.Errorf("FromRequest(private-network-proxy) = %q, want %q", got, "1.2.3.4")
+	}
+}
+
+func TestFromRequest_PrivateNetworkProxy_XRealIP(t *testing.T) {
+	SetTrustedProxies([]string{})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "192.168.1.1:443"
 	req.Header.Set("X-Real-IP", "5.6.7.8")
 	ctx := context.WithValue(req.Context(), domain.ContextKeyOriginalAddr, "192.168.1.1:443")
 	req = req.WithContext(ctx)
 
-	if got := FromRequest(req); got != "192.168.1.1" {
-		t.Errorf("FromRequest(untrusted) = %q, want %q", got, "192.168.1.1")
+	if got := FromRequest(req); got != "5.6.7.8" {
+		t.Errorf("FromRequest(private-network-x-real-ip) = %q, want %q", got, "5.6.7.8")
 	}
 }
 

@@ -86,8 +86,6 @@ func originalAddr(r *http.Request) string {
 }
 
 func isTrustedProxy(addr string) bool {
-	mu.RLock()
-	defer mu.RUnlock()
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		host = addr
@@ -99,12 +97,25 @@ func isTrustedProxy(addr string) bool {
 	if v4 := ip.To4(); v4 != nil {
 		ip = v4
 	}
+	if isPrivateOrLocalIP(ip) {
+		return true
+	}
+	mu.RLock()
+	defer mu.RUnlock()
 	for _, cidr := range cidrs {
 		if cidr.Contains(ip) {
 			return true
 		}
 	}
 	return false
+}
+
+// isPrivateOrLocalIP returns true for loopback, private (RFC 1918 / 4193),
+// and link-local addresses. These networks are treated as trusted proxies
+// automatically so that X-Forwarded-For is respected when running behind
+// a reverse proxy on the same host, Docker bridge, or private network.
+func isPrivateOrLocalIP(ip net.IP) bool {
+	return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast()
 }
 
 func remoteHost(addr string) string {
@@ -133,6 +144,9 @@ func rightmostUntrustedIP(forwarded string) string {
 }
 
 func ipInTrustedCIDRs(ip net.IP) bool {
+	if isPrivateOrLocalIP(ip) {
+		return true
+	}
 	mu.RLock()
 	defer mu.RUnlock()
 	for _, cidr := range cidrs {
