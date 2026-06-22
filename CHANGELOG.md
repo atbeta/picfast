@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.2](https://github.com/atbeta/picfast/compare/v0.15.1...v0.15.2) (2026-06-22)
+
+
+### Bug Fixes
+
+* **server:** auto-trust private/loopback IPs for X-Forwarded-For extraction ([92a2c4e](https://github.com/atbeta/picfast/commit/92a2c4e028dd5d4348c7dcfed3615597db11e028)), closes [#55](https://github.com/atbeta/picfast/issues/55)
+
 ## [0.15.1](https://github.com/atbeta/picfast/compare/v0.15.0...v0.15.1) (2026-06-21)
 
 
