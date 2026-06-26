@@ -6,6 +6,8 @@ import { useAuth } from '@/lib/auth-context'
 import { usePersonalization } from '@/lib/use-personalization'
 import { extractErrorMessage } from '@/lib/error-handler'
 import { themePresets } from '@/lib/theme-config'
+import { serializeThemePackage, parseThemePackage, ThemePackageError } from '@/lib/theme-package'
+import { copyToClipboard } from '@/lib/clipboard'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -22,8 +24,48 @@ export function AppearancePanel() {
   const [colorMode, setColorMode] = useState(String(currentOverride.mode || mode.colorMode || 'system'))
   const [density, setDensity] = useState(String(currentOverride.density || mode.density || 'comfortable'))
   const [motion, setMotion] = useState(String(currentOverride.motion || mode.motion || 'subtle'))
+  const [importText, setImportText] = useState('')
 
   if (!user) return null
+
+  const buildThemeConfig = () => ({
+    preset,
+    mode: colorMode as 'light' | 'dark' | 'system',
+    public: {
+      density: density as 'compact' | 'comfortable' | 'spacious',
+      motion: motion as 'none' | 'subtle' | 'playful',
+    },
+  })
+
+  const exportCurrentTheme = () => serializeThemePackage(buildThemeConfig(), 'user')
+  const copyThemeJSON = async () => {
+    await copyToClipboard(exportCurrentTheme())
+    toast.success(t('admin.themeCopied'))
+  }
+  const downloadThemeJSON = () => {
+    const blob = new Blob([exportCurrentTheme()], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `picfast-theme-${preset}-user.json`
+    anchor.click()
+    URL.revokeObjectURL(url)
+    toast.success(t('admin.themeExported'))
+  }
+  const importThemeJSON = () => {
+    try {
+      const { config } = parseThemePackage(importText)
+      if (config.preset) setPreset(config.preset)
+      if (config.mode) setColorMode(config.mode)
+      if (config.public?.density) setDensity(config.public.density)
+      if (config.public?.motion) setMotion(config.public.motion)
+      setImportText('')
+      toast.success(t('admin.themeImported'))
+    } catch (err: unknown) {
+      const message = err instanceof ThemePackageError ? err.message : t('admin.themeImportFailed')
+      toast.error(message)
+    }
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -132,6 +174,36 @@ export function AppearancePanel() {
           </Button>
         </div>
       </form>
+
+      <div className="border-t border-border/40 pt-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.sectionThemePackage')}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.sectionThemePackageDesc')}</p>
+        </div>
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={copyThemeJSON}>
+              {t('admin.themeCopyJson')}
+            </Button>
+            <Button type="button" variant="outline" onClick={downloadThemeJSON}>
+              {t('admin.themeExportJson')}
+            </Button>
+          </div>
+          <textarea
+            value={importText}
+            onChange={(event) => setImportText(event.target.value)}
+            spellCheck={false}
+            placeholder={t('admin.themeImportPlaceholder')}
+            className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={importThemeJSON}>
+              {t('admin.themeApplyImport')}
+            </Button>
+          </div>
+          <p className="text-xs leading-5 text-muted-foreground">{t('admin.themeImportHint')}</p>
+        </div>
+      </div>
     </div>
   )
 }

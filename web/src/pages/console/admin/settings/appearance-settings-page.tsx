@@ -93,7 +93,7 @@ export function AdminAppearanceSettingsPage() {
     }))
   }, [backgroundStyle, getValues, logoShape, mode, preset, themeAccent, themePrimary, themeRadius])
 
-  const exportCurrentTheme = () => serializeThemePackage(themePayload(getValues()))
+  const exportCurrentTheme = () => serializeThemePackage(themePayload(getValues()), 'site')
 
   const copyThemeJSON = async () => {
     await copyToClipboard(exportCurrentTheme())
@@ -113,7 +113,7 @@ export function AdminAppearanceSettingsPage() {
 
   const importThemeJSON = () => {
     try {
-      const config = parseThemePackage(importText)
+      const { config } = parseThemePackage(importText)
       applyThemeFields(themeConfigToFormFields(config))
       toast.success(t('admin.themeImported'))
     } catch (err: unknown) {

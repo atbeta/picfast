@@ -5,11 +5,16 @@ import {
   type ThemeMode,
 } from '@/lib/theme-config'
 
-const THEME_PACKAGE_KEYS = ['preset', 'mode', 'tokens', 'public', 'custom_css'] as const
+export type ThemePackageScope = 'site' | 'user'
+
+const SITE_PACKAGE_KEYS = ['preset', 'mode', 'tokens', 'public', 'custom_css'] as const
+const USER_PACKAGE_KEYS = ['preset', 'mode', 'density', 'motion'] as const
 
 const THEME_MODES = new Set<ThemeMode>(['light', 'dark', 'system'])
 const BACKGROUND_STYLES = new Set(['soft', 'clean', 'image'])
 const LOGO_SHAPES = new Set(['rounded', 'circle', 'square'])
+const DENSITIES = new Set(['compact', 'comfortable', 'spacious'])
+const MOTIONS = new Set(['none', 'subtle', 'playful'])
 
 export class ThemePackageError extends Error {
   constructor(message: string) {
@@ -45,12 +50,34 @@ function stripPublic(publicConfig?: ThemeConfig['public']): ThemeConfig['public'
   return Object.keys(next).length > 0 ? next as ThemeConfig['public'] : undefined
 }
 
-/** Export only safe, shareable theme fields. */
-export function exportThemePackage(config: ThemeConfig): ThemeConfig {
+// ── Export ──────────────────────────────────────────────────────────
+
+/** Export only safe, shareable theme fields for the given scope. */
+export function exportThemePackage(config: ThemeConfig, scope: ThemePackageScope): ThemeConfig {
   const merged = mergeThemeConfig(config)
+  const customCSS = merged.custom_css?.trim() ?? ''
+
+  if (scope === 'user') {
+    const pkg: ThemeConfig = {
+      preset: merged.preset || 'default',
+      mode: merged.mode || 'system',
+      public: {},
+    }
+    const pub = merged.public
+    if (pub?.density && pub.density !== 'comfortable') {
+      pkg.public = { ...pkg.public, density: pub.density }
+    }
+    if (pub?.motion && pub.motion !== 'subtle') {
+      pkg.public = { ...pkg.public, motion: pub.motion }
+    }
+    if (!pkg.public?.density && !pkg.public?.motion) {
+      delete pkg.public
+    }
+    return pkg
+  }
+
   const tokens = stripEmptyTokens(merged.tokens)
   const publicConfig = stripPublic(merged.public)
-  const customCSS = merged.custom_css?.trim() ?? ''
 
   const pkg: ThemeConfig = {
     preset: merged.preset || 'default',
@@ -62,9 +89,11 @@ export function exportThemePackage(config: ThemeConfig): ThemeConfig {
   return pkg
 }
 
-export function serializeThemePackage(config: ThemeConfig): string {
-  return JSON.stringify(exportThemePackage(config), null, 2)
+export function serializeThemePackage(config: ThemeConfig, scope: ThemePackageScope): string {
+  return JSON.stringify(exportThemePackage(config, scope), null, 2)
 }
+
+// ── Parsing helpers ─────────────────────────────────────────────────
 
 function assertSafeString(value: unknown, field: string, maxLen: number): string | undefined {
   if (value === undefined || value === null || value === '') return undefined
@@ -137,8 +166,8 @@ function parsePublic(raw: unknown): ThemeConfig['public'] | undefined {
   }
 
   const semanticFields: Array<{ key: keyof NonNullable<ThemeConfig['public']>; allowed: Set<string> }> = [
-    { key: 'density', allowed: new Set(['compact', 'comfortable', 'spacious']) },
-    { key: 'motion', allowed: new Set(['none', 'subtle', 'playful']) },
+    { key: 'density', allowed: DENSITIES },
+    { key: 'motion', allowed: MOTIONS },
   ]
   for (const field of semanticFields) {
     const value = assertSafeString(raw[field.key as string], `public.${String(field.key)}`, 16)
@@ -152,8 +181,15 @@ function parsePublic(raw: unknown): ThemeConfig['public'] | undefined {
   return Object.keys(next).length > 0 ? next : undefined
 }
 
-/** Parse imported JSON into a sanitized ThemeConfig. */
-export function parseThemePackage(raw: string): ThemeConfig {
+// ── Parse (scope-aware) ─────────────────────────────────────────────
+
+export interface ParsedThemePackage {
+  config: ThemeConfig
+  scope: ThemePackageScope
+}
+
+/** Parse imported JSON into a sanitized ThemeConfig, auto-detecting scope. */
+export function parseThemePackage(raw: string): ParsedThemePackage {
   let parsed: unknown
   try {
     parsed = JSON.parse(raw)
@@ -164,14 +200,49 @@ export function parseThemePackage(raw: string): ThemeConfig {
     throw new ThemePackageError('theme package must be a JSON object')
   }
 
+  const scope = (parsed.scope === 'user') ? 'user' as ThemePackageScope : 'site' as ThemePackageScope
+  const keySet: Set<string> = scope === 'user'
+    ? new Set(USER_PACKAGE_KEYS)
+    : new Set(SITE_PACKAGE_KEYS)
+
   for (const key of Object.keys(parsed)) {
-    if (!THEME_PACKAGE_KEYS.includes(key as typeof THEME_PACKAGE_KEYS[number])) {
+    if (key === 'scope') continue
+    if (!keySet.has(key)) {
+      if (scope === 'user') {
+        throw new ThemePackageError(`field "${key}" is not allowed in user-scope theme package`)
+      }
       throw new ThemePackageError(`unknown field: ${key}`)
     }
   }
 
   const preset = assertSafeString(parsed.preset, 'preset', 80) || 'default'
   presetById(preset)
+
+  if (scope === 'user') {
+    const modeRaw = assertSafeString(parsed.mode, 'mode', 16) || 'system'
+    if (!THEME_MODES.has(modeRaw as ThemeMode)) {
+      throw new ThemePackageError('mode is invalid')
+    }
+
+    const densityRaw = assertSafeString(parsed.density, 'density', 16)
+    if (densityRaw && !DENSITIES.has(densityRaw)) {
+      throw new ThemePackageError('density is invalid')
+    }
+
+    const motionRaw = assertSafeString(parsed.motion, 'motion', 16)
+    if (motionRaw && !MOTIONS.has(motionRaw)) {
+      throw new ThemePackageError('motion is invalid')
+    }
+
+    const config: ThemeConfig = {
+      preset,
+      mode: modeRaw as ThemeMode,
+      public: {},
+    }
+    if (densityRaw) config.public = { ...config.public, density: densityRaw as NonNullable<ThemeConfig['public']>['density'] }
+    if (motionRaw) config.public = { ...config.public, motion: motionRaw as NonNullable<ThemeConfig['public']>['motion'] }
+    return { config, scope }
+  }
 
   const modeRaw = assertSafeString(parsed.mode, 'mode', 16) || 'system'
   if (!THEME_MODES.has(modeRaw as ThemeMode)) {
@@ -186,8 +257,10 @@ export function parseThemePackage(raw: string): ThemeConfig {
   if (tokens) config.tokens = tokens
   if (publicConfig) config.public = publicConfig
   if (customCSS) config.custom_css = customCSS
-  return config
+  return { config, scope }
 }
+
+// ── Admin form helpers (unchanged) ──────────────────────────────────
 
 export interface ThemeFormImportFields {
   theme_preset: string
