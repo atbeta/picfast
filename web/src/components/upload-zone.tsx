@@ -58,23 +58,17 @@ export function UploadZone({ onFiles, disabled, className = '' }: UploadZoneProp
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       className={[
-        'pf-upload-zone relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl p-12 transition-colors duration-150 group',
+        'relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-border p-12 transition-colors duration-150 group hover:border-primary/50',
         dragging
-          ? 'bg-primary/5 dark:bg-primary/10'
+          ? 'bg-primary/5 dark:bg-primary/10 border-primary'
           : 'bg-muted/30 hover:bg-muted/50 dark:bg-muted/10 dark:hover:bg-muted/20',
         disabled && 'pointer-events-none opacity-50',
         className
       ].join(' ')}
     >
-      {/* Animated Border */}
-      <div className={[
-        "absolute inset-0 rounded-xl border-2 border-dashed transition-colors duration-150",
-        dragging ? "border-primary" : "border-border group-hover:border-primary/50"
-      ].join(' ')} />
-
       {/* Inner Glow Effect */}
       <div className={[
-        "absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-info/10 opacity-0 transition-opacity duration-150",
+        "absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-info/10 opacity-0 transition-opacity duration-150 rounded-xl",
         dragging ? "opacity-100" : "group-hover:opacity-100"
       ].join(' ')} />
 

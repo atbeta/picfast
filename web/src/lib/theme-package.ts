@@ -137,9 +137,6 @@ function parsePublic(raw: unknown): ThemeConfig['public'] | undefined {
   }
 
   const semanticFields: Array<{ key: keyof NonNullable<ThemeConfig['public']>; allowed: Set<string> }> = [
-    { key: 'upload_style', allowed: new Set(['dashed', 'solid', 'glass']) },
-    { key: 'card_style', allowed: new Set(['flat', 'elevated', 'glass']) },
-    { key: 'button_style', allowed: new Set(['default', 'pill', 'sharp']) },
     { key: 'density', allowed: new Set(['compact', 'comfortable', 'spacious']) },
     { key: 'motion', allowed: new Set(['none', 'subtle', 'playful']) },
   ]

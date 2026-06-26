@@ -4,6 +4,12 @@ import { usePersonalization } from '@/lib/use-personalization'
 import { themeConfigToCSS } from '@/lib/theme-config'
 import { useTheme } from '@/lib/theme'
 
+const LOGO_RADIUS: Record<string, string> = {
+  circle: '9999px',
+  square: 'calc(var(--radius) * 0.35)',
+  rounded: '0.75rem',
+}
+
 export function SiteThemeRuntime() {
   const { setTheme } = useTheme()
   const { theme, mode } = usePersonalization()
@@ -15,14 +21,13 @@ export function SiteThemeRuntime() {
     root.dataset.pfTheme = theme.preset || 'default'
     root.dataset.pfThemeBackground = theme.backgroundStyle || 'soft'
     root.dataset.pfThemeLogo = theme.logoShape || 'rounded'
-    root.dataset.pfUploadStyle = theme.config.public?.upload_style || 'dashed'
-    root.dataset.pfCardStyle = theme.config.public?.card_style || 'elevated'
-    root.dataset.pfButtonStyle = theme.config.public?.button_style || 'default'
     root.dataset.pfDensity = mode.density || 'comfortable'
     root.dataset.pfMotion = mode.motion || 'subtle'
 
     root.style.setProperty('--pf-density', String(mode.densityValue))
     root.style.setProperty('--pf-motion-duration', mode.motionDuration)
+    root.style.setProperty('--pf-public-glow-opacity', theme.backgroundStyle === 'image' ? '0.45' : '1')
+    root.style.setProperty('--pf-logo-radius', LOGO_RADIUS[theme.logoShape] ?? '0.75rem')
   }, [theme, mode])
 
   useEffect(() => {

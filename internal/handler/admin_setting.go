@@ -363,9 +363,6 @@ func validateThemeConfig(raw json.RawMessage) error {
 			key    string
 			values []string
 		}{
-			{"upload_style", []string{"dashed", "solid", "glass"}},
-			{"card_style", []string{"flat", "elevated", "glass"}},
-			{"button_style", []string{"default", "pill", "sharp"}},
 			{"density", []string{"compact", "comfortable", "spacious"}},
 			{"motion", []string{"none", "subtle", "playful"}},
 		} {

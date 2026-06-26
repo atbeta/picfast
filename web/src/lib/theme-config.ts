@@ -48,9 +48,6 @@ export interface ThemeConfig {
     background_image?: string
     background_style?: 'soft' | 'clean' | 'image'
     logo_shape?: 'rounded' | 'circle' | 'square'
-    upload_style?: 'dashed' | 'solid' | 'glass'
-    card_style?: 'flat' | 'elevated' | 'glass'
-    button_style?: 'default' | 'pill' | 'sharp'
     density?: 'compact' | 'comfortable' | 'spacious'
     motion?: 'none' | 'subtle' | 'playful'
   }
@@ -142,7 +139,7 @@ export const themePresets: ThemePreset[] = [
           radius: '1rem',
         },
       },
-      public: { background_style: 'soft', logo_shape: 'circle', upload_style: 'dashed', card_style: 'elevated', button_style: 'pill', density: 'comfortable', motion: 'subtle' },
+      public: { background_style: 'soft', logo_shape: 'circle', density: 'comfortable', motion: 'subtle' },
     },
   },
   {
@@ -204,7 +201,7 @@ export const themePresets: ThemePreset[] = [
           radius: '0.5rem',
         },
       },
-      public: { background_style: 'soft', logo_shape: 'square', upload_style: 'solid', card_style: 'glass', button_style: 'sharp', density: 'compact', motion: 'subtle' },
+      public: { background_style: 'soft', logo_shape: 'square', density: 'compact', motion: 'subtle' },
     },
   },
   {
@@ -266,7 +263,7 @@ export const themePresets: ThemePreset[] = [
           radius: '0.125rem',
         },
       },
-      public: { background_style: 'clean', logo_shape: 'square', upload_style: 'solid', card_style: 'flat', button_style: 'sharp', density: 'compact', motion: 'none' },
+      public: { background_style: 'clean', logo_shape: 'square', density: 'compact', motion: 'none' },
     },
   },
   {
@@ -328,7 +325,7 @@ export const themePresets: ThemePreset[] = [
           radius: '0.25rem',
         },
       },
-      public: { background_style: 'clean', logo_shape: 'square', upload_style: 'solid', card_style: 'flat', button_style: 'sharp', density: 'compact', motion: 'none' },
+      public: { background_style: 'clean', logo_shape: 'square', density: 'compact', motion: 'none' },
     },
   },
   {
@@ -390,7 +387,7 @@ export const themePresets: ThemePreset[] = [
           radius: '0.875rem',
         },
       },
-      public: { background_style: 'soft', logo_shape: 'rounded', upload_style: 'dashed', card_style: 'elevated', button_style: 'default', density: 'comfortable', motion: 'subtle' },
+      public: { background_style: 'soft', logo_shape: 'rounded', density: 'comfortable', motion: 'subtle' },
     },
   },
 ]

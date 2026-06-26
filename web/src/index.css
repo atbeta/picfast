@@ -124,7 +124,7 @@ html[data-pf-theme-background='clean'] .pf-public-glow {
 }
 
 html[data-pf-theme-background='image'] .pf-public-glow {
-  opacity: 0.45;
+  opacity: var(--pf-public-glow-opacity, 0.45);
 }
 
 html[data-pf-theme-logo='circle'] .pf-site-logo {
@@ -132,66 +132,13 @@ html[data-pf-theme-logo='circle'] .pf-site-logo {
 }
 
 html[data-pf-theme-logo='square'] .pf-site-logo {
-  border-radius: calc(var(--radius) * 0.35);
+  border-radius: var(--pf-logo-radius, calc(var(--radius) * 0.35));
 }
 
-html[data-pf-upload-style='solid'] .pf-upload-zone {
-  border-style: solid;
-  background: color-mix(in oklch, var(--card), transparent 35%);
-}
-
-html[data-pf-upload-style='glass'] .pf-upload-zone {
-  border-style: solid;
-  background: color-mix(in oklch, var(--card), transparent 55%);
-  backdrop-filter: blur(12px);
-}
-
-html[data-pf-card-style='flat'] .pf-result-card,
-html[data-pf-card-style='flat'] .pf-auth-card {
-  box-shadow: none;
-  background: var(--card);
-}
-
-html[data-pf-card-style='glass'] .pf-result-card,
-html[data-pf-card-style='glass'] .pf-auth-card {
-  background: color-mix(in oklch, var(--card), transparent 40%);
-  backdrop-filter: blur(14px);
-}
-
-html[data-pf-card-style='elevated'] .pf-result-card,
-html[data-pf-card-style='elevated'] .pf-auth-card {
-  box-shadow: 0 12px 40px color-mix(in oklch, var(--foreground), transparent 88%);
-}
-
-html[data-pf-button-style='pill'] .pf-primary-button {
-  border-radius: 9999px;
-}
-
-html[data-pf-button-style='sharp'] .pf-primary-button {
-  border-radius: calc(var(--radius) * 0.35);
-}
-
-html[data-pf-density='compact'] .pf-upload-zone {
-  padding: 2rem;
-}
-
-html[data-pf-density='spacious'] .pf-upload-zone {
-  padding: 4rem;
-}
-
-html[data-pf-motion='none'] .pf-upload-zone,
-html[data-pf-motion='none'] .pf-result-card,
-html[data-pf-motion='none'] .pf-primary-button {
-  transition: none !important;
-}
-
-html[data-pf-motion='playful'] .pf-upload-zone {
-  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
-}
-
-html[data-pf-motion='playful'] .pf-upload-zone:hover {
-  transform: translateY(-2px);
-}
+/* Density & motion driven by CSS variables set via SiteThemeRuntime.
+   Components opt in with calc(gap * var(--pf-density)) /
+   transition-duration: var(--pf-motion-duration). No per-component
+   data-attribute selectors needed. */
 
 /* ===== Dark-mode form controls ===== */
 /* These reset browser defaults that ignore Tailwind's dark variant */

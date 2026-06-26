@@ -88,7 +88,7 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
   }
 
   return (
-    <div className="pf-result-card group overflow-hidden rounded-2xl border border-border/50 bg-card/60 shadow-sm transition-colors duration-150 hover:border-border/80">
+    <div className="group overflow-hidden rounded-2xl border border-border/50 bg-card/60 shadow-sm transition-colors duration-150 hover:border-border/80">
       <div className="flex flex-col sm:flex-row sm:items-start gap-6 p-6">
         {/* Image Preview */}
         <div className="relative shrink-0">
@@ -142,7 +142,7 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
                 type="button"
                 size="sm"
                 onClick={copyPrimary}
-                className="pf-primary-button gap-2"
+                className="gap-2"
               >
                 {primaryCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
                 {primaryCopied ? t('upload.copied') : t(copyFormatLabelKey(copyPrefs.format))}
