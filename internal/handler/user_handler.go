@@ -2,6 +2,8 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -10,6 +12,116 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var (
+	errUnknownSettingsKey = errors.New("unknown settings key")
+	errInvalidSettingsType = errors.New("invalid settings value type")
+)
+
+var validThemeModes = map[string]bool{"light": true, "dark": true, "system": true}
+var validDensities = map[string]bool{"compact": true, "comfortable": true, "spacious": true}
+var validMotions = map[string]bool{"none": true, "subtle": true, "playful": true}
+var validCopyFormats = map[string]bool{"url": true, "markdown": true, "html": true, "bbcode": true, "thumbnail": true, "custom": true}
+var validImageFormats = map[string]bool{"": true, "origin": true, "jpeg": true, "jpg": true, "png": true, "webp": true}
+
+var knownUserSettingsKeys = map[string]bool{
+	"default_strategy":   true,
+	"default_album":      true,
+	"default_permission": true,
+	"image_processing":   true,
+	"default_copy_format": true,
+	"copy_template":       true,
+	"theme_override":      true,
+	"language":            true,
+}
+
+func validateUserSettings(raw json.RawMessage) error {
+	if len(raw) == 0 || string(raw) == "null" || string(raw) == "{}" {
+		return nil
+	}
+
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return errInvalidSettingsType
+	}
+
+	for key := range m {
+		if !knownUserSettingsKeys[key] {
+			return fmt.Errorf("%w: %s", errUnknownSettingsKey, key)
+		}
+	}
+
+	if rawTO, ok := m["theme_override"]; ok {
+		var to domain.ThemeOverride
+		if err := json.Unmarshal(rawTO, &to); err != nil {
+			return fmt.Errorf("theme_override: %w", errInvalidSettingsType)
+		}
+		for k := range mustMap(rawTO) {
+			switch k {
+			case "preset", "mode", "density", "motion":
+			default:
+				return fmt.Errorf("%w: theme_override.%s", errUnknownSettingsKey, k)
+			}
+		}
+		if to.Mode != "" && !validThemeModes[to.Mode] {
+			return fmt.Errorf("theme_override.mode: must be light, dark, or system")
+		}
+		if to.Density != "" && !validDensities[to.Density] {
+			return fmt.Errorf("theme_override.density: must be compact, comfortable, or spacious")
+		}
+		if to.Motion != "" && !validMotions[to.Motion] {
+			return fmt.Errorf("theme_override.motion: must be none, subtle, or playful")
+		}
+	}
+
+	if rawCF, ok := m["default_copy_format"]; ok {
+		var cf string
+		if err := json.Unmarshal(rawCF, &cf); err != nil {
+			return fmt.Errorf("default_copy_format: %w", errInvalidSettingsType)
+		}
+		if cf != "" && !validCopyFormats[cf] {
+			return fmt.Errorf("default_copy_format: must be one of url, markdown, html, bbcode, thumbnail, custom")
+		}
+	}
+
+	if rawIP, ok := m["image_processing"]; ok {
+		if err := validateImageProcessing(rawIP); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateImageProcessing(raw json.RawMessage) error {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return fmt.Errorf("image_processing: %w", errInvalidSettingsType)
+	}
+	for key := range m {
+		switch key {
+		case "image_save_quality", "image_save_format", "is_strip_exif", "is_enable_watermark", "watermark_configs":
+		default:
+			return fmt.Errorf("%w: image_processing.%s", errUnknownSettingsKey, key)
+		}
+	}
+	if rawFmt, ok := m["image_save_format"]; ok {
+		var fmtStr string
+		if err := json.Unmarshal(rawFmt, &fmtStr); err != nil {
+			return fmt.Errorf("image_processing.image_save_format: %w", errInvalidSettingsType)
+		}
+		if !validImageFormats[fmtStr] {
+			return fmt.Errorf("image_processing.image_save_format: must be origin, jpeg, png, or webp")
+		}
+	}
+	return nil
+}
+
+func mustMap(raw json.RawMessage) map[string]json.RawMessage {
+	var m map[string]json.RawMessage
+	json.Unmarshal(raw, &m)
+	return m
+}
 
 type UserHandler struct {
 	db *sqlc.Queries
@@ -99,6 +211,10 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		password = pgtype.Text{String: string(hash), Valid: true}
 	}
 	if req.Settings != nil {
+		if err := validateUserSettings(*req.Settings); err != nil {
+			Fail(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		settings = *req.Settings
 	}
 

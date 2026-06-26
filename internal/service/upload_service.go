@@ -32,11 +32,6 @@ type UploadService struct {
 	countInit   sync.Once
 }
 
-type uploadUserSettings struct {
-	DefaultStrategy int64                               `json:"default_strategy"`
-	ImageProcessing *domain.UserImageProcessingSettings `json:"image_processing"`
-}
-
 type uploadIdentity struct {
 	group               sqlc.Group
 	userID              int64
@@ -368,7 +363,7 @@ func (s *UploadService) resolveIdentity(ctx context.Context, params UploadParams
 
 	var (
 		preferredStrategyID *int64
-		settings            uploadUserSettings
+		settings            domain.UserSettings
 	)
 	if len(user.Settings) > 0 {
 		if err := json.Unmarshal(user.Settings, &settings); err == nil && settings.DefaultStrategy > 0 {

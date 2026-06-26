@@ -1,34 +1,35 @@
 import { useEffect, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
 
-import { getSiteConfig } from '@/lib/site-config'
-import { mergeThemeConfig, themeConfigToCSS } from '@/lib/theme-config'
+import { usePersonalization } from '@/lib/use-personalization'
+import { themeConfigToCSS } from '@/lib/theme-config'
 import { useTheme } from '@/lib/theme'
 
 export function SiteThemeRuntime() {
   const { setTheme } = useTheme()
-  const { data: config } = useQuery({ queryKey: ['site-config'], queryFn: getSiteConfig })
-  const themeConfig = useMemo(() => mergeThemeConfig(config?.theme_config), [config?.theme_config])
-  const css = useMemo(() => themeConfigToCSS(themeConfig), [themeConfig])
+  const { theme, mode } = usePersonalization()
+
+  const css = useMemo(() => themeConfigToCSS(theme.config), [theme.config])
 
   useEffect(() => {
     const root = document.documentElement
-    const pub = themeConfig.public
-    root.dataset.pfTheme = themeConfig.preset || 'default'
-    root.dataset.pfThemeBackground = pub?.background_style || 'soft'
-    root.dataset.pfThemeLogo = pub?.logo_shape || 'rounded'
-    root.dataset.pfUploadStyle = pub?.upload_style || 'dashed'
-    root.dataset.pfCardStyle = pub?.card_style || 'elevated'
-    root.dataset.pfButtonStyle = pub?.button_style || 'default'
-    root.dataset.pfDensity = pub?.density || 'comfortable'
-    root.dataset.pfMotion = pub?.motion || 'subtle'
-  }, [themeConfig])
+    root.dataset.pfTheme = theme.preset || 'default'
+    root.dataset.pfThemeBackground = theme.backgroundStyle || 'soft'
+    root.dataset.pfThemeLogo = theme.logoShape || 'rounded'
+    root.dataset.pfUploadStyle = theme.config.public?.upload_style || 'dashed'
+    root.dataset.pfCardStyle = theme.config.public?.card_style || 'elevated'
+    root.dataset.pfButtonStyle = theme.config.public?.button_style || 'default'
+    root.dataset.pfDensity = mode.density || 'comfortable'
+    root.dataset.pfMotion = mode.motion || 'subtle'
+
+    root.style.setProperty('--pf-density', String(mode.densityValue))
+    root.style.setProperty('--pf-motion-duration', mode.motionDuration)
+  }, [theme, mode])
 
   useEffect(() => {
-    if (!themeConfig.mode || themeConfig.mode === 'system') return
+    if (!mode.colorMode || mode.colorMode === 'system') return
     if (window.localStorage.getItem('theme')) return
-    setTheme(themeConfig.mode)
-  }, [setTheme, themeConfig.mode])
+    setTheme(mode.colorMode)
+  }, [setTheme, mode.colorMode])
 
   return <style id="picfast-site-theme">{css}</style>
 }

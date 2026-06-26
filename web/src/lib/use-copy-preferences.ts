@@ -1,22 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
-
-import { useAuth } from '@/lib/auth-context'
-import { normalizeCopyFormat, type CopyFormat, type CopyPreferences } from '@/lib/copy-template'
-import { getSiteConfig } from '@/lib/site-config'
+import { type CopyFormat, type CopyPreferences } from '@/lib/copy-template'
+import { usePersonalization } from '@/lib/use-personalization'
 
 export function useCopyPreferences(): CopyPreferences {
-  const { user } = useAuth()
-  const { data: site } = useQuery({ queryKey: ['site-config'], queryFn: getSiteConfig })
-
-  const userSettings = user?.settings as {
-    default_copy_format?: string
-    copy_template?: string
-  } | undefined
-
-  const format = normalizeCopyFormat(userSettings?.default_copy_format || site?.default_copy_format)
-  const template = (userSettings?.copy_template ?? site?.copy_template ?? '').trim()
-
-  return { format, template }
+  const { output } = usePersonalization()
+  return output
 }
 
 export function copyFormatLabelKey(format: CopyFormat): string {

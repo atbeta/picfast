@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { XIcon, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -9,6 +9,8 @@ import { UploadResultCard } from '../../components/upload-result'
 import { getStrategies, uploadImageAuth, listAlbums } from '../../lib/console-api'
 import type { ImageItem, Strategy, Album } from '../../lib/console-api'
 import { useAuth } from '../../lib/auth-context'
+import { usePersonalization } from '../../lib/use-personalization'
+import { migrateLocalStorageToServer } from '../../lib/personalization'
 import { extractErrorMessage, logError } from '../../lib/error-handler'
 import { storageStrategyLabel } from '../../lib/storage-strategy'
 
@@ -19,7 +21,9 @@ interface UploadingFile {
 
 export function UploadPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, updateProfile } = useAuth()
+  const { workflow } = usePersonalization()
+  const migrateCalled = useRef(false)
   const [results, setResults] = useState<ImageItem[]>([])
   const [uploading, setUploading] = useState<UploadingFile[]>([])
   const [errors, setErrors] = useState<string[]>([])
@@ -31,7 +35,7 @@ export function UploadPage() {
   // Strategy selector
   const [strategies, setStrategies] = useState<Strategy[]>([])
   const [selectedStrategyId, setSelectedStrategyId] = useState<number | null>(null)
-  
+
   // Album selector
   const [albums, setAlbums] = useState<Album[]>([])
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null)
@@ -40,18 +44,22 @@ export function UploadPage() {
   const [selectedPermission, setSelectedPermission] = useState<number | null>(null)
 
   useEffect(() => {
+    if (migrateCalled.current || !user) return
+    migrateCalled.current = true
+    migrateLocalStorageToServer(
+      (data) => updateProfile(data),
+      user.settings as Record<string, unknown> | undefined,
+    ).catch(() => {})
+  }, [user, updateProfile])
+
+  useEffect(() => {
     getStrategies()
       .then((list) => {
         setStrategies(list)
-        // Priority: user settings -> localStorage -> first available
-        const userDefault = (user?.settings as Record<string, unknown>)?.default_strategy
-        const userDefaultNum = userDefault ? Number(userDefault) : null
-        const saved = localStorage.getItem('default_strategy_id')
+        const preferred = workflow.defaultStrategy
         let initialId: number | null = null
-        if (userDefaultNum && list.some((s) => s.id === userDefaultNum)) {
-          initialId = userDefaultNum
-        } else if (saved && list.some((s) => s.id === Number(saved))) {
-          initialId = Number(saved)
+        if (preferred && list.some((s) => s.id === preferred)) {
+          initialId = preferred
         } else if (list.length > 0) {
           initialId = list[0].id
         }
@@ -62,21 +70,16 @@ export function UploadPage() {
     listAlbums(1, 100)
       .then((res) => {
         setAlbums(res.items)
-        const saved = localStorage.getItem('default_album_id')
-        if (saved && res.items.some((a) => a.id === Number(saved))) {
-          setSelectedAlbumId(Number(saved))
-        } else if (user?.settings) {
-          const userDefaultAlbum = (user.settings as Record<string, unknown>).default_album
-          if (userDefaultAlbum) setSelectedAlbumId(Number(userDefaultAlbum))
+        const preferred = workflow.defaultAlbum
+        if (preferred && res.items.some((a) => a.id === preferred)) {
+          setSelectedAlbumId(preferred)
         }
       })
       .catch((err: unknown) => logError('upload.loadAlbums', err))
 
-    // Load default permission — no server-side UI for this, use localStorage only
-    const savedPerm = localStorage.getItem('default_permission')
-    const nextPermission = savedPerm !== null ? Number(savedPerm) : 1
+    const nextPermission = workflow.defaultPermission
     queueMicrotask(() => setSelectedPermission(nextPermission))
-  }, [user])
+  }, [user, workflow.defaultStrategy, workflow.defaultAlbum, workflow.defaultPermission])
 
   const onStrategyChange = (id: number) => {
     setSelectedStrategyId(id)
