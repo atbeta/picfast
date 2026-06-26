@@ -1,8 +1,16 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Controller, useWatch } from 'react-hook-form'
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { uploadImageAuth } from '@/lib/console-api'
-import { fieldInputCls, fieldTextareaCls, useAdminSettingsForm } from './form'
+import {
+  analyticsPayload,
+  fieldInputCls,
+  fieldTextareaCls,
+  themePayload,
+  useAdminSettingsForm,
+} from './form'
 import {
   SettingField,
   SettingsPageLayout,
@@ -11,22 +19,28 @@ import {
 export function AdminSiteSettingsPage() {
   const { t } = useTranslation()
   const state = useAdminSettingsForm()
-  const { register, handleSubmit, setValue, watch } = state.form
+  const { register, control, handleSubmit, setValue, watch } = state.form
   const [uploading, setUploading] = useState(false)
   const [uploadMsg, setUploadMsg] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const faviconURL = watch('favicon_url')
+  const analyticsProvider = useWatch({ control, name: 'analytics_provider' }) || ''
 
-  const onSubmit = handleSubmit((form) => state.saveSettings({
-    app_name: form.app_name,
-    app_url: form.app_url,
-    site_description: form.site_description,
-    favicon_url: form.favicon_url,
-    footer_text_1: form.footer_text_1,
-    footer_link_1: form.footer_link_1,
-    footer_text_2: form.footer_text_2,
-    footer_link_2: form.footer_link_2,
-  }))
+  const onSubmit = handleSubmit((form) =>
+    state.saveSettings({
+      app_name: form.app_name,
+      app_url: form.app_url,
+      site_description: form.site_description,
+      favicon_url: form.favicon_url,
+      footer_text_1: form.footer_text_1,
+      footer_link_1: form.footer_link_1,
+      footer_text_2: form.footer_text_2,
+      footer_link_2: form.footer_link_2,
+      theme_config: themePayload(form),
+      analytics_provider: form.analytics_provider,
+      analytics_config: analyticsPayload(form),
+    }),
+  )
 
   const onPickFavicon = async (files: FileList | null) => {
     const file = files?.[0]
@@ -127,6 +141,125 @@ export function AdminSiteSettingsPage() {
         </div>
       </div>
 
+      <div className="border-t border-border/40 pt-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.themeCustomCss')}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.themeCustomCssHint')}</p>
+        </div>
+        <SettingField label={t('admin.themeCustomCssScope')}>
+          <textarea
+            id="theme_custom_css"
+            {...register('theme_custom_css')}
+            spellCheck={false}
+            className={`${fieldTextareaCls} min-h-40 font-mono`}
+          />
+        </SettingField>
+      </div>
+
+      <div className="border-t border-border/40 pt-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.analyticsSettingsTitle')}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.analyticsSettingsDesc')}</p>
+        </div>
+
+        <SettingField label={t('admin.analyticsProvider')}>
+          <Controller
+            name="analytics_provider"
+            control={control}
+            render={({ field }) => (
+              <Select
+                value={field.value || ''}
+                onValueChange={(val) => field.onChange(String(val))}
+                items={{
+                  '': t('admin.analyticsDisabled'),
+                  plausible: 'Plausible',
+                  umami: 'Umami',
+                  ga4: 'Google Analytics 4',
+                  baidu: t('admin.analyticsBaidu'),
+                  custom: t('admin.analyticsCustom'),
+                }}
+              >
+                <SelectTrigger className="h-11 w-full bg-background border-input">
+                  <SelectValue placeholder={t('admin.analyticsDisabled')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{t('admin.analyticsDisabled')}</SelectItem>
+                  <SelectItem value="plausible">Plausible</SelectItem>
+                  <SelectItem value="umami">Umami</SelectItem>
+                  <SelectItem value="ga4">Google Analytics 4</SelectItem>
+                  <SelectItem value="baidu">{t('admin.analyticsBaidu')}</SelectItem>
+                  <SelectItem value="custom">{t('admin.analyticsCustom')}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </SettingField>
+
+        {analyticsProvider === 'plausible' && (
+          <>
+            <SettingField label={t('admin.analyticsDomain')}>
+              <input {...register('analytics_domain')} placeholder="img.example.com" className={fieldInputCls} />
+            </SettingField>
+            <SettingField label={t('admin.analyticsScriptUrl')}>
+              <input {...register('analytics_script_url')} placeholder="https://plausible.io/js/script.js" className={fieldInputCls} />
+            </SettingField>
+          </>
+        )}
+
+        {analyticsProvider === 'umami' && (
+          <>
+            <SettingField label={t('admin.analyticsScriptUrl')}>
+              <input {...register('analytics_script_url')} placeholder="https://analytics.example.com/script.js" className={fieldInputCls} />
+            </SettingField>
+            <SettingField label={t('admin.analyticsWebsiteId')}>
+              <input {...register('analytics_website_id')} className={fieldInputCls} />
+            </SettingField>
+          </>
+        )}
+
+        {analyticsProvider === 'ga4' && (
+          <SettingField label={t('admin.analyticsMeasurementId')}>
+            <input {...register('analytics_measurement_id')} placeholder="G-XXXXXXXXXX" className={fieldInputCls} />
+          </SettingField>
+        )}
+
+        {analyticsProvider === 'baidu' && (
+          <SettingField label={t('admin.analyticsSiteId')}>
+            <input {...register('analytics_site_id')} className={fieldInputCls} />
+          </SettingField>
+        )}
+
+        {analyticsProvider === 'custom' && (
+          <SettingField label={t('admin.analyticsCustomScript')} hint={t('admin.analyticsCustomScriptDesc')}>
+            <textarea {...register('analytics_custom_script')} className={fieldTextareaCls} />
+          </SettingField>
+        )}
+
+        {analyticsProvider && (
+          <details className="space-y-4 rounded-lg border border-border/60 p-4">
+            <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+              {t('admin.analyticsAdvanced', { defaultValue: 'CSP 高级配置' })}
+            </summary>
+            <p className="text-xs text-muted-foreground">
+              {t('admin.analyticsAdvancedDesc', { defaultValue: '仅在默认 CSP 规则不满足时填写，多个域名用逗号分隔。' })}
+            </p>
+            <SettingField label="connect-src">
+              <input
+                {...register('analytics_connect_src')}
+                placeholder="https://custom-api.example.com"
+                className={fieldInputCls}
+              />
+            </SettingField>
+            <SettingField label="script-src">
+              <input
+                {...register('analytics_script_src')}
+                placeholder="https://cdn.example.com"
+                className={fieldInputCls}
+              />
+            </SettingField>
+          </details>
+        )}
+      </div>
     </SettingsPageLayout>
   )
 }

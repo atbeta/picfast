@@ -17,10 +17,8 @@ import {
   Globe,
   ScrollText,
   ShieldCheck,
-  BarChart3,
   ShieldAlert,
   Menu,
-  Palette,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -129,9 +127,7 @@ export function ConsoleLayout() {
                   <ConsoleNavItem to="/console/admin/moderation" label={t('admin.navModeration', { defaultValue: '审核管理' })} icon={ShieldAlert} onNavigate={() => setMobileNavOpen(false)} />
                   <ConsoleNavItem to="/console/admin/audit-logs" label={t('admin.navAuditLogs', { defaultValue: '审计日志' })} icon={ScrollText} onNavigate={() => setMobileNavOpen(false)} />
                   <ConsoleNavItem to="/console/admin/site" label={t('admin.navSiteSettings')} icon={Globe} onNavigate={() => setMobileNavOpen(false)} />
-                  <ConsoleNavItem to="/console/admin/appearance" label={t('admin.navAppearanceSettings', { defaultValue: '外观风格' })} icon={Palette} onNavigate={() => setMobileNavOpen(false)} />
                   <ConsoleNavItem to="/console/admin/access" label={t('admin.navAccessSettings')} icon={ShieldCheck} onNavigate={() => setMobileNavOpen(false)} />
-                  <ConsoleNavItem to="/console/admin/analytics" label={t('admin.navAnalyticsSettings')} icon={BarChart3} onNavigate={() => setMobileNavOpen(false)} />
                 </>
               )}
             </div>
@@ -164,9 +160,7 @@ export function ConsoleLayout() {
                   <ConsoleNavItem to="/console/admin/moderation" label={t('admin.navModeration', { defaultValue: '审核管理' })} icon={ShieldAlert} />
                   <ConsoleNavItem to="/console/admin/audit-logs" label={t('admin.navAuditLogs', { defaultValue: '审计日志' })} icon={ScrollText} />
                   <ConsoleNavItem to="/console/admin/site" label={t('admin.navSiteSettings')} icon={Globe} />
-                  <ConsoleNavItem to="/console/admin/appearance" label={t('admin.navAppearanceSettings', { defaultValue: '外观风格' })} icon={Palette} />
                   <ConsoleNavItem to="/console/admin/access" label={t('admin.navAccessSettings')} icon={ShieldCheck} />
-                  <ConsoleNavItem to="/console/admin/analytics" label={t('admin.navAnalyticsSettings')} icon={BarChart3} />
                 </div>
               </div>
             )}
