@@ -2,18 +2,18 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { 
-  UploadCloud, 
-  Image as ImageIcon, 
-  FolderOpen, 
-  KeySquare, 
-  Blocks, 
-  Settings, 
-  LayoutDashboard, 
-  Users, 
-  UsersRound, 
-  Database, 
-  Files, 
+import {
+  UploadCloud,
+  Image as ImageIcon,
+  FolderOpen,
+  KeySquare,
+  Blocks,
+  UserRound,
+  LayoutDashboard,
+  Users,
+  UsersRound,
+  Database,
+  Files,
   Globe,
   ScrollText,
   ShieldCheck,
@@ -21,7 +21,7 @@ import {
   ShieldAlert,
   Menu,
   Palette,
-  Wrench
+  Wrench,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -116,7 +116,7 @@ export function ConsoleLayout() {
               <ConsoleNavItem to="/console/albums" label={t('nav.albums')} icon={FolderOpen} onNavigate={() => setMobileNavOpen(false)} />
               <ConsoleNavItem to="/console/api-tokens" label={t('nav.apiTokens')} icon={KeySquare} onNavigate={() => setMobileNavOpen(false)} />
               <ConsoleNavItem to="/console/integrations" label={t('connections.title', { defaultValue: '接入' })} icon={Blocks} onNavigate={() => setMobileNavOpen(false)} />
-              <ConsoleNavItem to="/console/settings" label={t('nav.settings')} icon={Settings} onNavigate={() => setMobileNavOpen(false)} />
+              <ConsoleNavItem to="/console/account" label={t('nav.account')} icon={UserRound} onNavigate={() => setMobileNavOpen(false)} />
               {user?.role === 'admin' && (
                 <>
                   <p className="mt-4 px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
@@ -150,7 +150,7 @@ export function ConsoleLayout() {
               <ConsoleNavItem to="/console/albums" label={t('nav.albums')} icon={FolderOpen} />
               <ConsoleNavItem to="/console/api-tokens" label={t('nav.apiTokens')} icon={KeySquare} />
               <ConsoleNavItem to="/console/integrations" label={t('connections.title', { defaultValue: '接入' })} icon={Blocks} />
-              <ConsoleNavItem to="/console/settings" label={t('nav.settings')} icon={Settings} />
+              <ConsoleNavItem to="/console/account" label={t('nav.account')} icon={UserRound} />
             </div>
             {user?.role === 'admin' && (
               <div className="mt-4 pt-4 border-t border-border/40">

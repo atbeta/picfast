@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button'
 import { UploadZone } from '../../components/upload-zone'
 import { UploadResultCard } from '../../components/upload-result'
+import { ImageProcessingDialog } from '../../components/image-processing-dialog'
 import { getStrategies, uploadImageAuth, listAlbums } from '../../lib/console-api'
 import type { ImageItem, Strategy, Album } from '../../lib/console-api'
 import { useAuth } from '../../lib/auth-context'
@@ -201,7 +202,7 @@ export function UploadPage() {
           {/* Permission Selector */}
           <div className="flex h-10 items-center gap-3 rounded-lg border border-border/50 bg-card px-3 shadow-sm text-sm">
             <span className="text-muted-foreground font-medium">{t('images.permission', { defaultValue: '权限:' })}</span>
-            <Select 
+            <Select
               value={selectedPermission?.toString() ?? '1'}
               onValueChange={(val) => val !== null && onPermissionChange(val as string)}
               items={{
@@ -218,6 +219,9 @@ export function UploadPage() {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Image processing settings popover */}
+          <ImageProcessingDialog />
         </div>
       </div>
 

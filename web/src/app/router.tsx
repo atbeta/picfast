@@ -14,7 +14,7 @@ import { PublicLayout } from '../pages/layouts/public-layout'
 const AlbumsPage = lazy(async () => ({ default: (await import('../pages/console/albums-page')).AlbumsPage }))
 const ApiTokensPage = lazy(async () => ({ default: (await import('../pages/console/api-tokens-page')).ApiTokensPage }))
 const ImagesPage = lazy(async () => ({ default: (await import('../pages/console/images-page')).ImagesPage }))
-const SettingsPage = lazy(async () => ({ default: (await import('../pages/console/settings-page')).SettingsPage }))
+const AccountPage = lazy(async () => ({ default: (await import('../pages/console/account-page')).AccountPage }))
 const IntegrationsPage = lazy(async () => ({ default: (await import('../pages/console/integrations-page')).IntegrationsPage }))
 const UploadPage = lazy(async () => ({ default: (await import('../pages/console/upload-page')).UploadPage }))
 const AdminUsersPage = lazy(async () => ({ default: (await import('../pages/console/admin/users-page')).AdminUsersPage }))
@@ -173,7 +173,8 @@ function PublicRoutes() {
               <Route path="albums" element={<LazyPage><AlbumsPage /></LazyPage>} />
               <Route path="api-tokens" element={<LazyPage><ApiTokensPage /></LazyPage>} />
               <Route path="integrations" element={<LazyPage><IntegrationsPage /></LazyPage>} />
-              <Route path="settings" element={<LazyPage><SettingsPage /></LazyPage>} />
+              <Route path="account" element={<LazyPage><AccountPage /></LazyPage>} />
+              <Route path="settings" element={<Navigate to="/console/account" replace />} />
               <Route path="admin" element={<RequireAdmin />}>
                 <Route index element={<LazyPage><AdminDashboardPage /></LazyPage>} />
                 <Route path="users" element={<LazyPage><AdminUsersPage /></LazyPage>} />
