@@ -127,7 +127,7 @@ export function ImageProcessingDialog() {
       >
         <Settings className="size-4" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>{t('settings.imageProcessing', { defaultValue: '图片处理' })}</DialogTitle>
           <p className="text-sm text-muted-foreground">
