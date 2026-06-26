@@ -146,14 +146,13 @@ export function AdminSiteSettingsPage() {
           <h3 className="text-sm font-semibold text-foreground">{t('admin.themeCustomCss')}</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.themeCustomCssHint')}</p>
         </div>
-        <SettingField label={t('admin.themeCustomCssScope')}>
-          <textarea
-            id="theme_custom_css"
-            {...register('theme_custom_css')}
-            spellCheck={false}
-            className={`${fieldTextareaCls} min-h-40 font-mono`}
-          />
-        </SettingField>
+        <textarea
+          id="theme_custom_css"
+          {...register('theme_custom_css')}
+          spellCheck={false}
+          className={`${fieldTextareaCls} min-h-40 font-mono`}
+        />
+        <p className="mt-2 text-xs leading-5 text-muted-foreground">{t('admin.themeCustomCssScope')}</p>
       </div>
 
       <div className="border-t border-border/40 pt-6">
