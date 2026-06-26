@@ -3,17 +3,6 @@ import { defaultThemeConfig, mergeThemeConfig } from './theme-config'
 import type { CopyPreferences } from './copy-template'
 import { normalizeCopyFormat } from './copy-template'
 
-// ── Layer ──────────────────────────────────────────────────────────
-export type PersonalizationLayer = 'site' | 'user'
-
-// ── Type ───────────────────────────────────────────────────────────
-export type PersonalizationType = 'theme' | 'mode' | 'output' | 'workflow' | 'account'
-
-export interface OverridePolicy {
-  overridable: boolean | 'conditional'
-  conditionKey?: string
-}
-
 // ── Theme override (user-scoped, persisted in users.settings.theme_override) ─
 export interface ThemeOverride {
   preset?: string
@@ -234,46 +223,3 @@ export function buildThemeOverridePayload(
   if (override.motion) payload.motion = override.motion
   return Object.keys(payload).length > 0 ? payload : undefined
 }
-
-// ── Layer × Type matrix (for documentation / UI generation) ────────
-export interface KeyMeta {
-  key: string
-  type: PersonalizationType
-  layer: PersonalizationLayer | 'both'
-  overridable: boolean | 'conditional'
-  conditionKey?: string
-  description: string
-}
-
-export const PERSONALIZATION_KEYS: KeyMeta[] = [
-  { key: 'theme_config', type: 'theme', layer: 'site', overridable: false, description: 'Site theme preset, tokens, custom CSS' },
-  { key: 'app_name', type: 'theme', layer: 'site', overridable: false, description: 'Application name' },
-  { key: 'favicon_url', type: 'theme', layer: 'site', overridable: false, description: 'Favicon URL' },
-  { key: 'logo_shape', type: 'theme', layer: 'site', overridable: false, description: 'Logo border-radius shape' },
-  { key: 'background_image', type: 'theme', layer: 'site', overridable: false, description: 'Public page background image' },
-  { key: 'background_style', type: 'theme', layer: 'site', overridable: false, description: 'Public page background style' },
-  { key: 'footer_text_1', type: 'theme', layer: 'site', overridable: false, description: 'Footer text line 1' },
-  { key: 'footer_link_1', type: 'theme', layer: 'site', overridable: false, description: 'Footer link line 1' },
-  { key: 'footer_text_2', type: 'theme', layer: 'site', overridable: false, description: 'Footer text line 2' },
-  { key: 'footer_link_2', type: 'theme', layer: 'site', overridable: false, description: 'Footer link line 2' },
-  { key: 'theme_override', type: 'theme', layer: 'user', overridable: true, description: 'User theme preset override' },
-
-  { key: 'mode', type: 'mode', layer: 'both', overridable: true, description: 'Light/dark/system color mode' },
-  { key: 'density', type: 'mode', layer: 'site', overridable: true, description: 'UI density (compact/comfortable/spacious), overridden via theme_override' },
-  { key: 'motion', type: 'mode', layer: 'site', overridable: true, description: 'Animation (none/subtle/playful), overridden via theme_override' },
-  { key: 'language', type: 'mode', layer: 'user', overridable: true, description: 'UI language' },
-
-  { key: 'default_copy_format', type: 'output', layer: 'both', overridable: true, description: 'Default copy link format' },
-  { key: 'copy_template', type: 'output', layer: 'both', overridable: true, description: 'Custom copy template' },
-
-  { key: 'default_strategy', type: 'workflow', layer: 'user', overridable: true, description: 'Default upload storage strategy' },
-  { key: 'default_album', type: 'workflow', layer: 'user', overridable: true, description: 'Default upload album' },
-  { key: 'default_permission', type: 'workflow', layer: 'user', overridable: true, description: 'Default upload permission' },
-  { key: 'image_processing', type: 'workflow', layer: 'user', overridable: 'conditional', conditionKey: 'allow_user_image_processing', description: 'Image processing preferences' },
-  { key: 'allow_user_image_processing', type: 'workflow', layer: 'site', overridable: false, description: 'Allow users to configure image processing' },
-  { key: 'skip_image_processing', type: 'workflow', layer: 'site', overridable: false, description: 'Skip all server-side image processing' },
-
-  { key: 'account_name', type: 'account', layer: 'user', overridable: true, description: 'Display name' },
-  { key: 'account_email', type: 'account', layer: 'user', overridable: false, description: 'Email address' },
-  { key: 'account_role', type: 'account', layer: 'user', overridable: false, description: 'User role' },
-]

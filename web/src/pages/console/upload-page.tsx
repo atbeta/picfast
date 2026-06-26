@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { XIcon, CheckCircle2, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import { Button } from '@/components/ui/button'
@@ -49,8 +50,10 @@ export function UploadPage() {
     migrateLocalStorageToServer(
       (data) => updateProfile(data),
       user.settings as Record<string, unknown> | undefined,
-    ).catch(() => {})
-  }, [user, updateProfile])
+    ).catch(() => {
+      toast.warning(t('settings.syncFailed', { defaultValue: '偏好同步失败，将在下次登录重试' }))
+    })
+  }, [user, updateProfile, t])
 
   useEffect(() => {
     getStrategies()

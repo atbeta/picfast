@@ -73,6 +73,11 @@ export function SettingsPage() {
   const oauthProviders = siteConfig?.oauth_providers ?? []
   const unlinkedProviders = oauthProviders.filter((p) => !linkedProviders.has(p.id))
 
+  const visibleTabs = TABS.filter(tab => {
+    if (tab.id === 'accounts' && oauthProviders.length === 0 && oauthIdentities.length === 0) return false
+    return true
+  })
+
   return (
     <section className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">{t('page.settings.title')}</h1>
@@ -84,7 +89,7 @@ export function SettingsPage() {
       )}
 
       <div className="flex flex-wrap gap-1 border-b border-border/40 pb-0">
-        {TABS.map((tab) => (
+        {visibleTabs.map((tab) => (
           <button
             key={tab.id}
             type="button"

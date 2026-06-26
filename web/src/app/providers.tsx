@@ -13,9 +13,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <SiteThemeRuntime />
         <BrowserRouter>
           <AuthProvider>
+            <SiteThemeRuntime />
             {children}
             <Toaster />
           </AuthProvider>
