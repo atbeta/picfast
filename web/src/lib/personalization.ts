@@ -1,10 +1,6 @@
-import type { CopyPreferences } from './copy-template'
-import { normalizeCopyFormat } from './copy-template'
-
 export interface PersonalizationState {
   theme: { customCSS: string }
   mode: { colorMode: 'light' | 'dark' | 'system'; language: string }
-  output: CopyPreferences
   workflow: PersonalizationWorkflow
   account: PersonalizationAccount
 }
@@ -22,18 +18,6 @@ export interface PersonalizationAccount {
   name: string
   email: string
   role: string
-}
-
-export function getEffectiveCopyPreferences(
-  siteCopyFormat: string | null | undefined,
-  siteCopyTemplate: string | null | undefined,
-  userCopyFormat: string | null | undefined,
-  userCopyTemplate: string | null | undefined,
-): CopyPreferences {
-  return {
-    format: normalizeCopyFormat(userCopyFormat ?? siteCopyFormat),
-    template: (userCopyTemplate ?? siteCopyTemplate ?? '').trim(),
-  }
 }
 
 function pickNumber(serverVal: unknown, localVal: string | null): number | null {

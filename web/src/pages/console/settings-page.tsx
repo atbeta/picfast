@@ -11,14 +11,12 @@ import { Button } from '@/components/ui/button'
 
 import { AccountPanel } from './settings/account-panel'
 import { WorkflowPanel } from './settings/workflow-panel'
-import { OutputPanel } from './settings/output-panel'
 
-type SettingsTab = 'account' | 'upload' | 'output' | 'accounts'
+type SettingsTab = 'account' | 'upload' | 'accounts'
 
 const TABS: { id: SettingsTab; labelKey: string }[] = [
   { id: 'account', labelKey: 'settings.tabAccount' },
   { id: 'upload', labelKey: 'settings.tabUpload' },
-  { id: 'output', labelKey: 'settings.tabOutput' },
   { id: 'accounts', labelKey: 'settings.tabConnectedAccounts' },
 ]
 
@@ -107,7 +105,6 @@ export function SettingsPage() {
       <div className="pb-8">
         {activeTab === 'account' && <AccountPanel />}
         {activeTab === 'upload' && <WorkflowPanel />}
-        {activeTab === 'output' && <OutputPanel />}
         {activeTab === 'accounts' && (
           <div className="space-y-6">
             <div>

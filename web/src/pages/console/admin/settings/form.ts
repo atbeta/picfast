@@ -37,8 +37,6 @@ export interface SettingsForm {
   analytics_connect_src: string
   analytics_script_src: string
   theme_custom_css: string
-  default_copy_format: string
-  copy_template: string
 }
 
 export const fieldInputCls = 'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/20'
@@ -74,8 +72,6 @@ const defaultValues: SettingsForm = {
   analytics_connect_src: '',
   analytics_script_src: '',
   theme_custom_css: '',
-  default_copy_format: 'markdown',
-  copy_template: '',
 }
 
 const ttlOptions = new Set(['0', '24h', '168h', '720h', '2160h'])
@@ -131,8 +127,6 @@ function settingsToForm(data: AdminSettings): SettingsForm {
     analytics_connect_src: Array.isArray(data.analytics_config?.connect_src) ? (data.analytics_config.connect_src as string[]).join(', ') : '',
     analytics_script_src: Array.isArray(data.analytics_config?.script_src) ? (data.analytics_config.script_src as string[]).join(', ') : '',
     theme_custom_css: rawTheme?.custom_css || '',
-    default_copy_format: data.default_copy_format || 'markdown',
-    copy_template: data.copy_template || '',
   }
 }
 

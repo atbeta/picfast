@@ -4,8 +4,6 @@ import { formatFileSize } from '../lib/upload'
 import { Copy, Check, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { copyToClipboard } from '@/lib/clipboard'
-import { resolveCopyText } from '@/lib/copy-template'
-import { copyFormatLabelKey, useCopyPreferences } from '@/lib/use-copy-preferences'
 
 interface UploadResultLike {
   permission?: number
@@ -62,17 +60,10 @@ function CopyRow({ item }: { item: CopyItem }) {
 
 export function UploadResultCard({ result }: UploadResultCardProps) {
   const { t } = useTranslation()
-  const copyPrefs = useCopyPreferences()
-  const primaryCopyText = resolveCopyText(result.links, {
-    name: result.origin_name,
-    extension: result.extension,
-    width: result.width,
-    height: result.height,
-  }, copyPrefs)
   const [primaryCopied, setPrimaryCopied] = useState(false)
 
   const copyPrimary = async () => {
-    await copyToClipboard(primaryCopyText)
+    await copyToClipboard(result.links.markdown)
     setPrimaryCopied(true)
     setTimeout(() => setPrimaryCopied(false), 2000)
   }
@@ -145,7 +136,7 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
                 className="gap-2"
               >
                 {primaryCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                {primaryCopied ? t('upload.copied') : t(copyFormatLabelKey(copyPrefs.format))}
+                {primaryCopied ? t('upload.copied') : 'Markdown'}
               </Button>
               <a
               href={result.links.url} 

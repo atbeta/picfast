@@ -56,8 +56,6 @@ type updateSettingsRequest struct {
 	AnalyticsProvider        *string          `json:"analytics_provider"`
 	AnalyticsConfig          *json.RawMessage `json:"analytics_config"`
 	ThemeConfig              *json.RawMessage `json:"theme_config"`
-	DefaultCopyFormat        *string          `json:"default_copy_format"`
-	CopyTemplate             *string          `json:"copy_template"`
 }
 
 func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -217,22 +215,6 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 		h.setter.SetThemeConfig(themeConfig)
 	}
-	if req.DefaultCopyFormat != nil || req.CopyTemplate != nil {
-		format := h.config.AppSnapshot().DefaultCopyFormat
-		template := h.config.AppSnapshot().CopyTemplate
-		if req.DefaultCopyFormat != nil {
-			format = strings.TrimSpace(*req.DefaultCopyFormat)
-		}
-		if req.CopyTemplate != nil {
-			template = *req.CopyTemplate
-		}
-		if err := validateCopySettings(format, template); err != nil {
-			Fail(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		h.setter.SetDefaultCopyFormat(format)
-		h.setter.SetCopyTemplate(template)
-	}
 	if err := h.persist(r.Context()); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to persist settings")
 		return
@@ -272,8 +254,6 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 		AnalyticsProvider:        app.AnalyticsProvider,
 		AnalyticsConfig:          normalizedRawMessage(app.AnalyticsConfig),
 		ThemeConfig:              normalizedRawMessage(app.ThemeConfig),
-		DefaultCopyFormat:        app.DefaultCopyFormat,
-		CopyTemplate:             app.CopyTemplate,
 	})
 	return err
 }
@@ -303,8 +283,6 @@ func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string
 		"analytics_provider":          app.AnalyticsProvider,
 		"analytics_config":            normalizedRawMessage(app.AnalyticsConfig),
 		"theme_config":                normalizedRawMessage(app.ThemeConfig),
-		"default_copy_format":           app.DefaultCopyFormat,
-		"copy_template":                 app.CopyTemplate,
 	}
 	if includeMailReady {
 		resp["require_email_verification"] = app.RequireEmailVerification && h.mailReady
@@ -328,18 +306,6 @@ func validateThemeConfig(raw json.RawMessage) error {
 	}
 	if css, ok := cfg["custom_css"].(string); ok && len(css) > 20000 {
 		return &badRequestError{"theme_config custom_css is too large"}
-	}
-	return nil
-}
-
-func validateCopySettings(format, template string) error {
-	switch format {
-	case "url", "markdown", "html", "bbcode", "thumbnail", "custom":
-	default:
-		return &badRequestError{"invalid default_copy_format"}
-	}
-	if len(template) > 4000 {
-		return &badRequestError{"copy_template is too large"}
 	}
 	return nil
 }

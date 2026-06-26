@@ -18,7 +18,6 @@ var (
 	errInvalidSettingsType = errors.New("invalid settings value type")
 )
 
-var validCopyFormats = map[string]bool{"url": true, "markdown": true, "html": true, "bbcode": true, "thumbnail": true, "custom": true}
 var validImageFormats = map[string]bool{"": true, "origin": true, "jpeg": true, "jpg": true, "png": true, "webp": true}
 
 var knownUserSettingsKeys = map[string]bool{
@@ -26,8 +25,6 @@ var knownUserSettingsKeys = map[string]bool{
 	"default_album":      true,
 	"default_permission": true,
 	"image_processing":   true,
-	"default_copy_format": true,
-	"copy_template":       true,
 	"language":            true,
 }
 
@@ -44,16 +41,6 @@ func validateUserSettings(raw json.RawMessage) error {
 	for key := range m {
 		if !knownUserSettingsKeys[key] {
 			return fmt.Errorf("%w: %s", errUnknownSettingsKey, key)
-		}
-	}
-
-	if rawCF, ok := m["default_copy_format"]; ok {
-		var cf string
-		if err := json.Unmarshal(rawCF, &cf); err != nil {
-			return fmt.Errorf("default_copy_format: %w", errInvalidSettingsType)
-		}
-		if cf != "" && !validCopyFormats[cf] {
-			return fmt.Errorf("default_copy_format: must be one of url, markdown, html, bbcode, thumbnail, custom")
 		}
 	}
 
