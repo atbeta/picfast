@@ -314,96 +314,20 @@ func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string
 }
 
 func validateThemeConfig(raw json.RawMessage) error {
+	if len(normalizedRawMessage(raw)) == 0 {
+		return nil
+	}
 	var cfg map[string]any
 	if err := json.Unmarshal(normalizedRawMessage(raw), &cfg); err != nil {
 		return &badRequestError{"invalid theme_config"}
 	}
-	allowedKeys := map[string]bool{
-		"preset": true, "mode": true, "tokens": true, "public": true, "custom_css": true,
-	}
 	for key := range cfg {
-		if !allowedKeys[key] {
+		if key != "custom_css" {
 			return &badRequestError{"theme_config contains unknown field"}
 		}
 	}
 	if css, ok := cfg["custom_css"].(string); ok && len(css) > 20000 {
 		return &badRequestError{"theme_config custom_css is too large"}
-	}
-	if preset, ok := cfg["preset"].(string); ok && len(preset) > 80 {
-		return &badRequestError{"theme_config preset is too long"}
-	}
-	if mode, ok := cfg["mode"].(string); ok && mode != "" {
-		switch mode {
-		case "light", "dark", "system":
-		default:
-			return &badRequestError{"theme_config mode is invalid"}
-		}
-	}
-	if public, ok := cfg["public"].(map[string]any); ok {
-		if backgroundImage := stringValue(public["background_image"]); backgroundImage != "" {
-			if err := validateOptionalURL(backgroundImage); err != nil {
-				return &badRequestError{"theme_config background_image is invalid"}
-			}
-		}
-		if style := stringValue(public["background_style"]); style != "" {
-			switch style {
-			case "soft", "clean", "image":
-			default:
-				return &badRequestError{"theme_config background_style is invalid"}
-			}
-		}
-		if logoShape := stringValue(public["logo_shape"]); logoShape != "" {
-			switch logoShape {
-			case "rounded", "circle", "square":
-			default:
-				return &badRequestError{"theme_config logo_shape is invalid"}
-			}
-		}
-		for _, field := range []struct {
-			key    string
-			values []string
-		}{
-			{"density", []string{"compact", "comfortable", "spacious"}},
-			{"motion", []string{"none", "subtle", "playful"}},
-		} {
-			raw := stringValue(public[field.key])
-			if raw == "" {
-				continue
-			}
-			ok := false
-			for _, allowed := range field.values {
-				if raw == allowed {
-					ok = true
-					break
-				}
-			}
-			if !ok {
-				return &badRequestError{"theme_config " + field.key + " is invalid"}
-			}
-		}
-	}
-	if tokens, ok := cfg["tokens"].(map[string]any); ok {
-		for _, mode := range []string{"light", "dark"} {
-			values, ok := tokens[mode].(map[string]any)
-			if !ok {
-				continue
-			}
-			for key, rawValue := range values {
-				value, ok := rawValue.(string)
-				if !ok || strings.TrimSpace(value) == "" {
-					continue
-				}
-				if key == "radius" {
-					if !isSafeCSSLength(value) {
-						return &badRequestError{"theme_config radius is invalid"}
-					}
-					continue
-				}
-				if !isSafeCSSColor(value) {
-					return &badRequestError{"theme_config color is invalid"}
-				}
-			}
-		}
 	}
 	return nil
 }

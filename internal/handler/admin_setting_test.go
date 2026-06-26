@@ -198,18 +198,6 @@ func TestAdminSettingsPersistThemeConfig(t *testing.T) {
 
 	body := map[string]interface{}{
 		"theme_config": map[string]interface{}{
-			"preset": "moe",
-			"mode":   "system",
-			"tokens": map[string]interface{}{
-				"light": map[string]interface{}{
-					"primary": "oklch(0.68 0.18 345)",
-					"radius":  "1rem",
-				},
-			},
-			"public": map[string]interface{}{
-				"background_style": "soft",
-				"logo_shape":       "circle",
-			},
 			"custom_css": ".pf-custom { color: var(--primary); }",
 		},
 	}
@@ -225,8 +213,8 @@ func TestAdminSettingsPersistThemeConfig(t *testing.T) {
 	if !ok {
 		t.Fatalf("theme_config = %T, want object", data["theme_config"])
 	}
-	if theme["preset"] != "moe" {
-		t.Fatalf("theme preset = %v", theme["preset"])
+	if theme["custom_css"] != ".pf-custom { color: var(--primary); }" {
+		t.Fatalf("theme custom_css = %v", theme["custom_css"])
 	}
 
 	settings, err := env.DB.GetSiteSettings(req.Context())
@@ -237,28 +225,8 @@ func TestAdminSettingsPersistThemeConfig(t *testing.T) {
 	if err := json.Unmarshal(settings.ThemeConfig, &persisted); err != nil {
 		t.Fatalf("unmarshal theme config: %v", err)
 	}
-	if persisted["preset"] != "moe" {
-		t.Fatalf("persisted theme preset = %v", persisted["preset"])
-	}
-}
-
-func TestAdminSettingsRejectsInvalidThemeBackgroundImage(t *testing.T) {
-	env := newTestEnv(t)
-	_, group, admin := env.seedSetup(t)
-	makeAdmin(t, env, admin.ID)
-
-	body := map[string]interface{}{
-		"theme_config": map[string]interface{}{
-			"public": map[string]interface{}{
-				"background_image": "javascript:alert(1)",
-			},
-		},
-	}
-	req := env.authReq(t, http.MethodPut, "/api/v1/admin/settings", body, admin.ID, domain.RoleAdmin, group.ID)
-	rec := doReq(env.Router, req)
-
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d, want 400; body: %s", rec.Code, rec.Body.String())
+	if persisted["custom_css"] != ".pf-custom { color: var(--primary); }" {
+		t.Fatalf("persisted theme custom_css = %v", persisted["custom_css"])
 	}
 }
 
@@ -288,28 +256,6 @@ func TestAdminSettingsRejectsUnknownThemeField(t *testing.T) {
 	body := map[string]interface{}{
 		"theme_config": map[string]interface{}{
 			"app_name": "evil",
-		},
-	}
-	req := env.authReq(t, http.MethodPut, "/api/v1/admin/settings", body, admin.ID, domain.RoleAdmin, group.ID)
-	rec := doReq(env.Router, req)
-
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d, want 400; body: %s", rec.Code, rec.Body.String())
-	}
-}
-
-func TestAdminSettingsRejectsInvalidThemeColor(t *testing.T) {
-	env := newTestEnv(t)
-	_, group, admin := env.seedSetup(t)
-	makeAdmin(t, env, admin.ID)
-
-	body := map[string]interface{}{
-		"theme_config": map[string]interface{}{
-			"tokens": map[string]interface{}{
-				"light": map[string]interface{}{
-					"primary": "definitely-not-a-color",
-				},
-			},
 		},
 	}
 	req := env.authReq(t, http.MethodPut, "/api/v1/admin/settings", body, admin.ID, domain.RoleAdmin, group.ID)

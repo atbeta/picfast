@@ -18,9 +18,6 @@ var (
 	errInvalidSettingsType = errors.New("invalid settings value type")
 )
 
-var validThemeModes = map[string]bool{"light": true, "dark": true, "system": true}
-var validDensities = map[string]bool{"compact": true, "comfortable": true, "spacious": true}
-var validMotions = map[string]bool{"none": true, "subtle": true, "playful": true}
 var validCopyFormats = map[string]bool{"url": true, "markdown": true, "html": true, "bbcode": true, "thumbnail": true, "custom": true}
 var validImageFormats = map[string]bool{"": true, "origin": true, "jpeg": true, "jpg": true, "png": true, "webp": true}
 
@@ -31,7 +28,6 @@ var knownUserSettingsKeys = map[string]bool{
 	"image_processing":   true,
 	"default_copy_format": true,
 	"copy_template":       true,
-	"theme_override":      true,
 	"language":            true,
 }
 
@@ -48,29 +44,6 @@ func validateUserSettings(raw json.RawMessage) error {
 	for key := range m {
 		if !knownUserSettingsKeys[key] {
 			return fmt.Errorf("%w: %s", errUnknownSettingsKey, key)
-		}
-	}
-
-	if rawTO, ok := m["theme_override"]; ok {
-		var to domain.ThemeOverride
-		if err := json.Unmarshal(rawTO, &to); err != nil {
-			return fmt.Errorf("theme_override: %w", errInvalidSettingsType)
-		}
-		for k := range mustMap(rawTO) {
-			switch k {
-			case "preset", "mode", "density", "motion":
-			default:
-				return fmt.Errorf("%w: theme_override.%s", errUnknownSettingsKey, k)
-			}
-		}
-		if to.Mode != "" && !validThemeModes[to.Mode] {
-			return fmt.Errorf("theme_override.mode: must be light, dark, or system")
-		}
-		if to.Density != "" && !validDensities[to.Density] {
-			return fmt.Errorf("theme_override.density: must be compact, comfortable, or spacious")
-		}
-		if to.Motion != "" && !validMotions[to.Motion] {
-			return fmt.Errorf("theme_override.motion: must be none, subtle, or playful")
 		}
 	}
 

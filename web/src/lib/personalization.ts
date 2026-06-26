@@ -1,57 +1,12 @@
-import type { ThemeConfig, ThemeMode, ThemeTokenSet } from './theme-config'
-import { defaultThemeConfig, mergeThemeConfig } from './theme-config'
 import type { CopyPreferences } from './copy-template'
 import { normalizeCopyFormat } from './copy-template'
 
-// ── Theme override (user-scoped, persisted in users.settings.theme_override) ─
-export interface ThemeOverride {
-  preset?: string
-  mode?: ThemeMode
-  density?: 'compact' | 'comfortable' | 'spacious'
-  motion?: 'none' | 'subtle' | 'playful'
-}
-
-export const DENSITY_VALUES: Record<string, number> = {
-  compact: 0.75,
-  comfortable: 1,
-  spacious: 1.25,
-}
-
-export const MOTION_VALUES: Record<string, string> = {
-  none: '0ms',
-  subtle: '150ms',
-  playful: '300ms',
-}
-
-// ── Personalization state (the single source of truth) ─────────────
 export interface PersonalizationState {
-  theme: PersonalizationTheme
-  mode: PersonalizationMode
+  theme: { customCSS: string }
+  mode: { colorMode: 'light' | 'dark' | 'system'; language: string }
   output: CopyPreferences
   workflow: PersonalizationWorkflow
   account: PersonalizationAccount
-}
-
-export interface PersonalizationTheme {
-  preset: string
-  config: ThemeConfig
-  tokens: {
-    light: ThemeTokenSet
-    dark: ThemeTokenSet
-  }
-  customCSS: string
-  logoShape: 'rounded' | 'circle' | 'square'
-  backgroundImage: string
-  backgroundStyle: 'soft' | 'clean' | 'image'
-}
-
-export interface PersonalizationMode {
-  colorMode: ThemeMode
-  density: 'compact' | 'comfortable' | 'spacious'
-  motion: 'none' | 'subtle' | 'playful'
-  densityValue: number
-  motionDuration: string
-  language: string
 }
 
 export interface PersonalizationWorkflow {
@@ -69,54 +24,6 @@ export interface PersonalizationAccount {
   role: string
 }
 
-// ── Effective theme computation ────────────────────────────────────
-export function getEffectiveTheme(
-  siteThemeConfig: ThemeConfig | null | undefined,
-  userOverride: ThemeOverride | null | undefined,
-): { config: ThemeConfig; preset: string } {
-  const merged = mergeThemeConfig(siteThemeConfig ?? undefined)
-
-  if (userOverride?.preset) {
-    return {
-      preset: userOverride.preset,
-      config: mergeThemeConfig({ ...siteThemeConfig ?? {}, preset: userOverride.preset }),
-    }
-  }
-
-  return {
-    preset: merged.preset ?? defaultThemeConfig.preset ?? 'default',
-    config: merged,
-  }
-}
-
-// ── Mode computation ───────────────────────────────────────────────
-export function getEffectiveMode(
-  siteThemeMode: ThemeMode | undefined,
-  userOverride: ThemeOverride | null | undefined,
-  fallbackMode: ThemeMode,
-): ThemeMode {
-  return userOverride?.mode ?? siteThemeMode ?? fallbackMode
-}
-
-export function getEffectiveDensity(
-  siteThemeConfig: ThemeConfig | null | undefined,
-  userOverride: ThemeOverride | null | undefined,
-): 'compact' | 'comfortable' | 'spacious' {
-  const merged = mergeThemeConfig(siteThemeConfig ?? undefined)
-  const siteDefault = merged.public?.density ?? 'comfortable'
-  return userOverride?.density ?? siteDefault
-}
-
-export function getEffectiveMotion(
-  siteThemeConfig: ThemeConfig | null | undefined,
-  userOverride: ThemeOverride | null | undefined,
-): 'none' | 'subtle' | 'playful' {
-  const merged = mergeThemeConfig(siteThemeConfig ?? undefined)
-  const siteDefault = merged.public?.motion ?? 'subtle'
-  return userOverride?.motion ?? siteDefault
-}
-
-// ── Copy preferences computation ───────────────────────────────────
 export function getEffectiveCopyPreferences(
   siteCopyFormat: string | null | undefined,
   siteCopyTemplate: string | null | undefined,
@@ -129,7 +36,12 @@ export function getEffectiveCopyPreferences(
   }
 }
 
-// ── Workflow computation ───────────────────────────────────────────
+function pickNumber(serverVal: unknown, localVal: string | null): number | null {
+  if (serverVal != null) return Number(serverVal)
+  if (localVal != null) return Number(localVal)
+  return null
+}
+
 export function getEffectiveWorkflow(
   userSettings: Record<string, unknown> | null | undefined,
   siteAllowUserImageProcessing: boolean,
@@ -150,13 +62,7 @@ export function getEffectiveWorkflow(
   }
 }
 
-function pickNumber(serverVal: unknown, localVal: string | null): number | null {
-  if (serverVal != null) return Number(serverVal)
-  if (localVal != null) return Number(localVal)
-  return null
-}
-
-// ── LocalStorage → server migration (v1 one-way) ────────────────────
+// ── LocalStorage → server migration (upload defaults) ─────────────────
 const MIGRATION_FLAG_KEY = 'pf-migrated-v1'
 
 const LOCAL_PREF_KEYS = [
@@ -210,16 +116,4 @@ export async function migrateLocalStorageToServer(
   } catch {
     return { migrated: false, reason: 'failed' }
   }
-}
-
-export function buildThemeOverridePayload(
-  override: ThemeOverride | null,
-): Record<string, unknown> | undefined {
-  if (!override) return undefined
-  const payload: Record<string, unknown> = {}
-  if (override.preset) payload.preset = override.preset
-  if (override.mode) payload.mode = override.mode
-  if (override.density) payload.density = override.density
-  if (override.motion) payload.motion = override.motion
-  return Object.keys(payload).length > 0 ? payload : undefined
 }

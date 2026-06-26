@@ -50,8 +50,9 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  --pf-public-bg-image: none;
-  --pf-public-bg-opacity: 0;
+  --pf-density: 1;
+  --pf-motion-duration: 150ms;
+  --pf-logo-radius: 0.75rem;
 }
 
 .dark {
@@ -107,38 +108,13 @@ body {
     sans-serif;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: var(--pf-public-bg-image);
-  background-position: center;
-  background-size: cover;
-  opacity: var(--pf-public-bg-opacity);
+.pf-site-logo {
+  border-radius: var(--pf-logo-radius);
 }
 
-html[data-pf-theme-background='clean'] .pf-public-glow {
-  display: none;
-}
-
-html[data-pf-theme-background='image'] .pf-public-glow {
-  opacity: var(--pf-public-glow-opacity, 0.45);
-}
-
-html[data-pf-theme-logo='circle'] .pf-site-logo {
-  border-radius: 9999px;
-}
-
-html[data-pf-theme-logo='square'] .pf-site-logo {
-  border-radius: var(--pf-logo-radius, calc(var(--radius) * 0.35));
-}
-
-/* Density & motion driven by CSS variables set via SiteThemeRuntime.
-   Components opt in with calc(gap * var(--pf-density)) /
-   transition-duration: var(--pf-motion-duration). No per-component
-   data-attribute selectors needed. */
+/* Density & motion are static site-wide CSS variables. Components
+   opt in with calc(gap * var(--pf-density)) / transition-duration:
+   var(--pf-motion-duration). Override per-site via custom_css. */
 
 /* ===== Dark-mode form controls ===== */
 /* These reset browser defaults that ignore Tailwind's dark variant */

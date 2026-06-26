@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { getAdminSettings, updateAdminSettings, type AdminSettings } from '@/lib/admin-api'
 import { extractErrorMessage } from '@/lib/error-handler'
-import { defaultThemeConfig, mergeThemeConfig, type ThemeConfig, type ThemeMode } from '@/lib/theme-config'
+import type { ThemeConfig } from '@/lib/theme-config'
 
 export interface SettingsForm {
   app_name: string
@@ -36,14 +36,6 @@ export interface SettingsForm {
   analytics_custom_script: string
   analytics_connect_src: string
   analytics_script_src: string
-  theme_preset: string
-  theme_mode: string
-  theme_primary: string
-  theme_accent: string
-  theme_radius: string
-  theme_background_image: string
-  theme_background_style: string
-  theme_logo_shape: string
   theme_custom_css: string
   default_copy_format: string
   copy_template: string
@@ -81,14 +73,6 @@ const defaultValues: SettingsForm = {
   analytics_custom_script: '',
   analytics_connect_src: '',
   analytics_script_src: '',
-  theme_preset: defaultThemeConfig.preset || 'default',
-  theme_mode: defaultThemeConfig.mode || 'system',
-  theme_primary: '',
-  theme_accent: '',
-  theme_radius: '',
-  theme_background_image: '',
-  theme_background_style: defaultThemeConfig.public?.background_style || 'soft',
-  theme_logo_shape: defaultThemeConfig.public?.logo_shape || 'rounded',
   theme_custom_css: '',
   default_copy_format: 'markdown',
   copy_template: '',
@@ -116,9 +100,7 @@ function settingString(value: unknown): string {
 }
 
 function settingsToForm(data: AdminSettings): SettingsForm {
-  const rawTheme = data.theme_config ?? {}
-  const theme = mergeThemeConfig(rawTheme)
-  const lightTokenOverrides = rawTheme.tokens?.light ?? {}
+  const rawTheme = data.theme_config ?? null
   return {
     app_name: data.app_name,
     app_url: data.app_url || '',
@@ -148,15 +130,7 @@ function settingsToForm(data: AdminSettings): SettingsForm {
     analytics_custom_script: settingString(data.analytics_config?.script),
     analytics_connect_src: Array.isArray(data.analytics_config?.connect_src) ? (data.analytics_config.connect_src as string[]).join(', ') : '',
     analytics_script_src: Array.isArray(data.analytics_config?.script_src) ? (data.analytics_config.script_src as string[]).join(', ') : '',
-    theme_preset: theme.preset || 'default',
-    theme_mode: theme.mode || 'system',
-    theme_primary: lightTokenOverrides.primary || '',
-    theme_accent: lightTokenOverrides.accent || '',
-    theme_radius: lightTokenOverrides.radius || '',
-    theme_background_image: theme.public?.background_image || '',
-    theme_background_style: theme.public?.background_style || 'soft',
-    theme_logo_shape: theme.public?.logo_shape || 'rounded',
-    theme_custom_css: theme.custom_css || '',
+    theme_custom_css: rawTheme?.custom_css || '',
     default_copy_format: data.default_copy_format || 'markdown',
     copy_template: data.copy_template || '',
   }
@@ -198,35 +172,7 @@ function parseCommaList(s: string): string[] {
 }
 
 export function themePayload(form: SettingsForm): ThemeConfig {
-  const mode = ['light', 'dark', 'system'].includes(form.theme_mode) ? form.theme_mode as ThemeMode : 'system'
-  const backgroundStyle = ['soft', 'clean', 'image'].includes(form.theme_background_style)
-    ? form.theme_background_style as 'soft' | 'clean' | 'image'
-    : 'soft'
-  const logoShape = ['rounded', 'circle', 'square'].includes(form.theme_logo_shape)
-    ? form.theme_logo_shape as 'rounded' | 'circle' | 'square'
-    : 'rounded'
   return {
-    preset: form.theme_preset || 'default',
-    mode,
-    tokens: {
-      light: {
-        primary: form.theme_primary.trim() || undefined,
-        accent: form.theme_accent.trim() || undefined,
-        ring: form.theme_primary.trim() || undefined,
-        radius: form.theme_radius.trim() || undefined,
-      },
-      dark: {
-        primary: form.theme_primary.trim() || undefined,
-        accent: form.theme_accent.trim() || undefined,
-        ring: form.theme_primary.trim() || undefined,
-        radius: form.theme_radius.trim() || undefined,
-      },
-    },
-    public: {
-      background_image: form.theme_background_image.trim(),
-      background_style: backgroundStyle,
-      logo_shape: logoShape,
-    },
     custom_css: form.theme_custom_css,
   }
 }
