@@ -61,13 +61,6 @@ func (c *GroupConfig) IsExtensionAllowed(ext string) bool {
 	return false
 }
 
-type ThemeOverride struct {
-	Preset  string `json:"preset,omitempty"`
-	Mode    string `json:"mode,omitempty"`    // light, dark, system
-	Density string `json:"density,omitempty"` // compact, comfortable, spacious
-	Motion  string `json:"motion,omitempty"`  // none, subtle, playful
-}
-
 type UserSettings struct {
 	DefaultAlbum      int64                        `json:"default_album,omitempty"`
 	DefaultStrategy   int64                        `json:"default_strategy,omitempty"`
