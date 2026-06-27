@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.16.0](https://github.com/atbeta/picfast/compare/v0.15.2...v0.16.0) (2026-06-27)
+
+
+### Features
+
+* **personalization:** unified preferences with Layer × Type matrix ([8f29b76](https://github.com/atbeta/picfast/commit/8f29b76adfd452eec86833383417ce2c6731a5ba))
+* **theme:** support user-scoped theme package import/export ([f36f928](https://github.com/atbeta/picfast/commit/f36f92878495ea869187b69f4d8ad3cb75c98b6e))
+
+
+### Bug Fixes
+
+* **admin:** stack custom CSS scope hint below the textarea ([7d3eb72](https://github.com/atbeta/picfast/commit/7d3eb7214ad9e36b3002f6cbe3c82a98c3ab2251))
+* **personalization:** toast on sync failure, AuthProvider context, i18n keys, rename to Personalization ([00c14ea](https://github.com/atbeta/picfast/commit/00c14eaa0084c7a30c68204f61984174b53ed2e3))
+* **ui:** widen image processing dialog to prevent horizontal scroll ([139b51f](https://github.com/atbeta/picfast/commit/139b51f033646f1192f7323e5d5d44564156a1d2))
+
 ## [0.15.2](https://github.com/atbeta/picfast/compare/v0.15.1...v0.15.2) (2026-06-22)
 
 
