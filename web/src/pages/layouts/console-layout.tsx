@@ -7,6 +7,7 @@ import {
   Image as ImageIcon,
   FolderOpen,
   KeySquare,
+  Webhook,
   Blocks,
   UserRound,
   LayoutDashboard,
@@ -112,6 +113,7 @@ export function ConsoleLayout() {
               <ConsoleNavItem to="/console/images" label={t('nav.images')} icon={ImageIcon} onNavigate={() => setMobileNavOpen(false)} />
               <ConsoleNavItem to="/console/albums" label={t('nav.albums')} icon={FolderOpen} onNavigate={() => setMobileNavOpen(false)} />
               <ConsoleNavItem to="/console/api-tokens" label={t('nav.apiTokens')} icon={KeySquare} onNavigate={() => setMobileNavOpen(false)} />
+              <ConsoleNavItem to="/console/webhooks" label={t('webhooks.title', { defaultValue: 'Webhooks' })} icon={Webhook} onNavigate={() => setMobileNavOpen(false)} />
               <ConsoleNavItem to="/console/integrations" label={t('connections.title', { defaultValue: '接入' })} icon={Blocks} onNavigate={() => setMobileNavOpen(false)} />
               <ConsoleNavItem to="/console/account" label={t('nav.account')} icon={UserRound} onNavigate={() => setMobileNavOpen(false)} />
               {user?.role === 'admin' && (
@@ -143,6 +145,7 @@ export function ConsoleLayout() {
               <ConsoleNavItem to="/console/images" label={t('nav.images')} icon={ImageIcon} />
               <ConsoleNavItem to="/console/albums" label={t('nav.albums')} icon={FolderOpen} />
               <ConsoleNavItem to="/console/api-tokens" label={t('nav.apiTokens')} icon={KeySquare} />
+              <ConsoleNavItem to="/console/webhooks" label={t('webhooks.title', { defaultValue: 'Webhooks' })} icon={Webhook} />
               <ConsoleNavItem to="/console/integrations" label={t('connections.title', { defaultValue: '接入' })} icon={Blocks} />
               <ConsoleNavItem to="/console/account" label={t('nav.account')} icon={UserRound} />
             </div>

@@ -13,6 +13,8 @@ import { PublicLayout } from '../pages/layouts/public-layout'
 
 const AlbumsPage = lazy(async () => ({ default: (await import('../pages/console/albums-page')).AlbumsPage }))
 const ApiTokensPage = lazy(async () => ({ default: (await import('../pages/console/api-tokens-page')).ApiTokensPage }))
+const WebhooksPage = lazy(async () => ({ default: (await import('../pages/console/webhooks-page')).WebhooksPage }))
+const WebhookDetailPage = lazy(async () => ({ default: (await import('../pages/console/webhook-detail-page')).WebhookDetailPage }))
 const ImagesPage = lazy(async () => ({ default: (await import('../pages/console/images-page')).ImagesPage }))
 const AccountPage = lazy(async () => ({ default: (await import('../pages/console/account-page')).AccountPage }))
 const IntegrationsPage = lazy(async () => ({ default: (await import('../pages/console/integrations-page')).IntegrationsPage }))
@@ -169,6 +171,8 @@ function PublicRoutes() {
               <Route path="images" element={<LazyPage><ImagesPage /></LazyPage>} />
               <Route path="albums" element={<LazyPage><AlbumsPage /></LazyPage>} />
               <Route path="api-tokens" element={<LazyPage><ApiTokensPage /></LazyPage>} />
+              <Route path="webhooks" element={<LazyPage><WebhooksPage /></LazyPage>} />
+              <Route path="webhooks/:id" element={<LazyPage><WebhookDetailPage /></LazyPage>} />
               <Route path="integrations" element={<LazyPage><IntegrationsPage /></LazyPage>} />
               <Route path="account" element={<LazyPage><AccountPage /></LazyPage>} />
               <Route path="settings" element={<Navigate to="/console/account" replace />} />

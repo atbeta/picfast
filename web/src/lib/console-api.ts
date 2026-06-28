@@ -161,3 +161,77 @@ export async function getStrategies(): Promise<Strategy[]> {
   const res = await api.get<ApiResponse<Strategy[]>>('/strategies')
   return res.data.data
 }
+
+// ============================================================
+// Webhooks
+// ============================================================
+
+export interface WebhookItem {
+  id: number
+  name: string
+  url: string
+  events: string[]
+  enabled: boolean
+  secret?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface WebhookDelivery {
+  id: number
+  webhook_id: number
+  status: string
+  attempt: number
+  max_attempts: number
+  next_retry_at: string
+  response_status: number | null
+  response_body: string
+  error_message: string
+  duration_ms: number | null
+  created_at: string
+  completed_at: string | null
+}
+
+export async function listWebhooks(): Promise<WebhookItem[]> {
+  const res = await api.get<ApiResponse<WebhookItem[]>>('/webhooks')
+  return res.data.data
+}
+
+export async function createWebhook(name: string, url: string, events: string[]): Promise<WebhookItem> {
+  const res = await api.post<ApiResponse<WebhookItem>>('/webhooks', { name, url, events })
+  return res.data.data
+}
+
+export async function getWebhook(id: number): Promise<WebhookItem> {
+  const res = await api.get<ApiResponse<WebhookItem>>(`/webhooks/${id}`)
+  return res.data.data
+}
+
+export async function updateWebhook(id: number, data: { name?: string; url?: string; events?: string[]; enabled?: boolean }): Promise<WebhookItem> {
+  const res = await api.put<ApiResponse<WebhookItem>>(`/webhooks/${id}`, data)
+  return res.data.data
+}
+
+export async function deleteWebhook(id: number): Promise<void> {
+  await api.delete(`/webhooks/${id}`)
+}
+
+export async function rotateWebhookSecret(id: number): Promise<{ secret: string }> {
+  const res = await api.post<ApiResponse<{ secret: string }>>(`/webhooks/${id}/rotate-secret`)
+  return res.data.data
+}
+
+export async function testWebhook(id: number): Promise<void> {
+  await api.post(`/webhooks/${id}/test`)
+}
+
+export async function listWebhookDeliveries(id: number, page = 1, pageSize = 20): Promise<PaginatedData<WebhookDelivery>> {
+  const res = await api.get<ApiResponse<PaginatedData<WebhookDelivery>>>(`/webhooks/${id}/deliveries`, {
+    params: { page, page_size: pageSize },
+  })
+  return res.data.data
+}
+
+export async function replayWebhookDelivery(deliveryId: number): Promise<void> {
+  await api.post(`/webhook-deliveries/${deliveryId}/replay`)
+}
