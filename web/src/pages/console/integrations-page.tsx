@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useState, useMemo } from 'react'
-import { PlugIcon, MonitorIcon, ImagePlus, Code, Copy, ChevronDown, KeyRound, Eye, EyeOff } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { PlugIcon, MonitorIcon, ImagePlus, Code, Copy, ChevronDown, KeyRound, Eye, EyeOff, Webhook } from 'lucide-react'
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { getSiteConfig } from '../../lib/site-config'
@@ -13,7 +14,7 @@ function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '')
 }
 
-type CardKey = 'mcp' | 'sharex' | 'flat' | 'vscode'
+type CardKey = 'mcp' | 'sharex' | 'flat' | 'vscode' | 'webhook'
 
 export function IntegrationsPage() {
   const { t } = useTranslation()
@@ -167,6 +168,7 @@ URL to file: %url%`,
     { key: 'sharex', icon: <MonitorIcon className="size-5" />, colorClass: 'bg-success/10 text-success' },
     { key: 'flat', icon: <ImagePlus className="size-5" />, colorClass: 'bg-warning/10 text-warning' },
     { key: 'vscode', icon: <Code className="size-5" />, colorClass: 'bg-purple-500/10 text-purple-500' },
+    { key: 'webhook', icon: <Webhook className="size-5" />, colorClass: 'bg-primary/10 text-primary' },
   ]
 
   const tokenApplied = activeToken && activeToken !== '<YOUR_API_TOKEN>'
@@ -472,6 +474,17 @@ URL to file: %url%`,
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {expanded === 'webhook' && (
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-5">
+          <h2 className="text-lg font-semibold">{t('webhooks.title', { defaultValue: 'Webhooks' })}</h2>
+          <p className="text-sm text-muted-foreground">{t('webhooks.emptyDesc', { defaultValue: '创建 Webhook 后将事件推送到外部服务（如 n8n、Zapier）。' })}</p>
+          <Link to="/console/webhooks" className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+            <Webhook className="size-4" />
+            {t('webhooks.title', { defaultValue: 'Webhooks' })}
+          </Link>
         </div>
       )}
     </section>

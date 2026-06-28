@@ -115,7 +115,7 @@ export function WebhookDetailPage() {
         </div>
 
         {filteredDeliveries.length === 0 ? (
-          <EmptyState title={t('webhooks.empty')} compact />
+          <EmptyState title={t('webhooks.deliveriesEmpty', { defaultValue: '暂无投递记录' })} compact />
         ) : (
           <div className="space-y-2">
             <div className="text-xs text-muted-foreground mb-2">

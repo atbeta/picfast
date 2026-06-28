@@ -280,3 +280,28 @@ func TestImagePipeline(t *testing.T) {
 		t.Fatalf("moderation is empty")
 	}
 }
+
+func TestImagePipelinePrivateBlocked(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, user := env.seedSetup(t)
+	other := testutil.SeedUser(t, env.DB, group.ID, "pipeline-blocked@example.com", "password123", string(domain.RoleUser))
+
+	token := env.generateToken(t, user.ID, domain.RoleUser, group.ID)
+	key := uploadAndGetKey(t, env, token)
+
+	// Set image to private
+	patchBody := map[string]int{"permission": 0}
+	patchReq := env.authReq(t, http.MethodPatch, "/api/v1/images/"+key, patchBody, user.ID, domain.RoleUser, group.ID)
+	patchRec := doReq(env.Router, patchReq)
+	if patchRec.Code != http.StatusOK {
+		t.Fatalf("patch status = %d, want 200; body: %s", patchRec.Code, patchRec.Body.String())
+	}
+
+	// Other user should get 404
+	req := env.authReq(t, http.MethodGet, "/api/v1/images/"+key+"/pipeline", nil, other.ID, domain.RoleUser, group.ID)
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", rec.Code)
+	}
+}
