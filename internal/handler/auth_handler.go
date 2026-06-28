@@ -15,6 +15,7 @@ import (
 	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/events"
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/jackc/pgx/v5"
@@ -31,18 +32,19 @@ const (
 )
 
 type AuthHandler struct {
-	db     *sqlc.Queries
-	pool   *pgxpool.Pool
-	jwt    *JWTService
-	config *config.Config
-	mail   mailservice.Sender
+	db      *sqlc.Queries
+	pool    *pgxpool.Pool
+	jwt     *JWTService
+	config  *config.Config
+	mail    mailservice.Sender
+	emitter events.Emitter
 }
 
-func NewAuthHandler(db *sqlc.Queries, pool *pgxpool.Pool, jwtSvc *JWTService, cfg *config.Config, sender mailservice.Sender) *AuthHandler {
+func NewAuthHandler(db *sqlc.Queries, pool *pgxpool.Pool, jwtSvc *JWTService, cfg *config.Config, sender mailservice.Sender, emitter events.Emitter) *AuthHandler {
 	if sender == nil {
 		sender = mailservice.NewNoopSender(false)
 	}
-	return &AuthHandler{db: db, pool: pool, jwt: jwtSvc, config: cfg, mail: sender}
+	return &AuthHandler{db: db, pool: pool, jwt: jwtSvc, config: cfg, mail: sender, emitter: emitter}
 }
 
 type RegisterRequest struct {
@@ -195,6 +197,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Fail(w, http.StatusInternalServerError, "failed to create user")
 		return
 	}
+
+	ev := events.BuildUserRegistered(user.ID, user.Email, user.Name, domain.PgInt8Val(user.GroupID), requiresVerification)
+	ev.Actor = events.UserActor(user.Email, user.Name, user.ID)
+	events.EmitAsync(h.emitter, ev)
 
 	if requiresVerification {
 		resp.VerificationEmailSent = h.sendVerificationEmail(

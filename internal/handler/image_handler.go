@@ -313,7 +313,7 @@ func (h *ImageHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.deleter.DeleteImage(r.Context(), img.ID); err != nil {
+	if err := h.deleter.DeleteImage(context.WithValue(r.Context(), domain.ContextKeyDeletedBy, "owner"), img.ID); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to delete image")
 		return
 	}
@@ -426,7 +426,7 @@ func (h *ImageHandler) BatchDelete(w http.ResponseWriter, r *http.Request) {
 			failed++
 			continue
 		}
-		if err := h.deleter.DeleteImage(r.Context(), img.ID); err != nil {
+	if err := h.deleter.DeleteImage(context.WithValue(r.Context(), domain.ContextKeyDeletedBy, "owner"), img.ID); err != nil {
 			slog.Warn("batch delete failed for image", "key", key, "error", err)
 			failed++
 			continue

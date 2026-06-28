@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -20,6 +21,7 @@ type Config struct {
 	Mail        MailConfig     `mapstructure:"mail"`
 	App         AppConfig      `mapstructure:"app"`
 	OAuth       OAuthConfig    `mapstructure:"oauth"`
+	Webhook     WebhookConfig  `mapstructure:"webhook"`
 	SecretKey   string         `mapstructure:"secret_key"`
 	secretBytes []byte
 }
@@ -102,7 +104,7 @@ type AppConfig struct {
 	GuestImageTTL            time.Duration   `mapstructure:"guest_image_ttl"`
 	AdminEmail               string          `mapstructure:"admin_email"`
 	AdminPassword            string          `mapstructure:"admin_password"`
-	ModerationMode           string          `mapstructure:"moderation_mode"` // disabled, manual, auto
+	ModerationMode           string          `mapstructure:"moderation_mode"`
 	FooterText1              string          `mapstructure:"footer_text_1"`
 	FooterLink1              string          `mapstructure:"footer_link_1"`
 	FooterText2              string          `mapstructure:"footer_text_2"`
@@ -111,6 +113,16 @@ type AppConfig struct {
 	AnalyticsProvider        string          `mapstructure:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `mapstructure:"analytics_config"`
 	ThemeConfig              json.RawMessage `mapstructure:"theme_config"`
+	InstanceID               string          `mapstructure:"instance_id"`
+}
+
+type WebhookConfig struct {
+	Enabled          bool          `mapstructure:"enabled"`
+	MaxPerUser       int           `mapstructure:"max_per_user"`
+	AllowHTTP        bool          `mapstructure:"allow_http"`
+	AllowPrivateURLs bool          `mapstructure:"allow_private_urls"`
+	WorkerInterval   time.Duration `mapstructure:"worker_interval"`
+	DeliveryTimeout  time.Duration `mapstructure:"delivery_timeout"`
 }
 
 type Setter struct {
@@ -260,7 +272,11 @@ func (c *Config) UsesDefaultJWTSecret() bool {
 func (c *Config) SecretKeyBytes() []byte {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.secretBytes
+	if len(c.secretBytes) == 32 {
+		return c.secretBytes
+	}
+	key := sha256.Sum256([]byte(c.JWT.Secret))
+	return key[:]
 }
 
 func (c *Config) SetSecretKeyBytes(key []byte) {
@@ -414,6 +430,14 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.footer_text_2", "")
 	v.SetDefault("app.footer_link_2", "")
 	v.SetDefault("app.analytics_provider", "")
+	v.SetDefault("app.instance_id", "")
+
+	v.SetDefault("webhook.enabled", true)
+	v.SetDefault("webhook.max_per_user", 10)
+	v.SetDefault("webhook.allow_http", false)
+	v.SetDefault("webhook.allow_private_urls", false)
+	v.SetDefault("webhook.worker_interval", 5*time.Second)
+	v.SetDefault("webhook.delivery_timeout", 10*time.Second)
 
 	v.SetDefault("secret_key", "")
 }

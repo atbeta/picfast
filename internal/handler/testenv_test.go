@@ -79,7 +79,7 @@ func newTestEnv(t *testing.T) *testEnv {
 	jwtSvc := handler.NewJWTService(&cfg.JWT)
 	handler.SetTrustedProxies([]string{"192.0.2.0/24", "127.0.0.0/8"})
 	sender := &fakeMailSender{}
-	r := router.New(db, pool, cfg, jwtSvc, nil, sender)
+	r, _ := router.New(db, pool, cfg, jwtSvc, nil, sender)
 
 	return &testEnv{
 		Pool:       pool,
@@ -92,7 +92,7 @@ func newTestEnv(t *testing.T) *testEnv {
 }
 
 func (e *testEnv) rebuildRouter() {
-	e.Router = router.New(e.DB, e.Pool, e.Config, e.JWT, nil, e.MailSender)
+	e.Router, _ = router.New(e.DB, e.Pool, e.Config, e.JWT, nil, e.MailSender)
 }
 
 func (e *testEnv) seedSetup(t *testing.T) (sqlc.Group, sqlc.Strategy, sqlc.User) {

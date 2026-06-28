@@ -26,4 +26,6 @@ const (
 	ContextKeyGroupID      ContextKey = "group_id"
 	ContextKeyScopes       ContextKey = "scopes"
 	ContextKeyOriginalAddr ContextKey = "original_addr"
+	ContextKeyDeletedBy    ContextKey = "deleted_by"
 )
+

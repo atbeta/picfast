@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/events"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -14,10 +16,11 @@ type DeleteService struct {
 	db       *sqlc.Queries
 	pool     *pgxpool.Pool
 	thumbDir string
+	emitter  events.Emitter
 }
 
-func NewDeleteService(db *sqlc.Queries, pool *pgxpool.Pool, thumbDir string) *DeleteService {
-	return &DeleteService{db: db, pool: pool, thumbDir: thumbDir}
+func NewDeleteService(db *sqlc.Queries, pool *pgxpool.Pool, thumbDir string, emitter events.Emitter) *DeleteService {
+	return &DeleteService{db: db, pool: pool, thumbDir: thumbDir, emitter: emitter}
 }
 
 func (s *DeleteService) DeleteImage(ctx context.Context, imgID int64) error {
@@ -36,6 +39,8 @@ func (s *DeleteService) CleanExpiredImages(ctx context.Context, batchSize int32)
 	if len(expired) == 0 {
 		return 0, nil
 	}
+
+	ctx = context.WithValue(ctx, domain.ContextKeyDeletedBy, "system")
 
 	deleted := 0
 	for _, img := range expired {
@@ -84,7 +89,7 @@ func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) e
 	userID := img.UserID
 	albumID := img.AlbumID
 
-	return sqlc.RunInTx(ctx, s.pool, func(qtx *sqlc.Queries) error {
+	txErr := sqlc.RunInTx(ctx, s.pool, func(qtx *sqlc.Queries) error {
 		if err := qtx.DeleteImage(ctx, img.ID); err != nil {
 			return err
 		}
@@ -96,4 +101,25 @@ func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) e
 		}
 		return nil
 	})
+	if txErr != nil {
+		return txErr
+	}
+
+	deletedBy, _ := ctx.Value(domain.ContextKeyDeletedBy).(string)
+	if deletedBy == "" {
+		deletedBy = "owner"
+	}
+
+	e := events.BuildImageDeleted(img, deletedBy)
+	switch deletedBy {
+	case "admin":
+		e.Actor = events.AdminActor(0)
+	case "system":
+		e.Actor = events.SystemActor()
+	default:
+		e.Actor = events.UserActor("", "", domain.PgInt8Val(img.UserID))
+	}
+	events.EmitAsync(s.emitter, e)
+
+	return nil
 }

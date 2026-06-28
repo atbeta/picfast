@@ -16,11 +16,13 @@ import (
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/docsui"
 	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/events"
 	"github.com/atbeta/picfast/internal/handler"
 	"github.com/atbeta/picfast/internal/handler/middleware"
 	"github.com/atbeta/picfast/internal/service"
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/service/moderation"
+	"github.com/atbeta/picfast/internal/service/webhook"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/atbeta/picfast/internal/version"
 	"github.com/go-chi/chi/v5"
@@ -36,7 +38,7 @@ func New(
 	jwtSvc *handler.JWTService,
 	spaHandler *handler.SPAHandler,
 	mailSender mailservice.Sender,
-) http.Handler {
+) (http.Handler, *webhook.Worker) {
 	r := chi.NewRouter()
 
 	r.Use(middleware.StructuredLogger)
@@ -184,8 +186,17 @@ func New(
 	}
 
 	// Services
-	uploadSvc := service.NewUploadService(queries, pool, cfg)
-	deleteSvc := service.NewDeleteService(queries, pool, cfg.Storage.ThumbnailDir)
+	eventEmitter := events.NewOutboxEmitter(queries)
+	uploadSvc := service.NewUploadService(queries, pool, cfg, eventEmitter)
+	deleteSvc := service.NewDeleteService(queries, pool, cfg.Storage.ThumbnailDir, eventEmitter)
+
+	webhookSvc := webhook.NewService(queries, cfg.Webhook.MaxPerUser, cfg.SecretKeyBytes())
+	webhookDelivery := webhook.NewDeliveryService(queries, cfg.Webhook.DeliveryTimeout, cfg.Webhook.AllowHTTP, cfg.Webhook.AllowPrivateURLs, cfg.SecretKeyBytes())
+	webhookWorker := webhook.NewWorker(queries, webhookDelivery, cfg.Webhook.WorkerInterval, 20)
+	whHandler := handler.NewWebhookHandler(webhookSvc, webhookDelivery)
+	if cfg.Webhook.Enabled {
+		webhookWorker.Start()
+	}
 
 	go func() {
 		ticker := time.NewTicker(1 * time.Hour)
@@ -201,7 +212,7 @@ func New(
 	}()
 
 	// Handlers
-	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg, mailSender)
+	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg, mailSender, eventEmitter)
 	oauthHandler := handler.NewOAuthHandler(queries, pool, jwtSvc, cfg)
 	setupHandler := handler.NewSetupHandler(queries, pool, jwtSvc, cfg)
 	userHandler := handler.NewUserHandler(queries)
@@ -297,6 +308,7 @@ func New(
 		r.Get("/version", func(w http.ResponseWriter, r *http.Request) {
 			handler.Success(w, version.Info())
 		})
+		r.Get("/events/types", whHandler.ListEventTypes)
 
 		// First-run setup
 		r.Route("/setup", func(r chi.Router) {
@@ -372,6 +384,20 @@ func New(
 			r.Post("/api-tokens", apiTokenHandler.Create)
 			r.Get("/api-tokens", apiTokenHandler.List)
 			r.Delete("/api-tokens/{id}", apiTokenHandler.Delete)
+
+			// Webhooks
+			r.Route("/webhooks", func(r chi.Router) {
+				r.Get("/", whHandler.List)
+				r.Post("/", whHandler.Create)
+				r.Get("/{id}", whHandler.Get)
+				r.Put("/{id}", whHandler.Update)
+				r.Delete("/{id}", whHandler.Delete)
+				r.Post("/{id}/rotate-secret", whHandler.RotateSecret)
+				r.Post("/{id}/test", whHandler.TestWebhook)
+				r.Get("/{id}/deliveries", whHandler.ListDeliveries)
+			})
+			r.Get("/webhook-deliveries/{id}", whHandler.GetDelivery)
+			r.Post("/webhook-deliveries/{id}/replay", whHandler.ReplayDelivery)
 		})
 
 		// Optional auth for guest upload (also accepts API tokens)
@@ -447,7 +473,7 @@ func New(
 			r.Delete("/images/{id}", adminImageHandler.Delete)
 
 			// Content moderation (admin only)
-			modHandler := handler.NewModerationHandler(queries, cfg.ServerSnapshot().BaseURL)
+			modHandler := handler.NewModerationHandler(queries, cfg.ServerSnapshot().BaseURL, eventEmitter)
 			r.Get("/moderation/pending", modHandler.ListPending)
 			r.Post("/moderation/{id}/approve", modHandler.Approve)
 			r.Post("/moderation/{id}/reject", modHandler.Reject)
@@ -491,7 +517,7 @@ func New(
 		r.NotFound(spaHandler.Serve)
 	}
 
-	return r
+	return r, webhookWorker
 }
 
 func normalizeJSON(raw json.RawMessage) json.RawMessage {

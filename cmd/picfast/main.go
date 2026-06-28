@@ -101,7 +101,7 @@ func main() {
 		slog.Info("serving frontend", "dir", webDir)
 	}
 
-	r := router.New(queries, pool, cfg, jwtSvc, spaHandler, mailSender)
+	r, webhookWorker := router.New(queries, pool, cfg, jwtSvc, spaHandler, mailSender)
 
 	metricsMux := http.NewServeMux()
 	metricsMux.Handle("/metrics", promhttp.Handler())
@@ -144,6 +144,8 @@ func main() {
 	slog.Info("shutting down server")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	webhookWorker.Stop()
 
 	if err := metricsSrv.Shutdown(ctx); err != nil {
 		slog.Error("metrics server forced to shutdown", "error", err)

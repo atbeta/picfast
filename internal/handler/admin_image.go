@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -97,7 +98,7 @@ func (h *AdminImageHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Warn("failed to load image before admin delete", "error", err, "image_id", id)
 	}
-	if err := h.deleter.DeleteImage(r.Context(), id); err != nil {
+	if err := h.deleter.DeleteImage(context.WithValue(r.Context(), domain.ContextKeyDeletedBy, "admin"), id); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to delete image")
 		return
 	}

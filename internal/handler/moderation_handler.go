@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/events"
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/sqlc"
@@ -16,10 +17,11 @@ import (
 type ModerationHandler struct {
 	db      *sqlc.Queries
 	baseURL string
+	emitter events.Emitter
 }
 
-func NewModerationHandler(db *sqlc.Queries, baseURL string) *ModerationHandler {
-	return &ModerationHandler{db: db, baseURL: baseURL}
+func NewModerationHandler(db *sqlc.Queries, baseURL string, emitter events.Emitter) *ModerationHandler {
+	return &ModerationHandler{db: db, baseURL: baseURL, emitter: emitter}
 }
 
 // ListPending returns images awaiting moderation review.
@@ -91,6 +93,15 @@ func (h *ModerationHandler) Approve(w http.ResponseWriter, r *http.Request) {
 		"moderation_status": "approved",
 	})
 
+	img, err := h.db.GetImageByID(r.Context(), id)
+	if err != nil {
+		slog.Warn("failed to fetch image for moderation event", "image_id", id, "error", err)
+	} else {
+		ev := events.BuildModerationReviewed(id, img.Key, string(moderation.StatusApproved), adminID, "approved by admin", domain.PgInt8PtrVal(img.UserID))
+		ev.Actor = events.AdminActor(adminID)
+		events.EmitAsync(h.emitter, ev)
+	}
+
 	SuccessMessage(w, "image approved")
 }
 
@@ -126,6 +137,15 @@ func (h *ModerationHandler) Reject(w http.ResponseWriter, r *http.Request) {
 		details["reason"] = reqBody.Reason
 	}
 	writeAuditLog(h.db, r, "admin.moderation.reject", "image", idStr, "", details)
+
+	img, err := h.db.GetImageByID(r.Context(), id)
+	if err != nil {
+		slog.Warn("failed to fetch image for moderation event", "image_id", id, "error", err)
+	} else {
+		ev := events.BuildModerationReviewed(id, img.Key, string(moderation.StatusRejected), adminID, reqBody.Reason, domain.PgInt8PtrVal(img.UserID))
+		ev.Actor = events.AdminActor(adminID)
+		events.EmitAsync(h.emitter, ev)
+	}
 
 	SuccessMessage(w, "image rejected")
 }

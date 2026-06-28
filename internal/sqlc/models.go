@@ -108,6 +108,18 @@ type ImageModeration struct {
 	UpdatedAt   time.Time       `json:"updated_at"`
 }
 
+type OutboxEvent struct {
+	ID             pgtype.UUID        `json:"id"`
+	Type           string             `json:"type"`
+	Version        string             `json:"version"`
+	IdempotencyKey string             `json:"idempotency_key"`
+	Payload        json.RawMessage    `json:"payload"`
+	OwnerUserID    pgtype.Int8        `json:"owner_user_id"`
+	Status         string             `json:"status"`
+	CreatedAt      time.Time          `json:"created_at"`
+	ProcessedAt    pgtype.Timestamptz `json:"processed_at"`
+}
+
 type PasswordResetToken struct {
 	ID        int64              `json:"id"`
 	UserID    int64              `json:"user_id"`
@@ -187,4 +199,34 @@ type UserIdentity struct {
 	ProviderSubject string    `json:"provider_subject"`
 	Email           string    `json:"email"`
 	LinkedAt        time.Time `json:"linked_at"`
+}
+
+type Webhook struct {
+	ID               int64           `json:"id"`
+	UserID           int64           `json:"user_id"`
+	Name             string          `json:"name"`
+	Url              string          `json:"url"`
+	SecretHash       string          `json:"secret_hash"`
+	Events           json.RawMessage `json:"events"`
+	Enabled          bool            `json:"enabled"`
+	CreatedAt        time.Time       `json:"created_at"`
+	UpdatedAt        time.Time       `json:"updated_at"`
+	SecretCiphertext []byte          `json:"secret_ciphertext"`
+}
+
+type WebhookDelivery struct {
+	ID             int64              `json:"id"`
+	WebhookID      int64              `json:"webhook_id"`
+	OutboxEventID  pgtype.UUID        `json:"outbox_event_id"`
+	Status         string             `json:"status"`
+	Attempt        int32              `json:"attempt"`
+	MaxAttempts    int32              `json:"max_attempts"`
+	NextRetryAt    time.Time          `json:"next_retry_at"`
+	RequestHeaders json.RawMessage    `json:"request_headers"`
+	ResponseStatus pgtype.Int4        `json:"response_status"`
+	ResponseBody   string             `json:"response_body"`
+	ErrorMessage   string             `json:"error_message"`
+	DurationMs     pgtype.Int4        `json:"duration_ms"`
+	CreatedAt      time.Time          `json:"created_at"`
+	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
 }

@@ -16,6 +16,7 @@ import (
 
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/events"
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/atbeta/picfast/internal/sqlc"
@@ -24,9 +25,10 @@ import (
 )
 
 type UploadService struct {
-	db     *sqlc.Queries
-	pool   *pgxpool.Pool
-	config *config.Config
+	db      *sqlc.Queries
+	pool    *pgxpool.Pool
+	config  *config.Config
+	emitter events.Emitter
 
 	totalImages atomic.Int64
 	countInit   sync.Once
@@ -39,6 +41,8 @@ type uploadIdentity struct {
 	isAdmin             bool
 	preferredStrategyID *int64
 	processing          imageProcessingConfig
+	email               string
+	name                string
 }
 
 type imageProcessingConfig struct {
@@ -57,8 +61,8 @@ type processedUploadImage struct {
 	processed bool
 }
 
-func NewUploadService(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Config) *UploadService {
-	return &UploadService{db: db, pool: pool, config: cfg}
+func NewUploadService(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Config, emitter events.Emitter) *UploadService {
+	return &UploadService{db: db, pool: pool, config: cfg, emitter: emitter}
 }
 
 // totalImagesCount lazily seeds the atomic counter from the database,
@@ -287,14 +291,15 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	}
 
 	// Step 13: Generate thumbnail (synchronous to avoid race with frontend)
+	thumbStatus := "completed"
 	if thumbErr := GenerateThumbnail(fileData, ext, s.config.Storage.ThumbnailDir, md5Hash); thumbErr != nil {
 		slog.Warn("thumbnail generation failed", "md5", md5Hash, "error", thumbErr)
+		thumbStatus = "failed"
 	}
 
 	// Step 14: Build response
 	links := LinkBuilder{BaseURL: s.config.ServerSnapshot().BaseURL, StrategyURL: strategyPublicURL}.BuildImageLinks(imageKey, ext, md5Hash, params.FileName)
 
-	// Include moderation info in response so frontend can show pending state
 	resp := &UploadResult{
 		Image:             img,
 		Links:             links,
@@ -303,8 +308,23 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		StoredSizeBytes:   int64(len(fileData)),
 		Processed:         processed.processed,
 	}
-	// Attach moderation status to the response for frontend awareness
-	_ = modResult
+
+	var actor *events.Actor
+	if params.UserID == nil {
+		actor = events.GuestActor()
+	} else if identity.isAdmin {
+		actor = events.AdminActor(identity.userID)
+	} else {
+		actor = events.UserActor(identity.email, identity.name, identity.userID)
+	}
+
+	events.EmitAsync(s.emitter,
+		events.BuildImageUploadedWithActor(img, events.ImageLinks{
+			URL:          links.URL,
+			ThumbnailURL: links.ThumbnailURL,
+		}, actor),
+		events.BuildImageProcessed(img, originalSize, int64(len(fileData)), processed.processed, thumbStatus, string(modResult.Status), modResult.Provider),
+	)
 
 	return resp, nil
 }
@@ -378,6 +398,8 @@ func (s *UploadService) resolveIdentity(ctx context.Context, params UploadParams
 		isAdmin:             user.Role == string(domain.RoleAdmin),
 		preferredStrategyID: preferredStrategyID,
 		processing:          resolveImageProcessingConfig(s.config.AppSnapshot(), settings.ImageProcessing),
+		email:               user.Email,
+		name:                user.Name,
 	}, nil
 }
 
