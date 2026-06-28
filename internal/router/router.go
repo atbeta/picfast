@@ -216,7 +216,7 @@ func New(
 	oauthHandler := handler.NewOAuthHandler(queries, pool, jwtSvc, cfg)
 	setupHandler := handler.NewSetupHandler(queries, pool, jwtSvc, cfg)
 	userHandler := handler.NewUserHandler(queries)
-	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL, cfg.App.AuditUploadLogs, cfg.App.MaxUploadBytes)
+	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL, cfg.Storage.ThumbnailDir, cfg.App.AuditUploadLogs, cfg.App.MaxUploadBytes)
 	albumHandler := handler.NewAlbumHandler(queries, pool)
 	fileHandler := handler.NewFileHandler(queries, cfg.Server.BaseURL, cfg.Storage.ThumbnailDir)
 	adminGroupHandler := handler.NewAdminGroupHandler(queries, pool)
@@ -355,6 +355,8 @@ func New(
 			r.With(middleware.RequireScope("write")).Delete("/images/{key}", imageHandler.Delete)
 			r.With(middleware.RequireScope("write")).Post("/images/batch-delete", imageHandler.BatchDelete)
 			r.With(middleware.RequireScope("write")).Patch("/images/{key}", imageHandler.Update)
+
+			r.Get("/images/{key}/pipeline", imageHandler.Pipeline)
 
 			// Albums — write operations require "write" scope for API tokens
 			r.Get("/albums", albumHandler.List)

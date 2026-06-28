@@ -6,6 +6,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -46,15 +48,16 @@ type ImageHandler struct {
 	upload          *service.UploadService
 	deleter         *service.DeleteService
 	baseURL         string
+	thumbDir        string
 	auditUploadLogs bool
 	maxUploadBytes  int64
 }
 
-func NewImageHandler(db *sqlc.Queries, upload *service.UploadService, deleter *service.DeleteService, baseURL string, auditUploadLogs bool, maxUploadBytes int64) *ImageHandler {
+func NewImageHandler(db *sqlc.Queries, upload *service.UploadService, deleter *service.DeleteService, baseURL, thumbDir string, auditUploadLogs bool, maxUploadBytes int64) *ImageHandler {
 	if maxUploadBytes <= 0 {
 		maxUploadBytes = defaultMaxUploadBytes
 	}
-	return &ImageHandler{db: db, upload: upload, deleter: deleter, baseURL: baseURL, auditUploadLogs: auditUploadLogs, maxUploadBytes: maxUploadBytes}
+	return &ImageHandler{db: db, upload: upload, deleter: deleter, baseURL: baseURL, thumbDir: thumbDir, auditUploadLogs: auditUploadLogs, maxUploadBytes: maxUploadBytes}
 }
 
 func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
@@ -487,3 +490,33 @@ func imageResponse(img sqlc.Image, links domain.ImageLinks) ImageResponse {
 		CreatedAt:        img.CreatedAt,
 	}
 }
+
+func (h *ImageHandler) Pipeline(w http.ResponseWriter, r *http.Request) {
+	key := chi.URLParam(r, "key")
+
+	img, err := h.db.GetImageByKey(r.Context(), key)
+	if err != nil {
+		Fail(w, http.StatusNotFound, "image not found")
+		return
+	}
+
+	thumbPath := filepath.Join(h.thumbDir, img.Md5+".png")
+	thumbStatus := "completed"
+	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
+		thumbStatus = "failed"
+	}
+
+	moderationStatus := img.ModerationStatus
+	if moderationStatus == "" {
+		moderationStatus = "approved"
+	}
+
+	Success(w, map[string]interface{}{
+		"upload":     "completed",
+		"processing": "completed",
+		"thumbnail":  thumbStatus,
+		"moderation": moderationStatus,
+		"updated_at": img.UpdatedAt.UTC().Format(time.RFC3339),
+	})
+}
+

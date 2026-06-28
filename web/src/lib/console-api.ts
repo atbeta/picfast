@@ -235,3 +235,20 @@ export async function listWebhookDeliveries(id: number, page = 1, pageSize = 20)
 export async function replayWebhookDelivery(deliveryId: number): Promise<void> {
   await api.post(`/webhook-deliveries/${deliveryId}/replay`)
 }
+
+// ============================================================
+// Pipeline
+// ============================================================
+
+export interface PipelineStatus {
+  upload: string
+  processing: string
+  thumbnail: string
+  moderation: string
+  updated_at: string
+}
+
+export async function getPipelineStatus(key: string): Promise<PipelineStatus> {
+  const res = await api.get<ApiResponse<PipelineStatus>>(`/images/${encodeURIComponent(key)}/pipeline`)
+  return res.data.data
+}
