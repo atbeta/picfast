@@ -9,6 +9,7 @@ PicFast MCP Server — upload images and manage your image hosting via AI with l
 - **Upload images** from local file paths (no base64 overhead)
 - **List, get, delete** images in your account
 - **Usage stats** — check storage quota and image count
+- **Pipeline status** — inspect image processing stages (upload, compression, thumbnail, moderation)
 - **Resources** — access user profile and image details via MCP resources
 - **Guest upload** — works without API token for anonymous uploads (requires the PicFast instance to have guest upload enabled)
 
@@ -59,6 +60,7 @@ Same config format as Claude Desktop in the respective MCP settings panel.
 | `get_image` | Yes | Get image details and share links |
 | `delete_image` | Yes | Delete an image by key |
 | `get_usage_stats` | Yes | Get storage quota and usage |
+| `get_image_pipeline` | Yes | Get image processing pipeline status |
 
 ## Resources
 

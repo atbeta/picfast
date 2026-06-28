@@ -690,6 +690,319 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /webhooks:
+    get:
+      tags: [webhooks]
+      summary: List webhooks for current user
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/WebhookItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [webhooks]
+      summary: Create a webhook
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWebhookRequest"
+      responses:
+        "201":
+          description: Created — secret is only returned once
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/WebhookItemWithSecret"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /webhooks/{id}:
+    get:
+      tags: [webhooks]
+      summary: Get webhook details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/WebhookItem"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      tags: [webhooks]
+      summary: Update webhook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWebhookRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/WebhookItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    delete:
+      tags: [webhooks]
+      summary: Delete webhook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /webhooks/{id}/rotate-secret:
+    post:
+      tags: [webhooks]
+      summary: Rotate webhook secret
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: New secret returned once
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          secret:
+                            type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /webhooks/{id}/test:
+    post:
+      tags: [webhooks]
+      summary: Send a test event to the webhook URL
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /webhooks/{id}/deliveries:
+    get:
+      tags: [webhooks]
+      summary: List delivery logs for a webhook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PaginatedDeliveryItems"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /webhook-deliveries/{id}:
+    get:
+      tags: [webhooks]
+      summary: Get single delivery detail
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/WebhookDeliveryItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [webhooks]
+      summary: Replay a failed delivery
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /events/types:
+    get:
+      tags: [events]
+      summary: List supported event types
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/EventTypeItem"
+
+  /images/{key}/pipeline:
+    get:
+      tags: [images]
+      summary: Get image processing pipeline status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PipelineStatus"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /sharex/upload:
     post:
       tags: [sharex]
@@ -2036,6 +2349,151 @@ components:
           items:
             type: string
             enum: [read, write]
+
+    WebhookItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        url:
+          type: string
+        events:
+          type: array
+          items:
+            type: string
+        enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WebhookItemWithSecret:
+      allOf:
+        - $ref: "#/components/schemas/WebhookItem"
+        - type: object
+          properties:
+            secret:
+              type: string
+              description: Only returned on creation and secret rotation.
+
+    CreateWebhookRequest:
+      type: object
+      required: [name, url, events]
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+          description: Must be https unless local dev mode.
+        events:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum:
+              - image.uploaded
+              - image.processed
+              - image.deleted
+              - moderation.reviewed
+              - user.registered
+
+    UpdateWebhookRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        enabled:
+          type: boolean
+
+    WebhookDeliveryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        webhook_id:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [pending, retrying, delivered, failed, dead]
+        attempt:
+          type: integer
+        max_attempts:
+          type: integer
+        next_retry_at:
+          type: string
+          format: date-time
+        response_status:
+          type: integer
+          nullable: true
+        response_body:
+          type: string
+        error_message:
+          type: string
+        duration_ms:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    PaginatedDeliveryItems:
+      allOf:
+        - $ref: "#/components/schemas/PaginatedData"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/WebhookDeliveryItem"
+
+    EventTypeItem:
+      type: object
+      properties:
+        type:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+
+    PipelineStatus:
+      type: object
+      properties:
+        upload:
+          type: string
+          enum: [completed, pending, failed, skipped]
+        processing:
+          type: string
+          enum: [completed, pending, failed, skipped]
+        thumbnail:
+          type: string
+          enum: [completed, pending, failed, skipped]
+        moderation:
+          type: string
+          enum: [approved, rejected, pending]
+        updated_at:
+          type: string
+          format: date-time
 
     ShareXUploadResponse:
       type: object

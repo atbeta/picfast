@@ -70,6 +70,14 @@ export interface UserProfile {
   album_num: number;
 }
 
+export interface PipelineStatus {
+  upload: string;
+  processing: string;
+  thumbnail: string;
+  moderation: string;
+  updated_at: string;
+}
+
 export class ApiClient {
   private baseUrl: string;
   private token: string | undefined;
@@ -250,6 +258,20 @@ export class ApiClient {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       throw new Error(`get profile failed (${res.status}): ${message}`);
+    }
+  }
+
+  async getPipelineStatus(key: string): Promise<PipelineStatus> {
+    this.requireAuth();
+    const res = await fetch(this.url(`/images/${key}/pipeline`), {
+      headers: this.authHeaders(),
+    });
+
+    try {
+      return await this.handleResponse<PipelineStatus>(res);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`get pipeline failed (${res.status}): ${message}`);
     }
   }
 }

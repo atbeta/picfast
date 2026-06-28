@@ -9,6 +9,7 @@ import { registerListImagesTool } from "./tools/list-images.js";
 import { registerGetImageTool } from "./tools/get-image.js";
 import { registerDeleteImageTool } from "./tools/delete-image.js";
 import { registerUsageStatsTool } from "./tools/usage-stats.js";
+import { registerGetImagePipelineTool } from "./tools/get-image-pipeline.js";
 import { registerUserProfileResource } from "./resources/user-profile.js";
 import { registerImageDetailResource } from "./resources/image-detail.js";
 
@@ -26,6 +27,7 @@ async function main() {
   registerGetImageTool(server, client);
   registerDeleteImageTool(server, client);
   registerUsageStatsTool(server, client);
+  registerGetImagePipelineTool(server, client);
 
   registerUserProfileResource(server, client);
   registerImageDetailResource(server, client);
