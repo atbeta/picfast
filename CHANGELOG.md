@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.17.0](https://github.com/atbeta/picfast/compare/v0.16.0...v0.17.0) (2026-06-28)
+
+
+### Features
+
+* **docs:** add OpenAPI spec, MCP pipeline tool, and webhook documentation ([eed5b72](https://github.com/atbeta/picfast/commit/eed5b72f3d38098a4e0822a13ded6644ac78fc75))
+* **events:** add event system and webhook delivery platform ([a0dce24](https://github.com/atbeta/picfast/commit/a0dce24b795432f198b810f8967adbf3eb9f4be2))
+* **pipeline:** add image pipeline status API and detail UI ([1909892](https://github.com/atbeta/picfast/commit/1909892df80328dc836cf5460f70070af2dbcc49))
+* **webhook:** add webhook management UI with i18n support ([ee9f450](https://github.com/atbeta/picfast/commit/ee9f450ae1f0e326ca0ecf56f50ed460ae3b0092))
+
+
+### Bug Fixes
+
+* **pipeline:** add permission check, processing skipped status, i18n, and test ([583141f](https://github.com/atbeta/picfast/commit/583141fc649227af710d710ba0c8d0b342bdf248))
+
 ## [0.16.0](https://github.com/atbeta/picfast/compare/v0.15.2...v0.16.0) (2026-06-27)
 
 
