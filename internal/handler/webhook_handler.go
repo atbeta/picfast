@@ -270,7 +270,6 @@ func (h *WebhookHandler) ListEventTypes(w http.ResponseWriter, r *http.Request) 
 		{"type": "image.processed", "version": "2026-06-01", "description": "Image processing pipeline completed"},
 		{"type": "image.deleted", "version": "2026-06-01", "description": "An image was deleted"},
 		{"type": "moderation.reviewed", "version": "2026-06-01", "description": "Moderation status changed"},
-		{"type": "user.registered", "version": "2026-06-01", "description": "A new user registered"},
 	}
 	Success(w, types)
 }

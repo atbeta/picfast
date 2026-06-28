@@ -198,10 +198,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ev := events.BuildUserRegistered(user.ID, user.Email, user.Name, domain.PgInt8Val(user.GroupID), requiresVerification)
-	ev.Actor = events.UserActor(user.Email, user.Name, user.ID)
-	events.EmitAsync(h.emitter, ev)
-
 	if requiresVerification {
 		resp.VerificationEmailSent = h.sendVerificationEmail(
 			r.Context(),

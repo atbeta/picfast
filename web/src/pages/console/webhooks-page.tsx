@@ -24,7 +24,6 @@ const ALL_EVENT_TYPES = [
   'image.processed',
   'image.deleted',
   'moderation.reviewed',
-  'user.registered',
 ]
 
 export function WebhooksPage() {
