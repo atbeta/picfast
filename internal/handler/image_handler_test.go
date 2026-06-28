@@ -252,3 +252,31 @@ func TestImageUpdatePermission(t *testing.T) {
 		t.Fatalf("permission = %v, want 0", img["permission"])
 	}
 }
+
+func TestImagePipeline(t *testing.T) {
+	env := newTestEnv(t)
+	_, group, user := env.seedSetup(t)
+
+	token := env.generateToken(t, user.ID, domain.RoleUser, group.ID)
+	key := uploadAndGetKey(t, env, token)
+
+	req := env.authReq(t, http.MethodGet, "/api/v1/images/"+key+"/pipeline", nil, user.ID, domain.RoleUser, group.ID)
+	rec := doReq(env.Router, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+	}
+	pipeline := respDataMap(t, parseResp(t, rec))
+	if pipeline["upload"] != "completed" {
+		t.Fatalf("upload = %v, want completed", pipeline["upload"])
+	}
+	if pipeline["processing"] == "" {
+		t.Fatalf("processing is empty")
+	}
+	if pipeline["thumbnail"] == "" {
+		t.Fatalf("thumbnail is empty")
+	}
+	if pipeline["moderation"] == "" {
+		t.Fatalf("moderation is empty")
+	}
+}

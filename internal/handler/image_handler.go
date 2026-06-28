@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/atbeta/picfast/internal/clientip"
+	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/service"
@@ -49,15 +50,16 @@ type ImageHandler struct {
 	deleter         *service.DeleteService
 	baseURL         string
 	thumbDir        string
+	cfg             *config.Config
 	auditUploadLogs bool
 	maxUploadBytes  int64
 }
 
-func NewImageHandler(db *sqlc.Queries, upload *service.UploadService, deleter *service.DeleteService, baseURL, thumbDir string, auditUploadLogs bool, maxUploadBytes int64) *ImageHandler {
+func NewImageHandler(db *sqlc.Queries, upload *service.UploadService, deleter *service.DeleteService, baseURL, thumbDir string, cfg *config.Config, auditUploadLogs bool, maxUploadBytes int64) *ImageHandler {
 	if maxUploadBytes <= 0 {
 		maxUploadBytes = defaultMaxUploadBytes
 	}
-	return &ImageHandler{db: db, upload: upload, deleter: deleter, baseURL: baseURL, thumbDir: thumbDir, auditUploadLogs: auditUploadLogs, maxUploadBytes: maxUploadBytes}
+	return &ImageHandler{db: db, upload: upload, deleter: deleter, baseURL: baseURL, thumbDir: thumbDir, cfg: cfg, auditUploadLogs: auditUploadLogs, maxUploadBytes: maxUploadBytes}
 }
 
 func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
@@ -500,6 +502,19 @@ func (h *ImageHandler) Pipeline(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if img.Permission == int16(domain.PermissionPrivate) {
+		userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)
+		if !ok || img.UserID.Int64 != userID {
+			Fail(w, http.StatusNotFound, "image not found")
+			return
+		}
+	}
+
+	processingStatus := "completed"
+	if h.cfg.AppSnapshot().SkipImageProcessing {
+		processingStatus = "skipped"
+	}
+
 	thumbPath := filepath.Join(h.thumbDir, img.Md5+".png")
 	thumbStatus := "completed"
 	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
@@ -513,7 +528,7 @@ func (h *ImageHandler) Pipeline(w http.ResponseWriter, r *http.Request) {
 
 	Success(w, map[string]interface{}{
 		"upload":     "completed",
-		"processing": "completed",
+		"processing": processingStatus,
 		"thumbnail":  thumbStatus,
 		"moderation": moderationStatus,
 		"updated_at": img.UpdatedAt.UTC().Format(time.RFC3339),

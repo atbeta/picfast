@@ -216,7 +216,7 @@ func New(
 	oauthHandler := handler.NewOAuthHandler(queries, pool, jwtSvc, cfg)
 	setupHandler := handler.NewSetupHandler(queries, pool, jwtSvc, cfg)
 	userHandler := handler.NewUserHandler(queries)
-	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL, cfg.Storage.ThumbnailDir, cfg.App.AuditUploadLogs, cfg.App.MaxUploadBytes)
+	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL, cfg.Storage.ThumbnailDir, cfg, cfg.App.AuditUploadLogs, cfg.App.MaxUploadBytes)
 	albumHandler := handler.NewAlbumHandler(queries, pool)
 	fileHandler := handler.NewFileHandler(queries, cfg.Server.BaseURL, cfg.Storage.ThumbnailDir)
 	adminGroupHandler := handler.NewAdminGroupHandler(queries, pool)

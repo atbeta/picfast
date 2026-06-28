@@ -160,20 +160,27 @@ export function ImageDetailDialog({
                   {t('images.pipeline', { defaultValue: '处理流水线' })}
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[
-                    { key: 'upload' as const, label: t('images.pipelineUpload', { defaultValue: '上传' }) },
-                    { key: 'processing' as const, label: t('images.pipelineProcessing', { defaultValue: '处理' }) },
-                    { key: 'thumbnail' as const, label: t('images.pipelineThumbnail', { defaultValue: '缩略图' }) },
-                    { key: 'moderation' as const, label: t('images.pipelineModeration', { defaultValue: '审核' }) },
-                  ].map(({ key, label }) => {
+                  {([
+                    { key: 'upload' as const, label: t('images.pipelineUpload') },
+                    { key: 'processing' as const, label: t('images.pipelineProcessing') },
+                    { key: 'thumbnail' as const, label: t('images.pipelineThumbnail') },
+                    { key: 'moderation' as const, label: t('images.pipelineModeration') },
+                  ] as const).map(({ key, label }) => {
                     const status = pipeline[key] ?? 'pending'
                     const isGood = status === 'completed' || status === 'approved'
                     const isBad = status === 'failed' || status === 'rejected'
+                    const isSkipped = status === 'skipped'
+                    const statusKey = status === 'completed' ? 'statusCompleted'
+                      : status === 'approved' ? 'statusApproved'
+                      : status === 'rejected' ? 'statusRejected'
+                      : status === 'failed' ? 'statusFailed'
+                      : status === 'skipped' ? 'statusSkipped'
+                      : 'statusPending'
                     return (
                       <div key={key} className="flex flex-col items-center gap-1 rounded-lg border border-border/40 bg-background/50 p-3">
                         {isGood ? <CheckCircle2 className="size-5 text-green-500" /> :
                          isBad ? <XCircle className="size-5 text-red-500" /> :
-                         status === 'skipped' ? <SkipForward className="size-5 text-muted-foreground" /> :
+                         isSkipped ? <SkipForward className="size-5 text-muted-foreground" /> :
                          <Clock className="size-5 text-yellow-500" />}
                         <span className="text-xs font-medium text-muted-foreground">{label}</span>
                         <span className={`text-xs font-semibold ${
@@ -181,7 +188,7 @@ export function ImageDetailDialog({
                           isBad ? 'text-red-600' :
                           'text-yellow-600'
                         }`}>
-                          {status}
+                          {t(`images.${statusKey}`)}
                         </span>
                       </div>
                     )
