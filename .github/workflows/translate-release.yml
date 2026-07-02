@@ -1,0 +1,74 @@
+# After a GitHub Release is published, append a Chinese translation
+# to the release body via an OpenAI-compatible LLM API.
+#
+# Setup:
+# 1. Repository secret: LLM_API_KEY
+# 2. (Optional) LLM_BASE_URL, LLM_MODEL, LLM_TEMPERATURE
+# 3. Settings → Actions → General → Workflow permissions: Read and write
+
+name: Translate Release Notes
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: translate-release-${{ github.event.release.tag_name }}
+  cancel-in-progress: true
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check LLM_API_KEY
+        id: llm
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          if [ -n "$LLM_API_KEY" ]; then
+            echo "has_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_key=false" >> "$GITHUB_OUTPUT"
+            echo "LLM_API_KEY not set; skipping translation."
+          fi
+
+      - name: Setup Node.js
+        if: steps.llm.outputs.has_key == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Fetch English release body
+        if: steps.llm.outputs.has_key == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release view "$RELEASE_TAG" --json body -q .body > release_body_en.md
+
+      - name: Translate with LLM
+        if: steps.llm.outputs.has_key == 'true'
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_TEMPERATURE: ${{ secrets.LLM_TEMPERATURE }}
+        run: node .github/scripts/translate_release.mjs
+
+      - name: Update GitHub Release
+        if: steps.llm.outputs.has_key == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [ ! -s translated_release.md ]; then
+            echo "No translated_release.md; nothing to update."
+            exit 0
+          fi
+          gh release edit "$RELEASE_TAG" --notes-file translated_release.md

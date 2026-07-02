@@ -20,3 +20,7 @@ imgapi
 
 # Go test coverage output
 coverage.out
+
+# Release translation temp files (local testing)
+/release_body_en.md
+/translated_release.md
