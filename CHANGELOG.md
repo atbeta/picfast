@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/atbeta/picfast/compare/v0.17.0...v0.17.1) (2026-07-02)
+
+
+### Bug Fixes
+
+* **web:** suppress zod v4 eval probe to eliminate CSP violation ([f7f0a51](https://github.com/atbeta/picfast/commit/f7f0a516550b8d49e769e0245f5471506561439d))
+
 ## [0.17.0](https://github.com/atbeta/picfast/compare/v0.16.0...v0.17.0) (2026-06-28)
 
 
