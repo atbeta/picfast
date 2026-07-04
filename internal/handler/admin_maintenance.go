@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -47,16 +48,20 @@ func (h *AdminMaintenanceHandler) Summary(w http.ResponseWriter, r *http.Request
 	risks := h.collectRisks(ctx, usage, strategies)
 	diskInfo := h.diskInfo()
 	backupInfo := h.backupInfo()
+	dbTables := h.tableStats(ctx)
+	phashCoverage := h.phashStats(ctx)
 
 	Success(w, map[string]any{
-		"generated_at": time.Now().UTC(),
-		"risks":        risks,
+		"generated_at":   time.Now().UTC(),
+		"risks":          risks,
 		"storage": map[string]any{
-			"disk":         diskInfo,
-			"strategies":   strategies,
+			"disk":       diskInfo,
+			"strategies": strategies,
 		},
-		"usage":  usage,
-		"backup": backupInfo,
+		"usage":          usage,
+		"backup":         backupInfo,
+		"database":       dbTables,
+		"phash_coverage": phashCoverage,
 	})
 }
 
@@ -181,4 +186,60 @@ func getString(m map[string]any, key string) string {
 		v, _ = m[key].(string)
 	}
 	return v
+}
+
+func (h *AdminMaintenanceHandler) tableStats(ctx context.Context) []map[string]any {
+	rows, err := h.pool.Query(ctx, `
+		SELECT schemaname, relname, n_live_tup
+		FROM pg_stat_user_tables
+		ORDER BY n_live_tup DESC
+	`)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var tables []map[string]any
+	for rows.Next() {
+		var schema, name string
+		var rowCount int64
+		if err := rows.Scan(&schema, &name, &rowCount); err != nil {
+			continue
+		}
+		tables = append(tables, map[string]any{
+			"table": name,
+			"rows":  rowCount,
+		})
+	}
+	return tables
+}
+
+func (h *AdminMaintenanceHandler) phashStats(ctx context.Context) map[string]any {
+	var total, withPhash int64
+	if err := h.pool.QueryRow(ctx, `SELECT COUNT(*) FROM images`).Scan(&total); err != nil {
+		return nil
+	}
+	if err := h.pool.QueryRow(ctx, `SELECT COUNT(*) FROM images WHERE phash IS NOT NULL`).Scan(&withPhash); err != nil {
+		return nil
+	}
+	return map[string]any{
+		"total":      total,
+		"with_phash": withPhash,
+	}
+}
+
+func (h *AdminMaintenanceHandler) CleanupExpired(w http.ResponseWriter, r *http.Request) {
+	count, err := h.db.CountExpiredImages(r.Context())
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to count expired images")
+		return
+	}
+
+	result, err := h.db.DeleteExpiredImages(r.Context())
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to delete expired images")
+		return
+	}
+
+	SuccessMessage(w, fmt.Sprintf("cleaned %d of %d expired images", len(result), count))
 }

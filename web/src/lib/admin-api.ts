@@ -342,9 +342,11 @@ export interface AdminObservabilitySummary {
 export interface MaintenanceSummary {
   generated_at: string
   risks: MaintenanceRisk[]
-  storage: { disk: DiskInfo;   strategies: Record<string, unknown>[] }
+  storage: { disk: DiskInfo; strategies: Record<string, unknown>[] }
   usage: Record<string, number>
   backup: BackupInfo
+  database: { table: string; rows: number }[]
+  phash_coverage: { total: number; with_phash: number }
 }
 
 export interface MaintenanceRisk {
@@ -377,5 +379,10 @@ export async function getAdminObservabilitySummary(): Promise<AdminObservability
 export async function getMaintenanceSummary(): Promise<MaintenanceSummary> {
   const res = await api.get<ApiResponse<MaintenanceSummary>>('/admin/maintenance/summary')
   return res.data.data
+}
+
+export async function cleanupExpiredImages(): Promise<string> {
+  const res = await api.post<ApiResponse<string>>('/admin/maintenance/cleanup-expired')
+  return res.data.message ?? 'done'
 }
 

@@ -1,8 +1,12 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
-import { ShieldCheck, AlertTriangle, Info, CheckCircle2, HardDrive, Clock, XCircle } from 'lucide-react'
-import { getMaintenanceSummary, type MaintenanceSummary, type MaintenanceRisk } from '../../../lib/admin-api'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { ShieldCheck, AlertTriangle, Info, CheckCircle2, HardDrive, Clock, XCircle, Trash2, Layers, Activity } from 'lucide-react'
+import { toast } from 'sonner'
+import { getMaintenanceSummary, cleanupExpiredImages, type MaintenanceSummary, type MaintenanceRisk } from '../../../lib/admin-api'
+import { extractErrorMessage } from '../../../lib/error-handler'
 import { LoadingState } from '@/components/page-states'
+import { Button } from '@/components/ui/button'
 
 function formatBytes(bytes: number): string {
   if (!bytes || bytes <= 0) return '0 B'
@@ -24,11 +28,26 @@ function RiskIcon({ level }: { level: string }) {
 
 export function MaintenancePage() {
   const { t } = useTranslation()
+  const qc = useQueryClient()
   const { data, isLoading, error } = useQuery<MaintenanceSummary>({
     queryKey: ['maintenance-summary'],
     queryFn: getMaintenanceSummary,
     refetchInterval: 30000,
   })
+
+  const [cleaning, setCleaning] = useState(false)
+  const handleCleanup = async () => {
+    setCleaning(true)
+    try {
+      const msg = await cleanupExpiredImages()
+      toast.success(msg)
+      qc.invalidateQueries({ queryKey: ['maintenance-summary'] })
+    } catch (err: unknown) {
+      toast.error(extractErrorMessage(err, 'cleanup failed'))
+    } finally {
+      setCleaning(false)
+    }
+  }
 
   if (isLoading) return <LoadingState className="min-h-[40vh]" compact />
   if (error || !data) return (
@@ -142,6 +161,69 @@ export function MaintenancePage() {
               </p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Database */}
+      {data.database && data.database.length > 0 && (
+        <div>
+          <h2 className="flex items-center gap-2 text-sm font-semibold mb-3"><Layers className="size-4" />{t('admin.databaseStats', { defaultValue: '数据库' })}</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {data.database.map((t: Record<string, unknown>, i: number) => (
+              <div key={i} className="rounded-lg border bg-card px-3 py-2 text-center">
+                <p className="text-xs text-muted-foreground truncate">{t.table as string}</p>
+                <p className="text-lg font-bold">{String(t.rows)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* pHash Coverage */}
+      {data.phash_coverage && (
+        <div>
+          <h2 className="flex items-center gap-2 text-sm font-semibold mb-3"><Activity className="size-4" />{t('admin.phashCoverage', { defaultValue: '感知哈希覆盖' })}</h2>
+          <div className="rounded-xl border bg-card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm">{data.phash_coverage.with_phash as number} / {data.phash_coverage.total as number}</span>
+              <span className="text-xs text-muted-foreground">{data.phash_coverage.total as number > 0 ? Math.round((data.phash_coverage.with_phash as number / data.phash_coverage.total as number) * 100) : 0}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div className="h-full rounded-full bg-green-500 transition-all" style={{
+                width: `${data.phash_coverage.total as number > 0 ? (data.phash_coverage.with_phash as number / data.phash_coverage.total as number) * 100 : 0}%`
+              }} />
+            </div>
+            {(data.phash_coverage.with_phash as number) < (data.phash_coverage.total as number) && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t('admin.phashHint', { defaultValue: '历史图片尚未计算感知哈希，可通过 CLI 或维护工具补算' })}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tools */}
+      <div>
+        <h2 className="flex items-center gap-2 text-sm font-semibold mb-3"><Trash2 className="size-4" />{t('admin.tools', { defaultValue: '维护工具' })}</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="rounded-xl border bg-card p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">{t('admin.cleanExpired', { defaultValue: '清理过期图片' })}</p>
+              <p className="text-xs text-muted-foreground">{t('admin.cleanExpiredDesc', { defaultValue: '删除所有已过期的图片及其文件' })}</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={handleCleanup} disabled={cleaning}>
+              {cleaning ? '...' : t('admin.run', { defaultValue: '执行' })}
+            </Button>
+          </div>
+          <div className="rounded-xl border bg-card p-4">
+            <p className="text-sm font-medium">{t('admin.logs', { defaultValue: '查看日志' })}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t('admin.logsHint', { defaultValue: '通过命令行查看实时日志' })}
+            </p>
+            <code className="mt-2 block rounded bg-muted px-2 py-1 text-xs font-mono">
+              journalctl -u picfast -f
+            </code>
+          </div>
         </div>
       </div>
     </div>

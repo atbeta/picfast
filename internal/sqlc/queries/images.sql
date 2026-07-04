@@ -120,3 +120,7 @@ SELECT * FROM images WHERE phash IS NULL ORDER BY id LIMIT $1;
 
 -- name: UpdateImagePHash :exec
 UPDATE images SET phash = $2 WHERE id = $1;
+
+-- name: DeleteExpiredImages :many
+DELETE FROM images WHERE expires_at IS NOT NULL AND expires_at <= NOW()
+RETURNING id;
