@@ -339,7 +339,43 @@ export interface AdminObservabilitySummary {
   }
 }
 
+export interface MaintenanceSummary {
+  generated_at: string
+  risks: MaintenanceRisk[]
+  storage: { disk: DiskInfo;   strategies: Record<string, unknown>[] }
+  usage: Record<string, number>
+  backup: BackupInfo
+}
+
+export interface MaintenanceRisk {
+  level: 'info' | 'warn' | 'error'
+  code: string
+  message: string
+  count?: number
+}
+
+export interface DiskInfo {
+  healthy: boolean
+  path: string
+  total_bytes: number
+  free_bytes: number
+}
+
+export interface BackupInfo {
+  status: 'ok' | 'no_backups' | 'no_storage'
+  file?: string
+  size?: number
+  timestamp?: string
+  path?: string
+}
+
 export async function getAdminObservabilitySummary(): Promise<AdminObservabilitySummary> {
   const res = await api.get<ApiResponse<AdminObservabilitySummary>>('/admin/observability/summary')
   return res.data.data
 }
+
+export async function getMaintenanceSummary(): Promise<MaintenanceSummary> {
+  const res = await api.get<ApiResponse<MaintenanceSummary>>('/admin/maintenance/summary')
+  return res.data.data
+}
+

@@ -19,6 +19,7 @@ import {
   ScrollText,
   ShieldCheck,
   ShieldAlert,
+  Wrench,
   Menu,
 } from 'lucide-react'
 
@@ -128,6 +129,7 @@ export function ConsoleLayout() {
                   <ConsoleNavItem to="/console/admin/images" label={t('admin.navImages')} icon={Files} onNavigate={() => setMobileNavOpen(false)} />
                   <ConsoleNavItem to="/console/admin/moderation" label={t('admin.navModeration', { defaultValue: '审核管理' })} icon={ShieldAlert} onNavigate={() => setMobileNavOpen(false)} />
                   <ConsoleNavItem to="/console/admin/audit-logs" label={t('admin.navAuditLogs', { defaultValue: '审计日志' })} icon={ScrollText} onNavigate={() => setMobileNavOpen(false)} />
+                  <ConsoleNavItem to="/console/admin/maintenance" label={t('admin.maintenanceTitle', { defaultValue: '系统维护' })} icon={Wrench} onNavigate={() => setMobileNavOpen(false)} />
                   <ConsoleNavItem to="/console/admin/site" label={t('admin.navSiteSettings')} icon={Globe} onNavigate={() => setMobileNavOpen(false)} />
                   <ConsoleNavItem to="/console/admin/access" label={t('admin.navAccessSettings')} icon={ShieldCheck} onNavigate={() => setMobileNavOpen(false)} />
                 </>
@@ -162,6 +164,7 @@ export function ConsoleLayout() {
                   <ConsoleNavItem to="/console/admin/images" label={t('admin.navImages')} icon={Files} />
                   <ConsoleNavItem to="/console/admin/moderation" label={t('admin.navModeration', { defaultValue: '审核管理' })} icon={ShieldAlert} />
                   <ConsoleNavItem to="/console/admin/audit-logs" label={t('admin.navAuditLogs', { defaultValue: '审计日志' })} icon={ScrollText} />
+                  <ConsoleNavItem to="/console/admin/maintenance" label={t('admin.maintenanceTitle', { defaultValue: '系统维护' })} icon={Wrench} />
                   <ConsoleNavItem to="/console/admin/site" label={t('admin.navSiteSettings')} icon={Globe} />
                   <ConsoleNavItem to="/console/admin/access" label={t('admin.navAccessSettings')} icon={ShieldCheck} />
                 </div>

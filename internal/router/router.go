@@ -226,6 +226,7 @@ func New(
 	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg), queries, mailSender != nil && mailSender.Ready())
 	adminAuditHandler := handler.NewAdminAuditHandler(queries)
 	adminObservabilityHandler := handler.NewAdminObservabilityHandler(queries, pool, cfg, mailSender != nil && mailSender.Ready())
+	adminMaintenanceHandler := handler.NewAdminMaintenanceHandler(queries, pool, cfg, adminObservabilityHandler)
 
 	// Content Moderation
 	app := cfg.AppSnapshot()
@@ -484,6 +485,7 @@ func New(
 			r.Put("/settings", adminSettingHandler.Update)
 			r.Get("/audit-logs", adminAuditHandler.List)
 			r.Get("/observability/summary", adminObservabilityHandler.Summary)
+			r.Get("/maintenance/summary", adminMaintenanceHandler.Summary)
 
 			if cfg.ServerSnapshot().EnablePprof {
 				// Debug / pprof (admin only)

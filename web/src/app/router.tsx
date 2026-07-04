@@ -28,6 +28,7 @@ const AdminSiteSettingsPage = lazy(async () => ({ default: (await import('../pag
 const AdminAccessSettingsPage = lazy(async () => ({ default: (await import('../pages/console/admin/settings/access-settings-page')).AdminAccessSettingsPage }))
 const AdminDashboardPage = lazy(async () => ({ default: (await import('../pages/console/admin/dashboard-page')).AdminDashboardPage }))
 const AdminAuditLogsPage = lazy(async () => ({ default: (await import('../pages/console/admin/audit-logs-page')).AdminAuditLogsPage }))
+const AdminMaintenancePage = lazy(async () => ({ default: (await import('../pages/console/admin/maintenance-page')).MaintenancePage }))
 const GuestUploadPage = lazy(async () => ({ default: (await import('../pages/public/guest-upload-page')).GuestUploadPage }))
 const LoginPage = lazy(async () => ({ default: (await import('../pages/public/login-page')).LoginPage }))
 const ForgotPasswordPage = lazy(async () => ({ default: (await import('../pages/public/forgot-password-page')).ForgotPasswordPage }))
@@ -184,6 +185,7 @@ function PublicRoutes() {
                 <Route path="images" element={<LazyPage><AdminImagesPage /></LazyPage>} />
                 <Route path="moderation" element={<LazyPage><AdminModerationPage /></LazyPage>} />
                 <Route path="audit-logs" element={<LazyPage><AdminAuditLogsPage /></LazyPage>} />
+                <Route path="maintenance" element={<LazyPage><AdminMaintenancePage /></LazyPage>} />
                 <Route path="maintenance" element={<Navigate to="https://picfast.top/docs/maintenance" replace />} />
                 <Route path="settings" element={<Navigate to="/console/admin/site" replace />} />
                 <Route path="site" element={<LazyPage><AdminSiteSettingsPage /></LazyPage>} />

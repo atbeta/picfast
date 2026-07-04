@@ -111,3 +111,12 @@ WHERE phash IS NOT NULL
   AND bit_count(phash # sqlc.arg('phash')::bigint) < sqlc.arg('max_distance')::int
 ORDER BY distance ASC
 LIMIT sqlc.arg('limit')::int;
+
+-- name: CountExpiredImages :one
+SELECT COUNT(*) FROM images WHERE expires_at IS NOT NULL AND expires_at <= NOW();
+
+-- name: GetImagesWithoutPHash :many
+SELECT * FROM images WHERE phash IS NULL ORDER BY id LIMIT $1;
+
+-- name: UpdateImagePHash :exec
+UPDATE images SET phash = $2 WHERE id = $1;

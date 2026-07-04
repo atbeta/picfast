@@ -17,8 +17,10 @@ import (
 	"github.com/atbeta/picfast/internal/config"
 	picservice "github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/service/maintenance"
+	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/atbeta/picfast/internal/version"
 	"github.com/davidbyttow/govips/v2/vips"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -39,6 +41,8 @@ func runMaintenanceCommand(ctx context.Context, args []string, stdout, stderr io
 		return runMaintenanceRestore(ctx, args[1:], stdout, stderr)
 	case "repair-thumbnails":
 		return runMaintenanceRepairThumbnails(ctx, args[1:], stdout, stderr)
+	case "recalc-phash":
+		return runRecalcPHash(ctx, args[1:], stdout, stderr)
 	case "help", "-h", "--help":
 		printMaintenanceUsage(stdout)
 		return 0
@@ -56,13 +60,15 @@ func printMaintenanceUsage(w io.Writer) {
   picfast maintenance inspect <backup.tar|backup.tar.gz> [flags]
   picfast maintenance restore <backup.tar|backup.tar.gz> [flags]
   picfast maintenance repair-thumbnails [flags]
+  picfast maintenance recalc-phash [flags]
 
 Commands:
   doctor              Verify image objects and thumbnails without changing data
   backup              Create a versioned backup archive
   inspect             Validate backup manifest and checksums
   restore             Restore a backup archive after guarded preflight checks
-  repair-thumbnails   Rebuild missing thumbnails from readable source objects`)
+  repair-thumbnails   Rebuild missing thumbnails from readable source objects
+  recalc-phash        Recompute perceptual hashes for images missing one`)
 }
 
 func runMaintenanceDoctor(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -1101,4 +1107,89 @@ func parseInterspersedFlags(fs *flag.FlagSet, args []string) error {
 		}
 	}
 	return fs.Parse(append(flagArgs, positionals...))
+}
+
+func runRecalcPHash(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("picfast maintenance recalc-phash", flag.ContinueOnError)
+	batchSize := fs.Int("batch", 100, "Number of images to process per batch")
+	dryRun := fs.Bool("dry-run", false, "Show what would be done without making changes")
+
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Fprintf(stderr, "cannot load config: %v\n", err)
+		return 1
+	}
+	pool, err := pgxpool.New(ctx, cfg.Database.URL)
+	if err != nil {
+		fmt.Fprintf(stderr, "cannot connect: %v\n", err)
+		return 1
+	}
+	defer pool.Close()
+
+	db := sqlc.New(pool)
+
+	total := 0
+	for {
+		images, err := db.GetImagesWithoutPHash(ctx, int32(*batchSize))
+		if err != nil {
+			fmt.Fprintf(stderr, "query error: %v\n", err)
+			return 1
+		}
+		if len(images) == 0 {
+			break
+		}
+
+		for _, img := range images {
+			strategy, err := db.GetStrategyByID(ctx, img.StrategyID.Int64)
+			if err != nil {
+				fmt.Fprintf(stderr, "strategy lookup failed for image %d: %v\n", img.ID, err)
+				continue
+			}
+
+			store, err := picservice.GetStorageForStrategy(strategy)
+			if err != nil {
+				fmt.Fprintf(stderr, "storage init failed for image %d: %v\n", img.ID, err)
+				continue
+			}
+
+			pathname := img.Name
+			if img.Path != "" && img.Path != "." {
+				pathname = img.Path + "/" + img.Name
+			}
+			data, err := store.Read(ctx, pathname)
+			_ = store.Close()
+			if err != nil {
+				fmt.Fprintf(stderr, "read failed for image %d: %v\n", img.ID, err)
+				continue
+			}
+
+			phash, err := picservice.ComputePHash(data)
+			if err != nil {
+				fmt.Fprintf(stderr, "phash failed for image %d: %v\n", img.ID, err)
+				continue
+			}
+
+			if !*dryRun {
+				if err := db.UpdateImagePHash(ctx, sqlc.UpdateImagePHashParams{
+					ID:    img.ID,
+					Phash: pgtype.Int8{Int64: int64(phash), Valid: true},
+				}); err != nil {
+					fmt.Fprintf(stderr, "update phash failed for image %d: %v\n", img.ID, err)
+					continue
+				}
+			}
+
+			total++
+			if total%10 == 0 {
+				fmt.Fprintf(stdout, "processed %d images...\n", total)
+			}
+		}
+	}
+
+	fmt.Fprintf(stdout, "done: processed %d images\n", total)
+	return 0
 }

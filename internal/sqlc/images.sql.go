@@ -43,6 +43,17 @@ func (q *Queries) CountAllImages(ctx context.Context, arg CountAllImagesParams) 
 	return count, err
 }
 
+const countExpiredImages = `-- name: CountExpiredImages :one
+SELECT COUNT(*) FROM images WHERE expires_at IS NOT NULL AND expires_at <= NOW()
+`
+
+func (q *Queries) CountExpiredImages(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countExpiredImages)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countImagesByStrategy = `-- name: CountImagesByStrategy :one
 SELECT COUNT(*) FROM images WHERE strategy_id = $1
 `
@@ -559,6 +570,56 @@ func (q *Queries) GetImagesByMD5(ctx context.Context, md5 string) ([]Image, erro
 	return items, nil
 }
 
+const getImagesWithoutPHash = `-- name: GetImagesWithoutPHash :many
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash FROM images WHERE phash IS NULL ORDER BY id LIMIT $1
+`
+
+func (q *Queries) GetImagesWithoutPHash(ctx context.Context, limit int32) ([]Image, error) {
+	rows, err := q.db.Query(ctx, getImagesWithoutPHash, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Image{}
+	for rows.Next() {
+		var i Image
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.AlbumID,
+			&i.GroupID,
+			&i.StrategyID,
+			&i.Key,
+			&i.Path,
+			&i.Name,
+			&i.OriginName,
+			&i.SizeBytes,
+			&i.Mimetype,
+			&i.Extension,
+			&i.Md5,
+			&i.Sha1,
+			&i.Width,
+			&i.Height,
+			&i.Permission,
+			&i.IsUnhealthy,
+			&i.UploadedIp,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ModerationStatus,
+			&i.ExpiresAt,
+			&i.ExifData,
+			&i.Phash,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllImages = `-- name: ListAllImages :many
 SELECT images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status, images.expires_at, images.exif_data, images.phash, users.email as user_email FROM images
 LEFT JOIN users ON images.user_id = users.id
@@ -839,5 +900,19 @@ type UpdateImageExpirationParams struct {
 
 func (q *Queries) UpdateImageExpiration(ctx context.Context, arg UpdateImageExpirationParams) error {
 	_, err := q.db.Exec(ctx, updateImageExpiration, arg.ID, arg.ExpiresAt)
+	return err
+}
+
+const updateImagePHash = `-- name: UpdateImagePHash :exec
+UPDATE images SET phash = $2 WHERE id = $1
+`
+
+type UpdateImagePHashParams struct {
+	ID    int64       `json:"id"`
+	Phash pgtype.Int8 `json:"phash"`
+}
+
+func (q *Queries) UpdateImagePHash(ctx context.Context, arg UpdateImagePHashParams) error {
+	_, err := q.db.Exec(ctx, updateImagePHash, arg.ID, arg.Phash)
 	return err
 }
