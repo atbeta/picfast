@@ -258,34 +258,6 @@ export function AdminDashboardPage() {
               </dl>
             </div>
           </div>
-
-          <div className="border-t border-border/40 bg-card/60 p-6">
-            <div className="mb-4 text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/70"></span>
-              {t('admin.observabilityStorageStrategies', { defaultValue: '存储策略健康' })}
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {observability.storage_strategies.map((strategy) => (
-                <div key={strategy.id} className="rounded-lg border border-border/40 bg-card/40 p-4 transition-colors hover:border-primary/30">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-foreground">{strategy.name}</div>
-                      <div className="mt-0.5 text-xs text-muted-foreground font-mono">{strategy.type}</div>
-                    </div>
-                    <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${strategy.healthy ? 'bg-success/15 text-success border border-success/20' : 'bg-destructive/15 text-destructive border border-destructive/20'}`}>
-                      {strategy.healthy
-                        ? strategy.warning
-                          ? t('admin.statusLimited', { defaultValue: '受限' })
-                          : t('admin.statusHealthy', { defaultValue: '健康' })
-                        : t('admin.statusUnhealthy', { defaultValue: '异常' })}
-                    </span>
-                  </div>
-                  {strategy.warning && <div className="mt-3 truncate text-xs text-amber-500/90" title={strategy.warning}>{strategy.warning}</div>}
-                  {strategy.error && <div className="mt-3 truncate text-xs text-destructive/90" title={strategy.error}>{strategy.error}</div>}
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       )}
     </section>

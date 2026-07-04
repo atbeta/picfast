@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"syscall"
 	"time"
 
@@ -50,6 +51,7 @@ func (h *AdminMaintenanceHandler) Summary(w http.ResponseWriter, r *http.Request
 	backupInfo := h.backupInfo()
 	dbTables := h.tableStats(ctx)
 	phashCoverage := h.phashStats(ctx)
+	thumbnailStats := h.thumbnailStats()
 
 	Success(w, map[string]any{
 		"generated_at":   time.Now().UTC(),
@@ -62,6 +64,7 @@ func (h *AdminMaintenanceHandler) Summary(w http.ResponseWriter, r *http.Request
 		"backup":         backupInfo,
 		"database":       dbTables,
 		"phash_coverage": phashCoverage,
+		"thumbnails":     thumbnailStats,
 	})
 }
 
@@ -226,6 +229,25 @@ func (h *AdminMaintenanceHandler) phashStats(ctx context.Context) map[string]any
 		"total":      total,
 		"with_phash": withPhash,
 	}
+}
+
+func (h *AdminMaintenanceHandler) thumbnailStats() map[string]any {
+	thumbDir := h.cfg.Storage.ThumbnailDir
+	if thumbDir == "" {
+		return map[string]any{"error": "not configured"}
+	}
+
+	entries, err := os.ReadDir(thumbDir)
+	if err != nil {
+		return map[string]any{"error": err.Error(), "on_disk": 0}
+	}
+	onDisk := 0
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".png") {
+			onDisk++
+		}
+	}
+	return map[string]any{"on_disk": onDisk, "dir": thumbDir}
 }
 
 func (h *AdminMaintenanceHandler) CleanupExpired(w http.ResponseWriter, r *http.Request) {

@@ -347,6 +347,7 @@ export interface MaintenanceSummary {
   backup: BackupInfo
   database: { table: string; rows: number }[]
   phash_coverage: { total: number; with_phash: number }
+  thumbnails: { on_disk: number; dir: string; error?: string }
 }
 
 export interface MaintenanceRisk {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ShieldCheck, AlertTriangle, Info, CheckCircle2, HardDrive, Clock, XCircle, Trash2, Layers, Activity } from 'lucide-react'
+import { ShieldCheck, AlertTriangle, Info, CheckCircle2, HardDrive, Clock, XCircle, Layers, Activity, Image, Wrench, Terminal, Play } from 'lucide-react'
 import { toast } from 'sonner'
 import { getMaintenanceSummary, cleanupExpiredImages, type MaintenanceSummary, type MaintenanceRisk } from '../../../lib/admin-api'
 import { extractErrorMessage } from '../../../lib/error-handler'
@@ -202,9 +202,24 @@ export function MaintenancePage() {
         </div>
       )}
 
+      {/* Thumbnails */}
+      {data.thumbnails && (
+        <div>
+          <h2 className="flex items-center gap-2 text-sm font-semibold mb-3"><Image className="size-4" />{t('admin.thumbnails', { defaultValue: '缩略图' })}</h2>
+          <div className="rounded-xl border bg-card p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">{data.thumbnails.on_disk as number} {t('admin.thumbsOnDisk', { defaultValue: '个文件' })}</p>
+                <p className="text-xs text-muted-foreground">{data.thumbnails.dir as string}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tools */}
       <div>
-        <h2 className="flex items-center gap-2 text-sm font-semibold mb-3"><Trash2 className="size-4" />{t('admin.tools', { defaultValue: '维护工具' })}</h2>
+        <h2 className="flex items-center gap-2 text-sm font-semibold mb-3"><Wrench className="size-4" />{t('admin.tools', { defaultValue: '维护工具' })}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="rounded-xl border bg-card p-4 flex items-center justify-between">
             <div>
@@ -215,14 +230,52 @@ export function MaintenancePage() {
               {cleaning ? '...' : t('admin.run', { defaultValue: '执行' })}
             </Button>
           </div>
+          <div className="rounded-xl border bg-card p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">{t('admin.repairThumbnails', { defaultValue: '修复缩略图' })}</p>
+              <p className="text-xs text-muted-foreground">{t('admin.repairThumbnailsDesc', { defaultValue: '重建所有丢失的缩略图文件' })}</p>
+            </div>
+            <Button size="sm" variant="outline" disabled>
+              <Terminal className="size-3.5 mr-1" />CLI
+            </Button>
+          </div>
+          <div className="rounded-xl border bg-card p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">{t('admin.dataDoctor', { defaultValue: '数据完整性校验' })}</p>
+              <p className="text-xs text-muted-foreground">{t('admin.dataDoctorDesc', { defaultValue: '校验存储对象与缩略图一致性（不修改数据）' })}</p>
+            </div>
+            <Button size="sm" variant="outline" disabled>
+              <Terminal className="size-3.5 mr-1" />CLI
+            </Button>
+          </div>
+          <div className="rounded-xl border bg-card p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">{t('admin.recalcPhash', { defaultValue: '补算感知哈希' })}</p>
+              <p className="text-xs text-muted-foreground">{t('admin.recalcPhashDesc', { defaultValue: '为无哈希的历史图片计算感知哈希' })}</p>
+            </div>
+            <Button size="sm" variant="outline" disabled>
+              <Terminal className="size-3.5 mr-1" />CLI
+            </Button>
+          </div>
+          <div className="rounded-xl border bg-card p-4 sm:col-span-2">
+            <p className="text-sm font-medium flex items-center gap-2">
+              <Play className="size-4 text-green-500" />
+              {t('admin.backupNow', { defaultValue: '创建备份' })}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t('admin.backupNowDesc', { defaultValue: '创建完整备份（含数据库 + 文件），下载 tar.gz 归档' })}</p>
+            <code className="mt-2 block rounded bg-muted px-2 py-1 text-xs font-mono">
+              picfast maintenance backup -o backup.tar.gz
+            </code>
+          </div>
           <div className="rounded-xl border bg-card p-4">
             <p className="text-sm font-medium">{t('admin.logs', { defaultValue: '查看日志' })}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('admin.logsHint', { defaultValue: '通过命令行查看实时日志' })}
-            </p>
-            <code className="mt-2 block rounded bg-muted px-2 py-1 text-xs font-mono">
-              journalctl -u picfast -f
-            </code>
+            <p className="text-xs text-muted-foreground mt-1">{t('admin.logsHint', { defaultValue: '实时日志查看命令' })}</p>
+            <code className="mt-2 block rounded bg-muted px-2 py-1 text-xs font-mono">journalctl -u picfast -f</code>
+          </div>
+          <div className="rounded-xl border bg-card p-4">
+            <p className="text-sm font-medium">{t('admin.dockerLogs', { defaultValue: 'Docker 日志' })}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('admin.dockerLogsHint', { defaultValue: '容器环境查看日志' })}</p>
+            <code className="mt-2 block rounded bg-muted px-2 py-1 text-xs font-mono">docker logs picfast -f</code>
           </div>
         </div>
       </div>
