@@ -1,6 +1,7 @@
 package events
 
 import (
+	"encoding/json"
 	"strconv"
 	"time"
 
@@ -26,6 +27,8 @@ type ImageUploadedData struct {
 	UploadedIP   string    `json:"uploaded_ip"`
 	ExpiresAt    *time.Time `json:"expires_at"`
 	Links        ImageLinks `json:"links"`
+	Exif         json.RawMessage `json:"exif,omitempty"`
+	Phash        uint64          `json:"phash,omitempty"`
 }
 
 type ImageLinks struct {

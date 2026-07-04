@@ -93,6 +93,8 @@ type Image struct {
 	UpdatedAt        time.Time          `json:"updated_at"`
 	ModerationStatus string             `json:"moderation_status"`
 	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+	ExifData         []byte             `json:"exif_data"`
+	Phash            pgtype.Int8        `json:"phash"`
 }
 
 type ImageModeration struct {

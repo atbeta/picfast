@@ -5,8 +5,8 @@ SELECT * FROM images WHERE key = $1;
 SELECT * FROM images WHERE id = $1;
 
 -- name: CreateImage :one
-INSERT INTO images (user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, uploaded_ip, expires_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+INSERT INTO images (user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, uploaded_ip, expires_at, exif_data, phash)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
 RETURNING *;
 
 -- name: DeleteImage :exec
@@ -100,3 +100,14 @@ SELECT * FROM images WHERE md5 = $1;
 
 -- name: CountImagesByStrategy :one
 SELECT COUNT(*) FROM images WHERE strategy_id = $1;
+
+-- name: FindSimilarImages :many
+SELECT *, bit_count(phash # sqlc.arg('phash')::bigint) AS distance
+FROM images
+WHERE phash IS NOT NULL
+  AND phash != 0
+  AND id != sqlc.arg('image_id')
+  AND (sqlc.narg('user_id')::int = 0 OR user_id = sqlc.narg('user_id'))
+  AND bit_count(phash # sqlc.arg('phash')::bigint) < sqlc.arg('max_distance')::int
+ORDER BY distance ASC
+LIMIT sqlc.arg('limit')::int;

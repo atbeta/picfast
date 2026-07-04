@@ -124,9 +124,9 @@ func (q *Queries) CountImagesInWindowByIP(ctx context.Context, arg CountImagesIn
 }
 
 const createImage = `-- name: CreateImage :one
-INSERT INTO images (user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, uploaded_ip, expires_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-RETURNING id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at
+INSERT INTO images (user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, uploaded_ip, expires_at, exif_data, phash)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+RETURNING id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash
 `
 
 type CreateImageParams struct {
@@ -148,6 +148,8 @@ type CreateImageParams struct {
 	Permission int16              `json:"permission"`
 	UploadedIp string             `json:"uploaded_ip"`
 	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+	ExifData   []byte             `json:"exif_data"`
+	Phash      pgtype.Int8        `json:"phash"`
 }
 
 func (q *Queries) CreateImage(ctx context.Context, arg CreateImageParams) (Image, error) {
@@ -170,6 +172,8 @@ func (q *Queries) CreateImage(ctx context.Context, arg CreateImageParams) (Image
 		arg.Permission,
 		arg.UploadedIp,
 		arg.ExpiresAt,
+		arg.ExifData,
+		arg.Phash,
 	)
 	var i Image
 	err := row.Scan(
@@ -196,6 +200,8 @@ func (q *Queries) CreateImage(ctx context.Context, arg CreateImageParams) (Image
 		&i.UpdatedAt,
 		&i.ModerationStatus,
 		&i.ExpiresAt,
+		&i.ExifData,
+		&i.Phash,
 	)
 	return i, err
 }
@@ -219,7 +225,7 @@ func (q *Queries) DeleteImageByKey(ctx context.Context, key string) error {
 }
 
 const findDuplicateImage = `-- name: FindDuplicateImage :one
-SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at FROM images
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash FROM images
 WHERE strategy_id = $1 AND md5 = $2 AND sha1 = $3
 LIMIT 1
 `
@@ -257,12 +263,116 @@ func (q *Queries) FindDuplicateImage(ctx context.Context, arg FindDuplicateImage
 		&i.UpdatedAt,
 		&i.ModerationStatus,
 		&i.ExpiresAt,
+		&i.ExifData,
+		&i.Phash,
 	)
 	return i, err
 }
 
+const findSimilarImages = `-- name: FindSimilarImages :many
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash, bit_count(phash # $1::bigint) AS distance
+FROM images
+WHERE phash IS NOT NULL
+  AND phash != 0
+  AND id != $2
+  AND ($3::int = 0 OR user_id = $3)
+  AND bit_count(phash # $1::bigint) < $4::int
+ORDER BY distance ASC
+LIMIT $5::int
+`
+
+type FindSimilarImagesParams struct {
+	Phash       int64       `json:"phash"`
+	ImageID     int64       `json:"image_id"`
+	UserID      pgtype.Int4 `json:"user_id"`
+	MaxDistance int32       `json:"max_distance"`
+	Limit       int32       `json:"limit"`
+}
+
+type FindSimilarImagesRow struct {
+	ID               int64              `json:"id"`
+	UserID           pgtype.Int8        `json:"user_id"`
+	AlbumID          pgtype.Int8        `json:"album_id"`
+	GroupID          pgtype.Int8        `json:"group_id"`
+	StrategyID       pgtype.Int8        `json:"strategy_id"`
+	Key              string             `json:"key"`
+	Path             string             `json:"path"`
+	Name             string             `json:"name"`
+	OriginName       string             `json:"origin_name"`
+	SizeBytes        int64              `json:"size_bytes"`
+	Mimetype         string             `json:"mimetype"`
+	Extension        string             `json:"extension"`
+	Md5              string             `json:"md5"`
+	Sha1             string             `json:"sha1"`
+	Width            int32              `json:"width"`
+	Height           int32              `json:"height"`
+	Permission       int16              `json:"permission"`
+	IsUnhealthy      bool               `json:"is_unhealthy"`
+	UploadedIp       string             `json:"uploaded_ip"`
+	CreatedAt        time.Time          `json:"created_at"`
+	UpdatedAt        time.Time          `json:"updated_at"`
+	ModerationStatus string             `json:"moderation_status"`
+	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+	ExifData         []byte             `json:"exif_data"`
+	Phash            pgtype.Int8        `json:"phash"`
+	Distance         int64              `json:"distance"`
+}
+
+func (q *Queries) FindSimilarImages(ctx context.Context, arg FindSimilarImagesParams) ([]FindSimilarImagesRow, error) {
+	rows, err := q.db.Query(ctx, findSimilarImages,
+		arg.Phash,
+		arg.ImageID,
+		arg.UserID,
+		arg.MaxDistance,
+		arg.Limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindSimilarImagesRow{}
+	for rows.Next() {
+		var i FindSimilarImagesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.AlbumID,
+			&i.GroupID,
+			&i.StrategyID,
+			&i.Key,
+			&i.Path,
+			&i.Name,
+			&i.OriginName,
+			&i.SizeBytes,
+			&i.Mimetype,
+			&i.Extension,
+			&i.Md5,
+			&i.Sha1,
+			&i.Width,
+			&i.Height,
+			&i.Permission,
+			&i.IsUnhealthy,
+			&i.UploadedIp,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ModerationStatus,
+			&i.ExpiresAt,
+			&i.ExifData,
+			&i.Phash,
+			&i.Distance,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getExpiredImages = `-- name: GetExpiredImages :many
-SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at FROM images
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash FROM images
 WHERE expires_at IS NOT NULL AND expires_at <= NOW()
 ORDER BY expires_at ASC
 LIMIT $1
@@ -301,6 +411,8 @@ func (q *Queries) GetExpiredImages(ctx context.Context, limit int32) ([]Image, e
 			&i.UpdatedAt,
 			&i.ModerationStatus,
 			&i.ExpiresAt,
+			&i.ExifData,
+			&i.Phash,
 		); err != nil {
 			return nil, err
 		}
@@ -324,7 +436,7 @@ func (q *Queries) GetGuestUsedCapacity(ctx context.Context) (int64, error) {
 }
 
 const getImageByID = `-- name: GetImageByID :one
-SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at FROM images WHERE id = $1
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash FROM images WHERE id = $1
 `
 
 func (q *Queries) GetImageByID(ctx context.Context, id int64) (Image, error) {
@@ -354,12 +466,14 @@ func (q *Queries) GetImageByID(ctx context.Context, id int64) (Image, error) {
 		&i.UpdatedAt,
 		&i.ModerationStatus,
 		&i.ExpiresAt,
+		&i.ExifData,
+		&i.Phash,
 	)
 	return i, err
 }
 
 const getImageByKey = `-- name: GetImageByKey :one
-SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at FROM images WHERE key = $1
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash FROM images WHERE key = $1
 `
 
 func (q *Queries) GetImageByKey(ctx context.Context, key string) (Image, error) {
@@ -389,12 +503,14 @@ func (q *Queries) GetImageByKey(ctx context.Context, key string) (Image, error) 
 		&i.UpdatedAt,
 		&i.ModerationStatus,
 		&i.ExpiresAt,
+		&i.ExifData,
+		&i.Phash,
 	)
 	return i, err
 }
 
 const getImagesByMD5 = `-- name: GetImagesByMD5 :many
-SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at FROM images WHERE md5 = $1
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash FROM images WHERE md5 = $1
 `
 
 func (q *Queries) GetImagesByMD5(ctx context.Context, md5 string) ([]Image, error) {
@@ -430,6 +546,8 @@ func (q *Queries) GetImagesByMD5(ctx context.Context, md5 string) ([]Image, erro
 			&i.UpdatedAt,
 			&i.ModerationStatus,
 			&i.ExpiresAt,
+			&i.ExifData,
+			&i.Phash,
 		); err != nil {
 			return nil, err
 		}
@@ -442,7 +560,7 @@ func (q *Queries) GetImagesByMD5(ctx context.Context, md5 string) ([]Image, erro
 }
 
 const listAllImages = `-- name: ListAllImages :many
-SELECT images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status, images.expires_at, users.email as user_email FROM images
+SELECT images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status, images.expires_at, images.exif_data, images.phash, users.email as user_email FROM images
 LEFT JOIN users ON images.user_id = users.id
 WHERE ($3::text IS NULL OR images.origin_name ILIKE '%' || $3 || '%')
   AND ($4::text IS NULL OR users.email ILIKE '%' || $4 || '%')
@@ -487,6 +605,8 @@ type ListAllImagesRow struct {
 	UpdatedAt        time.Time          `json:"updated_at"`
 	ModerationStatus string             `json:"moderation_status"`
 	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+	ExifData         []byte             `json:"exif_data"`
+	Phash            pgtype.Int8        `json:"phash"`
 	UserEmail        pgtype.Text        `json:"user_email"`
 }
 
@@ -531,6 +651,8 @@ func (q *Queries) ListAllImages(ctx context.Context, arg ListAllImagesParams) ([
 			&i.UpdatedAt,
 			&i.ModerationStatus,
 			&i.ExpiresAt,
+			&i.ExifData,
+			&i.Phash,
 			&i.UserEmail,
 		); err != nil {
 			return nil, err
@@ -545,7 +667,7 @@ func (q *Queries) ListAllImages(ctx context.Context, arg ListAllImagesParams) ([
 
 const listImagesByUser = `-- name: ListImagesByUser :many
 SELECT
-    images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status, images.expires_at,
+    images.id, images.user_id, images.album_id, images.group_id, images.strategy_id, images.key, images.path, images.name, images.origin_name, images.size_bytes, images.mimetype, images.extension, images.md5, images.sha1, images.width, images.height, images.permission, images.is_unhealthy, images.uploaded_ip, images.created_at, images.updated_at, images.moderation_status, images.expires_at, images.exif_data, images.phash,
     strategies.name as strategy_name,
     strategies.strategy_type as strategy_type
 FROM images
@@ -595,6 +717,8 @@ type ListImagesByUserRow struct {
 	UpdatedAt        time.Time          `json:"updated_at"`
 	ModerationStatus string             `json:"moderation_status"`
 	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+	ExifData         []byte             `json:"exif_data"`
+	Phash            pgtype.Int8        `json:"phash"`
 	StrategyName     pgtype.Text        `json:"strategy_name"`
 	StrategyType     pgtype.Text        `json:"strategy_type"`
 }
@@ -641,6 +765,8 @@ func (q *Queries) ListImagesByUser(ctx context.Context, arg ListImagesByUserPara
 			&i.UpdatedAt,
 			&i.ModerationStatus,
 			&i.ExpiresAt,
+			&i.ExifData,
+			&i.Phash,
 			&i.StrategyName,
 			&i.StrategyType,
 		); err != nil {
@@ -660,7 +786,7 @@ UPDATE images SET
     permission = COALESCE($3, permission),
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at
+RETURNING id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash
 `
 
 type UpdateImageParams struct {
@@ -696,6 +822,8 @@ func (q *Queries) UpdateImage(ctx context.Context, arg UpdateImageParams) (Image
 		&i.UpdatedAt,
 		&i.ModerationStatus,
 		&i.ExpiresAt,
+		&i.ExifData,
+		&i.Phash,
 	)
 	return i, err
 }

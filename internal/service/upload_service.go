@@ -21,6 +21,7 @@ import (
 	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -135,6 +136,9 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		return nil, err
 	}
 
+	// Step 5: EXIF extraction (before processing strips metadata)
+	exifJSON := ExtractExif(params.FileData)
+
 	// Step 6: Process image
 	originalSize := int64(len(params.FileData))
 	processed := processUploadImage(params.FileData, ext, identity.processing)
@@ -156,6 +160,14 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	md5Hash := ComputeMD5(fileData)
 	h := sha1.Sum(fileData)
 	sha1Hash := fmt.Sprintf("%x", h[:])
+
+	// Compute perceptual hash from original data (best-effort)
+	var phash pgtype.Int8
+	if h, phashErr := ComputePHash(params.FileData); phashErr == nil {
+		phash = pgtype.Int8{Int64: int64(h), Valid: true}
+	} else {
+		slog.Debug("phash computation skipped", "error", phashErr)
+	}
 
 	// Step 9: Dedup check
 	existing, err := s.db.FindDuplicateImage(ctx, sqlc.FindDuplicateImageParams{
@@ -240,6 +252,8 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 			Permission: perm,
 			UploadedIp: params.ClientIP,
 			ExpiresAt:  domain.PgTimeWithZonePtr(params.ExpiresAt),
+			ExifData:   []byte(exifJSON),
+			Phash:      phash,
 		})
 		if err != nil {
 			return err
