@@ -318,10 +318,10 @@ export function MaintenancePage() {
           <div className="space-y-3 lg:col-span-1">
             <h2 className="flex items-center gap-2 text-sm font-semibold"><Layers className="size-4" />{t('admin.databaseStats', { defaultValue: '数据库' })}</h2>
             <div className="grid grid-cols-2 gap-3 h-[calc(100%-2rem)]">
-              {data.database.slice(0, 4).map((t: Record<string, unknown>, i: number) => (
+              {data.database.slice(0, 4).map((row: Record<string, unknown>, i: number) => (
                 <div key={i} className="rounded-xl border bg-card px-3 py-3 text-center shadow-sm flex flex-col justify-center">
-                  <p className="text-lg font-bold">{String(t.rows)}</p>
-                  <p className="text-xs text-muted-foreground truncate mt-1">{t.table as string}</p>
+                  <p className="text-lg font-bold">{String(row.rows)}</p>
+                  <p className="text-xs text-muted-foreground truncate mt-1">{row.table as string}</p>
                 </div>
               ))}
             </div>

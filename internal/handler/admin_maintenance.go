@@ -194,9 +194,6 @@ func (h *AdminMaintenanceHandler) backupInfo() map[string]any {
 
 func getString(m map[string]any, key string) string {
 	v, _ := m[key].(string)
-	if v == "" {
-		v, _ = m[key].(string)
-	}
 	return v
 }
 

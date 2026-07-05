@@ -485,7 +485,7 @@ func New(
 			r.Put("/settings", adminSettingHandler.Update)
 			r.Get("/audit-logs", adminAuditHandler.List)
 			r.Get("/observability/summary", adminObservabilityHandler.Summary)
-		r.Get("/maintenance/summary", adminMaintenanceHandler.Summary)
+			r.Get("/maintenance/summary", adminMaintenanceHandler.Summary)
 			r.Post("/maintenance/cleanup-expired", adminMaintenanceHandler.CleanupExpired)
 			r.Post("/maintenance/recalc-phash", adminMaintenanceHandler.RecalcPHash)
 

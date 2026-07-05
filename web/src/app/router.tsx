@@ -186,7 +186,6 @@ function PublicRoutes() {
                 <Route path="moderation" element={<LazyPage><AdminModerationPage /></LazyPage>} />
                 <Route path="audit-logs" element={<LazyPage><AdminAuditLogsPage /></LazyPage>} />
                 <Route path="maintenance" element={<LazyPage><AdminMaintenancePage /></LazyPage>} />
-                <Route path="maintenance" element={<Navigate to="https://picfast.top/docs/maintenance" replace />} />
                 <Route path="settings" element={<Navigate to="/console/admin/site" replace />} />
                 <Route path="site" element={<LazyPage><AdminSiteSettingsPage /></LazyPage>} />
                 <Route path="access" element={<LazyPage><AdminAccessSettingsPage /></LazyPage>} />
