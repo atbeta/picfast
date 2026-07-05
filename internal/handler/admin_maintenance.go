@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"github.com/atbeta/picfast/internal/config"
+	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -83,11 +85,18 @@ func (h *AdminMaintenanceHandler) collectRisks(ctx context.Context, usage map[st
 	// Check storage strategies health
 	for _, st := range strategies {
 		healthy, _ := st["healthy"].(bool)
+		name := getString(st, "name")
 		if !healthy {
 			risks = append(risks, map[string]any{
 				"level":   "error",
 				"code":    "strategy_unhealthy",
-				"message": "Storage strategy \"" + getString(st, "name") + "\" is unhealthy: " + getString(st, "error"),
+				"message": name + " is unhealthy: " + getString(st, "error"),
+			})
+		} else if w := getString(st, "warning"); w != "" {
+			risks = append(risks, map[string]any{
+				"level":   "warn",
+				"code":    "strategy_warning",
+				"message": name + ": " + w,
 			})
 		}
 	}
@@ -264,4 +273,54 @@ func (h *AdminMaintenanceHandler) CleanupExpired(w http.ResponseWriter, r *http.
 	}
 
 	SuccessMessage(w, fmt.Sprintf("cleaned %d of %d expired images", len(result), count))
+}
+
+func (h *AdminMaintenanceHandler) RecalcPHash(w http.ResponseWriter, r *http.Request) {
+	count, err := h.db.CountAllImages(r.Context(), sqlc.CountAllImagesParams{})
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to count images")
+		return
+	}
+
+	go func() {
+		bgCtx := context.Background()
+		processed := 0
+		for {
+			images, err := h.db.GetImagesWithoutPHash(bgCtx, 100)
+			if err != nil || len(images) == 0 {
+				break
+			}
+			for _, img := range images {
+				strategy, err := h.db.GetStrategyByID(bgCtx, img.StrategyID.Int64)
+				if err != nil {
+					continue
+				}
+				store, err := service.GetStorageForStrategy(strategy)
+				if err != nil {
+					continue
+				}
+				pathname := img.Name
+				if img.Path != "" && img.Path != "." {
+					pathname = img.Path + "/" + img.Name
+				}
+				data, err := store.Read(bgCtx, pathname)
+				store.Close()
+				if err != nil {
+					continue
+				}
+				phash, err := service.ComputePHash(data)
+				if err != nil {
+					continue
+				}
+				h.db.UpdateImagePHash(bgCtx, sqlc.UpdateImagePHashParams{
+					ID:    img.ID,
+					Phash: pgtype.Int8{Int64: int64(phash), Valid: true},
+				})
+				processed++
+			}
+		}
+		slog.Info("recalc-phash complete", "processed", processed)
+	}()
+
+	SuccessMessage(w, fmt.Sprintf("recalc-phash started, processing up to %d images in background", count))
 }

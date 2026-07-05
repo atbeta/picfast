@@ -339,10 +339,19 @@ export interface AdminObservabilitySummary {
   }
 }
 
+export interface MaintenanceSummaryStrategy {
+  id: number
+  name: string
+  type: string
+  healthy: boolean
+  error?: string
+  warning?: string
+}
+
 export interface MaintenanceSummary {
   generated_at: string
   risks: MaintenanceRisk[]
-  storage: { disk: DiskInfo; strategies: Record<string, unknown>[] }
+  storage: { disk: DiskInfo; strategies: MaintenanceSummaryStrategy[] }
   usage: Record<string, number>
   backup: BackupInfo
   database: { table: string; rows: number }[]
@@ -385,5 +394,10 @@ export async function getMaintenanceSummary(): Promise<MaintenanceSummary> {
 export async function cleanupExpiredImages(): Promise<string> {
   const res = await api.post<ApiResponse<string>>('/admin/maintenance/cleanup-expired')
   return res.data.message ?? 'done'
+}
+
+export async function recalcPHash(): Promise<string> {
+  const res = await api.post<ApiResponse<string>>('/admin/maintenance/recalc-phash')
+  return res.data.message ?? 'started'
 }
 

@@ -487,6 +487,7 @@ func New(
 			r.Get("/observability/summary", adminObservabilityHandler.Summary)
 		r.Get("/maintenance/summary", adminMaintenanceHandler.Summary)
 			r.Post("/maintenance/cleanup-expired", adminMaintenanceHandler.CleanupExpired)
+			r.Post("/maintenance/recalc-phash", adminMaintenanceHandler.RecalcPHash)
 
 			if cfg.ServerSnapshot().EnablePprof {
 				// Debug / pprof (admin only)
