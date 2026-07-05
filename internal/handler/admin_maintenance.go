@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"syscall"
+	"sync/atomic"
 	"time"
 
 	"github.com/atbeta/picfast/internal/config"
@@ -18,18 +18,21 @@ import (
 )
 
 type AdminMaintenanceHandler struct {
-	db           *sqlc.Queries
-	pool         *pgxpool.Pool
-	cfg          *config.Config
-	obsHandler   *AdminObservabilityHandler
+	db            *sqlc.Queries
+	pool          *pgxpool.Pool
+	cfg           *config.Config
+	obsHandler    *AdminObservabilityHandler
+	deleter       *service.DeleteService
+	recalcRunning atomic.Bool
 }
 
-func NewAdminMaintenanceHandler(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Config, obsHandler *AdminObservabilityHandler) *AdminMaintenanceHandler {
+func NewAdminMaintenanceHandler(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Config, obsHandler *AdminObservabilityHandler, deleter *service.DeleteService) *AdminMaintenanceHandler {
 	return &AdminMaintenanceHandler{
 		db:         db,
 		pool:       pool,
 		cfg:        cfg,
 		obsHandler: obsHandler,
+		deleter:    deleter,
 	}
 }
 
@@ -49,7 +52,7 @@ func (h *AdminMaintenanceHandler) Summary(w http.ResponseWriter, r *http.Request
 	}
 
 	risks := h.collectRisks(ctx, usage, strategies)
-	diskInfo := h.diskInfo()
+	di := diskInfo(h.cfg)
 	backupInfo := h.backupInfo()
 	dbTables := h.tableStats(ctx)
 	phashCoverage := h.phashStats(ctx)
@@ -59,7 +62,7 @@ func (h *AdminMaintenanceHandler) Summary(w http.ResponseWriter, r *http.Request
 		"generated_at":   time.Now().UTC(),
 		"risks":          risks,
 		"storage": map[string]any{
-			"disk":       diskInfo,
+			"disk":       di,
 			"strategies": strategies,
 		},
 		"usage":          usage,
@@ -123,8 +126,8 @@ func (h *AdminMaintenanceHandler) collectRisks(ctx context.Context, usage map[st
 	}
 
 	// Check disk space
-	disk := h.diskInfo()
-	if freeBytes, ok := disk["free_bytes"].(uint64); ok && freeBytes < 1024*1024*1024 { // < 1 GB
+	di := diskInfo(h.cfg)
+	if freeBytes, ok := di["free_bytes"].(uint64); ok && freeBytes < 1024*1024*1024 { // < 1 GB
 		risks = append(risks, map[string]any{
 			"level":   "error",
 			"code":    "low_disk_space",
@@ -133,25 +136,6 @@ func (h *AdminMaintenanceHandler) collectRisks(ctx context.Context, usage map[st
 	}
 
 	return risks
-}
-
-func (h *AdminMaintenanceHandler) diskInfo() map[string]any {
-	root := h.cfg.Storage.LocalRoot
-	if root == "" {
-		root = "."
-	}
-	var stat syscall.Statfs_t
-	if err := syscall.Statfs(root, &stat); err != nil {
-		return map[string]any{"healthy": false, "error": err.Error()}
-	}
-	freeBytes := stat.Bavail * uint64(stat.Bsize)
-	totalBytes := stat.Blocks * uint64(stat.Bsize)
-	return map[string]any{
-		"healthy":     true,
-		"path":        root,
-		"total_bytes": totalBytes,
-		"free_bytes":  freeBytes,
-	}
 }
 
 func (h *AdminMaintenanceHandler) backupInfo() map[string]any {
@@ -257,43 +241,52 @@ func (h *AdminMaintenanceHandler) thumbnailStats() map[string]any {
 }
 
 func (h *AdminMaintenanceHandler) CleanupExpired(w http.ResponseWriter, r *http.Request) {
-	count, err := h.db.CountExpiredImages(r.Context())
+	deleted, err := h.deleter.CleanExpiredImages(r.Context(), int32(h.cfg.Server.ExpiredCleanupBatchSize))
 	if err != nil {
-		Fail(w, http.StatusInternalServerError, "failed to count expired images")
+		Fail(w, http.StatusInternalServerError, "failed to clean expired images")
 		return
 	}
-
-	result, err := h.db.DeleteExpiredImages(r.Context())
-	if err != nil {
-		Fail(w, http.StatusInternalServerError, "failed to delete expired images")
-		return
-	}
-
-	SuccessMessage(w, fmt.Sprintf("cleaned %d of %d expired images", len(result), count))
+	SuccessMessage(w, fmt.Sprintf("cleaned %d expired images", deleted))
 }
 
 func (h *AdminMaintenanceHandler) RecalcPHash(w http.ResponseWriter, r *http.Request) {
+	if h.recalcRunning.Swap(true) {
+		Fail(w, http.StatusConflict, "recalc-phash is already running")
+		return
+	}
+
 	count, err := h.db.CountAllImages(r.Context(), sqlc.CountAllImagesParams{})
 	if err != nil {
+		h.recalcRunning.Store(false)
 		Fail(w, http.StatusInternalServerError, "failed to count images")
 		return
 	}
 
 	go func() {
+		defer h.recalcRunning.Store(false)
 		bgCtx := context.Background()
 		processed := 0
+		skipped := 0
 		for {
 			images, err := h.db.GetImagesWithoutPHash(bgCtx, 100)
-			if err != nil || len(images) == 0 {
+			if err != nil {
+				slog.Error("recalc-phash: query failed", "error", err)
+				break
+			}
+			if len(images) == 0 {
 				break
 			}
 			for _, img := range images {
 				strategy, err := h.db.GetStrategyByID(bgCtx, img.StrategyID.Int64)
 				if err != nil {
+					slog.Warn("recalc-phash: strategy lookup failed", "image_id", img.ID, "error", err)
+					skipped++
 					continue
 				}
 				store, err := service.GetStorageForStrategy(strategy)
 				if err != nil {
+					slog.Warn("recalc-phash: storage init failed", "image_id", img.ID, "error", err)
+					skipped++
 					continue
 				}
 				pathname := img.Name
@@ -303,20 +296,28 @@ func (h *AdminMaintenanceHandler) RecalcPHash(w http.ResponseWriter, r *http.Req
 				data, err := store.Read(bgCtx, pathname)
 				store.Close()
 				if err != nil {
+					slog.Warn("recalc-phash: read failed", "image_id", img.ID, "error", err)
+					skipped++
 					continue
 				}
 				phash, err := service.ComputePHash(data)
 				if err != nil {
+					slog.Warn("recalc-phash: compute failed", "image_id", img.ID, "error", err)
+					skipped++
 					continue
 				}
-				h.db.UpdateImagePHash(bgCtx, sqlc.UpdateImagePHashParams{
+				if err := h.db.UpdateImagePHash(bgCtx, sqlc.UpdateImagePHashParams{
 					ID:    img.ID,
 					Phash: pgtype.Int8{Int64: int64(phash), Valid: true},
-				})
+				}); err != nil {
+					slog.Warn("recalc-phash: update failed", "image_id", img.ID, "error", err)
+					skipped++
+					continue
+				}
 				processed++
 			}
 		}
-		slog.Info("recalc-phash complete", "processed", processed)
+		slog.Info("recalc-phash complete", "processed", processed, "skipped", skipped)
 	}()
 
 	SuccessMessage(w, fmt.Sprintf("recalc-phash started, processing up to %d images in background", count))

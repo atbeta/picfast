@@ -226,7 +226,7 @@ func New(
 	adminSettingHandler := handler.NewAdminSettingHandler(cfg, config.NewSetter(cfg), queries, mailSender != nil && mailSender.Ready())
 	adminAuditHandler := handler.NewAdminAuditHandler(queries)
 	adminObservabilityHandler := handler.NewAdminObservabilityHandler(queries, pool, cfg, mailSender != nil && mailSender.Ready())
-	adminMaintenanceHandler := handler.NewAdminMaintenanceHandler(queries, pool, cfg, adminObservabilityHandler)
+	adminMaintenanceHandler := handler.NewAdminMaintenanceHandler(queries, pool, cfg, adminObservabilityHandler, deleteSvc)
 
 	// Content Moderation
 	app := cfg.AppSnapshot()
