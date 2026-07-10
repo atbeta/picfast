@@ -139,13 +139,18 @@ function formToConfigs(form: StrategyForm): Record<string, unknown> {
         url: form.cosURL,
         ...(linkMode && { link_mode: linkMode }),
       }
-    case 'webdav':
-      return {
+    case 'webdav': {
+      const cfg: Record<string, unknown> = {
         endpoint: form.webdavEndpoint,
         username: form.webdavUsername,
         password: form.webdavPassword,
         url: form.webdavURL,
       }
+      if (form.linkModeProxy) {
+        cfg.link_mode = 'direct'
+      }
+      return cfg
+    }
   }
 }
 
@@ -182,7 +187,9 @@ function strategyToForm(s: AdminStrategy): StrategyForm {
     webdavUsername: (c.username as string) || '',
     webdavPassword: (c.password as string) || '',
     webdavURL: (c.url as string) || '',
-    linkModeProxy: c.link_mode === 'proxy',
+    linkModeProxy: s.strategy_type === 'webdav'
+      ? c.link_mode === 'direct'
+      : c.link_mode === 'proxy',
   }
 }
 
@@ -470,7 +477,7 @@ export function AdminStrategiesPage() {
               </div>
             )}
 
-            {['s3', 'oss', 'cos', 'kodo'].includes(form.type) && (
+            {['s3', 'oss', 'cos', 'kodo', 'webdav'].includes(form.type) && (
               <label className="flex items-start gap-3 rounded-lg border border-border/60 p-3 text-sm text-foreground">
                 <input
                   type="checkbox"
@@ -479,8 +486,16 @@ export function AdminStrategiesPage() {
                   className="mt-0.5 size-4 rounded border-input"
                 />
                 <div className="space-y-1">
-                  <span className="font-medium">{t('admin.linkModeProxy')}</span>
-                  <p className="text-xs text-muted-foreground">{t('admin.linkModeProxyHint')}</p>
+                  <span className="font-medium">
+                    {form.type === 'webdav'
+                      ? t('admin.linkModeDirect', { defaultValue: '直链 302 重定向' })
+                      : t('admin.linkModeProxy')}
+                  </span>
+                  <p className="text-xs text-muted-foreground">
+                    {form.type === 'webdav'
+                      ? t('admin.linkModeDirectHint', { defaultValue: '开启后图片请求将 302 重定向到 WebDAV 端点，减轻 PicFast 代理负载。需确保端点可公开访问。' })
+                      : t('admin.linkModeProxyHint')}
+                  </p>
                 </div>
               </label>
             )}

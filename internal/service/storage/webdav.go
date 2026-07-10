@@ -116,6 +116,10 @@ func (s *WebDAVStorage) URL(pathname string) string {
 	return joinPublicURL(s.endpoint, pathname)
 }
 
+func (s *WebDAVStorage) HasPublicURL() bool {
+	return s.url != ""
+}
+
 func (s *WebDAVStorage) HealthCheck(ctx context.Context) HealthResult {
 	req, err := s.newRequest(ctx, "PROPFIND", s.endpoint, nil)
 	if err != nil {

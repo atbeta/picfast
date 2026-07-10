@@ -20,6 +20,20 @@ func IsProxyLinkMode(configs json.RawMessage) bool {
 	return raw["link_mode"] == "proxy"
 }
 
+// IsDirectLinkMode returns true when the strategy's link_mode is explicitly
+// set to "direct". This is currently WebDAV-only: it enables 302 redirect at
+// serve time instead of proxying content through PicFast. For S3/OSS/COS/Kodo
+// strategies, the absence of "proxy" already means direct CDN passthrough at
+// link-construction time — do NOT broaden this check to other strategy types
+// without understanding the different semantics.
+func IsDirectLinkMode(configs json.RawMessage) bool {
+	var raw map[string]string
+	if err := json.Unmarshal(configs, &raw); err != nil {
+		return false
+	}
+	return raw["link_mode"] == "direct"
+}
+
 type LinkBuilder struct {
 	BaseURL     string
 	StrategyURL string

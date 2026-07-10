@@ -108,6 +108,18 @@ func (h *FileHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
 	if img.Path != "" && img.Path != "." {
 		pathname = img.Path + "/" + img.Name
 	}
+
+	if strategy.StrategyType == "webdav" && service.IsDirectLinkMode(strategy.Configs) {
+		if wds, ok := store.(interface{ HasPublicURL() bool }); ok && wds.HasPublicURL() {
+			if img.Permission == int16(domain.PermissionPublic) && params.IsEmpty() {
+				w.Header().Set("Cache-Control", "public, max-age=2592000")
+				http.Redirect(w, r, store.URL(pathname), http.StatusFound)
+				result = "success"
+				return
+			}
+		}
+	}
+
 	data, err := store.Read(r.Context(), pathname)
 	if err != nil {
 		result = "not_found"

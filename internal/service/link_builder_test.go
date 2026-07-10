@@ -74,3 +74,26 @@ func TestIsProxyLinkMode(t *testing.T) {
 		})
 	}
 }
+
+func TestIsDirectLinkMode(t *testing.T) {
+	tests := []struct {
+		name    string
+		configs json.RawMessage
+		want    bool
+	}{
+		{"nil configs", nil, false},
+		{"empty object", json.RawMessage(`{}`), false},
+		{"direct", json.RawMessage(`{"link_mode":"direct"}`), true},
+		{"proxy", json.RawMessage(`{"link_mode":"proxy"}`), false},
+		{"other fields only", json.RawMessage(`{"bucket":"b","url":"https://cdn.example.com"}`), false},
+		{"direct with other fields", json.RawMessage(`{"bucket":"b","link_mode":"direct"}`), true},
+		{"invalid json", json.RawMessage(`not-json`), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsDirectLinkMode(tt.configs); got != tt.want {
+				t.Fatalf("IsDirectLinkMode(%s) = %v, want %v", tt.configs, got, tt.want)
+			}
+		})
+	}
+}
