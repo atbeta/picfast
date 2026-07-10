@@ -3,7 +3,6 @@ package service
 import (
 	"bytes"
 	"image"
-	"image/color"
 	"math"
 	"sort"
 
@@ -13,7 +12,7 @@ import (
 )
 
 func ComputePHash(data []byte) (uint64, error) {
-	img, err := decodeToNRGBA(data)
+	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		return 0, err
 	}
@@ -25,22 +24,7 @@ func ComputePHash(data []byte) (uint64, error) {
 	return hash, nil
 }
 
-func decodeToNRGBA(data []byte) (*image.NRGBA, error) {
-	img, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	bounds := img.Bounds()
-	nrgba := image.NewNRGBA(bounds)
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			nrgba.Set(x, y, img.At(x, y))
-		}
-	}
-	return nrgba, nil
-}
-
-func toGrayscale32x32(img *image.NRGBA) [][]float64 {
+func toGrayscale32x32(img image.Image) [][]float64 {
 	bounds := img.Bounds()
 	srcW := bounds.Dx()
 	srcH := bounds.Dy()
@@ -55,8 +39,8 @@ func toGrayscale32x32(img *image.NRGBA) [][]float64 {
 		for x := 0; x < targetSize; x++ {
 			srcX := x * srcW / targetSize
 			srcY := y * srcH / targetSize
-			c := img.At(srcX, srcY).(color.NRGBA)
-			result[y][x] = float64(c.R)*0.299 + float64(c.G)*0.587 + float64(c.B)*0.114
+			r, g, b, _ := img.At(srcX, srcY).RGBA()
+			result[y][x] = float64(r>>8)*0.299 + float64(g>>8)*0.587 + float64(b>>8)*0.114
 		}
 	}
 

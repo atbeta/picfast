@@ -153,52 +153,59 @@ export function ImageDetailDialog({
               </div>
             </div>
 
-            {pipeline && (
-              <div className="space-y-3 rounded-xl border border-border/40 bg-muted/10 p-4">
-                <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground border-b border-border/40 pb-2">
-                  <Activity className="size-4 text-primary" />
-                  {t('images.pipeline', { defaultValue: '处理流水线' })}
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {([
-                    { key: 'upload' as const, label: t('images.pipelineUpload') },
-                    { key: 'processing' as const, label: t('images.pipelineProcessing') },
-                    { key: 'thumbnail' as const, label: t('images.pipelineThumbnail') },
-                    { key: 'moderation' as const, label: t('images.pipelineModeration') },
-                  ] as const).map(({ key, label }) => {
-                    const status = pipeline[key] ?? 'pending'
-                    const isGood = status === 'completed' || status === 'approved'
-                    const isBad = status === 'failed' || status === 'rejected'
-                    const isSkipped = status === 'skipped'
-                    const statusKey = status === 'completed' ? 'statusCompleted'
-                      : status === 'approved' ? 'statusApproved'
-                      : status === 'rejected' ? 'statusRejected'
-                      : status === 'failed' ? 'statusFailed'
-                      : status === 'skipped' ? 'statusSkipped'
-                      : 'statusPending'
-                    return (
-                      <div key={key} className="flex flex-col items-center gap-1 rounded-lg border border-border/40 bg-background/50 p-3">
-                        {isGood ? <CheckCircle2 className="size-5 text-green-500" /> :
-                         isBad ? <XCircle className="size-5 text-red-500" /> :
-                         isSkipped ? <SkipForward className="size-5 text-muted-foreground" /> :
-                         <Clock className="size-5 text-yellow-500" />}
-                        <span className="text-xs font-medium text-muted-foreground">{label}</span>
-                        <span className={`text-xs font-semibold ${
-                          isGood ? 'text-green-600' :
-                          isBad ? 'text-red-600' :
-                          'text-yellow-600'
-                        }`}>
-                          {t(`images.${statusKey}`)}
-                        </span>
-                      </div>
-                    )
-                  })}
+            {pipeline && (() => {
+              const stages = ['upload', 'processing', 'thumbnail', 'moderation'] as const
+              const hasIssueOrPending = stages.some(key => {
+                const status = pipeline[key] ?? 'pending'
+                return status === 'pending' || status === 'failed' || status === 'rejected'
+              })
+
+              // 如果一切正常且没有在处理中，就隐藏整个流水线面板以节省空间
+              if (!hasIssueOrPending) return null
+
+              return (
+                <div className="space-y-3 rounded-xl border border-border/40 bg-muted/10 p-4">
+                  <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground border-b border-border/40 pb-2">
+                    <Activity className="size-4 text-primary" />
+                    {t('images.pipeline', { defaultValue: '处理流水线' })}
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {stages.map((key) => {
+                      const label = t(`images.pipeline${key.charAt(0).toUpperCase() + key.slice(1)}`)
+                      const status = pipeline[key] ?? 'pending'
+                      const isGood = status === 'completed' || status === 'approved'
+                      const isBad = status === 'failed' || status === 'rejected'
+                      const isSkipped = status === 'skipped'
+                      const statusKey = status === 'completed' ? 'statusCompleted'
+                        : status === 'approved' ? 'statusApproved'
+                        : status === 'rejected' ? 'statusRejected'
+                        : status === 'failed' ? 'statusFailed'
+                        : status === 'skipped' ? 'statusSkipped'
+                        : 'statusPending'
+                      return (
+                        <div key={key} className="flex flex-col items-center gap-1 rounded-lg border border-border/40 bg-background/50 p-3">
+                          {isGood ? <CheckCircle2 className="size-5 text-green-500" /> :
+                           isBad ? <XCircle className="size-5 text-red-500" /> :
+                           isSkipped ? <SkipForward className="size-5 text-muted-foreground" /> :
+                           <Clock className="size-5 text-yellow-500" />}
+                          <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                          <span className={`text-xs font-semibold ${
+                            isGood ? 'text-green-600' :
+                            isBad ? 'text-red-600' :
+                            'text-yellow-600'
+                          }`}>
+                            {t(`images.${statusKey}`)}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground text-right">
+                    {pipeline.updated_at && new Date(pipeline.updated_at).toLocaleString()}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground text-right">
-                  {pipeline.updated_at && new Date(pipeline.updated_at).toLocaleString()}
-                </p>
-              </div>
-            )}
+              )
+            })()}
           </div>
         )}
       </DialogContent>
