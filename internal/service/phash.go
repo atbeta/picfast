@@ -9,41 +9,43 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	_ "golang.org/x/image/webp"
+
+	"golang.org/x/image/draw"
 )
 
 func ComputePHash(data []byte) (uint64, error) {
-	img, _, err := image.Decode(bytes.NewReader(data))
+	src, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		return 0, err
 	}
 
-	gray := toGrayscale32x32(img)
+	gray := resampleGrayscale32x32(src)
 	dct := compute2DDCT(gray)
 	lowFreq := extractLowFreq(dct, 8)
 	hash := dctHash(lowFreq)
 	return hash, nil
 }
 
-func toGrayscale32x32(img image.Image) [][]float64 {
-	bounds := img.Bounds()
-	srcW := bounds.Dx()
-	srcH := bounds.Dy()
-
+func resampleGrayscale32x32(src image.Image) [][]float64 {
 	const targetSize = 32
+	dst := image.NewNRGBA(image.Rect(0, 0, targetSize, targetSize))
+	draw.CatmullRom.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Over, nil)
+
 	result := make([][]float64, targetSize)
 	for i := range result {
 		result[i] = make([]float64, targetSize)
 	}
 
+	stride := dst.Stride
+	pix := dst.Pix
 	for y := 0; y < targetSize; y++ {
+		row := result[y]
+		offset := y * stride
 		for x := 0; x < targetSize; x++ {
-			srcX := x * srcW / targetSize
-			srcY := y * srcH / targetSize
-			r, g, b, _ := img.At(srcX, srcY).RGBA()
-			result[y][x] = float64(r>>8)*0.299 + float64(g>>8)*0.587 + float64(b>>8)*0.114
+			i := offset + x*4
+			row[x] = float64(pix[i])*0.299 + float64(pix[i+1])*0.587 + float64(pix[i+2])*0.114
 		}
 	}
-
 	return result
 }
 
