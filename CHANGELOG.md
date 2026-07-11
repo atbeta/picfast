@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.18.0](https://github.com/atbeta/picfast/compare/v0.17.1...v0.18.0) (2026-07-11)
+
+
+### Features
+
+* **ci:** auto-translate release notes to Chinese via LLM ([37adb6d](https://github.com/atbeta/picfast/commit/37adb6d95024618ed62c4154d756eca3f128346e))
+* **images:** add EXIF extraction and perceptual hash (pHash) ([a3d5bf6](https://github.com/atbeta/picfast/commit/a3d5bf6c8cf7fe284b9c4ee0ada90e6a7d6242d6))
+* maintenance page overhaul, cross-platform disk, and review fixes ([fc78bdd](https://github.com/atbeta/picfast/commit/fc78bddb948d287f9bfb39e31169f9cd0fbbe1f9))
+* **maintenance:** add admin maintenance dashboard, disk health, risk audit, and recalc-phash CLI ([c0109e8](https://github.com/atbeta/picfast/commit/c0109e89f05f9add3d6382c37b7f6febaba496dd))
+* **maintenance:** add database stats, pHash coverage, cleanup tool, and log hints ([bac63d1](https://github.com/atbeta/picfast/commit/bac63d157cfbc921da8e322874cdfe527725ec01))
+* **webdav:** support direct 302 redirect for public endpoints ([9e2d19a](https://github.com/atbeta/picfast/commit/9e2d19a53d7d9e7a60d5bbf19fa87122cd4360ba))
+
+
+### Bug Fixes
+
+* **maintenance:** break recalc-phash infinite loop with cursor pagination ([f861795](https://github.com/atbeta/picfast/commit/f86179507c3ed7b27bdbbcd992480461d2cc7781))
+* **service:** cap upload-time pHash memory by direct 32x32 resampling ([10406f5](https://github.com/atbeta/picfast/commit/10406f5bd2baedac4cacf0b9ca14470ddfee6ba2))
+
 ## [0.17.1](https://github.com/atbeta/picfast/compare/v0.17.0...v0.17.1) (2026-07-02)
 
 
