@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.18.1](https://github.com/atbeta/picfast/compare/v0.18.0...v0.18.1) (2026-07-11)
+
+
+### Bug Fixes
+
+* **spa:** cache hashed assets 1y immutable, revalidate index.html ([f0cf4c4](https://github.com/atbeta/picfast/commit/f0cf4c4171233db3b7a314f7f52cc421235f6222))
+* **web:** pin vite to 8.0.x to avoid rolldown CJS wrapper regression ([7d82de5](https://github.com/atbeta/picfast/commit/7d82de549fcc4df9a87add00a1aac4a9f00fa0cf))
+
 ## [0.18.0](https://github.com/atbeta/picfast/compare/v0.17.1...v0.18.0) (2026-07-11)
 
 
