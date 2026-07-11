@@ -101,26 +101,14 @@ SELECT * FROM images WHERE md5 = $1;
 -- name: CountImagesByStrategy :one
 SELECT COUNT(*) FROM images WHERE strategy_id = $1;
 
--- name: FindSimilarImages :many
-SELECT *, bit_count(phash # sqlc.arg('phash')::bigint) AS distance
-FROM images
-WHERE phash IS NOT NULL
-  AND phash != 0
-  AND id != sqlc.arg('image_id')
-  AND (sqlc.narg('user_id')::int = 0 OR user_id = sqlc.narg('user_id'))
-  AND bit_count(phash # sqlc.arg('phash')::bigint) < sqlc.arg('max_distance')::int
-ORDER BY distance ASC
-LIMIT sqlc.arg('limit')::int;
-
 -- name: CountExpiredImages :one
 SELECT COUNT(*) FROM images WHERE expires_at IS NOT NULL AND expires_at <= NOW();
 
--- name: GetImagesWithoutPHash :many
-SELECT * FROM images WHERE phash IS NULL ORDER BY id LIMIT $1;
+-- name: GetImagesForPHashRecalc :many
+SELECT * FROM images WHERE id > sqlc.arg('after_id') ORDER BY id LIMIT sqlc.arg('batch_size');
+
+-- name: GetMaxImageID :one
+SELECT COALESCE(MAX(id), 0)::bigint FROM images;
 
 -- name: UpdateImagePHash :exec
 UPDATE images SET phash = $2 WHERE id = $1;
-
--- name: DeleteExpiredImages :many
-DELETE FROM images WHERE expires_at IS NOT NULL AND expires_at <= NOW()
-RETURNING id;

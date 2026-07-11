@@ -1132,9 +1132,20 @@ func runRecalcPHash(ctx context.Context, args []string, stdout, stderr io.Writer
 
 	db := sqlc.New(pool)
 
+	maxID, err := db.GetMaxImageID(ctx)
+	if err != nil {
+		fmt.Fprintf(stderr, "failed to get max image id: %v\n", err)
+		return 1
+	}
+
 	total := 0
-	for {
-		images, err := db.GetImagesWithoutPHash(ctx, int32(*batchSize))
+	skipped := 0
+	lastID := int64(0)
+	for lastID < maxID {
+		images, err := db.GetImagesForPHashRecalc(ctx, sqlc.GetImagesForPHashRecalcParams{
+			AfterID:   lastID,
+			BatchSize: int32(*batchSize),
+		})
 		if err != nil {
 			fmt.Fprintf(stderr, "query error: %v\n", err)
 			return 1
@@ -1144,15 +1155,18 @@ func runRecalcPHash(ctx context.Context, args []string, stdout, stderr io.Writer
 		}
 
 		for _, img := range images {
+			lastID = img.ID
 			strategy, err := db.GetStrategyByID(ctx, img.StrategyID.Int64)
 			if err != nil {
 				fmt.Fprintf(stderr, "strategy lookup failed for image %d: %v\n", img.ID, err)
+				skipped++
 				continue
 			}
 
 			store, err := picservice.GetStorageForStrategy(strategy)
 			if err != nil {
 				fmt.Fprintf(stderr, "storage init failed for image %d: %v\n", img.ID, err)
+				skipped++
 				continue
 			}
 
@@ -1164,12 +1178,26 @@ func runRecalcPHash(ctx context.Context, args []string, stdout, stderr io.Writer
 			_ = store.Close()
 			if err != nil {
 				fmt.Fprintf(stderr, "read failed for image %d: %v\n", img.ID, err)
+				if !*dryRun {
+					db.UpdateImagePHash(ctx, sqlc.UpdateImagePHashParams{
+						ID:    img.ID,
+						Phash: pgtype.Int8{Int64: -1, Valid: true},
+					})
+				}
+				skipped++
 				continue
 			}
 
 			phash, err := picservice.ComputePHash(data)
 			if err != nil {
 				fmt.Fprintf(stderr, "phash failed for image %d: %v\n", img.ID, err)
+				if !*dryRun {
+					db.UpdateImagePHash(ctx, sqlc.UpdateImagePHashParams{
+						ID:    img.ID,
+						Phash: pgtype.Int8{Int64: -1, Valid: true},
+					})
+				}
+				skipped++
 				continue
 			}
 
@@ -1179,6 +1207,7 @@ func runRecalcPHash(ctx context.Context, args []string, stdout, stderr io.Writer
 					Phash: pgtype.Int8{Int64: int64(phash), Valid: true},
 				}); err != nil {
 					fmt.Fprintf(stderr, "update phash failed for image %d: %v\n", img.ID, err)
+					skipped++
 					continue
 				}
 			}
@@ -1190,6 +1219,6 @@ func runRecalcPHash(ctx context.Context, args []string, stdout, stderr io.Writer
 		}
 	}
 
-	fmt.Fprintf(stdout, "done: processed %d images\n", total)
+	fmt.Fprintf(stdout, "done: processed %d images, skipped %d\n", total, skipped)
 	return 0
 }

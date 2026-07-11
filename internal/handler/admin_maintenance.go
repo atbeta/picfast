@@ -255,10 +255,10 @@ func (h *AdminMaintenanceHandler) RecalcPHash(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	count, err := h.db.CountAllImages(r.Context(), sqlc.CountAllImagesParams{})
+	maxID, err := h.db.GetMaxImageID(r.Context())
 	if err != nil {
 		h.recalcRunning.Store(false)
-		Fail(w, http.StatusInternalServerError, "failed to count images")
+		Fail(w, http.StatusInternalServerError, "failed to get max image id")
 		return
 	}
 
@@ -267,8 +267,12 @@ func (h *AdminMaintenanceHandler) RecalcPHash(w http.ResponseWriter, r *http.Req
 		bgCtx := context.Background()
 		processed := 0
 		skipped := 0
-		for {
-			images, err := h.db.GetImagesWithoutPHash(bgCtx, 100)
+		lastID := int64(0)
+		for lastID < maxID {
+			images, err := h.db.GetImagesForPHashRecalc(bgCtx, sqlc.GetImagesForPHashRecalcParams{
+				AfterID:   lastID,
+				BatchSize: 100,
+			})
 			if err != nil {
 				slog.Error("recalc-phash: query failed", "error", err)
 				break
@@ -277,6 +281,7 @@ func (h *AdminMaintenanceHandler) RecalcPHash(w http.ResponseWriter, r *http.Req
 				break
 			}
 			for _, img := range images {
+				lastID = img.ID
 				strategy, err := h.db.GetStrategyByID(bgCtx, img.StrategyID.Int64)
 				if err != nil {
 					slog.Warn("recalc-phash: strategy lookup failed", "image_id", img.ID, "error", err)
@@ -297,12 +302,20 @@ func (h *AdminMaintenanceHandler) RecalcPHash(w http.ResponseWriter, r *http.Req
 				store.Close()
 				if err != nil {
 					slog.Warn("recalc-phash: read failed", "image_id", img.ID, "error", err)
+					h.db.UpdateImagePHash(bgCtx, sqlc.UpdateImagePHashParams{
+						ID:    img.ID,
+						Phash: pgtype.Int8{Int64: -1, Valid: true},
+					})
 					skipped++
 					continue
 				}
 				phash, err := service.ComputePHash(data)
 				if err != nil {
 					slog.Warn("recalc-phash: compute failed", "image_id", img.ID, "error", err)
+					h.db.UpdateImagePHash(bgCtx, sqlc.UpdateImagePHashParams{
+						ID:    img.ID,
+						Phash: pgtype.Int8{Int64: -1, Valid: true},
+					})
 					skipped++
 					continue
 				}
@@ -320,5 +333,5 @@ func (h *AdminMaintenanceHandler) RecalcPHash(w http.ResponseWriter, r *http.Req
 		slog.Info("recalc-phash complete", "processed", processed, "skipped", skipped)
 	}()
 
-	SuccessMessage(w, fmt.Sprintf("recalc-phash started, processing up to %d images in background", count))
+	SuccessMessage(w, fmt.Sprintf("recalc-phash started, processing up to %d images in background", maxID))
 }

@@ -217,31 +217,6 @@ func (q *Queries) CreateImage(ctx context.Context, arg CreateImageParams) (Image
 	return i, err
 }
 
-const deleteExpiredImages = `-- name: DeleteExpiredImages :many
-DELETE FROM images WHERE expires_at IS NOT NULL AND expires_at <= NOW()
-RETURNING id
-`
-
-func (q *Queries) DeleteExpiredImages(ctx context.Context) ([]int64, error) {
-	rows, err := q.db.Query(ctx, deleteExpiredImages)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []int64{}
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		items = append(items, id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const deleteImage = `-- name: DeleteImage :exec
 DELETE FROM images WHERE id = $1
 `
@@ -303,108 +278,6 @@ func (q *Queries) FindDuplicateImage(ctx context.Context, arg FindDuplicateImage
 		&i.Phash,
 	)
 	return i, err
-}
-
-const findSimilarImages = `-- name: FindSimilarImages :many
-SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash, bit_count(phash # $1::bigint) AS distance
-FROM images
-WHERE phash IS NOT NULL
-  AND phash != 0
-  AND id != $2
-  AND ($3::int = 0 OR user_id = $3)
-  AND bit_count(phash # $1::bigint) < $4::int
-ORDER BY distance ASC
-LIMIT $5::int
-`
-
-type FindSimilarImagesParams struct {
-	Phash       int64       `json:"phash"`
-	ImageID     int64       `json:"image_id"`
-	UserID      pgtype.Int4 `json:"user_id"`
-	MaxDistance int32       `json:"max_distance"`
-	Limit       int32       `json:"limit"`
-}
-
-type FindSimilarImagesRow struct {
-	ID               int64              `json:"id"`
-	UserID           pgtype.Int8        `json:"user_id"`
-	AlbumID          pgtype.Int8        `json:"album_id"`
-	GroupID          pgtype.Int8        `json:"group_id"`
-	StrategyID       pgtype.Int8        `json:"strategy_id"`
-	Key              string             `json:"key"`
-	Path             string             `json:"path"`
-	Name             string             `json:"name"`
-	OriginName       string             `json:"origin_name"`
-	SizeBytes        int64              `json:"size_bytes"`
-	Mimetype         string             `json:"mimetype"`
-	Extension        string             `json:"extension"`
-	Md5              string             `json:"md5"`
-	Sha1             string             `json:"sha1"`
-	Width            int32              `json:"width"`
-	Height           int32              `json:"height"`
-	Permission       int16              `json:"permission"`
-	IsUnhealthy      bool               `json:"is_unhealthy"`
-	UploadedIp       string             `json:"uploaded_ip"`
-	CreatedAt        time.Time          `json:"created_at"`
-	UpdatedAt        time.Time          `json:"updated_at"`
-	ModerationStatus string             `json:"moderation_status"`
-	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
-	ExifData         []byte             `json:"exif_data"`
-	Phash            pgtype.Int8        `json:"phash"`
-	Distance         int64              `json:"distance"`
-}
-
-func (q *Queries) FindSimilarImages(ctx context.Context, arg FindSimilarImagesParams) ([]FindSimilarImagesRow, error) {
-	rows, err := q.db.Query(ctx, findSimilarImages,
-		arg.Phash,
-		arg.ImageID,
-		arg.UserID,
-		arg.MaxDistance,
-		arg.Limit,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []FindSimilarImagesRow{}
-	for rows.Next() {
-		var i FindSimilarImagesRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.AlbumID,
-			&i.GroupID,
-			&i.StrategyID,
-			&i.Key,
-			&i.Path,
-			&i.Name,
-			&i.OriginName,
-			&i.SizeBytes,
-			&i.Mimetype,
-			&i.Extension,
-			&i.Md5,
-			&i.Sha1,
-			&i.Width,
-			&i.Height,
-			&i.Permission,
-			&i.IsUnhealthy,
-			&i.UploadedIp,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.ModerationStatus,
-			&i.ExpiresAt,
-			&i.ExifData,
-			&i.Phash,
-			&i.Distance,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const getExpiredImages = `-- name: GetExpiredImages :many
@@ -595,12 +468,17 @@ func (q *Queries) GetImagesByMD5(ctx context.Context, md5 string) ([]Image, erro
 	return items, nil
 }
 
-const getImagesWithoutPHash = `-- name: GetImagesWithoutPHash :many
-SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash FROM images WHERE phash IS NULL ORDER BY id LIMIT $1
+const getImagesForPHashRecalc = `-- name: GetImagesForPHashRecalc :many
+SELECT id, user_id, album_id, group_id, strategy_id, key, path, name, origin_name, size_bytes, mimetype, extension, md5, sha1, width, height, permission, is_unhealthy, uploaded_ip, created_at, updated_at, moderation_status, expires_at, exif_data, phash FROM images WHERE id > $1 ORDER BY id LIMIT $2
 `
 
-func (q *Queries) GetImagesWithoutPHash(ctx context.Context, limit int32) ([]Image, error) {
-	rows, err := q.db.Query(ctx, getImagesWithoutPHash, limit)
+type GetImagesForPHashRecalcParams struct {
+	AfterID   int64 `json:"after_id"`
+	BatchSize int32 `json:"batch_size"`
+}
+
+func (q *Queries) GetImagesForPHashRecalc(ctx context.Context, arg GetImagesForPHashRecalcParams) ([]Image, error) {
+	rows, err := q.db.Query(ctx, getImagesForPHashRecalc, arg.AfterID, arg.BatchSize)
 	if err != nil {
 		return nil, err
 	}
@@ -643,6 +521,17 @@ func (q *Queries) GetImagesWithoutPHash(ctx context.Context, limit int32) ([]Ima
 		return nil, err
 	}
 	return items, nil
+}
+
+const getMaxImageID = `-- name: GetMaxImageID :one
+SELECT COALESCE(MAX(id), 0)::bigint FROM images
+`
+
+func (q *Queries) GetMaxImageID(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, getMaxImageID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const listAllImages = `-- name: ListAllImages :many
