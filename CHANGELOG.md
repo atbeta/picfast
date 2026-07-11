@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.2](https://github.com/atbeta/picfast/compare/v0.18.1...v0.18.2) (2026-07-11)
+
+
+### Bug Fixes
+
+* **spa:** cache hashed assets 1y immutable, revalidate index.html ([f0cf4c4](https://github.com/atbeta/picfast/commit/f0cf4c4171233db3b7a314f7f52cc421235f6222))
+
 ## [0.18.1](https://github.com/atbeta/picfast/compare/v0.18.0...v0.18.1) (2026-07-11)
 
 
