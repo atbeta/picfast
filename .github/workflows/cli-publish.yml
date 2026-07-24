@@ -29,11 +29,13 @@ jobs:
             darwin-arm64 \
             linux-amd64 \
             linux-arm64 \
-            windows-amd64; do
+            windows-amd64 \
+            windows-arm64; do
             os=$(echo "$target" | cut -d- -f1)
             arch=$(echo "$target" | cut -d- -f2)
             suffix=""
             if [ "$os" = "windows" ]; then suffix=".exe"; fi
+            echo "building picfast-${target}${suffix}"
             GOOS="$os" GOARCH="$arch" go build -o "dist/picfast-${target}${suffix}" ./cmd/picfast-cli/
           done
 
