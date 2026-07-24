@@ -1,0 +1,45 @@
+name: Publish VS Code Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (e.g. 0.2.0). Leave empty to use package.json."
+        required: false
+        type: string
+  push:
+    tags:
+      - "vscode-v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        working-directory: vscode
+        run: npm ci
+
+      - name: Set version (if provided)
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        working-directory: vscode
+        run: npm version "${{ inputs.version }}" --no-git-tag-version
+
+      - name: Build
+        working-directory: vscode
+        run: npx tsc -p ./
+
+      - name: Test
+        working-directory: vscode
+        run: npm test
+
+      - name: Publish
+        working-directory: vscode
+        run: npx vsce publish -p "${{ secrets.VSCE_PAT }}"
