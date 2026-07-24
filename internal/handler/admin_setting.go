@@ -53,6 +53,10 @@ type updateSettingsRequest struct {
 	FooterLink1              *string          `json:"footer_link_1"`
 	FooterText2              *string          `json:"footer_text_2"`
 	FooterLink2              *string          `json:"footer_link_2"`
+	ShowPoweredBy            *bool            `json:"show_powered_by"`
+	GuestUploadNoticeTitle   *string          `json:"guest_upload_notice_title"`
+	GuestUploadNoticeSubtitle *string         `json:"guest_upload_notice_subtitle"`
+	ShowLoginLink            *bool            `json:"show_login_link"`
 	AnalyticsProvider        *string          `json:"analytics_provider"`
 	AnalyticsConfig          *json.RawMessage `json:"analytics_config"`
 	ThemeConfig              *json.RawMessage `json:"theme_config"`
@@ -185,6 +189,24 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 		h.setter.SetFooterItems(text1, link1, text2, link2)
 	}
+	if req.ShowPoweredBy != nil {
+		h.setter.SetShowPoweredBy(*req.ShowPoweredBy)
+	}
+	if req.GuestUploadNoticeTitle != nil || req.GuestUploadNoticeSubtitle != nil {
+		_, app := h.config.RuntimeSnapshot()
+		title := app.GuestUploadNoticeTitle
+		subtitle := app.GuestUploadNoticeSubtitle
+		if req.GuestUploadNoticeTitle != nil {
+			title = *req.GuestUploadNoticeTitle
+		}
+		if req.GuestUploadNoticeSubtitle != nil {
+			subtitle = *req.GuestUploadNoticeSubtitle
+		}
+		h.setter.SetGuestUploadNotice(title, subtitle)
+	}
+	if req.ShowLoginLink != nil {
+		h.setter.SetShowLoginLink(*req.ShowLoginLink)
+	}
 	if req.AnalyticsProvider != nil || req.AnalyticsConfig != nil {
 		_, app := h.config.RuntimeSnapshot()
 		provider := app.AnalyticsProvider
@@ -251,6 +273,10 @@ func (h *AdminSettingHandler) persist(ctx context.Context) error {
 		FooterLink1:              app.FooterLink1,
 		FooterText2:              app.FooterText2,
 		FooterLink2:              app.FooterLink2,
+		ShowPoweredBy:            app.ShowPoweredBy,
+		GuestUploadNoticeTitle:   app.GuestUploadNoticeTitle,
+		GuestUploadNoticeSubtitle: app.GuestUploadNoticeSubtitle,
+		ShowLoginLink:            app.ShowLoginLink,
 		AnalyticsProvider:        app.AnalyticsProvider,
 		AnalyticsConfig:          normalizedRawMessage(app.AnalyticsConfig),
 		ThemeConfig:              normalizedRawMessage(app.ThemeConfig),
@@ -280,6 +306,10 @@ func (h *AdminSettingHandler) settingsResponse(includeMailReady bool) map[string
 		"footer_link_1":               app.FooterLink1,
 		"footer_text_2":               app.FooterText2,
 		"footer_link_2":               app.FooterLink2,
+		"show_powered_by":             app.ShowPoweredBy,
+		"guest_upload_notice_title":   app.GuestUploadNoticeTitle,
+		"guest_upload_notice_subtitle": app.GuestUploadNoticeSubtitle,
+		"show_login_link":             app.ShowLoginLink,
 		"analytics_provider":          app.AnalyticsProvider,
 		"analytics_config":            normalizedRawMessage(app.AnalyticsConfig),
 		"theme_config":                normalizedRawMessage(app.ThemeConfig),

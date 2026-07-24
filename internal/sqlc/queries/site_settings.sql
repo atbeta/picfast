@@ -21,13 +21,17 @@ INSERT INTO site_settings (
     footer_link_1,
     footer_text_2,
     footer_link_2,
+    show_powered_by,
+    guest_upload_notice_title,
+    guest_upload_notice_subtitle,
+    show_login_link,
     analytics_provider,
     analytics_config,
     allow_user_image_processing,
     skip_image_processing,
     theme_config
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
@@ -46,6 +50,10 @@ ON CONFLICT (id) DO UPDATE SET
     footer_link_1 = EXCLUDED.footer_link_1,
     footer_text_2 = EXCLUDED.footer_text_2,
     footer_link_2 = EXCLUDED.footer_link_2,
+    show_powered_by = EXCLUDED.show_powered_by,
+    guest_upload_notice_title = EXCLUDED.guest_upload_notice_title,
+    guest_upload_notice_subtitle = EXCLUDED.guest_upload_notice_subtitle,
+    show_login_link = EXCLUDED.show_login_link,
     analytics_provider = EXCLUDED.analytics_provider,
     analytics_config = EXCLUDED.analytics_config,
     allow_user_image_processing = EXCLUDED.allow_user_image_processing,

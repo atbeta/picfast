@@ -27,6 +27,10 @@ export interface SettingsForm {
   footer_link_1: string
   footer_text_2: string
   footer_link_2: string
+  show_powered_by: boolean
+  guest_upload_notice_title: string
+  guest_upload_notice_subtitle: string
+  show_login_link: boolean
   analytics_provider: string
   analytics_domain: string
   analytics_script_url: string
@@ -62,6 +66,10 @@ const defaultValues: SettingsForm = {
   footer_link_1: '',
   footer_text_2: '',
   footer_link_2: '',
+  show_powered_by: true,
+  guest_upload_notice_title: '游客上传',
+  guest_upload_notice_subtitle: '游客上传不提供后续管理能力，建议注册账号以使用完整功能。',
+  show_login_link: true,
   analytics_provider: '',
   analytics_domain: '',
   analytics_script_url: '',
@@ -117,6 +125,10 @@ function settingsToForm(data: AdminSettings): SettingsForm {
     footer_link_1: data.footer_link_1 || '',
     footer_text_2: data.footer_text_2 || '',
     footer_link_2: data.footer_link_2 || '',
+    show_powered_by: data.show_powered_by ?? true,
+    guest_upload_notice_title: data.guest_upload_notice_title ?? '游客上传',
+    guest_upload_notice_subtitle: data.guest_upload_notice_subtitle ?? '游客上传不提供后续管理能力，建议注册账号以使用完整功能。',
+    show_login_link: data.show_login_link ?? true,
     analytics_provider: data.analytics_provider || '',
     analytics_domain: settingString(data.analytics_config?.domain),
     analytics_script_url: settingString(data.analytics_config?.script_url),

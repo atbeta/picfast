@@ -19,6 +19,10 @@ export interface SiteConfig {
   footer_link_1: string
   footer_text_2: string
   footer_link_2: string
+  show_powered_by: boolean
+  guest_upload_notice_title: string
+  guest_upload_notice_subtitle: string
+  show_login_link: boolean
   analytics_provider: string
   analytics_config: Record<string, unknown>
   theme_config: ThemeConfig

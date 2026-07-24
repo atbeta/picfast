@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Controller, useWatch } from 'react-hook-form'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { uploadImageAuth } from '@/lib/console-api'
 import {
   analyticsPayload,
@@ -36,6 +37,10 @@ export function AdminSiteSettingsPage() {
       footer_link_1: form.footer_link_1,
       footer_text_2: form.footer_text_2,
       footer_link_2: form.footer_link_2,
+      show_powered_by: form.show_powered_by,
+      guest_upload_notice_title: form.guest_upload_notice_title,
+      guest_upload_notice_subtitle: form.guest_upload_notice_subtitle,
+      show_login_link: form.show_login_link,
       theme_config: themePayload(form),
       analytics_provider: form.analytics_provider,
       analytics_config: analyticsPayload(form),
@@ -138,6 +143,66 @@ export function AdminSiteSettingsPage() {
               <input {...register('footer_link_2')} placeholder="https://" className={fieldInputCls} />
             </SettingField>
           </div>
+        </div>
+        <div className="mt-4 rounded-xl border border-border/60 bg-muted/20 p-4 md:p-5">
+          <Controller
+            name="show_powered_by"
+            control={control}
+            render={({ field }) => (
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">{t('admin.showPoweredBy')}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.showPoweredByDesc')}</p>
+                </div>
+                <Switch
+                  checked={!!field.value}
+                  onCheckedChange={field.onChange}
+                  id="show_powered_by"
+                />
+              </div>
+            )}
+          />
+        </div>
+      </div>
+
+      <div className="border-t border-border/40 pt-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.sectionGuestUploadNotice')}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.sectionGuestUploadNoticeDesc')}</p>
+        </div>
+        <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4 md:p-5">
+          <SettingField label={t('admin.guestUploadNoticeTitle')} hint={t('admin.guestUploadNoticeTitleHint')}>
+            <input {...register('guest_upload_notice_title')} className={fieldInputCls} />
+          </SettingField>
+          <SettingField label={t('admin.guestUploadNoticeSubtitle')} hint={t('admin.guestUploadNoticeSubtitleHint')}>
+            <textarea {...register('guest_upload_notice_subtitle')} className={fieldTextareaCls} />
+          </SettingField>
+        </div>
+      </div>
+
+      <div className="border-t border-border/40 pt-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.sectionHeaderLogin')}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.sectionHeaderLoginDesc')}</p>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-muted/20 p-4 md:p-5">
+          <Controller
+            name="show_login_link"
+            control={control}
+            render={({ field }) => (
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">{t('admin.showLoginLink')}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{t('admin.showLoginLinkDesc')}</p>
+                </div>
+                <Switch
+                  checked={!!field.value}
+                  onCheckedChange={field.onChange}
+                  id="show_login_link"
+                />
+              </div>
+            )}
+          />
         </div>
       </div>
 
