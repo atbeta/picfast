@@ -1,6 +1,9 @@
 .ai/
 .DS_Store
 bin/
+# npm CLI ships a JS wrapper under npm/picfast/bin/ (native binary stays ignored)
+!npm/picfast/bin/
+!npm/picfast/bin/picfast
 data/
 web-dist/
 web/dist/

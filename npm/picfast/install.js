@@ -3,7 +3,7 @@ const path = require('path')
 const { execSync } = require('child_process')
 
 const REPO = 'atbeta/picfast'
-const BIN_NAME = process.platform === 'win32' ? 'picfast.exe' : 'picfast'
+const MIN_BINARY_BYTES = 1024 * 1024
 
 function getTarget() {
   const p = process.platform
@@ -17,18 +17,32 @@ function getTarget() {
   return null
 }
 
+function needsDownload(binPath) {
+  try {
+    return fs.statSync(binPath).size < MIN_BINARY_BYTES
+  } catch {
+    return true
+  }
+}
+
 const target = getTarget()
 if (!target) {
-  console.warn(`picfast: unsupported platform ${process.platform}-${process.arch}, skipping binary download`)
+  console.warn(
+    `picfast: unsupported platform ${process.platform}-${process.arch}, skipping binary download`
+  )
   process.exit(0)
 }
 
 const version = require('./package.json').version
-const url = `https://github.com/${REPO}/releases/download/picfast-v${version}/picfast-${target}`
+const asset = target.startsWith('windows-')
+  ? `picfast-${target}.exe`
+  : `picfast-${target}`
+const url = `https://github.com/${REPO}/releases/download/picfast-v${version}/${asset}`
 const binDir = path.join(__dirname, 'bin')
-const binPath = path.join(binDir, BIN_NAME)
+const binName = process.platform === 'win32' ? 'picfast.exe' : 'picfast-native'
+const binPath = path.join(binDir, binName)
 
-if (fs.existsSync(binPath)) {
+if (!needsDownload(binPath)) {
   process.exit(0)
 }
 
@@ -36,9 +50,23 @@ try {
   fs.mkdirSync(binDir, { recursive: true })
   console.log(`picfast: downloading ${url}`)
   execSync(`curl -fsSL "${url}" -o "${binPath}"`, { stdio: 'pipe' })
+} catch (err) {
+  console.error('picfast: failed to download binary from', url)
+  if (err && err.stderr) {
+    process.stderr.write(String(err.stderr))
+  }
+  process.exit(1)
+}
+
+try {
+  const st = fs.statSync(binPath)
+  if (st.size < MIN_BINARY_BYTES) {
+    console.error(`picfast: downloaded file looks too small (${st.size} bytes)`)
+    process.exit(1)
+  }
 } catch {
-  console.error('picfast: failed to download binary')
-  process.exit(0)
+  console.error('picfast: downloaded binary missing after curl')
+  process.exit(1)
 }
 
 try {

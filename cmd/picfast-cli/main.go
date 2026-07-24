@@ -22,9 +22,17 @@ type uploadResponse struct {
 }
 
 func main() {
-	markdown := flag.Bool("markdown", false, "output markdown image link instead of URL")
-	format := flag.String("format", "", "output format: url, markdown, html, bbcode")
-	flag.Usage = func() {
+	args := os.Args[1:]
+	// Accept optional "upload" subcommand for npm README compatibility:
+	//   picfast upload image.png
+	if len(args) > 0 && args[0] == "upload" {
+		args = args[1:]
+	}
+
+	fs := flag.NewFlagSet("picfast", flag.ExitOnError)
+	markdown := fs.Bool("markdown", false, "output markdown image link instead of URL")
+	format := fs.String("format", "", "output format: url, markdown, html, bbcode")
+	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: picfast upload [flags] <file...>
 
   picfast upload image.png
@@ -37,9 +45,9 @@ Environment:
 
 Flags:
 `)
-		flag.PrintDefaults()
+		fs.PrintDefaults()
 	}
-	flag.Parse()
+	_ = fs.Parse(args)
 
 	baseURL := strings.TrimRight(os.Getenv("PICFAST_URL"), "/")
 	if baseURL == "" {
@@ -48,13 +56,14 @@ Flags:
 	}
 	token := os.Getenv("PICFAST_TOKEN")
 
-	if flag.NArg() == 0 {
-		flag.Usage()
+	files := fs.Args()
+	if len(files) == 0 {
+		fs.Usage()
 		os.Exit(1)
 	}
 
 	exitCode := 0
-	for _, path := range flag.Args() {
+	for _, path := range files {
 		if err := uploadFile(baseURL, token, path, *markdown, *format); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %s: %v\n", path, err)
 			exitCode = 1

@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+const { spawnSync } = require('child_process')
+const fs = require('fs')
+const path = require('path')
+
+const MIN_BINARY_BYTES = 1024 * 1024
+const nativeName = process.platform === 'win32' ? 'picfast.exe' : 'picfast-native'
+const nativePath = path.join(__dirname, nativeName)
+
+function isBinary(filePath) {
+  try {
+    return fs.statSync(filePath).size >= MIN_BINARY_BYTES
+  } catch {
+    return false
+  }
+}
+
+if (!isBinary(nativePath)) {
+  process.stderr.write(
+    'picfast: native binary missing. Re-run: npm install picfast\n'
+  )
+  process.exit(1)
+}
+
+const result = spawnSync(nativePath, process.argv.slice(2), { stdio: 'inherit' })
+if (result.error) {
+  process.stderr.write(`picfast: ${result.error.message}\n`)
+  process.exit(1)
+}
+process.exit(result.status ?? 1)

@@ -1,6 +1,6 @@
 {
   "name": "picfast",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "PicFast CLI — upload images from the command line",
   "license": "MIT",
   "repository": {
