@@ -47,7 +47,7 @@ class PicFastCodeLensProvider implements vscode.CodeLensProvider {
       );
       lenses.push(
         new vscode.CodeLens(range, {
-          title: "$(cloud-upload) Upload to PicFast",
+          title: t("picfast.ui.codeLens.title"),
           command: COMMAND_UPLOAD_ONE,
           arguments: [ref, document.uri],
           tooltip:
