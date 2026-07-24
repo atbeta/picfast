@@ -94,7 +94,7 @@
       "properties": {
         "picfast.baseUrl": {
           "type": "string",
-          "default": "https://picfast.example.com",
+          "default": "https://demo.picfast.dev",
           "description": "%picfast.config.baseUrl.description%",
           "pattern": "^https?://.+$"
         },
