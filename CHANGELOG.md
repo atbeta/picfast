@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.20.0](https://github.com/atbeta/picfast/compare/v0.19.0...v0.20.0) (2026-07-24)
+
+
+### Features
+
+* **asset:** tags, EXIF/OCR display, advanced search, and i18n ([c970852](https://github.com/atbeta/picfast/commit/c970852e3b469266de8f2168bac4871511f00c40))
+* **audit:** enable upload logging by default; add 7 new audit events ([450ccf6](https://github.com/atbeta/picfast/commit/450ccf670b9b56e1e84c42dbb944add5566a735e))
+* **cli:** add picfast CLI upload client for npm distribution ([342a56c](https://github.com/atbeta/picfast/commit/342a56c48461885225bc704b364b47ba84b3b976))
+* **site:** 4 admin toggles for white-label internal deployments ([3d99120](https://github.com/atbeta/picfast/commit/3d99120627229c9f63cd4f0d7693281ec6d3b99b))
+* **vscode:** add PicFast Image Uploader VS Code extension ([de5621d](https://github.com/atbeta/picfast/commit/de5621dd3927bdd9239664c3074dc7f73080f72d))
+* **web:** replace third-party VS Code exts with official PicFast extension ([bd7c518](https://github.com/atbeta/picfast/commit/bd7c518c6f0d1146e1551f1836d539d07ef14e78))
+
+
+### Bug Fixes
+
+* **ci:** restrict docker-publish tag filter to version tags ([b320de2](https://github.com/atbeta/picfast/commit/b320de20587b8d3dc52546914040b2cb3bbaea1c))
+* **vscode:** remove $(cloud-upload) from notification; localize CodeLens title ([298e8b2](https://github.com/atbeta/picfast/commit/298e8b255d7d64d6262d0cdc0b10d9e1dd51e78b))
+* **vscode:** revert default baseUrl to safe placeholder ([b3cf901](https://github.com/atbeta/picfast/commit/b3cf9012e80ded0d79a3fb99075c3722c69b8055))
+
 ## [0.19.0](https://github.com/atbeta/picfast/compare/v0.18.2...v0.19.0) (2026-07-24)
 
 
