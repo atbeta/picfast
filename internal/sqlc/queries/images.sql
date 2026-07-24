@@ -36,6 +36,7 @@ WHERE images.user_id = $1
   AND (sqlc.narg('extension')::text IS NULL OR images.extension = sqlc.narg('extension'))
   AND (sqlc.narg('date_from')::timestamptz IS NULL OR images.created_at >= sqlc.narg('date_from'))
   AND (sqlc.narg('date_to')::timestamptz IS NULL OR images.created_at <= sqlc.narg('date_to'))
+  AND (sqlc.narg('tag_ids')::bigint[] IS NULL OR EXISTS (SELECT 1 FROM image_tags WHERE image_tags.image_id = images.id AND tag_id = ANY(sqlc.narg('tag_ids')::bigint[])))
 ORDER BY images.created_at DESC
 LIMIT $2 OFFSET $3;
 
@@ -46,7 +47,8 @@ WHERE user_id = $1
   AND (sqlc.narg('keyword')::text IS NULL OR origin_name ILIKE '%' || sqlc.narg('keyword') || '%')
   AND (sqlc.narg('extension')::text IS NULL OR extension = sqlc.narg('extension'))
   AND (sqlc.narg('date_from')::timestamptz IS NULL OR created_at >= sqlc.narg('date_from'))
-  AND (sqlc.narg('date_to')::timestamptz IS NULL OR created_at <= sqlc.narg('date_to'));
+  AND (sqlc.narg('date_to')::timestamptz IS NULL OR created_at <= sqlc.narg('date_to'))
+  AND (sqlc.narg('tag_ids')::bigint[] IS NULL OR EXISTS (SELECT 1 FROM image_tags WHERE image_tags.image_id = images.id AND tag_id = ANY(sqlc.narg('tag_ids')::bigint[])));
 
 -- name: FindDuplicateImage :one
 SELECT * FROM images
@@ -71,6 +73,7 @@ WHERE (sqlc.narg('keyword')::text IS NULL OR images.origin_name ILIKE '%' || sql
   AND (sqlc.narg('extension')::text IS NULL OR images.extension = sqlc.narg('extension'))
   AND (sqlc.narg('date_from')::timestamptz IS NULL OR images.created_at >= sqlc.narg('date_from'))
   AND (sqlc.narg('date_to')::timestamptz IS NULL OR images.created_at <= sqlc.narg('date_to'))
+  AND (sqlc.narg('tag_ids')::bigint[] IS NULL OR EXISTS (SELECT 1 FROM image_tags WHERE image_tags.image_id = images.id AND tag_id = ANY(sqlc.narg('tag_ids')::bigint[])))
 ORDER BY images.created_at DESC
 LIMIT $1 OFFSET $2;
 
@@ -81,7 +84,8 @@ WHERE (sqlc.narg('keyword')::text IS NULL OR images.origin_name ILIKE '%' || sql
   AND (sqlc.narg('email')::text IS NULL OR users.email ILIKE '%' || sqlc.narg('email') || '%')
   AND (sqlc.narg('extension')::text IS NULL OR images.extension = sqlc.narg('extension'))
   AND (sqlc.narg('date_from')::timestamptz IS NULL OR images.created_at >= sqlc.narg('date_from'))
-  AND (sqlc.narg('date_to')::timestamptz IS NULL OR images.created_at <= sqlc.narg('date_to'));
+  AND (sqlc.narg('date_to')::timestamptz IS NULL OR images.created_at <= sqlc.narg('date_to'))
+  AND (sqlc.narg('tag_ids')::bigint[] IS NULL OR EXISTS (SELECT 1 FROM image_tags WHERE image_tags.image_id = images.id AND tag_id = ANY(sqlc.narg('tag_ids')::bigint[])));
 
 -- name: GetGuestUsedCapacity :one
 SELECT COALESCE(SUM(size_bytes), 0)::bigint FROM images WHERE user_id IS NULL;
@@ -112,3 +116,6 @@ SELECT COALESCE(MAX(id), 0)::bigint FROM images;
 
 -- name: UpdateImagePHash :exec
 UPDATE images SET phash = $2 WHERE id = $1;
+
+-- name: UpdateImageOCR :exec
+UPDATE images SET ocr_text = $2 WHERE id = $1;

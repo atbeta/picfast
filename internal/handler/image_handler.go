@@ -208,6 +208,18 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var tagIDs []int64
+	if tids := r.FormValue("tag_ids"); tids != "" {
+		if err := json.Unmarshal([]byte(tids), &tagIDs); err != nil {
+			// fallback: try comma separated
+			for _, p := range strings.Split(tids, ",") {
+				if v, err := strconv.ParseInt(strings.TrimSpace(p), 10, 64); err == nil {
+					tagIDs = append(tagIDs, v)
+				}
+			}
+		}
+	}
+
 	params := sqlc.ListImagesByUserParams{
 		UserID:    domain.PgInt8(userID),
 		AlbumID:   domain.PgInt8Ptr(albumID),
@@ -215,6 +227,7 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 		Extension: domain.PgTextNonEmpty(r.FormValue("extension")),
 		DateFrom:  domain.PgTimeWithZonePtr(dateFrom),
 		DateTo:    domain.PgTimeWithZonePtr(dateTo),
+		TagIds:    tagIDs,
 		Limit:     pageSize,
 		Offset:    (page - 1) * pageSize,
 	}
@@ -231,6 +244,7 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 		Extension: params.Extension,
 		DateFrom:  params.DateFrom,
 		DateTo:    params.DateTo,
+		TagIds:    tagIDs,
 	})
 	if err != nil {
 		slog.Warn("failed to count images", "error", err, "user_id", userID)
@@ -268,8 +282,16 @@ func (h *ImageHandler) List(w http.ResponseWriter, r *http.Request) {
 			StrategyID:       domain.PgInt8PtrVal(img.StrategyID),
 			StrategyName:     img.StrategyName.String,
 			StrategyType:     img.StrategyType.String,
-			Links:            links,
-			CreatedAt:        img.CreatedAt,
+			ExifData:         img.ExifData,
+			OCRText: func(s string) *string {
+				if s == "" {
+					return nil
+				}
+				return &s
+			}(img.OcrText),
+			PHash:     domain.PgInt8PtrVal(img.Phash),
+			Links:     links,
+			CreatedAt: img.CreatedAt,
 		}
 	}
 
@@ -431,7 +453,7 @@ func (h *ImageHandler) BatchDelete(w http.ResponseWriter, r *http.Request) {
 			failed++
 			continue
 		}
-	if err := h.deleter.DeleteImage(context.WithValue(r.Context(), domain.ContextKeyDeletedBy, "owner"), img.ID); err != nil {
+		if err := h.deleter.DeleteImage(context.WithValue(r.Context(), domain.ContextKeyDeletedBy, "owner"), img.ID); err != nil {
 			slog.Warn("batch delete failed for image", "key", key, "error", err)
 			failed++
 			continue
@@ -488,8 +510,16 @@ func imageResponse(img sqlc.Image, links domain.ImageLinks) ImageResponse {
 		Permission:       img.Permission,
 		AlbumID:          domain.PgInt8PtrVal(img.AlbumID),
 		ModerationStatus: img.ModerationStatus,
-		Links:            links,
-		CreatedAt:        img.CreatedAt,
+		ExifData:         img.ExifData,
+		OCRText: func(s string) *string {
+			if s == "" {
+				return nil
+			}
+			return &s
+		}(img.OcrText),
+		PHash:     domain.PgInt8PtrVal(img.Phash),
+		Links:     links,
+		CreatedAt: img.CreatedAt,
 	}
 }
 
@@ -534,4 +564,3 @@ func (h *ImageHandler) Pipeline(w http.ResponseWriter, r *http.Request) {
 		"updated_at": img.UpdatedAt.UTC().Format(time.RFC3339),
 	})
 }
-

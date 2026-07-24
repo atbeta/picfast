@@ -95,6 +95,7 @@ type Image struct {
 	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
 	ExifData         []byte             `json:"exif_data"`
 	Phash            pgtype.Int8        `json:"phash"`
+	OcrText          string             `json:"ocr_text"`
 }
 
 type ImageModeration struct {
@@ -108,6 +109,12 @@ type ImageModeration struct {
 	ModeratorID pgtype.Int8     `json:"moderator_id"`
 	CreatedAt   time.Time       `json:"created_at"`
 	UpdatedAt   time.Time       `json:"updated_at"`
+}
+
+type ImageTag struct {
+	ImageID   int64     `json:"image_id"`
+	TagID     int64     `json:"tag_id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type OutboxEvent struct {
@@ -178,6 +185,15 @@ type Strategy struct {
 	Configs      json.RawMessage `json:"configs"`
 	CreatedAt    time.Time       `json:"created_at"`
 	UpdatedAt    time.Time       `json:"updated_at"`
+}
+
+type Tag struct {
+	ID        int64       `json:"id"`
+	UserID    pgtype.Int8 `json:"user_id"`
+	Name      string      `json:"name"`
+	Type      string      `json:"type"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
 }
 
 type User struct {

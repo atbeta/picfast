@@ -114,6 +114,7 @@ type AppConfig struct {
 	GuestUploadNoticeTitle   string          `mapstructure:"guest_upload_notice_title"`
 	GuestUploadNoticeSubtitle string         `mapstructure:"guest_upload_notice_subtitle"`
 	ShowLoginLink            bool            `mapstructure:"show_login_link"`
+	EnableDummyOCR           bool            `mapstructure:"enable_dummy_ocr"`
 	AllowOauthRegistration   bool            `mapstructure:"allow_oauth_registration"`
 	AnalyticsProvider        string          `mapstructure:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `mapstructure:"analytics_config"`
@@ -458,6 +459,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.guest_upload_notice_title", "游客上传")
 	v.SetDefault("app.guest_upload_notice_subtitle", "游客上传不提供后续管理能力，建议注册账号以使用完整功能。")
 	v.SetDefault("app.show_login_link", true)
+	v.SetDefault("app.enable_dummy_ocr", false)
 	v.SetDefault("app.analytics_provider", "")
 	v.SetDefault("app.instance_id", "")
 

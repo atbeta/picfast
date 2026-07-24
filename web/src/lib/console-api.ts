@@ -23,18 +23,31 @@ export interface ImageItem {
   strategy_id: number | null
   strategy_name: string
   strategy_type: string
+  exif_data?: Record<string, unknown>
+  ocr_text?: string
+  phash?: number | null
   links: { url: string; html: string; bbcode: string; markdown: string; thumbnail_url: string }
   created_at: string
 }
 
-export async function listImages(page = 1, pageSize = 20, albumId?: number | null, keyword?: string): Promise<PaginatedData<ImageItem>> {
+export async function listImages(
+  page = 1,
+  pageSize = 20,
+  albumId?: number | null,
+  keyword?: string,
+  extension?: string,
+  dateFrom?: string,
+  dateTo?: string,
+  tagIds?: number[]
+): Promise<PaginatedData<ImageItem>> {
   const params: Record<string, string | number> = { page, page_size: pageSize }
-  if (albumId) {
-    params.album_id = albumId
-  }
-  if (keyword) {
-    params.keyword = keyword
-  }
+  if (albumId) params.album_id = albumId
+  if (keyword) params.keyword = keyword
+  if (extension) params.extension = extension
+  if (dateFrom) params.date_from = dateFrom
+  if (dateTo) params.date_to = dateTo
+  if (tagIds && tagIds.length > 0) params.tag_ids = tagIds.join(',')
+
   const res = await api.get<ApiResponse<PaginatedData<ImageItem>>>('/images', { params })
   return res.data.data
 }
@@ -75,6 +88,42 @@ export async function uploadImageAuth(
     },
   })
   return res.data.data
+}
+
+// ============================================================
+// Tags
+// ============================================================
+
+export interface TagItem {
+  id: number
+  user_id: number
+  name: string
+  type: string
+  created_at: string
+  updated_at: string
+}
+
+export async function listTags(): Promise<TagItem[]> {
+  const res = await api.get<ApiResponse<TagItem[]>>('/tags')
+  return res.data.data
+}
+
+export async function createTag(name: string, type: string = 'user'): Promise<TagItem> {
+  const res = await api.post<ApiResponse<TagItem>>('/tags', { name, type })
+  return res.data.data
+}
+
+export async function getImageTags(imageId: number): Promise<TagItem[]> {
+  const res = await api.get<ApiResponse<TagItem[]>>(`/images/${imageId}/tags`)
+  return res.data.data
+}
+
+export async function addImageTag(imageId: number, tagId: number): Promise<void> {
+  await api.post(`/images/${imageId}/tags`, { tag_id: tagId })
+}
+
+export async function removeImageTag(imageId: number, tagId: number): Promise<void> {
+  await api.delete(`/images/${imageId}/tags/${tagId}`)
 }
 
 // ============================================================

@@ -12,6 +12,7 @@ import { ConsoleLayout } from '../pages/layouts/console-layout'
 import { PublicLayout } from '../pages/layouts/public-layout'
 
 const AlbumsPage = lazy(async () => ({ default: (await import('../pages/console/albums-page')).AlbumsPage }))
+const TagsPage = lazy(async () => ({ default: (await import('../pages/console/tags-page')).TagsPage }))
 const ApiTokensPage = lazy(async () => ({ default: (await import('../pages/console/api-tokens-page')).ApiTokensPage }))
 const WebhooksPage = lazy(async () => ({ default: (await import('../pages/console/webhooks-page')).WebhooksPage }))
 const WebhookDetailPage = lazy(async () => ({ default: (await import('../pages/console/webhook-detail-page')).WebhookDetailPage }))
@@ -171,6 +172,7 @@ function PublicRoutes() {
               <Route path="upload" element={<LazyPage><UploadPage /></LazyPage>} />
               <Route path="images" element={<LazyPage><ImagesPage /></LazyPage>} />
               <Route path="albums" element={<LazyPage><AlbumsPage /></LazyPage>} />
+              <Route path="tags" element={<LazyPage><TagsPage /></LazyPage>} />
               <Route path="api-tokens" element={<LazyPage><ApiTokensPage /></LazyPage>} />
               <Route path="webhooks" element={<LazyPage><WebhooksPage /></LazyPage>} />
               <Route path="webhooks/:id" element={<LazyPage><WebhookDetailPage /></LazyPage>} />

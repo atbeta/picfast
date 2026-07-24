@@ -45,6 +45,9 @@ type ImageResponse struct {
 	Permission       int16             `json:"permission"`
 	AlbumID          *int64            `json:"album_id"`
 	ModerationStatus string            `json:"moderation_status"`
+	ExifData         json.RawMessage   `json:"exif_data,omitempty"`
+	OCRText          *string           `json:"ocr_text,omitempty"`
+	PHash            *int64            `json:"phash,omitempty"`
 	Links            domain.ImageLinks `json:"links"`
 	CreatedAt        time.Time         `json:"created_at"`
 }
@@ -66,6 +69,9 @@ type ImageListItem struct {
 	StrategyID       *int64            `json:"strategy_id"`
 	StrategyName     string            `json:"strategy_name"`
 	StrategyType     string            `json:"strategy_type"`
+	ExifData         json.RawMessage   `json:"exif_data,omitempty"`
+	OCRText          *string           `json:"ocr_text,omitempty"`
+	PHash            *int64            `json:"phash,omitempty"`
 	Links            domain.ImageLinks `json:"links"`
 	CreatedAt        time.Time         `json:"created_at"`
 }

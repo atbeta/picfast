@@ -6,6 +6,7 @@ import {
   UploadCloud,
   Image as ImageIcon,
   FolderOpen,
+  Tag as TagIcon,
   KeySquare,
   Webhook,
   Blocks,
@@ -113,6 +114,7 @@ export function ConsoleLayout() {
               <ConsoleNavItem to="/console/upload" label={t('nav.upload')} icon={UploadCloud} onNavigate={() => setMobileNavOpen(false)} />
               <ConsoleNavItem to="/console/images" label={t('nav.images')} icon={ImageIcon} onNavigate={() => setMobileNavOpen(false)} />
               <ConsoleNavItem to="/console/albums" label={t('nav.albums')} icon={FolderOpen} onNavigate={() => setMobileNavOpen(false)} />
+              <ConsoleNavItem to="/console/tags" label={t('tags.title', { defaultValue: '标签管理' })} icon={TagIcon} onNavigate={() => setMobileNavOpen(false)} />
               <ConsoleNavItem to="/console/api-tokens" label={t('nav.apiTokens')} icon={KeySquare} onNavigate={() => setMobileNavOpen(false)} />
               <ConsoleNavItem to="/console/webhooks" label={t('webhooks.title', { defaultValue: 'Webhooks' })} icon={Webhook} onNavigate={() => setMobileNavOpen(false)} />
               <ConsoleNavItem to="/console/integrations" label={t('connections.title', { defaultValue: '接入' })} icon={Blocks} onNavigate={() => setMobileNavOpen(false)} />
@@ -146,6 +148,7 @@ export function ConsoleLayout() {
               <ConsoleNavItem to="/console/upload" label={t('nav.upload')} icon={UploadCloud} />
               <ConsoleNavItem to="/console/images" label={t('nav.images')} icon={ImageIcon} />
               <ConsoleNavItem to="/console/albums" label={t('nav.albums')} icon={FolderOpen} />
+              <ConsoleNavItem to="/console/tags" label={t('tags.title', { defaultValue: '标签管理' })} icon={TagIcon} />
               <ConsoleNavItem to="/console/api-tokens" label={t('nav.apiTokens')} icon={KeySquare} />
               <ConsoleNavItem to="/console/webhooks" label={t('webhooks.title', { defaultValue: 'Webhooks' })} icon={Webhook} />
               <ConsoleNavItem to="/console/integrations" label={t('connections.title', { defaultValue: '接入' })} icon={Blocks} />

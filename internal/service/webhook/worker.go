@@ -7,25 +7,30 @@ import (
 	"sync"
 	"time"
 
+	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 type Worker struct {
-	db          *sqlc.Queries
-	delivery    *DeliveryService
-	interval    time.Duration
-	concurrency int
-	quit        chan struct{}
-	wg          sync.WaitGroup
+	db             *sqlc.Queries
+	delivery       *DeliveryService
+	interval       time.Duration
+	concurrency    int
+	enableOCR      bool
+	ocrConcurrency int
+	quit           chan struct{}
+	wg             sync.WaitGroup
 }
 
-func NewWorker(db *sqlc.Queries, delivery *DeliveryService, interval time.Duration, concurrency int) *Worker {
+func NewWorker(db *sqlc.Queries, delivery *DeliveryService, interval time.Duration, concurrency int, enableOCR bool, ocrConcurrency int) *Worker {
 	return &Worker{
-		db:          db,
-		delivery:    delivery,
-		interval:    interval,
-		concurrency: concurrency,
-		quit:        make(chan struct{}),
+		db:             db,
+		delivery:       delivery,
+		interval:       interval,
+		concurrency:    concurrency,
+		enableOCR:      enableOCR,
+		ocrConcurrency: ocrConcurrency,
+		quit:           make(chan struct{}),
 	}
 }
 
@@ -71,7 +76,18 @@ func (w *Worker) processOutbox(ctx context.Context) error {
 		return err
 	}
 
+	ocrSem := make(chan struct{}, w.ocrConcurrency)
+
 	for _, event := range events {
+		if w.enableOCR {
+			event := event
+			ocrSem <- struct{}{}
+			go func() {
+				defer func() { <-ocrSem }()
+				service.DummyOCRProcessor(w.db, event)
+			}()
+		}
+
 		if err := w.createEventDeliveries(ctx, event); err != nil {
 			slog.Warn("webhook worker: create deliveries failed", "event_id", event.ID, "error", err)
 		}

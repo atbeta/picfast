@@ -51,3 +51,10 @@ func PgTextNonEmpty(v string) pgtype.Text {
 	}
 	return pgtype.Text{String: v, Valid: true}
 }
+
+func PgTextPtrVal(p pgtype.Text) *string {
+	if p.Valid {
+		return &p.String
+	}
+	return nil
+}

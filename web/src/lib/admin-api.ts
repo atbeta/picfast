@@ -164,6 +164,9 @@ export async function listAdminImages(params?: {
   keyword?: string
   email?: string
   extension?: string
+  date_from?: string
+  date_to?: string
+  tag_ids?: string
 }): Promise<PaginatedData<AdminImage>> {
   const res = await api.get<ApiResponse<PaginatedData<AdminImage>>>('/admin/images', { params })
   return res.data.data

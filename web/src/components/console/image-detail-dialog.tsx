@@ -1,9 +1,9 @@
-import { Copy, Trash2, Activity, CheckCircle2, XCircle, Clock, SkipForward } from 'lucide-react'
+import { Copy, Trash2, Activity, CheckCircle2, XCircle, Clock, SkipForward, Tag as TagIcon, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { Album, ImageItem } from '@/lib/console-api'
-import { getPipelineStatus } from '@/lib/console-api'
+import { getPipelineStatus, listTags, getImageTags, addImageTag, removeImageTag } from '@/lib/console-api'
 import { storageStrategyLabel } from '@/lib/storage-strategy'
 import { formatFileSize } from '@/lib/upload'
 import { Button } from '@/components/ui/button'
@@ -38,12 +38,43 @@ export function ImageDetailDialog({
   onDelete,
 }: ImageDetailDialogProps) {
   const { t } = useTranslation()
+  const qc = useQueryClient()
 
   const { data: pipeline } = useQuery({
     queryKey: ['pipeline', image?.key],
     queryFn: () => getPipelineStatus(image!.key),
     enabled: !!image,
   })
+
+  const { data: allTags = [] } = useQuery({
+    queryKey: ['tags'],
+    queryFn: listTags,
+    enabled: !!image,
+  })
+
+  const { data: imageTags = [], refetch: refetchImageTags } = useQuery({
+    queryKey: ['image-tags', image?.id],
+    queryFn: () => getImageTags(image!.id),
+    enabled: !!image?.id,
+  })
+
+  const handleAddTag = async (tagIdStr: string) => {
+    if (!image) return
+    const tagId = Number(tagIdStr)
+    if (imageTags.some((t) => t.id === tagId)) return
+    await addImageTag(image.id, tagId)
+    refetchImageTags()
+    qc.invalidateQueries({ queryKey: ['images'] })
+  }
+
+  const handleRemoveTag = async (tagId: number) => {
+    if (!image) return
+    await removeImageTag(image.id, tagId)
+    refetchImageTags()
+    qc.invalidateQueries({ queryKey: ['images'] })
+  }
+
+  const availableTags = allTags.filter((t) => !imageTags.some((it) => it.id === t.id))
 
   return (
     <Dialog open={!!image} onOpenChange={(open) => { if (!open) onClose() }}>
@@ -83,6 +114,12 @@ export function ImageDetailDialog({
                   <div className="flex flex-col gap-1"><span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('images.colSize')}</span> <span className="text-foreground">{formatFileSize(image.size_bytes)}</span></div>
                   <div className="flex flex-col gap-1"><span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('images.type', { defaultValue: '类型' })}</span> <span className="text-foreground">{image.mimetype}</span></div>
                   <div className="flex flex-col gap-1"><span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('images.dimensions', { defaultValue: '尺寸' })}</span> <span className="text-foreground">{image.width}x{image.height}</span></div>
+                  {image.phash != null && (
+                    <div className="flex flex-col gap-1"><span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">pHash</span> <span className="text-foreground font-mono text-xs">{image.phash}</span></div>
+                  )}
+                  {image.ocr_text && (
+                    <div className="flex flex-col gap-1 sm:col-span-2"><span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">OCR Text</span> <span className="text-foreground text-xs line-clamp-2" title={image.ocr_text}>{image.ocr_text}</span></div>
+                  )}
                   <div className="flex flex-col gap-1 items-start">
                     <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('images.permission', { defaultValue: '权限' })}</span>
                     <button
@@ -149,6 +186,51 @@ export function ImageDetailDialog({
                       </div>
                     ))}
                   </div>
+                )}
+
+                <h4 className="text-sm font-semibold text-foreground border-b border-border/40 pb-2 pt-4">{t('tags.title')}</h4>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {imageTags.map((tag) => (
+                      <span key={tag.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                        <TagIcon className="size-3" />
+                        {tag.name}
+                        <button type="button" onClick={() => handleRemoveTag(tag.id)} className="ml-1 rounded-full p-0.5 hover:bg-primary/20 hover:text-primary-foreground">
+                          <X className="size-3" />
+                        </button>
+                      </span>
+                    ))}
+                    {imageTags.length === 0 && <span className="text-xs text-muted-foreground">{t('tags.empty')}</span>}
+                  </div>
+                  {availableTags.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Select value="none" onValueChange={(val) => { const v = val as string; if (v !== 'none') handleAddTag(v); }}>
+                        <SelectTrigger className="h-8 w-[160px] text-xs">
+                          <SelectValue placeholder={t('tags.add')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none" disabled>{t('tags.add')}</SelectItem>
+                          {availableTags.map((t) => (
+                            <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                {image.exif_data && Object.keys(image.exif_data as Record<string, unknown>).length > 0 && (
+                  <>
+                    <h4 className="text-sm font-semibold text-foreground border-b border-border/40 pb-2 pt-4">EXIF</h4>
+                    <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-xs sm:grid-cols-2 rounded-lg border border-border/40 bg-muted/10 p-3">
+                      {Object.entries(image.exif_data).map(([key, value]) => (
+                        <div key={key} className="flex flex-col">
+                          <span className="font-medium text-muted-foreground">{key}</span>
+                          <span className="text-foreground truncate" title={String(value)}>{String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             </div>

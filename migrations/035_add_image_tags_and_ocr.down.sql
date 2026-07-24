@@ -1,0 +1,4 @@
+ALTER TABLE images DROP COLUMN IF EXISTS ocr_text;
+
+DROP TABLE IF EXISTS image_tags;
+DROP TABLE IF EXISTS tags;

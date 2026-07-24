@@ -253,7 +253,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 			Permission: perm,
 			UploadedIp: params.ClientIP,
 			ExpiresAt:  domain.PgTimeWithZonePtr(params.ExpiresAt),
-			ExifData:   []byte(exifJSON),
+			ExifData:   exifJSON,
 			Phash:      phash,
 		})
 		if err != nil {

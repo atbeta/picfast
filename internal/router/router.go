@@ -192,7 +192,7 @@ func New(
 
 	webhookSvc := webhook.NewService(queries, cfg.Webhook.MaxPerUser, cfg.SecretKeyBytes())
 	webhookDelivery := webhook.NewDeliveryService(queries, cfg.Webhook.DeliveryTimeout, cfg.Webhook.AllowHTTP, cfg.Webhook.AllowPrivateURLs, cfg.SecretKeyBytes())
-	webhookWorker := webhook.NewWorker(queries, webhookDelivery, cfg.Webhook.WorkerInterval, 20)
+	webhookWorker := webhook.NewWorker(queries, webhookDelivery, cfg.Webhook.WorkerInterval, 20, cfg.App.EnableDummyOCR, 5)
 	whHandler := handler.NewWebhookHandler(webhookSvc, webhookDelivery)
 	if cfg.Webhook.Enabled {
 		webhookWorker.Start()
@@ -217,6 +217,7 @@ func New(
 	setupHandler := handler.NewSetupHandler(queries, pool, jwtSvc, cfg)
 	userHandler := handler.NewUserHandler(queries)
 	imageHandler := handler.NewImageHandler(queries, uploadSvc, deleteSvc, cfg.Server.BaseURL, cfg.Storage.ThumbnailDir, cfg, cfg.App.AuditUploadLogs, cfg.App.MaxUploadBytes)
+	tagHandler := handler.NewTagHandler(queries)
 	albumHandler := handler.NewAlbumHandler(queries, pool)
 	fileHandler := handler.NewFileHandler(queries, cfg.Server.BaseURL, cfg.Storage.ThumbnailDir)
 	adminGroupHandler := handler.NewAdminGroupHandler(queries, pool)
@@ -362,6 +363,15 @@ func New(
 			r.With(middleware.RequireScope("write")).Patch("/images/{key}", imageHandler.Update)
 
 			r.Get("/images/{key}/pipeline", imageHandler.Pipeline)
+
+			r.Get("/images/{id}/tags", tagHandler.GetImageTags)
+			r.Post("/images/{id}/tags", tagHandler.AddToImage)
+			r.Delete("/images/{id}/tags/{tagId}", tagHandler.RemoveFromImage)
+
+			r.Route("/tags", func(r chi.Router) {
+				r.Get("/", tagHandler.List)
+				r.Post("/", tagHandler.Create)
+			})
 
 			// Albums — write operations require "write" scope for API tokens
 			r.Get("/albums", albumHandler.List)

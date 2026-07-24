@@ -2,9 +2,11 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/atbeta/picfast/internal/domain"
@@ -38,6 +40,17 @@ func (h *AdminImageHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var tagIDs []int64
+	if tids := r.URL.Query().Get("tag_ids"); tids != "" {
+		if err := json.Unmarshal([]byte(tids), &tagIDs); err != nil {
+			for _, p := range strings.Split(tids, ",") {
+				if v, err := strconv.ParseInt(strings.TrimSpace(p), 10, 64); err == nil {
+					tagIDs = append(tagIDs, v)
+				}
+			}
+		}
+	}
+
 	params := sqlc.ListAllImagesParams{
 		Limit:     pageSize,
 		Offset:    (page - 1) * pageSize,
@@ -46,6 +59,7 @@ func (h *AdminImageHandler) List(w http.ResponseWriter, r *http.Request) {
 		Extension: domain.PgTextNonEmpty(r.URL.Query().Get("extension")),
 		DateFrom:  domain.PgTimeWithZonePtr(dateFrom),
 		DateTo:    domain.PgTimeWithZonePtr(dateTo),
+		TagIds:    tagIDs,
 	}
 	rows, err := h.db.ListAllImages(r.Context(), params)
 	if err != nil {
@@ -59,6 +73,7 @@ func (h *AdminImageHandler) List(w http.ResponseWriter, r *http.Request) {
 		Extension: params.Extension,
 		DateFrom:  params.DateFrom,
 		DateTo:    params.DateTo,
+		TagIds:    tagIDs,
 	})
 	if err != nil {
 		slog.Warn("failed to count all images", "error", err)

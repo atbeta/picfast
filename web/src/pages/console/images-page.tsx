@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Trash2, Image as ImageIcon, ChevronLeft, ChevronRight, Check, Download, Copy } from 'lucide-react'
+import { Trash2, Image as ImageIcon, ChevronLeft, ChevronRight, Check, Download, Copy, Filter, X } from 'lucide-react'
 
 import { deleteImage, getImage, listImages, updateImage, listAlbums, batchDeleteImages } from '@/lib/console-api'
 import type { ImageItem, Album } from '@/lib/console-api'
@@ -29,6 +29,12 @@ export function ImagesPage() {
   const keywordTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
   const pageSize = 60
 
+  const [extension, setExtension] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [tagIds, setTagIds] = useState<number[]>([])
+  const [showAdvanced, setShowAdvanced] = useState(false)
+
   const onKeywordChange = useCallback((value: string) => {
     setKeyword(value)
     setPage(1)
@@ -45,8 +51,8 @@ export function ImagesPage() {
   }
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['images', page, albumId, debouncedKeyword],
-    queryFn: () => listImages(page, pageSize, albumId, debouncedKeyword),
+    queryKey: ['images', page, albumId, debouncedKeyword, extension, dateFrom, dateTo, tagIds],
+    queryFn: () => listImages(page, pageSize, albumId, debouncedKeyword, extension, dateFrom, dateTo, tagIds),
     placeholderData: keepPreviousData,
   })
   const totalPages = data ? (data.total_pages > 0 ? data.total_pages : Math.max(1, Math.ceil(data.total / pageSize))) : 1
@@ -55,6 +61,14 @@ export function ImagesPage() {
   const [detail, setDetail] = useState<ImageItem | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [albums, setAlbums] = useState<Album[]>([])
+
+  const { data: allTags = [] } = useQuery({
+    queryKey: ['tags'],
+    queryFn: async () => {
+      const { listTags } = await import('@/lib/console-api')
+      return listTags()
+    },
+  })
 
   useEffect(() => {
     listAlbums(1, 100)
@@ -288,17 +302,125 @@ export function ImagesPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <input
-            type="text"
-            value={keyword}
-            onChange={(e) => onKeywordChange(e.target.value)}
-            placeholder={t('images.searchPlaceholder', { defaultValue: '搜索文件名…' })}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 pl-9 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-1 focus:ring-primary/20"
-          />
-          <svg className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => onKeywordChange(e.target.value)}
+              placeholder={t('images.searchPlaceholder')}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 pl-9 pr-10 text-sm outline-none transition-colors duration-150 focus:border-primary focus:ring-1 focus:ring-primary/20"
+            />
+            <svg className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className={`absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md transition-colors ${showAdvanced || extension || dateFrom || dateTo || tagIds.length > 0 ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'text-muted-foreground hover:bg-muted'}`}
+              title={t('images.advancedSearch')}
+            >
+              <Filter className="size-3.5" />
+            </button>
+          </div>
         </div>
+
+        {showAdvanced && (
+          <div className="grid gap-4 rounded-xl border border-border/40 bg-muted/10 p-4 sm:grid-cols-2 md:grid-cols-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">{t('images.filterExtension')}</label>
+              <Select value={extension || 'all'} onValueChange={(val) => { const v = val as string; setExtension(v === 'all' ? '' : v); setPage(1) }}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder={t('common.all')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="jpg">JPG/JPEG</SelectItem>
+                  <SelectItem value="png">PNG</SelectItem>
+                  <SelectItem value="gif">GIF</SelectItem>
+                  <SelectItem value="webp">WEBP</SelectItem>
+                  <SelectItem value="svg">SVG</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">{t('images.filterDateFrom')}</label>
+              <input
+                type="date"
+                value={dateFrom ? dateFrom.split('T')[0] : ''}
+                onChange={(e) => {
+                  setDateFrom(e.target.value ? new Date(e.target.value).toISOString() : '')
+                  setPage(1)
+                }}
+                className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">{t('images.filterDateTo')}</label>
+              <input
+                type="date"
+                value={dateTo ? dateTo.split('T')[0] : ''}
+                onChange={(e) => {
+                  // End of day
+                  const val = e.target.value
+                  if (val) {
+                    const d = new Date(val)
+                    d.setHours(23, 59, 59, 999)
+                    setDateTo(d.toISOString())
+                  } else {
+                    setDateTo('')
+                  }
+                  setPage(1)
+                }}
+                className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">{t('images.filterTags')}</label>
+              <Select
+                value="none"
+                onValueChange={(val) => {
+                  const v = val as string;
+                  if (v !== 'none') {
+                    const id = Number(v)
+                    if (!tagIds.includes(id)) {
+                      setTagIds([...tagIds, id])
+                      setPage(1)
+                    }
+                  }
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder={t('tags.select')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" disabled>{t('tags.select')}</SelectItem>
+                  {allTags.filter((t) => !tagIds.includes(t.id)).map((t) => (
+                    <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {tagIds.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {tagIds.map((id) => {
+                    const tObj = allTags.find((x) => x.id === id)
+                    return (
+                      <span key={id} className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                        {tObj?.name || id}
+                        <button
+                          type="button"
+                          onClick={() => { setTagIds(tagIds.filter((x) => x !== id)); setPage(1) }}
+                          className="rounded-full hover:bg-primary/20"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Batch bar */}

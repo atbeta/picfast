@@ -47,6 +47,7 @@ app:
   guest_upload_notice_title: "游客上传"   # shown above the guest upload page; hidden if both title and subtitle are empty
   guest_upload_notice_subtitle: "游客上传不提供后续管理能力，建议注册账号以使用完整功能。"
   show_login_link: true         # show the "Login" button in the public header; /login URL is still reachable directly
+  enable_dummy_ocr: false        # enable simulated OCR text extraction on upload (dev-only; replaces text with placeholder)
   analytics_provider: ""       # plausible | umami | ga4 | baidu | custom
   analytics_config: "{}"       # provider-specific JSON; configurable in admin console
   theme_config: "{}"           # theme preset/tokens/custom CSS JSON; configurable in admin console
