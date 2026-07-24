@@ -44,12 +44,12 @@ export function TagsPage() {
 
   return (
     <section className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">
           {t('tags.title')}
         </h1>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 size-4" />
+        <Button size="lg" onClick={() => setCreateOpen(true)}>
+          <Plus className="size-4" />
           {t('tags.create')}
         </Button>
       </div>
