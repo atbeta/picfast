@@ -1,0 +1,153 @@
+{
+  "name": "picfast",
+  "displayName": "%picfast.displayName%",
+  "description": "%picfast.description%",
+  "version": "0.1.0",
+  "publisher": "atbeta",
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "vscode": "^1.78.0"
+  },
+  "icon": "resources/icon-256.png",
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "image",
+    "uploader",
+    "picfast",
+    "screenshot",
+    "paste",
+    "markdown"
+  ],
+  "homepage": "https://github.com/atbeta/picfast",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atbeta/picfast.git",
+    "directory": "vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/atbeta/picfast/issues"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "picfast.pasteImage",
+        "title": "%picfast.command.pasteImage%",
+        "category": "PicFast"
+      },
+      {
+        "command": "picfast.uploadLocalImages",
+        "title": "%picfast.command.uploadLocalImages%",
+        "category": "PicFast"
+      },
+      {
+        "command": "picfast.uploadOneImage",
+        "title": "%picfast.command.uploadOneImage%",
+        "category": "PicFast"
+      },
+      {
+        "command": "picfast.setBaseUrl",
+        "title": "%picfast.command.setBaseUrl%",
+        "category": "PicFast"
+      },
+      {
+        "command": "picfast.setApiToken",
+        "title": "%picfast.command.setApiToken%",
+        "category": "PicFast"
+      },
+      {
+        "command": "picfast.openDocs",
+        "title": "%picfast.command.openDocs%",
+        "category": "PicFast"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "picfast.pasteImage",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "picfast.uploadLocalImages",
+        "key": "ctrl+alt+u",
+        "mac": "cmd+alt+u",
+        "when": "editorTextFocus && editorLangId =~ /^(markdown|mdx)$/"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "picfast.uploadLocalImages",
+          "when": "editorTextFocus && editorLangId =~ /^(markdown|mdx)$/",
+          "group": "picfast"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "%picfast.config.title%",
+      "properties": {
+        "picfast.baseUrl": {
+          "type": "string",
+          "default": "https://picfast.example.com",
+          "description": "%picfast.config.baseUrl.description%",
+          "pattern": "^https?://.+$"
+        },
+        "picfast.apiToken": {
+          "type": "string",
+          "default": "",
+          "description": "%picfast.config.apiToken.description%"
+        },
+        "picfast.defaultFormat": {
+          "type": "string",
+          "enum": [
+            "url",
+            "markdown",
+            "html",
+            "bbcode"
+          ],
+          "enumDescriptions": [
+            "%picfast.config.defaultFormat.enum.url%",
+            "%picfast.config.defaultFormat.enum.markdown%",
+            "%picfast.config.defaultFormat.enum.html%",
+            "%picfast.config.defaultFormat.enum.bbcode%"
+          ],
+          "default": "markdown",
+          "description": "%picfast.config.defaultFormat.description%"
+        },
+        "picfast.timeoutMs": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 1000,
+          "maximum": 300000,
+          "description": "%picfast.config.timeoutMs.description%"
+        },
+        "picfast.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "%picfast.config.showStatusBar.description%"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "tsc -p ./ --noEmit",
+    "test": "node --test --import tsx ./src/__tests__/*.test.ts",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.78.0",
+    "@vscode/vsce": "^2.22.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

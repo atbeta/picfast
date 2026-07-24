@@ -80,6 +80,40 @@ jobs:
         working-directory: web
         run: pnpm build
 
+  vscode:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install extension dependencies
+        working-directory: vscode
+        run: npm install --include=dev
+
+      - name: Build extension
+        working-directory: vscode
+        run: npx tsc -p ./
+
+      - name: Run extension tests
+        working-directory: vscode
+        run: npm test
+
+      - name: Package extension
+        working-directory: vscode
+        run: npx vsce package --no-dependencies
+
+      - name: Upload .vsix artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: picfast-vscode-${{ github.sha }}
+          path: vscode/picfast-*.vsix
+          if-no-files-found: error
+
   security:
     runs-on: ubuntu-latest
     permissions:
