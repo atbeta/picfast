@@ -43,6 +43,10 @@ app:
   footer_link_1: ""             # footer item 1 link; if set, text becomes a hyperlink
   footer_text_2: ""             # footer item 2 text; hidden if empty
   footer_link_2: ""             # footer item 2 link; if set, text becomes a hyperlink
+  show_powered_by: true         # show "Powered by PicFast" + version in footer; hide for white-label deployments
+  guest_upload_notice_title: "游客上传"   # shown above the guest upload page; hidden if both title and subtitle are empty
+  guest_upload_notice_subtitle: "游客上传不提供后续管理能力，建议注册账号以使用完整功能。"
+  show_login_link: true         # show the "Login" button in the public header; /login URL is still reachable directly
   analytics_provider: ""       # plausible | umami | ga4 | baidu | custom
   analytics_config: "{}"       # provider-specific JSON; configurable in admin console
   theme_config: "{}"           # theme preset/tokens/custom CSS JSON; configurable in admin console

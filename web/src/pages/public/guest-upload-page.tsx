@@ -1,10 +1,12 @@
 import { useCallback, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle } from 'lucide-react'
 
 import { UploadZone } from '../../components/upload-zone'
 import { UploadResultCard } from '../../components/upload-result'
 import { extractErrorMessage } from '../../lib/error-handler'
+import { getSiteConfig } from '../../lib/site-config'
 import { uploadImage } from '../../lib/upload'
 import type { UploadResult } from '../../lib/upload'
 
@@ -15,6 +17,15 @@ interface UploadingFile {
 
 export function GuestUploadPage() {
   const { t } = useTranslation()
+  const { data: siteConfig } = useQuery({
+    queryKey: ['site-config'],
+    queryFn: getSiteConfig,
+    staleTime: 5 * 60_000,
+  })
+  // Both title and subtitle empty = admin disabled the notice.
+  const noticeTitle = (siteConfig?.guest_upload_notice_title ?? '').trim()
+  const noticeSubtitle = (siteConfig?.guest_upload_notice_subtitle ?? '').trim()
+  const showNotice = noticeTitle !== '' || noticeSubtitle !== ''
   const [results, setResults] = useState<UploadResult[]>([])
   const [uploading, setUploading] = useState<UploadingFile[]>([])
   const [errors, setErrors] = useState<string[]>([])
@@ -54,14 +65,20 @@ export function GuestUploadPage() {
 
   return (
     <section className="mx-auto max-w-3xl space-y-8">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/70 dark:from-white dark:to-white/60">
-          {t('page.guestUpload.title')}
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-          {t('page.guestUpload.subtitle')}
-        </p>
-      </div>
+      {showNotice && (
+        <div className="text-center space-y-4">
+          {noticeTitle !== '' && (
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/70 dark:from-white dark:to-white/60">
+              {noticeTitle}
+            </h1>
+          )}
+          {noticeSubtitle !== '' && (
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+              {noticeSubtitle}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-xl p-2 shadow-xl shadow-black/5 dark:shadow-black/20">
         <UploadZone onFiles={handleFiles} disabled={busy} />

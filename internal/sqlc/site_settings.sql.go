@@ -11,7 +11,7 @@ import (
 )
 
 const getSiteSettings = `-- name: GetSiteSettings :one
-SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, allow_oauth_registration, skip_image_processing FROM site_settings WHERE id = 1
+SELECT id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, allow_oauth_registration, skip_image_processing, show_powered_by, guest_upload_notice_title, guest_upload_notice_subtitle, show_login_link FROM site_settings WHERE id = 1
 `
 
 func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
@@ -43,6 +43,10 @@ func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
 		&i.ThemeConfig,
 		&i.AllowOauthRegistration,
 		&i.SkipImageProcessing,
+		&i.ShowPoweredBy,
+		&i.GuestUploadNoticeTitle,
+		&i.GuestUploadNoticeSubtitle,
+		&i.ShowLoginLink,
 	)
 	return i, err
 }
@@ -67,13 +71,17 @@ INSERT INTO site_settings (
     footer_link_1,
     footer_text_2,
     footer_link_2,
+    show_powered_by,
+    guest_upload_notice_title,
+    guest_upload_notice_subtitle,
+    show_login_link,
     analytics_provider,
     analytics_config,
     allow_user_image_processing,
     skip_image_processing,
     theme_config
 )
-VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
 ON CONFLICT (id) DO UPDATE SET
     app_name = EXCLUDED.app_name,
     app_url = EXCLUDED.app_url,
@@ -92,38 +100,46 @@ ON CONFLICT (id) DO UPDATE SET
     footer_link_1 = EXCLUDED.footer_link_1,
     footer_text_2 = EXCLUDED.footer_text_2,
     footer_link_2 = EXCLUDED.footer_link_2,
+    show_powered_by = EXCLUDED.show_powered_by,
+    guest_upload_notice_title = EXCLUDED.guest_upload_notice_title,
+    guest_upload_notice_subtitle = EXCLUDED.guest_upload_notice_subtitle,
+    show_login_link = EXCLUDED.show_login_link,
     analytics_provider = EXCLUDED.analytics_provider,
     analytics_config = EXCLUDED.analytics_config,
     allow_user_image_processing = EXCLUDED.allow_user_image_processing,
     skip_image_processing = EXCLUDED.skip_image_processing,
     theme_config = EXCLUDED.theme_config,
     updated_at = NOW()
-RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, allow_oauth_registration, skip_image_processing
+RETURNING id, app_name, app_url, allow_guest_upload, allow_registration, require_email_verification, user_initial_capacity, default_image_ttl, moderation_mode, created_at, updated_at, site_description, analytics_provider, analytics_config, favicon_url, guest_capacity_bytes, allow_user_image_processing, footer_text_1, footer_link_1, footer_text_2, footer_link_2, guest_image_ttl, theme_config, allow_oauth_registration, skip_image_processing, show_powered_by, guest_upload_notice_title, guest_upload_notice_subtitle, show_login_link
 `
 
 type UpsertSiteSettingsParams struct {
-	AppName                  string          `json:"app_name"`
-	AppUrl                   string          `json:"app_url"`
-	AllowGuestUpload         bool            `json:"allow_guest_upload"`
-	GuestCapacityBytes       int64           `json:"guest_capacity_bytes"`
-	AllowRegistration        bool            `json:"allow_registration"`
-	AllowOauthRegistration   bool            `json:"allow_oauth_registration"`
-	RequireEmailVerification bool            `json:"require_email_verification"`
-	UserInitialCapacity      int64           `json:"user_initial_capacity"`
-	DefaultImageTtl          string          `json:"default_image_ttl"`
-	GuestImageTtl            string          `json:"guest_image_ttl"`
-	ModerationMode           string          `json:"moderation_mode"`
-	SiteDescription          string          `json:"site_description"`
-	FaviconUrl               string          `json:"favicon_url"`
-	FooterText1              string          `json:"footer_text_1"`
-	FooterLink1              string          `json:"footer_link_1"`
-	FooterText2              string          `json:"footer_text_2"`
-	FooterLink2              string          `json:"footer_link_2"`
-	AnalyticsProvider        string          `json:"analytics_provider"`
-	AnalyticsConfig          json.RawMessage `json:"analytics_config"`
-	AllowUserImageProcessing bool            `json:"allow_user_image_processing"`
-	SkipImageProcessing      bool            `json:"skip_image_processing"`
-	ThemeConfig              json.RawMessage `json:"theme_config"`
+	AppName                   string          `json:"app_name"`
+	AppUrl                    string          `json:"app_url"`
+	AllowGuestUpload          bool            `json:"allow_guest_upload"`
+	GuestCapacityBytes        int64           `json:"guest_capacity_bytes"`
+	AllowRegistration         bool            `json:"allow_registration"`
+	AllowOauthRegistration    bool            `json:"allow_oauth_registration"`
+	RequireEmailVerification  bool            `json:"require_email_verification"`
+	UserInitialCapacity       int64           `json:"user_initial_capacity"`
+	DefaultImageTtl           string          `json:"default_image_ttl"`
+	GuestImageTtl             string          `json:"guest_image_ttl"`
+	ModerationMode            string          `json:"moderation_mode"`
+	SiteDescription           string          `json:"site_description"`
+	FaviconUrl                string          `json:"favicon_url"`
+	FooterText1               string          `json:"footer_text_1"`
+	FooterLink1               string          `json:"footer_link_1"`
+	FooterText2               string          `json:"footer_text_2"`
+	FooterLink2               string          `json:"footer_link_2"`
+	ShowPoweredBy             bool            `json:"show_powered_by"`
+	GuestUploadNoticeTitle    string          `json:"guest_upload_notice_title"`
+	GuestUploadNoticeSubtitle string          `json:"guest_upload_notice_subtitle"`
+	ShowLoginLink             bool            `json:"show_login_link"`
+	AnalyticsProvider         string          `json:"analytics_provider"`
+	AnalyticsConfig           json.RawMessage `json:"analytics_config"`
+	AllowUserImageProcessing  bool            `json:"allow_user_image_processing"`
+	SkipImageProcessing       bool            `json:"skip_image_processing"`
+	ThemeConfig               json.RawMessage `json:"theme_config"`
 }
 
 func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettingsParams) (SiteSetting, error) {
@@ -145,6 +161,10 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		arg.FooterLink1,
 		arg.FooterText2,
 		arg.FooterLink2,
+		arg.ShowPoweredBy,
+		arg.GuestUploadNoticeTitle,
+		arg.GuestUploadNoticeSubtitle,
+		arg.ShowLoginLink,
 		arg.AnalyticsProvider,
 		arg.AnalyticsConfig,
 		arg.AllowUserImageProcessing,
@@ -178,6 +198,10 @@ func (q *Queries) UpsertSiteSettings(ctx context.Context, arg UpsertSiteSettings
 		&i.ThemeConfig,
 		&i.AllowOauthRegistration,
 		&i.SkipImageProcessing,
+		&i.ShowPoweredBy,
+		&i.GuestUploadNoticeTitle,
+		&i.GuestUploadNoticeSubtitle,
+		&i.ShowLoginLink,
 	)
 	return i, err
 }

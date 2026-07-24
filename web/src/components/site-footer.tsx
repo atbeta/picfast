@@ -40,13 +40,15 @@ export function SiteFooter({ config }: { config: SiteConfig }) {
             )}
           </div>
         )}
-        <span className="text-center">
-          Powered by{' '}
-          <a href={githubURL} target="_blank" rel="noreferrer" className="transition-colors hover:text-foreground">
-            PicFast
-          </a>
-          {version?.version ? ` ${version.version}` : ''}
-        </span>
+        {config.show_powered_by && (
+          <span className="text-center">
+            Powered by{' '}
+            <a href={githubURL} target="_blank" rel="noreferrer" className="transition-colors hover:text-foreground">
+              PicFast
+            </a>
+            {version?.version ? ` ${version.version}` : ''}
+          </span>
+        )}
       </div>
     </footer>
   )

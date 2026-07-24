@@ -110,6 +110,10 @@ type AppConfig struct {
 	FooterLink1              string          `mapstructure:"footer_link_1"`
 	FooterText2              string          `mapstructure:"footer_text_2"`
 	FooterLink2              string          `mapstructure:"footer_link_2"`
+	ShowPoweredBy            bool            `mapstructure:"show_powered_by"`
+	GuestUploadNoticeTitle   string          `mapstructure:"guest_upload_notice_title"`
+	GuestUploadNoticeSubtitle string         `mapstructure:"guest_upload_notice_subtitle"`
+	ShowLoginLink            bool            `mapstructure:"show_login_link"`
 	AllowOauthRegistration   bool            `mapstructure:"allow_oauth_registration"`
 	AnalyticsProvider        string          `mapstructure:"analytics_provider"`
 	AnalyticsConfig          json.RawMessage `mapstructure:"analytics_config"`
@@ -231,6 +235,25 @@ func (s *Setter) SetFooterItems(text1, link1, text2, link2 string) {
 	s.cfg.App.FooterLink1 = link1
 	s.cfg.App.FooterText2 = text2
 	s.cfg.App.FooterLink2 = link2
+}
+
+func (s *Setter) SetShowPoweredBy(v bool) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.ShowPoweredBy = v
+}
+
+func (s *Setter) SetGuestUploadNotice(title, subtitle string) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.GuestUploadNoticeTitle = title
+	s.cfg.App.GuestUploadNoticeSubtitle = subtitle
+}
+
+func (s *Setter) SetShowLoginLink(v bool) {
+	s.cfg.mu.Lock()
+	defer s.cfg.mu.Unlock()
+	s.cfg.App.ShowLoginLink = v
 }
 
 func (s *Setter) SetAnalytics(provider string, cfg json.RawMessage) {
@@ -431,6 +454,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.footer_link_1", "")
 	v.SetDefault("app.footer_text_2", "")
 	v.SetDefault("app.footer_link_2", "")
+	v.SetDefault("app.show_powered_by", true)
+	v.SetDefault("app.guest_upload_notice_title", "游客上传")
+	v.SetDefault("app.guest_upload_notice_subtitle", "游客上传不提供后续管理能力，建议注册账号以使用完整功能。")
+	v.SetDefault("app.show_login_link", true)
 	v.SetDefault("app.analytics_provider", "")
 	v.SetDefault("app.instance_id", "")
 

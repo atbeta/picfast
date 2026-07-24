@@ -52,9 +52,11 @@ export function PublicLayout() {
               </Link>
             ) : (
               <div className="flex items-center gap-3">
-                <Link to="/login" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                  {t('nav.login')}
-                </Link>
+                {(config?.show_login_link ?? true) && (
+                  <Link to="/login" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                    {t('nav.login')}
+                  </Link>
+                )}
                 {config?.allow_registration && (
                   <Link to="/register" className="inline-flex h-8 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
                     {t('nav.register')}

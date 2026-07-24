@@ -1,12 +1,14 @@
 package handler_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 func TestAdminSettingsEmailVerificationState(t *testing.T) {
@@ -326,5 +328,123 @@ func TestPublicConfigIncludesSiteMetadata(t *testing.T) {
 	}
 	if data["github_url"] != "https://github.com/atbeta/picfast" {
 		t.Fatalf("github_url = %v", data["github_url"])
+	}
+}
+
+func TestAdminSettingsInterfaceCustomization(t *testing.T) {
+	env := newTestEnv(t)
+	group, _, admin := env.seedSetup(t)
+	makeAdmin(t, env, admin.ID)
+
+	// First PUT creates the row in the DB; the response is the
+	// effective settings after the call, which uses runtime config
+	// defaults for any field the request did not include. The
+	// show_powered_by, guest_upload_notice_*, and show_login_link
+	// fields should all reflect those defaults.
+	first := map[string]interface{}{}
+	req := env.authReq(t, http.MethodPut, "/api/v1/admin/settings", first, admin.ID, domain.RoleAdmin, group.ID)
+	rec := doReq(env.Router, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("seed PUT status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+	}
+	var (
+		settings sqlc.SiteSetting
+		err      error
+	)
+	seedData := respDataMap(t, parseResp(t, rec))
+	if seedData["show_powered_by"] != true {
+		t.Fatalf("default show_powered_by = %v, want true", seedData["show_powered_by"])
+	}
+	if seedData["guest_upload_notice_title"] != "游客上传" {
+		t.Fatalf("default guest_upload_notice_title = %v", seedData["guest_upload_notice_title"])
+	}
+	if seedData["guest_upload_notice_subtitle"] == "" {
+		t.Fatalf("default guest_upload_notice_subtitle is empty")
+	}
+	if seedData["show_login_link"] != true {
+		t.Fatalf("default show_login_link = %v, want true", seedData["show_login_link"])
+	}
+
+	// Persist a customised set: turn the footer off, replace the
+	// notice, hide the login link.
+	body := map[string]interface{}{
+		"show_powered_by":              false,
+		"guest_upload_notice_title":   "Anonymous upload",
+		"guest_upload_notice_subtitle": "Anonymous upload has no follow-up management. Please register for full features.",
+		"show_login_link":             false,
+	}
+	req = env.authReq(t, http.MethodPut, "/api/v1/admin/settings", body, admin.ID, domain.RoleAdmin, group.ID)
+	rec = doReq(env.Router, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("settings status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+	}
+	data := respDataMap(t, parseResp(t, rec))
+	if data["show_powered_by"] != false {
+		t.Fatalf("show_powered_by = %v, want false", data["show_powered_by"])
+	}
+	if data["guest_upload_notice_title"] != "Anonymous upload" {
+		t.Fatalf("guest_upload_notice_title = %v", data["guest_upload_notice_title"])
+	}
+	if data["guest_upload_notice_subtitle"] != "Anonymous upload has no follow-up management. Please register for full features." {
+		t.Fatalf("guest_upload_notice_subtitle = %v", data["guest_upload_notice_subtitle"])
+	}
+	if data["show_login_link"] != false {
+		t.Fatalf("show_login_link = %v, want false", data["show_login_link"])
+	}
+
+	// Confirm the values are persisted to the DB.
+	settings, err = env.DB.GetSiteSettings(context.Background())
+	if err != nil {
+		t.Fatalf("get persisted: %v", err)
+	}
+	if settings.ShowPoweredBy {
+		t.Fatalf("persisted show_powered_by = true, want false")
+	}
+	if settings.GuestUploadNoticeTitle != "Anonymous upload" {
+		t.Fatalf("persisted guest_upload_notice_title = %q", settings.GuestUploadNoticeTitle)
+	}
+	if settings.GuestUploadNoticeSubtitle != "Anonymous upload has no follow-up management. Please register for full features." {
+		t.Fatalf("persisted guest_upload_notice_subtitle = %q", settings.GuestUploadNoticeSubtitle)
+	}
+	if settings.ShowLoginLink {
+		t.Fatalf("persisted show_login_link = true, want false")
+	}
+
+	// The /api/v1/config endpoint (used by the public web) should
+	// also surface the customised values.
+	cfgReq := env.authReq(t, http.MethodGet, "/api/v1/config", nil, admin.ID, domain.RoleAdmin, group.ID)
+	cfgRec := doReq(env.Router, cfgReq)
+	if cfgRec.Code != http.StatusOK {
+		t.Fatalf("config status = %d, want 200; body: %s", cfgRec.Code, cfgRec.Body.String())
+	}
+	cfgData := respDataMap(t, parseResp(t, cfgRec))
+	if cfgData["show_powered_by"] != false {
+		t.Fatalf("public config show_powered_by = %v", cfgData["show_powered_by"])
+	}
+	if cfgData["guest_upload_notice_title"] != "Anonymous upload" {
+		t.Fatalf("public config guest_upload_notice_title = %v", cfgData["guest_upload_notice_title"])
+	}
+	if cfgData["show_login_link"] != false {
+		t.Fatalf("public config show_login_link = %v", cfgData["show_login_link"])
+	}
+
+	// Empty notice fields = disabled (the web layer treats empty
+	// title AND subtitle as "hide the notice entirely").
+	reset := map[string]interface{}{
+		"guest_upload_notice_title":   "",
+		"guest_upload_notice_subtitle": "",
+	}
+	req = env.authReq(t, http.MethodPut, "/api/v1/admin/settings", reset, admin.ID, domain.RoleAdmin, group.ID)
+	rec = doReq(env.Router, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("reset status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+	}
+	settings, err = env.DB.GetSiteSettings(context.Background())
+	if err != nil {
+		t.Fatalf("get after reset: %v", err)
+	}
+	if settings.GuestUploadNoticeTitle != "" || settings.GuestUploadNoticeSubtitle != "" {
+		t.Fatalf("reset notice strings not empty: title=%q subtitle=%q",
+			settings.GuestUploadNoticeTitle, settings.GuestUploadNoticeSubtitle)
 	}
 }

@@ -68,11 +68,15 @@ func newTestEnv(t *testing.T) *testEnv {
 			ThumbnailDir: t.TempDir() + "/thumbnails",
 		},
 		App: config.AppConfig{
-			Name:                "TestAPI",
-			SiteDescription:     "Test API",
-			AllowGuestUpload:    true,
-			AllowRegistration:   true,
-			UserInitialCapacity: 524288000,
+			Name:                       "TestAPI",
+			SiteDescription:            "Test API",
+			AllowGuestUpload:           true,
+			AllowRegistration:          true,
+			UserInitialCapacity:       524288000,
+			ShowPoweredBy:             true,
+			GuestUploadNoticeTitle:    "游客上传",
+			GuestUploadNoticeSubtitle: "游客上传不提供后续管理能力，建议注册账号以使用完整功能。",
+			ShowLoginLink:             true,
 		},
 	}
 
