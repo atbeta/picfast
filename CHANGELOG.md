@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.2](https://github.com/atbeta/picfast/compare/v0.20.1...v0.20.2) (2026-07-24)
+
+
+### Bug Fixes
+
+* UI consistency and i18n/audit gaps ([9ac69e3](https://github.com/atbeta/picfast/commit/9ac69e3a4799aed85d6b9512acfec76115e47bd4))
+
 ## [0.20.1](https://github.com/atbeta/picfast/compare/v0.20.0...v0.20.1) (2026-07-24)
 
 
