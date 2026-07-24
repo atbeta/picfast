@@ -2,7 +2,7 @@
   "name": "picfast",
   "displayName": "%picfast.displayName%",
   "description": "%picfast.description%",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "atbeta",
   "license": "GPL-3.0-or-later",
   "engines": {
