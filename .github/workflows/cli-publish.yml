@@ -1,0 +1,65 @@
+name: Publish CLI
+
+on:
+  push:
+    tags:
+      - "picfast-v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Cross-compile
+        run: |
+          mkdir -p dist
+          for target in \
+            darwin-amd64 \
+            darwin-arm64 \
+            linux-amd64 \
+            linux-arm64 \
+            windows-amd64; do
+            os=$(echo "$target" | cut -d- -f1)
+            arch=$(echo "$target" | cut -d- -f2)
+            suffix=""
+            if [ "$os" = "windows" ]; then suffix=".exe"; fi
+            GOOS="$os" GOARCH="$arch" go build -o "dist/picfast-${target}${suffix}" ./cmd/picfast-cli/
+          done
+
+      - name: Create Release
+        id: release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          tag_name: ${{ github.ref_name }}
+          name: picfast CLI ${{ github.ref_name }}
+
+  npm:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Publish to npm
+        working-directory: npm/picfast
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
