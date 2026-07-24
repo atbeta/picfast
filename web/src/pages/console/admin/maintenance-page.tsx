@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { 
   ShieldCheck, AlertTriangle, Info, CheckCircle2, HardDrive, 
   Clock, XCircle, Layers, Activity, Image, Wrench, 
-  Cloud, Server, CloudRain, Loader2 
+  Cloud, Server, CloudRain, Loader2, BookOpen 
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getMaintenanceSummary, cleanupExpiredImages, recalcPHash, type MaintenanceSummary, type MaintenanceRisk, type MaintenanceSummaryStrategy } from '../../../lib/admin-api'
@@ -78,8 +78,12 @@ function DonutChart({ percentage, colorClass }: { percentage: number, colorClass
 }
 
 export function MaintenancePage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const qc = useQueryClient()
+
+  const docsUrl = i18n.language?.startsWith('zh')
+    ? 'https://picfast.dev/zh/docs/maintenance/'
+    : 'https://picfast.dev/docs/maintenance/'
   const { data, isLoading, error } = useQuery<MaintenanceSummary>({
     queryKey: ['maintenance-summary'],
     queryFn: getMaintenanceSummary,
@@ -133,7 +137,18 @@ export function MaintenancePage() {
     <div className="space-y-8 pb-10">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('admin.maintenanceTitle', { defaultValue: '系统维护' })}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">{t('admin.maintenanceTitle', { defaultValue: '系统维护' })}</h1>
+            <a
+              href={docsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+            >
+              <BookOpen className="size-3.5" />
+              {t('admin.maintenanceDocs', { defaultValue: '维护文档' })}
+            </a>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">{t('admin.maintenanceDesc', { defaultValue: '数据完整性、存储用量、风险巡检' })}</p>
         </div>
         <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
