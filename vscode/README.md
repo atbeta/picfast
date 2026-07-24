@@ -14,7 +14,8 @@ instance. Works with both guest uploads and API tokens.
 ## Requirements
 
 - VS Code **1.78** or later
-- A reachable PicFast instance (guest uploads require `allow_guest_upload: true`)
+- A reachable PicFast instance. Authenticated uploads work with an API token;
+  guest uploads require `allow_guest_upload: true` on the server.
 
 ## Quick start
 
