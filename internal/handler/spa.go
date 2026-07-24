@@ -32,12 +32,10 @@ func (h *SPAHandler) Serve(w http.ResponseWriter, r *http.Request) {
 	if ext := filepath.Ext(clean); ext != "" {
 		if f, err := h.staticFS.Open(clean); err == nil {
 			f.Close()
-			// Vite fingerprints everything in /assets/ by content hash, so a
-			// long-lived immutable cache is safe and avoids re-downloads.
-			// Other top-level static files (favicon, icons) only need
-			// revalidation, not aggressive caching.
 			if strings.HasPrefix(clean, "assets/") {
 				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			} else if clean == "index.html" {
+				w.Header().Set("Cache-Control", "no-store")
 			} else {
 				w.Header().Set("Cache-Control", "no-cache")
 			}
@@ -46,9 +44,10 @@ func (h *SPAHandler) Serve(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// SPA fallback: serve index.html. Always revalidate so deploys pick up
-	// the new asset hashes without users needing to force-refresh.
-	w.Header().Set("Cache-Control", "no-cache")
+	// SPA fallback: serve index.html. no-store prevents the browser from
+	// using a stale index.html that references now-deleted JS chunks after a
+	// deploy. The hashed /assets/ files are safe to cache immutably.
+	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write(h.index)
 }
