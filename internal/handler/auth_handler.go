@@ -209,12 +209,22 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		if !resp.VerificationEmailSent {
 			slog.Warn("failed to send verification email after registration", "email", user.Email)
 		}
+
+		writeAuditLog(h.db, r, "user.register", "user", strconv.FormatInt(user.ID, 10), user.Email, map[string]any{
+			"name":                         user.Name,
+			"requires_email_verification":  true,
+		})
 		Created(w, resp)
 		return
 	}
 
 	resp.Tokens = tokens
 	setAccessTokenCookie(w, r, tokens.AccessToken, tokens.ExpiresIn)
+
+	writeAuditLog(h.db, r, "user.register", "user", strconv.FormatInt(user.ID, 10), user.Email, map[string]any{
+		"name":                user.Name,
+		"requires_email_verification": false,
+	})
 	Created(w, resp)
 }
 
@@ -513,6 +523,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	writeAuditLog(h.db, r, "user.password_reset", "user", strconv.FormatInt(stored.UserID, 10), "", nil)
 	SuccessMessage(w, "password reset successfully")
 }
 

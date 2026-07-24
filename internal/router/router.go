@@ -193,7 +193,7 @@ func New(
 	webhookSvc := webhook.NewService(queries, cfg.Webhook.MaxPerUser, cfg.SecretKeyBytes())
 	webhookDelivery := webhook.NewDeliveryService(queries, cfg.Webhook.DeliveryTimeout, cfg.Webhook.AllowHTTP, cfg.Webhook.AllowPrivateURLs, cfg.SecretKeyBytes())
 	webhookWorker := webhook.NewWorker(queries, webhookDelivery, cfg.Webhook.WorkerInterval, 20, cfg.App.EnableDummyOCR, 5)
-	whHandler := handler.NewWebhookHandler(webhookSvc, webhookDelivery)
+	whHandler := handler.NewWebhookHandler(queries, webhookSvc, webhookDelivery)
 	if cfg.Webhook.Enabled {
 		webhookWorker.Start()
 	}

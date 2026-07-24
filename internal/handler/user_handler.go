@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/sqlc"
@@ -154,6 +155,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	name := user.Name
 	password := user.Password
 	var settings json.RawMessage = user.Settings
+	var passwordChanged bool
 
 	if req.Name != nil {
 		name = *req.Name
@@ -169,6 +171,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		password = pgtype.Text{String: string(hash), Valid: true}
+		passwordChanged = true
 	}
 	if req.Settings != nil {
 		if err := validateUserSettings(*req.Settings); err != nil {
@@ -196,6 +199,10 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Warn("failed to load user used capacity", "error", err, "user_id", userID)
 		usedCapacity = 0
+	}
+
+	if passwordChanged {
+		writeAuditLog(h.db, r, "user.password_change", "user", strconv.FormatInt(userID, 10), updated.Email, nil)
 	}
 
 	Success(w, map[string]interface{}{

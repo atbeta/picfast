@@ -13,12 +13,13 @@ import (
 )
 
 type WebhookHandler struct {
+	db       *sqlc.Queries
 	service  *webhook.Service
 	delivery *webhook.DeliveryService
 }
 
-func NewWebhookHandler(service *webhook.Service, delivery *webhook.DeliveryService) *WebhookHandler {
-	return &WebhookHandler{service: service, delivery: delivery}
+func NewWebhookHandler(db *sqlc.Queries, service *webhook.Service, delivery *webhook.DeliveryService) *WebhookHandler {
+	return &WebhookHandler{db: db, service: service, delivery: delivery}
 }
 
 func (h *WebhookHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -90,6 +91,10 @@ func (h *WebhookHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Secret:    result.Secret,
 		CreatedAt: result.CreatedAt.UTC().Format(time.RFC3339),
 	})
+
+	writeAuditLog(h.db, r, "webhook.create", "webhook", strconv.FormatInt(result.ID, 10), result.Name, map[string]any{
+		"url": result.Url,
+	})
 }
 
 func (h *WebhookHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -160,6 +165,7 @@ func (h *WebhookHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	writeAuditLog(h.db, r, "webhook.delete", "webhook", strconv.FormatInt(id, 10), strconv.FormatInt(id, 10), nil)
 	SuccessMessage(w, "webhook deleted")
 }
 

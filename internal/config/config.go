@@ -442,7 +442,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.allow_user_image_processing", true)
 	v.SetDefault("app.skip_image_processing", false)
 	v.SetDefault("app.require_email_verification", false)
-	v.SetDefault("app.audit_upload_logs", false)
+	v.SetDefault("app.audit_upload_logs", true)
 	v.SetDefault("app.max_upload_bytes", int64(50<<20))
 	v.SetDefault("app.user_initial_capacity", int64(524288000))
 	v.SetDefault("app.default_image_ttl", time.Duration(0))

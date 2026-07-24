@@ -78,6 +78,10 @@ func (h *TagHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Success(w, tag)
+
+	writeAuditLog(h.db, r, "tag.create", "tag", strconv.FormatInt(tag.ID, 10), tag.Name, map[string]any{
+		"type": tag.Type,
+	})
 }
 
 func (h *TagHandler) AddToImage(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +134,11 @@ func (h *TagHandler) AddToImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Success(w, nil)
+
+	writeAuditLog(h.db, r, "image.tag_add", "image", strconv.FormatInt(imageID, 10), img.OriginName, map[string]any{
+		"tag_id":   req.TagID,
+		"tag_name": tag.Name,
+	})
 }
 
 func (h *TagHandler) RemoveFromImage(w http.ResponseWriter, r *http.Request) {
@@ -180,6 +189,11 @@ func (h *TagHandler) RemoveFromImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Success(w, nil)
+
+	writeAuditLog(h.db, r, "image.tag_remove", "image", strconv.FormatInt(imageID, 10), img.OriginName, map[string]any{
+		"tag_id":   tagID,
+		"tag_name": tag.Name,
+	})
 }
 
 func (h *TagHandler) GetImageTags(w http.ResponseWriter, r *http.Request) {
