@@ -1,31 +1,40 @@
 # picfast
 
-This **npm package name is reserved** for the [PicFast](https://github.com/atbeta/picfast) project (image hosting /图床).
+Command-line upload client for [PicFast](https://github.com/atbeta/picfast).
 
-It does **not** ship a Node.js runtime or CLI here. The application is primarily the **Go** server in this repository (`cmd/picfast`).
+## Quick start
 
-## Integrations
+```bash
+export PICFAST_URL=https://your-instance.com
+export PICFAST_TOKEN=your-api-token   # optional
 
-| Use case | Package / path |
-|----------|----------------|
-| **MCP (local, Cursor / Claude / etc.)** | [`@picfast/mcp`](https://www.npmjs.com/package/@picfast/mcp) — uploads via `file_path` + REST multipart |
-| **Server / binary** | Build from source: `cmd/picfast` |
+npx picfast upload image.png
+npx picfast upload --markdown image.png
+npx picfast upload *.png
+```
 
-## Why this package exists
+## Usage
 
-The unscoped name `picfast` on npm is held so it cannot be squatted by unrelated projects. No functional code is published under this package.
+```
+picfast upload [flags] <file...>
 
----
+Environment:
+  PICFAST_URL    Base URL of your PicFast instance (required)
+  PICFAST_TOKEN  API token for authenticated uploads (optional)
 
-# picfast（npm 占位说明）
+Flags:
+  --markdown     output markdown image link instead of URL
+  --format       output format: url, markdown, html, bbcode
+```
 
-本 **无 scope** 的 npm 包名保留给 [PicFast](https://github.com/atbeta/picfast) 官方项目使用；**此处不提供可运行的 Node 模块或 CLI**，服务端实现见仓库中的 **Go**（`cmd/picfast`）。
+## Install globally
 
-## 集成方式
+```bash
+npm install -g picfast
+```
 
-| 场景 | 说明 |
-|------|------|
-| **本地 MCP** | 请使用 [`@picfast/mcp`](https://www.npmjs.com/package/@picfast/mcp)，通过本地路径读文件并以 multipart 上传 |
-| **自建服务** | 从本仓库编译 `cmd/picfast` |
+Or use `npx picfast upload ...` without installing.
 
-发布本占位包是为了避免第三方占用 `picfast` 这一 npm 包名；不包含业务代码。
+## License
+
+MIT

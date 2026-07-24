@@ -1,11 +1,12 @@
 {
   "name": "picfast",
-  "version": "0.0.1",
-  "description": "Placeholder package name for the PicFast project. See repository and @picfast/mcp for integrations.",
+  "version": "0.1.0",
+  "description": "PicFast CLI — upload images from the command line",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/atbeta/picfast.git"
+    "url": "https://github.com/atbeta/picfast.git",
+    "directory": "npm/picfast"
   },
   "homepage": "https://github.com/atbeta/picfast#readme",
   "bugs": {
@@ -14,9 +15,19 @@
   "keywords": [
     "picfast",
     "image-hosting",
-    "placeholder"
+    "upload",
+    "cli",
+    "screenshot"
   ],
+  "bin": {
+    "picfast": "bin/picfast"
+  },
+  "scripts": {
+    "install": "node install.js"
+  },
   "files": [
+    "install.js",
+    "bin/",
     "README.md"
   ]
 }
