@@ -1,0 +1,10 @@
+.vscode/
+node_modules/
+src/
+__tests__/
+*.map
+tsconfig.json
+.gitignore
+.eslintrc*
+*.log
+.DS_Store
