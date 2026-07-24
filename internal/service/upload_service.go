@@ -208,7 +208,8 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	}
 
 	// Step 11: Save DB record
-	keyLen := BaseKeyLength(s.totalImagesCount(ctx))
+	minKeyLen := s.config.AppSnapshot().ImageKeyMinLength
+	keyLen := BaseKeyLength(s.totalImagesCount(ctx), minKeyLen)
 	imageKey := GenerateImageKey(keyLen)
 	// Ensure key uniqueness
 	for {
@@ -221,7 +222,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		}
 		// Collision is rare at our occupancy thresholds, but check whether
 		// the local count has passed the next tier since we last looked.
-		keyLen = BaseKeyLength(s.totalImagesCount(ctx))
+		keyLen = BaseKeyLength(s.totalImagesCount(ctx), minKeyLen)
 		imageKey = GenerateImageKey(keyLen)
 	}
 

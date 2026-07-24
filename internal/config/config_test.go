@@ -59,6 +59,37 @@ func TestLoadReadsPprofEnabledFromEnv(t *testing.T) {
 	}
 }
 
+func TestLoadReadsImageKeyMinLengthFromEnv(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+	t.Setenv("PICFAST_APP_IMAGE_KEY_MIN_LENGTH", "8")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.App.ImageKeyMinLength != 8 {
+		t.Fatalf("ImageKeyMinLength = %d, want 8", cfg.App.ImageKeyMinLength)
+	}
+}
+
+func TestImageKeyMinLengthDefaultIsFour(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.App.ImageKeyMinLength != 4 {
+		t.Fatalf("ImageKeyMinLength = %d, want default 4", cfg.App.ImageKeyMinLength)
+	}
+}
+
 func TestLoadReadsMetricsAddrFromEnv(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)

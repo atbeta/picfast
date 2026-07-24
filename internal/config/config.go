@@ -102,6 +102,7 @@ type AppConfig struct {
 	UserInitialCapacity      int64           `mapstructure:"user_initial_capacity"`
 	DefaultImageTTL          time.Duration   `mapstructure:"default_image_ttl"`
 	GuestImageTTL            time.Duration   `mapstructure:"guest_image_ttl"`
+	ImageKeyMinLength        int             `mapstructure:"image_key_min_length"` // lower bound for generated image keys; clamped to [4, 10]
 	AdminEmail               string          `mapstructure:"admin_email"`
 	AdminPassword            string          `mapstructure:"admin_password"`
 	ModerationMode           string          `mapstructure:"moderation_mode"`
@@ -422,6 +423,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.user_initial_capacity", int64(524288000))
 	v.SetDefault("app.default_image_ttl", time.Duration(0))
 	v.SetDefault("app.guest_image_ttl", time.Duration(0))
+	v.SetDefault("app.image_key_min_length", 4)
 	v.SetDefault("app.admin_email", "")
 	v.SetDefault("app.admin_password", "")
 	v.SetDefault("app.moderation_mode", "")
