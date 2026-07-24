@@ -113,7 +113,7 @@ const EN_FALLBACK: Record<string, string> = {
   "picfast.input.baseUrl.title": "PicFast: Base URL",
   "picfast.input.baseUrl.prompt":
     "Base URL of your PicFast instance (no trailing slash).",
-  "picfast.input.baseUrl.placeholder": "https://demo.picfast.dev",
+  "picfast.input.baseUrl.placeholder": "https://your-picfast.example.com",
   "picfast.input.baseUrl.empty": "Base URL cannot be empty",
   "picfast.input.baseUrl.invalid": "Must start with http:// or https://",
   "picfast.input.token.title": "PicFast: API Token",

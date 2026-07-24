@@ -21,7 +21,8 @@ instance. Works with both guest uploads and API tokens.
 
 1. Install the extension from Marketplace.
 2. Run **"PicFast: Set Base URL"** from the Command Palette, or set
-   `picfast.baseUrl` in settings. Example: `https://demo.picfast.dev`
+   `picfast.baseUrl` in settings.
+   Example: `https://picfast.your-company.com` (or try our demo at `https://demo.picfast.dev`)
 3. Optionally set `picfast.apiToken` for authenticated uploads.
 4. Open a markdown file, press **`Ctrl+Alt+U`**.
 5. For one-off uploads, press **`Ctrl+Alt+V`** and pick a file.
@@ -42,7 +43,7 @@ Keybindings can be changed via `Ctrl+K Ctrl+S` → search "picfast".
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `picfast.baseUrl` | string | `https://demo.picfast.dev` | Base URL of your PicFast instance (no trailing slash) |
+| `picfast.baseUrl` | string | `https://your-picfast.example.com` | Base URL of your PicFast instance (no trailing slash) |
 | `picfast.apiToken` | string | `""` | Optional API token; leave empty for guest uploads |
 | `picfast.defaultFormat` | enum | `markdown` | Insert format: `url` / `markdown` / `html` / `bbcode` |
 | `picfast.timeoutMs` | number | `30000` | HTTP upload timeout (1000–300000 ms) |

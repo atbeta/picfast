@@ -59,7 +59,7 @@
 	"picfast.notify.tokenCleared": "PicFast：apiToken 已清空。",
 	"picfast.input.baseUrl.title": "PicFast: Base URL",
 	"picfast.input.baseUrl.prompt": "PicFast 实例的基础 URL（末尾不要带斜杠）。",
-	"picfast.input.baseUrl.placeholder": "https://demo.picfast.dev",
+	"picfast.input.baseUrl.placeholder": "https://your-picfast.example.com",
 	"picfast.input.baseUrl.empty": "Base URL 不能为空",
 	"picfast.input.baseUrl.invalid": "必须以 http:// 或 https:// 开头",
 	"picfast.input.token.title": "PicFast: API Token",
