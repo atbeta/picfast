@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/atbeta/picfast/compare/v0.20.2...v0.21.0) (2026-07-24)
+
+
+### Features
+
+* **web:** add Ctrl+V paste-to-upload on upload pages ([69ca3b4](https://github.com/atbeta/picfast/commit/69ca3b462ab3f231e9dc20ded8c6721e95f00e3a))
+
 ## [0.20.2](https://github.com/atbeta/picfast/compare/v0.20.1...v0.20.2) (2026-07-24)
 
 
