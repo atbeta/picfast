@@ -113,29 +113,6 @@ Form Field: file
 Header: {"Authorization": "Bearer ${tk}"}
 Response Content Type: JSON
 URL to file: %url%`,
-    vscodePasteImage: `// settings.json
-{
-  "pasteImage.path": "${apiURL}/api/v1/flat/upload",
-  "pasteImage.prefix": "",
-  "pasteImage.forceUpload": true,
-  "pasteImage.namePrefix": "",
-  "pasteImage.suffix": ".png",
-  "pasteImage.insertType": "markdown",
-  "pasteImage.customHeader": {
-    "Authorization": "Bearer ${tk}"
-  },
-  "pasteImage.responseType": "json",
-  "pasteImage.responsePath": "$.url"
-}`,
-    vscodeImageSnippets: `// settings.json — Image Snippets extension
-{
-  "imageSnippets.uploadUrl": "${apiURL}/api/v1/flat/upload",
-  "imageSnippets.uploadHeader": {
-    "Authorization": "Bearer ${tk}"
-  },
-  "imageSnippets.uploadFieldName": "file",
-  "imageSnippets.responseUrlPath": "url"
-}`,
   }), [apiURL, tk])
 
   const onCopy = async (text: string, key: string) => {
@@ -434,46 +411,41 @@ URL to file: %url%`,
       {expanded === 'vscode' && (
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-5">
           <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 px-4 py-3 text-sm text-muted-foreground">
-            <p className="font-semibold text-foreground">{t('connections.vscodeStepsTitle', { defaultValue: '推荐扩展' })}</p>
-            <ul className="mt-1 list-disc list-inside space-y-0.5">
-              <li>{t('connections.vscodeExtPasteImage', { defaultValue: 'Paste Image — 支持自定义上传 URL 和响应解析，截图粘贴即上传。' })}</li>
-              <li>{t('connections.vscodeExtImageSnippets', { defaultValue: 'Image Snippets — 支持自定义上传端点，粘贴或拖放图片自动上传。' })}</li>
-            </ul>
+            <p className="font-semibold text-foreground">{t('connections.vscodeStepsTitle')}</p>
+            <p className="mt-1">
+              {t('connections.vscodeInstallDesc')}{' '}
+              <a href="https://marketplace.visualstudio.com/items?itemName=atbeta.picfast" target="_blank" rel="noreferrer" className="text-primary underline underline-offset-2">
+                {t('connections.vscodeMarketplace')}
+              </a>
+            </p>
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('connections.vscodeConfigExampleLabel', { defaultValue: 'Paste Image 配置' })}</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('connections.vscodeSettingsTitle')}</label>
             <div className="relative group">
               <pre className="overflow-x-auto rounded-lg bg-muted/50 border border-border/50 p-4 text-sm leading-relaxed text-muted-foreground">
-                <code>{configs.vscodePasteImage}</code>
+                <code>{`"picfast.baseUrl": "${apiURL}"${tk !== '<YOUR_API_TOKEN>' ? `\n"picfast.apiToken": "${tk}"` : ''}`}</code>
               </pre>
-              <button type="button" onClick={() => onCopy(configs.vscodePasteImage, 'vscode-paste')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
+              <button type="button" onClick={() => {
+                const text = `"picfast.baseUrl": "${apiURL}"` + (tk !== '<YOUR_API_TOKEN>' ? `\n"picfast.apiToken": "${tk}"` : '')
+                onCopy(text, 'vscode-config')
+              }} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
                 <Copy className="size-4" />
               </button>
             </div>
-            {copied === 'vscode-paste' && (
-              <p className="rounded-lg border border-purple-500/20 bg-purple-500/5 px-3 py-2 text-sm text-purple-600">
-                {t('connections.vscodeCopied', { defaultValue: 'VS Code 配置已复制，粘贴到 settings.json 中即可使用。' })}
-              </p>
-            )}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('connections.vscodeImageSnippetsTitle', { defaultValue: 'Image Snippets 配置' })}</label>
-            <div className="relative group">
-              <pre className="overflow-x-auto rounded-lg bg-muted/50 border border-border/50 p-4 text-sm leading-relaxed text-muted-foreground">
-                <code>{configs.vscodeImageSnippets}</code>
-              </pre>
-              <button type="button" onClick={() => onCopy(configs.vscodeImageSnippets, 'vscode-snippets')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
-                <Copy className="size-4" />
-              </button>
-            </div>
-            {copied === 'vscode-snippets' && (
-              <p className="rounded-lg border border-purple-500/20 bg-purple-500/5 px-3 py-2 text-sm text-purple-600">
-                {t('connections.vscodeCopied', { defaultValue: 'VS Code 配置已复制，粘贴到 settings.json 中即可使用。' })}
-              </p>
-            )}
+          <div className="rounded-lg border border-border/50 bg-muted/30 px-4 py-3 text-sm space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('connections.vscodeKeybindings')}</p>
+            <p className="text-muted-foreground"><code className="bg-muted px-1 rounded">Ctrl+Alt+U</code> / <code className="bg-muted px-1 rounded">Cmd+Alt+U</code> — {t('connections.vscodeKbBulk')}</p>
+            <p className="text-muted-foreground"><code className="bg-muted px-1 rounded">Ctrl+Alt+V</code> / <code className="bg-muted px-1 rounded">Cmd+Alt+V</code> — {t('connections.vscodeKbSingle')}</p>
           </div>
+
+          {copied === 'vscode-config' && (
+            <p className="rounded-lg border border-purple-500/20 bg-purple-500/5 px-3 py-2 text-sm text-purple-600">
+              {t('connections.vscodeCopied')}
+            </p>
+          )}
         </div>
       )}
 
