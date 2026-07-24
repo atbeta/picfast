@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.20.1](https://github.com/atbeta/picfast/compare/v0.20.0...v0.20.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* **spa:** use no-store for index.html to prevent stale cache after deploy ([7816875](https://github.com/atbeta/picfast/commit/7816875bfaf73135a32b828bae6a512e6d2ce14f))
+* **web:** add i18n labels for new audit actions and resource types ([c7bc826](https://github.com/atbeta/picfast/commit/c7bc8266b82514ab170932f2fabd4377c0c5fd71))
+* **web:** match new-tag button size to other create buttons ([5c7b17d](https://github.com/atbeta/picfast/commit/5c7b17db75a5e3462725ce6a17cb4627cd27d901))
+
 ## [0.20.0](https://github.com/atbeta/picfast/compare/v0.19.0...v0.20.0) (2026-07-24)
 
 
