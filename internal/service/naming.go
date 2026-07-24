@@ -65,21 +65,55 @@ func GenerateImageKey(length int) string {
 	return generateRandomString(length)
 }
 
-// BaseKeyLength returns the recommended key length for the given total image count,
-// targeting <0.1% collision probability per generation (<1 retry per 1000 uploads).
-func BaseKeyLength(totalImages int64) int {
+// MinImageKeyLength is the smallest allowed image key length. Anything below
+// this is rejected at generation time and clamped at the lookup layer so the
+// invariant is upheld even for misconfigured instances.
+const MinImageKeyLength = 4
+
+// MaxImageKeyLength is the largest allowed image key length. The underlying
+// charset has 36 symbols, so 10 characters already offer ~3.6e15 combinations
+// and effectively eliminate collisions for any realistic deployment.
+const MaxImageKeyLength = 10
+
+// ClampImageKeyLength normalises a configured minimum length into the supported
+// [MinImageKeyLength, MaxImageKeyLength] range. Values outside the range are
+// silently clamped instead of returning an error, so a typo in the config file
+// cannot prevent the service from starting.
+func ClampImageKeyLength(minLength int) int {
+	if minLength < MinImageKeyLength {
+		return MinImageKeyLength
+	}
+	if minLength > MaxImageKeyLength {
+		return MaxImageKeyLength
+	}
+	return minLength
+}
+
+// BaseKeyLength returns the recommended key length for the given total image
+// count, targeting <0.1% collision probability per generation (<1 retry per
+// 1000 uploads). The configured minLength acts as a floor: a deployment that
+// always wants long keys can raise it (e.g. 8 or 10) and the tier table no
+// longer matters. Values outside [MinImageKeyLength, MaxImageKeyLength] are
+// clamped to keep callers safe against misconfiguration.
+func BaseKeyLength(totalImages int64, minLength int) int {
+	tier := 4
 	switch {
 	case totalImages < 1680:
-		return 4
+		tier = 4
 	case totalImages < 60466:
-		return 5
+		tier = 5
 	case totalImages < 2176782:
-		return 6
+		tier = 6
 	case totalImages < 78364164:
-		return 7
+		tier = 7
 	default:
-		return 8
+		tier = 8
 	}
+	min := ClampImageKeyLength(minLength)
+	if tier < min {
+		return min
+	}
+	return tier
 }
 
 func ComputeMD5(data []byte) string {
