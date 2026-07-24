@@ -116,6 +116,7 @@ export const resources = {
       upload: {
         dropHint: '拖拽图片到此处，或点击选择',
         dropFormats: '支持 JPG、PNG、GIF、WebP 等格式',
+        pasteHint: '也可以直接 Ctrl+V 粘贴剪贴板中的图片',
         uploadFailed: '{{name}} 上传失败',
         results: '上传结果',
         copy: '复制',
@@ -934,6 +935,7 @@ export const resources = {
       upload: {
         dropHint: 'Drop images here, or click to select',
         dropFormats: 'Supports JPG, PNG, GIF, WebP, etc.',
+        pasteHint: 'Or paste an image from clipboard with Ctrl+V',
         uploadFailed: '{{name}} upload failed',
         results: 'Upload Results',
         copy: 'Copy',

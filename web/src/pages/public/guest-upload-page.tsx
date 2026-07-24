@@ -8,6 +8,7 @@ import { UploadResultCard } from '../../components/upload-result'
 import { extractErrorMessage } from '../../lib/error-handler'
 import { getSiteConfig } from '../../lib/site-config'
 import { uploadImage } from '../../lib/upload'
+import { usePasteUpload } from '../../lib/use-paste-upload'
 import type { UploadResult } from '../../lib/upload'
 
 interface UploadingFile {
@@ -62,6 +63,8 @@ export function GuestUploadPage() {
     setErrors(newErrors)
     setBusy(false)
   }, [t])
+
+  usePasteUpload(handleFiles, busy)
 
   return (
     <section className="mx-auto max-w-3xl space-y-8">

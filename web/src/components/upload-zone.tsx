@@ -88,6 +88,9 @@ export function UploadZone({ onFiles, disabled, className = '' }: UploadZoneProp
         <p className="mt-2 text-sm text-muted-foreground/80 max-w-xs text-center">
           {t('upload.dropFormats')}
         </p>
+        <p className="mt-1 text-xs text-muted-foreground/60">
+          {t('upload.pasteHint')}
+        </p>
       </div>
 
       <input

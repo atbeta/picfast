@@ -15,6 +15,7 @@ import { usePersonalization } from '../../lib/use-personalization'
 import { migrateLocalStorageToServer } from '../../lib/personalization'
 import { extractErrorMessage, logError } from '../../lib/error-handler'
 import { storageStrategyLabel } from '../../lib/storage-strategy'
+import { usePasteUpload } from '../../lib/use-paste-upload'
 
 interface UploadingFile {
   file: File
@@ -134,6 +135,8 @@ export function UploadPage() {
     setUploading([])
     setBusy(false)
   }, [selectedStrategyId, selectedAlbumId, selectedPermission, t])
+
+  usePasteUpload(handleFiles, busy)
 
   return (
     <section className="flex flex-col flex-1 h-full w-full space-y-6">
