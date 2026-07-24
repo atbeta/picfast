@@ -43,6 +43,14 @@ const AUDIT_ACTION_FILTER_CODES = [
   'oauth.login',
   'oauth.link',
   'oauth.unlink',
+  'image.tag_add',
+  'image.tag_remove',
+  'tag.create',
+  'webhook.create',
+  'webhook.delete',
+  'user.register',
+  'user.password_change',
+  'user.password_reset',
 ] as const
 
 const AUDIT_RESOURCE_FILTER_CODES = [
@@ -56,6 +64,8 @@ const AUDIT_RESOURCE_FILTER_CODES = [
   'site_settings',
   'user_identity',
   'album',
+  'tag',
+  'webhook',
 ] as const
 
 export function AdminAuditLogsPage() {
@@ -88,6 +98,8 @@ export function AdminAuditLogsPage() {
       site_settings: t('admin.auditResourceSiteSettings', { defaultValue: '站点设置' }),
       user_identity: t('admin.auditResourceUserIdentity', { defaultValue: '用户身份' }),
       album: t('admin.auditResourceAlbum', { defaultValue: '相册' }),
+      tag: t('admin.auditResourceTag', { defaultValue: '标签' }),
+      webhook: t('admin.auditResourceWebhook', { defaultValue: 'Webhook' }),
     }),
     [t],
   )
