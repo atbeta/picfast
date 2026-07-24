@@ -47,6 +47,7 @@ const AUDIT_ACTION_FILTER_CODES = [
   'image.tag_remove',
   'tag.create',
   'webhook.create',
+  'webhook.update',
   'webhook.delete',
   'user.register',
   'user.password_change',

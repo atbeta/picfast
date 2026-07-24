@@ -145,6 +145,8 @@ func (h *WebhookHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Success(w, makeWebhookItem(wh))
+
+	writeAuditLog(h.db, r, "webhook.update", "webhook", strconv.FormatInt(wh.ID, 10), wh.Name, nil)
 }
 
 func (h *WebhookHandler) Delete(w http.ResponseWriter, r *http.Request) {

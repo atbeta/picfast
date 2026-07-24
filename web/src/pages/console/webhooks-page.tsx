@@ -173,13 +173,13 @@ export function WebhooksPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t('page.webhooks.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t('webhooks.emptyDesc')}</p>
         </div>
-        <Button onClick={openCreate} size="sm">
-          <Plus className="h-4 w-4 mr-1" />
+        <Button onClick={openCreate} size="lg">
+          <Plus className="size-4" />
           {t('webhooks.create')}
         </Button>
       </div>
@@ -189,10 +189,10 @@ export function WebhooksPage() {
           title={t('webhooks.empty')}
           icon={<Webhook className="size-6 text-muted-foreground" />}
           action={
-            <Button onClick={openCreate} size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-1" />
-              {t('webhooks.create')}
-            </Button>
+              <Button onClick={openCreate} size="lg" variant="outline">
+                <Plus className="size-4" />
+                {t('webhooks.create')}
+              </Button>
           }
         />
       ) : (
