@@ -112,6 +112,16 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	var albumID *int64
 	if aid := r.FormValue("album_id"); aid != "" {
 		if v, err := strconv.ParseInt(aid, 10, 64); err == nil {
+			if userID == nil {
+				observeUpload("error", "invalid_file", int64(len(fileData)))
+				Fail(w, http.StatusBadRequest, "album_id requires authentication")
+				return
+			}
+			if !h.albumBelongsToUser(r.Context(), *userID, v) {
+				observeUpload("error", "invalid_file", int64(len(fileData)))
+				Fail(w, http.StatusNotFound, "album not found")
+				return
+			}
 			albumID = &v
 		}
 	}
@@ -139,7 +149,6 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	result, err := h.upload.Store(r.Context(), service.UploadParams{
 		FileData:   fileData,
 		FileName:   header.Filename,
-		FileSize:   header.Size,
 		StrategyID: strategyID,
 		AlbumID:    albumID,
 		Permission: perm,
@@ -572,4 +581,9 @@ func (h *ImageHandler) Pipeline(w http.ResponseWriter, r *http.Request) {
 		"moderation": moderationStatus,
 		"updated_at": img.UpdatedAt.UTC().Format(time.RFC3339),
 	})
+}
+
+func (h *ImageHandler) albumBelongsToUser(ctx context.Context, userID, albumID int64) bool {
+	a, err := h.db.GetAlbumByID(ctx, albumID)
+	return err == nil && a.UserID == userID
 }

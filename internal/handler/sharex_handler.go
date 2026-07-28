@@ -74,7 +74,6 @@ func (h *ShareXHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	result, err := h.upload.Store(r.Context(), service.UploadParams{
 		FileData: fileData,
 		FileName: header.Filename,
-		FileSize: header.Size,
 		UserID:   userID,
 		ClientIP: clientip.FromRequest(r),
 	})

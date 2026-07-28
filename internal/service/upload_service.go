@@ -84,7 +84,6 @@ func (s *UploadService) totalImagesCount(ctx context.Context) int64 {
 type UploadParams struct {
 	FileData   []byte
 	FileName   string
-	FileSize   int64
 	StrategyID *int64
 	AlbumID    *int64
 	Permission *int16
@@ -431,7 +430,7 @@ func validateUploadFile(params UploadParams, groupConfig domain.GroupConfig) (st
 	if !groupConfig.IsExtensionAllowed(ext) {
 		return "", fmt.Errorf("file extension .%s is not allowed", ext)
 	}
-	if params.FileSize > groupConfig.MaximumFileSize {
+	if int64(len(params.FileData)) > groupConfig.MaximumFileSize {
 		return "", fmt.Errorf("file size exceeds maximum (%d bytes)", groupConfig.MaximumFileSize)
 	}
 	return ext, nil
@@ -447,7 +446,7 @@ func (s *UploadService) checkCapacity(ctx context.Context, params UploadParams, 
 		if err != nil {
 			return fmt.Errorf("failed to check guest capacity: %w", err)
 		}
-		if used+params.FileSize > capacity {
+		if used+int64(len(params.FileData)) > capacity {
 			return fmt.Errorf("guest storage capacity exceeded")
 		}
 		return nil
@@ -460,7 +459,7 @@ func (s *UploadService) checkCapacity(ctx context.Context, params UploadParams, 
 	if err != nil {
 		return fmt.Errorf("failed to get user: %w", err)
 	}
-	if user.CapacityBytes > 0 && used+params.FileSize > user.CapacityBytes {
+	if user.CapacityBytes > 0 && used+int64(len(params.FileData)) > user.CapacityBytes {
 		return fmt.Errorf("storage capacity exceeded")
 	}
 	return nil
