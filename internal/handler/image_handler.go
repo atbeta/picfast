@@ -156,6 +156,7 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	if h.auditUploadLogs {
 		details := map[string]any{
+			"source":      uploadSource(r),
 			"origin_name": result.Image.OriginName,
 			"size_bytes":  result.Image.SizeBytes,
 		}

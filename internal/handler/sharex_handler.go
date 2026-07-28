@@ -10,12 +10,15 @@ import (
 	"github.com/atbeta/picfast/internal/domain"
 	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/service"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 type ShareXHandler struct {
-	upload         *service.UploadService
-	baseURL        string
-	maxUploadBytes int64
+	upload          *service.UploadService
+	baseURL         string
+	maxUploadBytes  int64
+	db              *sqlc.Queries
+	auditUploadLogs bool
 }
 
 type shareXResponse struct {
@@ -24,11 +27,11 @@ type shareXResponse struct {
 	DeletionURL  string `json:"deletion_url,omitempty"`
 }
 
-func NewShareXHandler(upload *service.UploadService, baseURL string, maxUploadBytes int64) *ShareXHandler {
+func NewShareXHandler(upload *service.UploadService, baseURL string, maxUploadBytes int64, db *sqlc.Queries, auditUploadLogs bool) *ShareXHandler {
 	if maxUploadBytes <= 0 {
 		maxUploadBytes = defaultMaxUploadBytes
 	}
-	return &ShareXHandler{upload: upload, baseURL: baseURL, maxUploadBytes: maxUploadBytes}
+	return &ShareXHandler{upload: upload, baseURL: baseURL, maxUploadBytes: maxUploadBytes, db: db, auditUploadLogs: auditUploadLogs}
 }
 
 func (h *ShareXHandler) Upload(w http.ResponseWriter, r *http.Request) {
@@ -81,6 +84,16 @@ func (h *ShareXHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	observeUpload("success", picmetrics.ReasonNone, result.OriginalSizeBytes)
+
+	if h.auditUploadLogs {
+		details := map[string]any{
+			"source": "sharex",
+		}
+		if userID == nil {
+			details["guest"] = true
+		}
+		writeAuditLog(h.db, r, "image.upload", "image", result.Image.Key, result.Image.OriginName, details)
+	}
 
 	resp := shareXResponse{
 		URL:          result.Links.URL,

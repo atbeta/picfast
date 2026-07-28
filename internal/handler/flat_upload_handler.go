@@ -10,12 +10,15 @@ import (
 	"github.com/atbeta/picfast/internal/domain"
 	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/service"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 type FlatUploadHandler struct {
-	upload         *service.UploadService
-	baseURL        string
-	maxUploadBytes int64
+	upload          *service.UploadService
+	baseURL         string
+	maxUploadBytes  int64
+	db              *sqlc.Queries
+	auditUploadLogs bool
 }
 
 type flatUploadResponse struct {
@@ -26,11 +29,11 @@ type flatUploadResponse struct {
 	HTML         string `json:"html,omitempty"`
 }
 
-func NewFlatUploadHandler(upload *service.UploadService, baseURL string, maxUploadBytes int64) *FlatUploadHandler {
+func NewFlatUploadHandler(upload *service.UploadService, baseURL string, maxUploadBytes int64, db *sqlc.Queries, auditUploadLogs bool) *FlatUploadHandler {
 	if maxUploadBytes <= 0 {
 		maxUploadBytes = defaultMaxUploadBytes
 	}
-	return &FlatUploadHandler{upload: upload, baseURL: baseURL, maxUploadBytes: maxUploadBytes}
+	return &FlatUploadHandler{upload: upload, baseURL: baseURL, maxUploadBytes: maxUploadBytes, db: db, auditUploadLogs: auditUploadLogs}
 }
 
 func (h *FlatUploadHandler) Upload(w http.ResponseWriter, r *http.Request) {
@@ -83,6 +86,16 @@ func (h *FlatUploadHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	observeUpload("success", picmetrics.ReasonNone, result.OriginalSizeBytes)
+
+	if h.auditUploadLogs {
+		details := map[string]any{
+			"source": "flat",
+		}
+		if userID == nil {
+			details["guest"] = true
+		}
+		writeAuditLog(h.db, r, "image.upload", "image", result.Image.Key, result.Image.OriginName, details)
+	}
 
 	resp := flatUploadResponse{
 		URL:          result.Links.URL,

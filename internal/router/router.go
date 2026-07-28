@@ -422,12 +422,12 @@ func New(
 			Post("/upload", imageHandler.Upload)
 
 			// ShareX endpoints
-		sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL, cfg.App.MaxUploadBytes)
+		sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL, cfg.App.MaxUploadBytes, queries, cfg.App.AuditUploadLogs)
 		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
 		r.Get("/sharex/config", sharexHandler.Config)
 
 		// Flat upload endpoints (PicGo, uPic, Dropshare, etc.)
-		flatHandler := handler.NewFlatUploadHandler(uploadSvc, cfg.Server.BaseURL, cfg.App.MaxUploadBytes)
+		flatHandler := handler.NewFlatUploadHandler(uploadSvc, cfg.Server.BaseURL, cfg.App.MaxUploadBytes, queries, cfg.App.AuditUploadLogs)
 		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/flat/upload", flatHandler.Upload)
 
 		// Admin routes
