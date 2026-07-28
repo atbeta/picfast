@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.22.1](https://github.com/atbeta/picfast/compare/v0.22.0...v0.22.1) (2026-07-28)
+
+
+### Bug Fixes
+
+* **internal:** repair functional defects found in code audit ([00e1eee](https://github.com/atbeta/picfast/commit/00e1eee9087b4e5ee105c65b0a9d27f467e54c7b))
+* validate album ownership on upload and use actual file size ([8287e85](https://github.com/atbeta/picfast/commit/8287e857ebe87fb945cf05635a44b31747a8bce6))
+
 ## [0.22.0](https://github.com/atbeta/picfast/compare/v0.21.0...v0.22.0) (2026-07-28)
 
 
