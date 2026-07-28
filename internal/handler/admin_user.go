@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,18 +26,17 @@ func (h *AdminUserHandler) List(w http.ResponseWriter, r *http.Request) {
 	statusStr := r.URL.Query().Get("status")
 	page, pageSize := parsePagination(r)
 
-	users, err := h.db.ListUsers(r.Context(), sqlc.ListUsersParams{
-		Limit:  pageSize,
-		Offset: (page - 1) * pageSize,
-	})
+	users, err := h.db.ListAllUsers(r.Context())
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to list users")
 		return
 	}
 
-	// Apply filters in Go for simplicity (private deployment scale)
+	// Filter in Go for simplicity (private deployment scale).
+	// Full result set is loaded into memory; pagination is applied after filtering
+	// so that keyword/status filters produce correct totals.
 	if keyword != "" || statusStr != "" {
-		filtered := make([]sqlc.User, 0)
+		filtered := make([]sqlc.User, 0, len(users))
 		for _, u := range users {
 			if keyword != "" && !strings.Contains(strings.ToLower(u.Email), strings.ToLower(keyword)) &&
 				!strings.Contains(strings.ToLower(u.Name), strings.ToLower(keyword)) {
@@ -55,10 +53,17 @@ func (h *AdminUserHandler) List(w http.ResponseWriter, r *http.Request) {
 		users = filtered
 	}
 
-	total, err := h.db.CountUsers(r.Context())
-	if err != nil {
-		slog.Warn("failed to count users", "error", err)
-		total = 0
+	total := int64(len(users))
+
+	start := (page - 1) * pageSize
+	if start >= int32(len(users)) {
+		users = nil
+	} else {
+		end := start + pageSize
+		if end > int32(len(users)) {
+			end = int32(len(users))
+		}
+		users = users[start:end]
 	}
 
 	items := make([]map[string]interface{}, 0, len(users))

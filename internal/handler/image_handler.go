@@ -311,7 +311,11 @@ func (h *ImageHandler) Get(w http.ResponseWriter, r *http.Request) {
 	// Check permission
 	if img.Permission == int16(domain.PermissionPrivate) {
 		userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)
-		if !ok || img.UserID.Int64 != userID {
+		role := domain.RoleUser
+		if rVal, rOk := r.Context().Value(domain.ContextKeyRole).(domain.UserRole); rOk {
+			role = rVal
+		}
+		if !ok || (img.UserID.Int64 != userID && role != domain.RoleAdmin) {
 			Fail(w, http.StatusNotFound, "image not found")
 			return
 		}
@@ -535,7 +539,11 @@ func (h *ImageHandler) Pipeline(w http.ResponseWriter, r *http.Request) {
 
 	if img.Permission == int16(domain.PermissionPrivate) {
 		userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)
-		if !ok || img.UserID.Int64 != userID {
+		role := domain.RoleUser
+		if rVal, rOk := r.Context().Value(domain.ContextKeyRole).(domain.UserRole); rOk {
+			role = rVal
+		}
+		if !ok || (img.UserID.Int64 != userID && role != domain.RoleAdmin) {
 			Fail(w, http.StatusNotFound, "image not found")
 			return
 		}

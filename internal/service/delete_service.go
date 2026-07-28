@@ -94,10 +94,14 @@ func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) e
 			return err
 		}
 		if userID.Valid {
-			qtx.DecrementUserImageNum(ctx, userID.Int64)
+			if err := qtx.DecrementUserImageNum(ctx, userID.Int64); err != nil {
+				slog.Warn("decrement user image_num failed", "user_id", userID.Int64, "error", err)
+			}
 		}
 		if albumID.Valid {
-			qtx.DecrementAlbumImageNum(ctx, albumID.Int64)
+			if err := qtx.DecrementAlbumImageNum(ctx, albumID.Int64); err != nil {
+				slog.Warn("decrement album image_num failed", "album_id", albumID.Int64, "error", err)
+			}
 		}
 		return nil
 	})

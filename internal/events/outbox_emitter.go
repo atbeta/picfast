@@ -35,7 +35,7 @@ func (e *OutboxEmitter) Emit(ctx context.Context, event Envelope) error {
 	})
 	if err != nil {
 		slog.Warn("outbox insert failed", "idempotency_key", event.IdempotencyKey, "error", err)
-		return nil
+		return err
 	}
 	return nil
 }

@@ -110,14 +110,17 @@ func (h *AdminImageHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	img, err := h.db.GetImageByID(r.Context(), id)
+	var originName string
 	if err != nil {
 		slog.Warn("failed to load image before admin delete", "error", err, "image_id", id)
+	} else {
+		originName = img.OriginName
 	}
 	if err := h.deleter.DeleteImage(context.WithValue(r.Context(), domain.ContextKeyDeletedBy, "admin"), id); err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to delete image")
 		return
 	}
-	writeAuditLog(h.db, r, "admin.image.delete", "image", strconv.FormatInt(id, 10), img.OriginName, nil)
+	writeAuditLog(h.db, r, "admin.image.delete", "image", strconv.FormatInt(id, 10), originName, nil)
 
 	SuccessMessage(w, "deleted")
 }
