@@ -34,6 +34,12 @@ export function AdminImagesPage() {
     if (deleteTarget === null) return
     setDeleting(deleteTarget)
     try {
+      // If this is the only item on a non-first page, jump back first so the
+      // refetched data lands on a page with content instead of an empty one.
+      const willEmptyPage = data && data.items.length === 1 && page > 1
+      if (willEmptyPage) {
+        setPage((p) => p - 1)
+      }
       await deleteAdminImage(deleteTarget)
       setDeleteTarget(null)
       await qc.invalidateQueries({ queryKey: ['admin-images'] })
@@ -42,7 +48,7 @@ export function AdminImagesPage() {
     } finally {
       setDeleting(null)
     }
-  }, [deleteTarget, qc, t])
+  }, [deleteTarget, data, page, qc, t])
 
   return (
     <section className="space-y-6">

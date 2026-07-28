@@ -124,6 +124,12 @@ export function ImagesPage() {
     if (!deleteTarget) return
     setDeleteLoading(true)
     try {
+      // If this is the only item on a non-first page, jump back first so the
+      // refetched data lands on a page with content instead of an empty one.
+      const willEmptyPage = data && data.items.length === 1 && page > 1
+      if (willEmptyPage) {
+        setPage((p) => p - 1)
+      }
       await deleteImage(deleteTarget)
       setDetail(null)
       setDeleteTarget(null)
@@ -167,6 +173,13 @@ export function ImagesPage() {
   const batchDelete = async () => {
     setBatchProcessing(true)
     try {
+      // If we're about to delete every item on the current non-first page,
+      // jump back so the refetched data lands on a page with content.
+      const willEmptyPage =
+        data && selectedKeys.size === data.items.length && data.items.length > 0 && page > 1
+      if (willEmptyPage) {
+        setPage((p) => p - 1)
+      }
       const result = await batchDeleteImages([...selectedKeys])
       setShowBatchConfirm(false)
       setSelectedKeys(new Set())
