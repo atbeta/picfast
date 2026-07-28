@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.22.0](https://github.com/atbeta/picfast/compare/v0.21.0...v0.22.0) (2026-07-28)
+
+
+### Features
+
+* **cli:** add config commands and harden Windows installs ([141336b](https://github.com/atbeta/picfast/commit/141336b6a54b6807b0100dd6ce8c49689075b40c))
+
+
+### Bug Fixes
+
+* **audit:** record image.upload for sharex and flat upload endpoints ([d1bf3f1](https://github.com/atbeta/picfast/commit/d1bf3f172227ce49208f6b1ce48cfca192d27edf))
+* **cli:** make npx picfast resolve the upload binary ([f82082f](https://github.com/atbeta/picfast/commit/f82082f1017cd64c49cb98cfdde7f9e303af42c9))
+* **web:** jump back a page after deleting the last item(s) on a page ([a97bf45](https://github.com/atbeta/picfast/commit/a97bf45bda6f157f3790930b03a608256e10dce0))
+
 ## [0.21.0](https://github.com/atbeta/picfast/compare/v0.20.2...v0.21.0) (2026-07-24)
 
 
