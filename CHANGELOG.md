@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.2](https://github.com/atbeta/picfast/compare/v0.22.1...v0.22.2) (2026-07-31)
+
+
+### Bug Fixes
+
+* **admin:** display used storage per user and image count per group ([e917ee5](https://github.com/atbeta/picfast/commit/e917ee532d2f5b420e78f9e535c042fb920138dc))
+
 ## [0.22.1](https://github.com/atbeta/picfast/compare/v0.22.0...v0.22.1) (2026-07-28)
 
 
