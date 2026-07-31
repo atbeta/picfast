@@ -90,6 +90,9 @@ WHERE (sqlc.narg('keyword')::text IS NULL OR images.origin_name ILIKE '%' || sql
 -- name: GetGuestUsedCapacity :one
 SELECT COALESCE(SUM(size_bytes), 0)::bigint FROM images WHERE user_id IS NULL;
 
+-- name: CountImagesByGroup :one
+SELECT COUNT(*) FROM images WHERE group_id = $1;
+
 -- name: GetExpiredImages :many
 SELECT * FROM images
 WHERE expires_at IS NOT NULL AND expires_at <= NOW()

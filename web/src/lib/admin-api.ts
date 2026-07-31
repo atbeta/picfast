@@ -63,6 +63,7 @@ export interface AdminGroup {
   configs: Record<string, unknown>
   strategy_ids: number[]
   user_count: number
+  image_count: number
   created_at: string
   updated_at: string
 }

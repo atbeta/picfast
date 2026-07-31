@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -68,7 +69,12 @@ func (h *AdminUserHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	items := make([]map[string]interface{}, 0, len(users))
 	for _, u := range users {
-		items = append(items, userJSON(u))
+		usedCapacity, err := h.db.GetUserUsedCapacity(r.Context(), domain.PgInt8(u.ID))
+		if err != nil {
+			slog.Warn("failed to get user used capacity", "error", err, "user_id", u.ID)
+			usedCapacity = 0
+		}
+		items = append(items, userJSON(u, usedCapacity))
 	}
 
 	Paginated(w, items, total, page, pageSize)
@@ -87,7 +93,12 @@ func (h *AdminUserHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Success(w, userJSON(user))
+	usedCapacity, err := h.db.GetUserUsedCapacity(r.Context(), domain.PgInt8(user.ID))
+	if err != nil {
+		slog.Warn("failed to get user used capacity", "error", err, "user_id", user.ID)
+		usedCapacity = 0
+	}
+	Success(w, userJSON(user, usedCapacity))
 }
 
 type adminUpdateUserRequest struct {
@@ -169,7 +180,12 @@ func (h *AdminUserHandler) Update(w http.ResponseWriter, r *http.Request) {
 		"after_group":   updated.GroupID.Int64,
 	})
 
-	Success(w, userJSON(updated))
+	usedCapacity, err := h.db.GetUserUsedCapacity(r.Context(), domain.PgInt8(updated.ID))
+	if err != nil {
+		slog.Warn("failed to get user used capacity", "error", err, "user_id", updated.ID)
+		usedCapacity = 0
+	}
+	Success(w, userJSON(updated, usedCapacity))
 }
 
 func (h *AdminUserHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -199,7 +215,7 @@ func (h *AdminUserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	SuccessMessage(w, "deleted")
 }
 
-func userJSON(u sqlc.User) map[string]interface{} {
+func userJSON(u sqlc.User, usedCapacity int64) map[string]interface{} {
 	return map[string]interface{}{
 		"id":             u.ID,
 		"email":          u.Email,
@@ -207,6 +223,7 @@ func userJSON(u sqlc.User) map[string]interface{} {
 		"role":           u.Role,
 		"group_id":       domain.PgInt8PtrVal(u.GroupID),
 		"capacity_bytes": u.CapacityBytes,
+		"used_capacity":  usedCapacity,
 		"image_num":      u.ImageNum,
 		"album_num":      u.AlbumNum,
 		"status":         u.Status,

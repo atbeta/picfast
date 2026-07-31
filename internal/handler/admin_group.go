@@ -50,6 +50,7 @@ func (h *AdminGroupHandler) List(w http.ResponseWriter, r *http.Request) {
 		Configs     json.RawMessage `json:"configs"`
 		StrategyIDs []int64         `json:"strategy_ids"`
 		UserCount   int64           `json:"user_count"`
+		ImageCount  int64           `json:"image_count"`
 		CreatedAt   string          `json:"created_at"`
 		UpdatedAt   string          `json:"updated_at"`
 	}
@@ -70,10 +71,15 @@ func (h *AdminGroupHandler) List(w http.ResponseWriter, r *http.Request) {
 			slog.Warn("failed to count group users", "error", err, "group_id", g.ID)
 			count = 0
 		}
+		imageCount, err := h.db.CountImagesByGroup(r.Context(), domain.PgInt8(g.ID))
+		if err != nil {
+			slog.Warn("failed to count group images", "error", err, "group_id", g.ID)
+			imageCount = 0
+		}
 		items = append(items, groupRow{
 			ID: g.ID, Name: g.Name, IsDefault: g.IsDefault,
 			IsGuest: g.IsGuest, Configs: g.Configs, StrategyIDs: stratIDs,
-			UserCount: count,
+			UserCount: count, ImageCount: imageCount,
 			CreatedAt: g.CreatedAt.Format("2006-01-02T15:04:05Z"),
 			UpdatedAt: g.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 		})

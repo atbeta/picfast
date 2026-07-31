@@ -57,6 +57,17 @@ func (q *Queries) CountExpiredImages(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countImagesByGroup = `-- name: CountImagesByGroup :one
+SELECT COUNT(*) FROM images WHERE group_id = $1
+`
+
+func (q *Queries) CountImagesByGroup(ctx context.Context, groupID pgtype.Int8) (int64, error) {
+	row := q.db.QueryRow(ctx, countImagesByGroup, groupID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countImagesByStrategy = `-- name: CountImagesByStrategy :one
 SELECT COUNT(*) FROM images WHERE strategy_id = $1
 `
