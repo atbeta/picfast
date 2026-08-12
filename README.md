@@ -1,3 +1,5 @@
+
+
 <p align="center">
   <img src="web/public/favicon-default.svg" width="128" height="128" alt="PicFast logo">
 </p>
@@ -72,6 +74,7 @@
 Vite 将 `/api`、`/i`、`/t` 代理到 `VITE_BACKEND_URL`（默认 `http://localhost:8080`，见 `web/vite.config.ts`）。
 
 如需演示数据（额外测试账号与样例内容）再执行：`make seed`。
+默认管理员账号：`admin@example.com` / `admin123`，测试用户：`test@example.com` / `password123`。
 
 前后端一体静态托管：`cd web && pnpm build && go run ./cmd/picfast`。
 
