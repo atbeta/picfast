@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -244,11 +245,23 @@ func (h *AdminSettingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	after := h.settingsResponse(false)
 	_, app := h.config.RuntimeSnapshot()
 	writeAuditLog(h.queries, r, "admin.settings.update", "site_settings", "1", app.Name, map[string]any{
-		"before": before,
-		"after":  after,
+		"changes": settingsDiff(before, after),
 	})
 
 	Success(w, h.settingsResponse(true))
+}
+
+// settingsDiff 计算 before/after 的顶层字段级差异，避免在审计日志中写入全量快照
+//（全量快照会携带 analytics_config 等敏感配置的完整内容）。
+// 嵌套 JSON 字段（analytics_config、theme_config）发生变更时整体记录 before/after 值。
+func settingsDiff(before, after map[string]interface{}) map[string]any {
+	changes := make(map[string]any, len(after))
+	for k, afterV := range after {
+		if beforeV, ok := before[k]; !ok || !reflect.DeepEqual(beforeV, afterV) {
+			changes[k] = map[string]any{"before": before[k], "after": afterV}
+		}
+	}
+	return changes
 }
 
 func (h *AdminSettingHandler) persist(ctx context.Context) error {
