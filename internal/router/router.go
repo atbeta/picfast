@@ -343,19 +343,19 @@ func New(
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authHandler.Register)
 			r.Post("/verify-email", authHandler.VerifyEmail)
-			r.With(middleware.RateLimit(mailActionLimiter, clientIPKey)).Post("/resend-verification", authHandler.ResendVerification)
-			r.With(middleware.RateLimit(mailActionLimiter, clientIPKey)).Post("/forgot-password", authHandler.ForgotPassword)
+			r.With(middleware.RateLimit("mail", mailActionLimiter, clientIPKey)).Post("/resend-verification", authHandler.ResendVerification)
+			r.With(middleware.RateLimit("mail", mailActionLimiter, clientIPKey)).Post("/forgot-password", authHandler.ForgotPassword)
 			r.Post("/reset-password", authHandler.ResetPassword)
-			r.With(middleware.RateLimit(loginLimiter, clientIPKey)).
+			r.With(middleware.RateLimit("login", loginLimiter, clientIPKey)).
 				Post("/login", authHandler.Login)
 			r.Post("/refresh", authHandler.Refresh)
 
 			// OAuth
 			r.Route("/oauth", func(r chi.Router) {
 				r.Get("/providers", oauthHandler.Providers)
-				r.With(middleware.RateLimit(oauthStartLimiter, clientIPKey)).
+				r.With(middleware.RateLimit("oauth", oauthStartLimiter, clientIPKey)).
 					Get("/{provider}", oauthHandler.Start)
-				r.With(middleware.RateLimit(oauthCallbackLimiter, clientIPKey)).
+				r.With(middleware.RateLimit("oauth", oauthCallbackLimiter, clientIPKey)).
 					Get("/{provider}/callback", oauthHandler.Callback)
 			})
 		})
@@ -407,9 +407,9 @@ func New(
 			r.Put("/users/me", userHandler.UpdateProfile)
 
 			// OAuth link/unlink
-			r.With(middleware.RateLimit(oauthLinkLimiter, clientIPKey)).
+			r.With(middleware.RateLimit("oauth", oauthLinkLimiter, clientIPKey)).
 				Get("/auth/oauth/{provider}/link", oauthHandler.Link)
-			r.With(middleware.RateLimit(oauthLinkLimiter, clientIPKey)).
+			r.With(middleware.RateLimit("oauth", oauthLinkLimiter, clientIPKey)).
 				Delete("/auth/oauth/{provider}", oauthHandler.Unlink)
 			r.Get("/auth/oauth/identities", oauthHandler.Identities)
 

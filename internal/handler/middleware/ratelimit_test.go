@@ -59,7 +59,7 @@ func TestRateLimiter_PrunesExpiredWindows(t *testing.T) {
 
 func TestRateLimit_Middleware(t *testing.T) {
 	rl := NewRateLimiter(2, time.Second)
-	mw := RateLimit(rl, func(r *http.Request) string { return r.RemoteAddr })
+	mw := RateLimit("test", rl, func(r *http.Request) string { return r.RemoteAddr })
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

@@ -21,6 +21,7 @@ import (
 	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
+	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/service/oauth"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
@@ -259,13 +260,16 @@ func (h *OAuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Warn("oauth callback: find or create user", "provider", providerID, "error", err)
 		if errors.Is(err, errAccountDisabled) {
+			picmetrics.ObserveAuthAttempt("oauth", "denied", "account_disabled")
 			http.Redirect(w, r, h.loginErrorURL(r, "account_disabled"), http.StatusFound)
 			return
 		}
 		if errors.Is(err, errOAuthRegistrationDisabled) {
+			picmetrics.ObserveAuthAttempt("oauth", "denied", "registration_disabled")
 			http.Redirect(w, r, h.loginErrorURL(r, "registration_disabled"), http.StatusFound)
 			return
 		}
+		picmetrics.ObserveAuthAttempt("oauth", "error", "user_lookup_failed")
 		http.Redirect(w, r, h.loginErrorURL(r, "user_lookup_failed"), http.StatusFound)
 		return
 	}
@@ -273,10 +277,12 @@ func (h *OAuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	tokens, err := h.generateTokens(r.Context(), user.ID, domain.UserRole(user.Role))
 	if err != nil {
 		slog.Warn("oauth callback: generate tokens", "user_id", user.ID, "error", err)
+		picmetrics.ObserveAuthAttempt("oauth", "error", "token_failed")
 		http.Redirect(w, r, h.loginErrorURL(r, "token_failed"), http.StatusFound)
 		return
 	}
 
+	picmetrics.ObserveAuthAttempt("oauth", "success", picmetrics.ReasonNone)
 	setAccessTokenCookie(w, r, tokens.AccessToken, tokens.ExpiresIn)
 	setRefreshTokenCookie(w, r, tokens.RefreshToken, h.config.JWT.RefreshTTL)
 

@@ -16,6 +16,7 @@ import (
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/events"
+	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/jackc/pgx/v5"
@@ -238,22 +239,26 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.db.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
+		picmetrics.ObserveAuthAttempt("login", "error", "invalid_credentials")
 		Fail(w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
 
 	if user.Status != int16(domain.UserStatusActive) {
+		picmetrics.ObserveAuthAttempt("login", "denied", "frozen_user")
 		h.auditAdminLogin(r, user, false, "frozen_user")
 		Fail(w, http.StatusForbidden, "account is frozen")
 		return
 	}
 	if h.emailVerificationEnabled() && !user.EmailVerified {
+		picmetrics.ObserveAuthAttempt("login", "denied", "email_unverified")
 		h.auditAdminLogin(r, user, false, "email_unverified")
 		Fail(w, http.StatusForbidden, "email verification required")
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password.String), []byte(req.Password)); err != nil {
+		picmetrics.ObserveAuthAttempt("login", "error", "invalid_credentials")
 		h.auditAdminLogin(r, user, false, "invalid_credentials")
 		Fail(w, http.StatusUnauthorized, "invalid email or password")
 		return
@@ -263,10 +268,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	tokens, err := h.generateTokens(r.Context(), h.db, user.ID, domain.UserRole(user.Role), groupID)
 	if err != nil {
+		picmetrics.ObserveAuthAttempt("login", "error", "token_failed")
 		Fail(w, http.StatusInternalServerError, "failed to generate tokens")
 		return
 	}
 
+	picmetrics.ObserveAuthAttempt("login", "success", picmetrics.ReasonNone)
 	h.auditAdminLogin(r, user, true, "")
 	writeAuthTokens(w, r, tokens)
 }
@@ -549,23 +556,27 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	tokenHash := HashRefreshToken(req.RefreshToken)
 	stored, err := h.db.GetRefreshTokenByHash(r.Context(), tokenHash)
 	if err != nil {
+		picmetrics.ObserveAuthAttempt("refresh", "error", "invalid_token")
 		Fail(w, http.StatusUnauthorized, "invalid refresh token")
 		return
 	}
 
 	if time.Now().After(stored.ExpiresAt) {
 		h.db.DeleteRefreshToken(r.Context(), tokenHash)
+		picmetrics.ObserveAuthAttempt("refresh", "error", "expired")
 		Fail(w, http.StatusUnauthorized, "refresh token expired")
 		return
 	}
 
 	user, err := h.db.GetUserByID(r.Context(), stored.UserID)
 	if err != nil {
+		picmetrics.ObserveAuthAttempt("refresh", "error", "invalid_token")
 		Fail(w, http.StatusUnauthorized, "user not found")
 		return
 	}
 	if h.emailVerificationEnabled() && !user.EmailVerified {
 		h.db.DeleteRefreshToken(r.Context(), tokenHash)
+		picmetrics.ObserveAuthAttempt("refresh", "denied", "email_unverified")
 		Fail(w, http.StatusForbidden, "email verification required")
 		return
 	}
@@ -581,10 +592,12 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return err
 	})
 	if err != nil {
+		picmetrics.ObserveAuthAttempt("refresh", "error", "token_failed")
 		Fail(w, http.StatusInternalServerError, "failed to refresh token")
 		return
 	}
 
+	picmetrics.ObserveAuthAttempt("refresh", "success", picmetrics.ReasonNone)
 	writeAuthTokens(w, r, tokens)
 	setRefreshTokenCookie(w, r, tokens.RefreshToken, h.config.JWT.RefreshTTL)
 }

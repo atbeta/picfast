@@ -5,9 +5,11 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/events"
+	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -32,24 +34,31 @@ func (s *DeleteService) DeleteImage(ctx context.Context, imgID int64) error {
 }
 
 func (s *DeleteService) CleanExpiredImages(ctx context.Context, batchSize int32) (int, error) {
+	start := time.Now()
 	expired, err := s.db.GetExpiredImages(ctx, batchSize)
 	if err != nil {
+		picmetrics.ObserveCleanupRun("error", time.Since(start))
 		return 0, err
 	}
 	if len(expired) == 0 {
+		picmetrics.ObserveCleanupRun("success", time.Since(start))
 		return 0, nil
 	}
 
 	ctx = context.WithValue(ctx, domain.ContextKeyDeletedBy, "system")
 
 	deleted := 0
+	var deletedBytes int64
 	for _, img := range expired {
 		if err := s.deleteImageRecord(ctx, img); err != nil {
 			slog.Warn("failed to delete expired image", "image_id", img.ID, "error", err)
 			continue
 		}
 		deleted++
+		deletedBytes += img.SizeBytes
 	}
+	picmetrics.ObserveCleanupRun("success", time.Since(start))
+	picmetrics.ObserveCleanupDeleted("expired", deleted, deletedBytes)
 	return deleted, nil
 }
 

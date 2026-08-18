@@ -1,7 +1,10 @@
 package metrics
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"os"
 	"testing"
 )
 
@@ -24,4 +27,35 @@ func TestClassifyUploadError(t *testing.T) {
 			t.Fatalf("ClassifyUploadError(%q) = %q, want %q", tc.err, got, tc.want)
 		}
 	}
+}
+
+func TestClassifyStorageError(t *testing.T) {
+	cases := []struct {
+		err  error
+		want string
+	}{
+		{nil, ReasonNone},
+		{context.DeadlineExceeded, "timeout"},
+		{fmt.Errorf("wrap: %w", context.Canceled), "timeout"},
+		{fmt.Errorf("read: %w", os.ErrNotExist), "not_found"},
+		{errors.New("connection refused"), "unknown"},
+	}
+
+	for _, tc := range cases {
+		if got := ClassifyStorageError(tc.err); got != tc.want {
+			t.Fatalf("ClassifyStorageError(%v) = %q, want %q", tc.err, got, tc.want)
+		}
+	}
+}
+
+// 新增指标的 Observe 函数不允许 panic（重复注册、label 数不符都会在此暴露）。
+func TestObserveFunctionsDoNotPanic(t *testing.T) {
+	ObserveStorageOperation("put", "local", "success", ReasonNone, 0)
+	ObserveStorageOperation("get", "s3", "error", "timeout", 0)
+	ObserveCleanupRun("success", 0)
+	ObserveCleanupDeleted("expired", 3, 1024)
+	ObserveAuthAttempt("login", "error", "invalid_credentials")
+	ObserveAuthAttempt("oauth", "success", "")
+	ObserveRateLimited("login")
+	ObserveModerationAction("manual", "approve", "success")
 }

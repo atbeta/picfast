@@ -17,6 +17,7 @@ import (
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/events"
+	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/atbeta/picfast/internal/sqlc"
@@ -291,6 +292,20 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	modResult := &moderation.Result{Status: moderation.StatusApproved, Provider: "noop"}
 	if mod := moderation.FromContext(ctx); mod != nil && !identity.isAdmin {
 		mr, err := mod.Moderate(ctx, img.ID, img.Key, fileData)
+		if mod.Name() != "noop" {
+			if err != nil || mr == nil {
+				picmetrics.ObserveModerationAction(mod.Name(), "submit", "error")
+			} else {
+				action := "submit"
+				switch mr.Status {
+				case moderation.StatusApproved:
+					action = "auto_approve"
+				case moderation.StatusRejected:
+					action = "auto_reject"
+				}
+				picmetrics.ObserveModerationAction(mod.Name(), action, "success")
+			}
+		}
 		if err == nil && mr != nil {
 			modResult = mr
 			if mr.Status != moderation.StatusApproved {

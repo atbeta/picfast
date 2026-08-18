@@ -6,5 +6,9 @@ import (
 )
 
 func GetStorageForStrategy(strategy sqlc.Strategy) (storage.Storage, error) {
-	return storage.New(strategy.StrategyType, strategy.Configs)
+	s, err := storage.New(strategy.StrategyType, strategy.Configs)
+	if err != nil {
+		return nil, err
+	}
+	return storage.WithMetrics(strategy.StrategyType, s), nil
 }

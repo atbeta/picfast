@@ -1,6 +1,9 @@
 package metrics
 
 import (
+	"context"
+	"errors"
+	"os"
 	"strings"
 	"time"
 
@@ -69,6 +72,80 @@ var (
 		},
 		[]string{"result"},
 	)
+
+	storageOperationsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "picfast_storage_operations_total",
+			Help: "Total number of PicFast storage backend operations",
+		},
+		[]string{"operation", "backend", "result", "reason"},
+	)
+
+	storageOperationDuration = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "picfast_storage_operation_duration_seconds",
+			Help:    "PicFast storage backend operation duration in seconds",
+			Buckets: prometheus.DefBuckets,
+		},
+		[]string{"operation", "backend", "result"},
+	)
+
+	cleanupRunsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "picfast_cleanup_runs_total",
+			Help: "Total number of PicFast cleanup task runs",
+		},
+		[]string{"result"},
+	)
+
+	cleanupDeletedImagesTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "picfast_cleanup_deleted_images_total",
+			Help: "Total number of images removed by PicFast cleanup tasks",
+		},
+		[]string{"reason"},
+	)
+
+	cleanupDeletedBytesTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "picfast_cleanup_deleted_bytes_total",
+			Help: "Total bytes reclaimed by PicFast cleanup tasks",
+		},
+		[]string{"reason"},
+	)
+
+	cleanupDuration = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "picfast_cleanup_duration_seconds",
+			Help:    "PicFast cleanup task run duration in seconds",
+			Buckets: prometheus.DefBuckets,
+		},
+		[]string{"result"},
+	)
+
+	authAttemptsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "picfast_auth_attempts_total",
+			Help: "Total number of PicFast authentication attempts",
+		},
+		[]string{"kind", "result", "reason"},
+	)
+
+	rateLimitedTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "picfast_rate_limited_total",
+			Help: "Total number of PicFast requests rejected by rate limiting",
+		},
+		[]string{"area"},
+	)
+
+	moderationActionsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "picfast_moderation_actions_total",
+			Help: "Total number of PicFast moderation actions",
+		},
+		[]string{"mode", "action", "result"},
+	)
 )
 
 func ObserveUpload(source, result, reason string, bytes int64, duration time.Duration) {
@@ -89,6 +166,53 @@ func ObserveThumbnailGeneration(result, reason string, duration time.Duration) {
 	reason = normalizeReason(reason)
 	thumbnailGenerationsTotal.WithLabelValues(result, reason).Inc()
 	thumbnailGenerationDuration.WithLabelValues(result).Observe(duration.Seconds())
+}
+
+func ObserveStorageOperation(operation, backend, result, reason string, duration time.Duration) {
+	reason = normalizeReason(reason)
+	storageOperationsTotal.WithLabelValues(operation, backend, result, reason).Inc()
+	storageOperationDuration.WithLabelValues(operation, backend, result).Observe(duration.Seconds())
+}
+
+func ObserveCleanupRun(result string, duration time.Duration) {
+	cleanupRunsTotal.WithLabelValues(result).Inc()
+	cleanupDuration.WithLabelValues(result).Observe(duration.Seconds())
+}
+
+func ObserveCleanupDeleted(reason string, images int, bytes int64) {
+	if images > 0 {
+		cleanupDeletedImagesTotal.WithLabelValues(reason).Add(float64(images))
+	}
+	if bytes > 0 {
+		cleanupDeletedBytesTotal.WithLabelValues(reason).Add(float64(bytes))
+	}
+}
+
+func ObserveAuthAttempt(kind, result, reason string) {
+	reason = normalizeReason(reason)
+	authAttemptsTotal.WithLabelValues(kind, result, reason).Inc()
+}
+
+func ObserveRateLimited(area string) {
+	rateLimitedTotal.WithLabelValues(area).Inc()
+}
+
+func ObserveModerationAction(mode, action, result string) {
+	moderationActionsTotal.WithLabelValues(mode, action, result).Inc()
+}
+
+// ClassifyStorageError 把存储后端错误归入低基数枚举，禁止把原始错误文本放进 label。
+func ClassifyStorageError(err error) string {
+	switch {
+	case err == nil:
+		return ReasonNone
+	case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+		return "timeout"
+	case errors.Is(err, os.ErrNotExist):
+		return "not_found"
+	default:
+		return "unknown"
+	}
 }
 
 func ClassifyUploadError(err error) string {

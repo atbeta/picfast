@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/atbeta/picfast/internal/handler/httputil"
+	picmetrics "github.com/atbeta/picfast/internal/metrics"
 )
 
 // RateLimiter decides whether a request identified by key should be allowed.
@@ -74,12 +75,13 @@ func (rl *MemoryRateLimiter) pruneExpired(now time.Time) {
 	rl.lastPruned = now
 }
 
-func RateLimit(limiter RateLimiter, keyFunc func(r *http.Request) string) func(http.Handler) http.Handler {
+func RateLimit(area string, limiter RateLimiter, keyFunc func(r *http.Request) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			key := keyFunc(r)
 			allowed, retryAfter := limiter.Allow(key)
 			if !allowed {
+				picmetrics.ObserveRateLimited(area)
 				retryAfterSeconds := int(math.Ceil(retryAfter.Seconds()))
 				if retryAfterSeconds < 1 {
 					retryAfterSeconds = 1

@@ -8,6 +8,7 @@ import (
 
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/events"
+	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/sqlc"
@@ -85,9 +86,11 @@ func (h *ModerationHandler) Approve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := moderation.UpdateImageModeration(r.Context(), h.db, id, moderation.StatusApproved, adminID, "approved by admin"); err != nil {
+		picmetrics.ObserveModerationAction("manual", "approve", "error")
 		Fail(w, http.StatusInternalServerError, "failed to approve image")
 		return
 	}
+	picmetrics.ObserveModerationAction("manual", "approve", "success")
 
 	writeAuditLog(h.db, r, "admin.moderation.approve", "image", idStr, "", map[string]any{
 		"moderation_status": "approved",
@@ -128,9 +131,11 @@ func (h *ModerationHandler) Reject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := moderation.UpdateImageModeration(r.Context(), h.db, id, moderation.StatusRejected, adminID, reqBody.Reason); err != nil {
+		picmetrics.ObserveModerationAction("manual", "reject", "error")
 		Fail(w, http.StatusInternalServerError, "failed to reject image")
 		return
 	}
+	picmetrics.ObserveModerationAction("manual", "reject", "success")
 
 	details := map[string]any{"moderation_status": "rejected"}
 	if reqBody.Reason != "" {
