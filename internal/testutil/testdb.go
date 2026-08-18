@@ -13,7 +13,7 @@ import (
 
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,6 +24,17 @@ func testDBURL() string {
 		return u
 	}
 	return "postgres://picfast:picfast@localhost:5432/picfast_test?sslmode=disable"
+}
+
+// migrateDatabaseURL 把 postgres:// 形式的 DSN 改写成 golang-migrate pgx/v5
+// 驱动注册的 pgx5:// scheme，避免引入 lib/pq 驱动（其有未修复的 CVE）。
+func migrateDatabaseURL(dbURL string) string {
+	for _, scheme := range []string{"postgres://", "postgresql://"} {
+		if strings.HasPrefix(dbURL, scheme) {
+			return "pgx5://" + strings.TrimPrefix(dbURL, scheme)
+		}
+	}
+	return dbURL
 }
 
 // SetupDB connects to the test database, runs migrations, and returns a pool + queries.
@@ -38,7 +49,7 @@ func SetupDB(t *testing.T) (*pgxpool.Pool, *sqlc.Queries) {
 
 	// Run migrations
 	migrationsDir := migrationsPath(t)
-	m, err := migrate.New("file://"+migrationsDir, dbURL)
+	m, err := migrate.New("file://"+migrationsDir, migrateDatabaseURL(dbURL))
 	if err != nil {
 		t.Fatalf("create migrator: %v", err)
 	}
