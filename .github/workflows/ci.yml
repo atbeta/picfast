@@ -48,6 +48,16 @@ jobs:
       - name: Run backend tests
         run: go test ./...
 
+      - name: Run govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          # 存量问题较多，先只拦截 PR 引入的新问题
+          only-new-issues: true
+
   frontend:
     runs-on: ubuntu-latest
     steps:
