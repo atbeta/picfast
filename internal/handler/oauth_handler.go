@@ -280,7 +280,7 @@ func (h *OAuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	setAccessTokenCookie(w, r, tokens.AccessToken, tokens.ExpiresIn)
 	setRefreshTokenCookie(w, r, tokens.RefreshToken, h.config.JWT.RefreshTTL)
 
-	writeAuditLog(h.db, r, "oauth.login", "user", fmt.Sprintf("%d", user.ID), user.Name, map[string]any{
+	writeAuditLogWithActor(h.db, r, user.ID, "oauth.login", "user", fmt.Sprintf("%d", user.ID), user.Name, map[string]any{
 		"provider": providerID,
 		"subject":  identity.Subject,
 		"email":    identity.Email,
