@@ -397,6 +397,53 @@ func TestLogout(t *testing.T) {
 	}
 }
 
+func TestLogoutRevokesOnlyCurrentRefreshToken(t *testing.T) {
+	env := newTestEnv(t)
+	_, _, _ = env.seedSetup(t)
+
+	login := func() map[string]any {
+		req := newJSONReq(t, http.MethodPost, "/api/v1/auth/login", map[string]string{
+			"email":    "test@example.com",
+			"password": "password123",
+		})
+		rec := doReq(env.Router, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("login status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+		}
+		return respDataMap(t, parseResp(t, rec))
+	}
+
+	// 模拟同一账号在两台设备上分别登录
+	deviceA := login()
+	deviceB := login()
+
+	// 设备 A 登出（body 携带自己的 refresh token，模拟无 cookie 的 API 客户端）
+	logoutReq := newJSONReq(t, http.MethodPost, "/api/v1/auth/logout", map[string]string{
+		"refresh_token": deviceA["refresh_token"].(string),
+	})
+	logoutReq.Header.Set("Authorization", "Bearer "+deviceA["access_token"].(string))
+	logoutRec := doReq(env.Router, logoutReq)
+	if logoutRec.Code != http.StatusOK {
+		t.Fatalf("logout status = %d, want 200; body: %s", logoutRec.Code, logoutRec.Body.String())
+	}
+
+	// 设备 A 的 refresh token 已失效
+	refreshA := newJSONReq(t, http.MethodPost, "/api/v1/auth/refresh", map[string]string{
+		"refresh_token": deviceA["refresh_token"].(string),
+	})
+	if rec := doReq(env.Router, refreshA); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("refresh with revoked token status = %d, want 401; body: %s", rec.Code, rec.Body.String())
+	}
+
+	// 设备 B 的 refresh token 仍然有效
+	refreshB := newJSONReq(t, http.MethodPost, "/api/v1/auth/refresh", map[string]string{
+		"refresh_token": deviceB["refresh_token"].(string),
+	})
+	if rec := doReq(env.Router, refreshB); rec.Code != http.StatusOK {
+		t.Fatalf("refresh with other device token status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestVerifyEmailFlow(t *testing.T) {
 	env := newTestEnv(t)
 	_, _, _ = env.seedSetup(t)

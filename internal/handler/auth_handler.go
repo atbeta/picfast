@@ -590,13 +590,27 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(domain.ContextKeyUserID).(int64)
-	if !ok {
+	if _, ok := r.Context().Value(domain.ContextKeyUserID).(int64); !ok {
 		Fail(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	h.db.DeleteAllUserRefreshTokens(r.Context(), userID)
+	// 仅注销当前设备的 refresh token，其他已登录设备不受影响。
+	var refreshToken string
+	if c, err := r.Cookie(oauthRefreshCookie); err == nil {
+		refreshToken = c.Value
+	}
+	if refreshToken == "" && r.ContentLength > 0 {
+		var req RefreshRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err == nil {
+			refreshToken = req.RefreshToken
+		}
+	}
+	if refreshToken != "" {
+		if err := h.db.DeleteRefreshToken(r.Context(), HashRefreshToken(refreshToken)); err != nil {
+			slog.Warn("logout: failed to delete refresh token", "error", err)
+		}
+	}
 	clearAccessTokenCookie(w, r)
 	clearRefreshTokenCookie(w, r)
 	SuccessMessage(w, "logged out")
