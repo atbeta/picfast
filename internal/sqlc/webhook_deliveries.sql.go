@@ -58,6 +58,20 @@ func (q *Queries) CreateWebhookDelivery(ctx context.Context, arg CreateWebhookDe
 	return i, err
 }
 
+const deleteOldWebhookDeliveries = `-- name: DeleteOldWebhookDeliveries :execrows
+DELETE FROM webhook_deliveries
+WHERE status IN ('delivered', 'dead')
+  AND created_at < NOW() - make_interval(days => $1)
+`
+
+func (q *Queries) DeleteOldWebhookDeliveries(ctx context.Context, days int32) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteOldWebhookDeliveries, days)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getWebhookDeliveryByID = `-- name: GetWebhookDeliveryByID :one
 SELECT id, webhook_id, outbox_event_id, status, attempt, max_attempts, next_retry_at, request_headers, response_status, response_body, error_message, duration_ms, created_at, completed_at FROM webhook_deliveries WHERE id = $1
 `

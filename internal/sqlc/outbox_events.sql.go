@@ -12,6 +12,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteOldOutboxEvents = `-- name: DeleteOldOutboxEvents :execrows
+DELETE FROM outbox_events
+WHERE status IN ('dispatched', 'failed')
+  AND created_at < NOW() - make_interval(days => $1)
+  AND NOT EXISTS (
+      SELECT 1 FROM webhook_deliveries d
+      WHERE d.outbox_event_id = outbox_events.id
+  )
+`
+
+func (q *Queries) DeleteOldOutboxEvents(ctx context.Context, days int32) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteOldOutboxEvents, days)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getOutboxEventByID = `-- name: GetOutboxEventByID :one
 SELECT id, type, version, idempotency_key, payload, owner_user_id, status, created_at, processed_at FROM outbox_events WHERE id = $1
 `

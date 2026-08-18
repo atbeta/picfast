@@ -31,6 +31,10 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+// webhookDeliveryRetentionDays 是 webhook 投递日志与 outbox 事件的保留天数，
+// 到期由每小时的清理任务删除（见 .ai/phase1-events-spec.md §13.4）。
+const webhookDeliveryRetentionDays = 90
+
 func New(
 	queries *sqlc.Queries,
 	pool *pgxpool.Pool,
@@ -207,6 +211,19 @@ func New(
 				slog.Warn("failed to clean expired images", "error", err)
 			} else if deleted > 0 {
 				slog.Info("cleaned expired images", "deleted", deleted)
+			}
+			if cfg.Webhook.Enabled {
+				ctx := context.Background()
+				if n, err := queries.DeleteOldWebhookDeliveries(ctx, webhookDeliveryRetentionDays); err != nil {
+					slog.Warn("failed to clean old webhook deliveries", "error", err)
+				} else if n > 0 {
+					slog.Info("cleaned old webhook deliveries", "deleted", n)
+				}
+				if n, err := queries.DeleteOldOutboxEvents(ctx, webhookDeliveryRetentionDays); err != nil {
+					slog.Warn("failed to clean old outbox events", "error", err)
+				} else if n > 0 {
+					slog.Info("cleaned old outbox events", "deleted", n)
+				}
 			}
 		}
 	}()

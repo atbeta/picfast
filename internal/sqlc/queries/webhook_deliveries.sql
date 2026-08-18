@@ -43,3 +43,8 @@ UPDATE webhook_deliveries SET
     error_message = '',
     completed_at = NULL
 WHERE id = $1;
+
+-- name: DeleteOldWebhookDeliveries :execrows
+DELETE FROM webhook_deliveries
+WHERE status IN ('delivered', 'dead')
+  AND created_at < NOW() - make_interval(days => $1);

@@ -86,6 +86,10 @@ Failed deliveries are retried with exponential backoff:
 
 After 6 failed attempts, the delivery is marked as dead.
 
+### Delivery Log Retention
+
+Deliveries in a terminal state (`delivered` / `dead`) and outbox events with no remaining deliveries are kept for 90 days, then purged by the hourly cleanup job.
+
 ### Example: Node.js Verification
 
 ```js
