@@ -225,6 +225,13 @@ func New(
 					slog.Info("cleaned old outbox events", "deleted", n)
 				}
 			}
+			if retentionDays := int32(cfg.AppSnapshot().AuditLogRetentionDays); retentionDays > 0 {
+				if n, err := queries.DeleteOldAuditLogs(context.Background(), retentionDays); err != nil {
+					slog.Warn("failed to clean old audit logs", "error", err)
+				} else if n > 0 {
+					slog.Info("cleaned old audit logs", "deleted", n)
+				}
+			}
 		}
 	}()
 

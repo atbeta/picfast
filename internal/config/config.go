@@ -98,6 +98,7 @@ type AppConfig struct {
 	SkipImageProcessing      bool            `mapstructure:"skip_image_processing"`
 	RequireEmailVerification bool            `mapstructure:"require_email_verification"`
 	AuditUploadLogs          bool            `mapstructure:"audit_upload_logs"`
+	AuditLogRetentionDays    int             `mapstructure:"audit_log_retention_days"` // 0 = 永不删除
 	MaxUploadBytes           int64           `mapstructure:"max_upload_bytes"`
 	UserInitialCapacity      int64           `mapstructure:"user_initial_capacity"`
 	DefaultImageTTL          time.Duration   `mapstructure:"default_image_ttl"`
@@ -443,6 +444,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.skip_image_processing", false)
 	v.SetDefault("app.require_email_verification", false)
 	v.SetDefault("app.audit_upload_logs", true)
+	v.SetDefault("app.audit_log_retention_days", 180)
 	v.SetDefault("app.max_upload_bytes", int64(50<<20))
 	v.SetDefault("app.user_initial_capacity", int64(524288000))
 	v.SetDefault("app.default_image_ttl", time.Duration(0))

@@ -26,3 +26,7 @@ SELECT COUNT(*)
 FROM audit_logs al
 WHERE (sqlc.narg('action')::text IS NULL OR al.action = sqlc.narg('action'))
   AND (sqlc.narg('resource_type')::text IS NULL OR al.resource_type = sqlc.narg('resource_type'));
+
+-- name: DeleteOldAuditLogs :execrows
+DELETE FROM audit_logs
+WHERE created_at < NOW() - make_interval(days => $1);

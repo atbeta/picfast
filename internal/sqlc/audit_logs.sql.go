@@ -70,6 +70,19 @@ func (q *Queries) CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) 
 	return err
 }
 
+const deleteOldAuditLogs = `-- name: DeleteOldAuditLogs :execrows
+DELETE FROM audit_logs
+WHERE created_at < NOW() - make_interval(days => $1)
+`
+
+func (q *Queries) DeleteOldAuditLogs(ctx context.Context, days int32) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteOldAuditLogs, days)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const listAuditLogs = `-- name: ListAuditLogs :many
 SELECT
     al.id, al.actor_user_id, al.action, al.resource_type, al.resource_id, al.resource_name, al.details, al.ip, al.user_agent, al.created_at,
