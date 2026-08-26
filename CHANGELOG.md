@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.23.0](https://github.com/atbeta/picfast/compare/v0.22.2...v0.23.0) (2026-08-26)
+
+
+### Features
+
+* **audit:** purge audit logs older than a configurable retention ([0a66b47](https://github.com/atbeta/picfast/commit/0a66b47712963b2ffb5d815069941089bf196d56))
+* **metrics:** add storage, cleanup, auth and moderation metrics ([9d08ea5](https://github.com/atbeta/picfast/commit/9d08ea5f2c27b8e7b02d91a6de5a26b1c3861cf8))
+* **webhook:** purge terminal deliveries and outbox events after 90 days ([8ac05e1](https://github.com/atbeta/picfast/commit/8ac05e1701a996e097352e6bee2cab9e79593220))
+
+
+### Bug Fixes
+
+* **audit:** record actor for oauth login audit entries ([3abdd61](https://github.com/atbeta/picfast/commit/3abdd616f60732fde4c0c4570c26cacd079fd05f))
+* **auth:** logout revokes only the current device session ([19a9459](https://github.com/atbeta/picfast/commit/19a9459c7351ad9826cb48b461aa37ce856f8357))
+* **deps:** run migrations through pgx/v5 driver to drop lib/pq ([054142f](https://github.com/atbeta/picfast/commit/054142f116af36e326b575d0ead1536213f74078))
+* **deps:** upgrade x/image and go directive to clear vulnerabilities ([1a3d73e](https://github.com/atbeta/picfast/commit/1a3d73e2738cb6673a73b81add962f94e419b08a))
+
 ## [0.22.2](https://github.com/atbeta/picfast/compare/v0.22.1...v0.22.2) (2026-07-31)
 
 
