@@ -53,12 +53,19 @@ function subscribe(onSuccess: (token: string) => void, onError: (error: unknown)
   subscribers.push({ onSuccess, onError })
 }
 
+// Endpoints that must never trigger a token refresh on 401 — refreshing the
+// refresh call itself would deadlock the interceptor (it awaits its own retry).
+const NO_REFRESH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/refresh']
+
+function isNoRefreshEndpoint(url?: string): boolean {
+  return !!url && NO_REFRESH_ENDPOINTS.some((p) => url.startsWith(p))
+}
+
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const originalRequest = err.config
-    const isAuthEndpoint = originalRequest?.url?.startsWith('/auth/login') || originalRequest?.url?.startsWith('/auth/register')
-    if (err.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthEndpoint) {
+    if (err.response?.status === 401 && originalRequest && !originalRequest._retry && !isNoRefreshEndpoint(originalRequest.url)) {
       const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
 
       if (refreshToken) {
@@ -91,7 +98,8 @@ api.interceptors.response.use(
           localStorage.removeItem(ACCESS_TOKEN_KEY)
           localStorage.removeItem(REFRESH_TOKEN_KEY)
           rejectSubscribers(refreshError)
-          window.location.href = '/login'
+          // No hard redirect here: let AuthContext clear the session so the
+          // router can show the guest upload page or redirect to /login.
           return Promise.reject(refreshError)
         } finally {
           isRefreshing = false
@@ -126,7 +134,6 @@ api.interceptors.response.use(
         return api(originalRequest)
       } catch (refreshError) {
         rejectSubscribers(refreshError)
-        window.location.href = '/login'
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false
