@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.1](https://github.com/atbeta/picfast/compare/v0.23.0...v0.23.1) (2026-08-29)
+
+
+### Bug Fixes
+
+* **web:** unstick homepage loading when session expires ([86e994d](https://github.com/atbeta/picfast/commit/86e994d52de374b56aee36d2c0a5d4630df368c4))
+
 ## [0.23.0](https://github.com/atbeta/picfast/compare/v0.22.2...v0.23.0) (2026-08-26)
 
 
