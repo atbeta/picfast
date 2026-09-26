@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { XIcon, CheckCircle2, AlertCircle } from 'lucide-react'
+import { XIcon, CheckCircle2, AlertCircle, SlidersHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -45,6 +45,13 @@ export function UploadPage() {
 
   // Permission selector
   const [selectedPermission, setSelectedPermission] = useState<number | null>(null)
+
+  // On phones the upload settings are collapsed so the picker stays the focus.
+  const [showSettings, setShowSettings] = useState(false)
+  const currentStrategy = strategies.find((s) => s.id === selectedStrategyId)
+  const permissionLabel = selectedPermission === 0
+    ? t('images.private', { defaultValue: '私有' })
+    : t('images.public', { defaultValue: '公开' })
 
   useEffect(() => {
     if (migrateCalled.current || !user) return
@@ -140,12 +147,33 @@ export function UploadPage() {
 
   return (
     <section className="flex flex-col flex-1 h-full w-full space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {t('page.upload.title')}
-        </h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t('page.upload.title')}
+          </h1>
 
-        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 shrink-0 gap-2 sm:hidden"
+            onClick={() => setShowSettings((v) => !v)}
+            aria-expanded={showSettings}
+            aria-controls="upload-settings"
+          >
+            <SlidersHorizontal className="size-4" />
+            {t('upload.settings')}
+          </Button>
+        </div>
+
+        {!showSettings && (
+          <p className="text-xs text-muted-foreground sm:hidden">
+            {currentStrategy ? `${currentStrategy.name} · ` : ''}{permissionLabel}
+          </p>
+        )}
+
+        <div id="upload-settings" className={`${showSettings ? 'flex' : 'hidden'} flex-wrap items-center gap-2 sm:flex sm:gap-3`}>
           {/* Strategy Selector */}
           <div className="flex h-10 items-center gap-3 rounded-lg border border-border/50 bg-card px-3 shadow-sm text-sm">
             <span className="text-muted-foreground font-medium">{t('upload.strategy', { defaultValue: 'Strategy:' })}</span>
@@ -251,7 +279,7 @@ export function UploadPage() {
         </div>
       )}
 
-      <div className="flex-1 rounded-2xl border border-border/50 bg-card/70 p-2 shadow-sm min-h-[300px]">
+      <div className="flex-1 rounded-2xl border border-border/50 bg-card/70 p-2 shadow-sm min-h-[240px] sm:min-h-[300px]">
         <UploadZone onFiles={handleFiles} disabled={busy} className="h-full" />
       </div>
 

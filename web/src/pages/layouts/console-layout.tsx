@@ -47,7 +47,7 @@ export function ConsoleLayout() {
 
   return (
     <div className="relative flex-1 flex flex-col overflow-x-hidden">
-      <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-card/80 backdrop-blur-xl supports-[backdrop-filter]:bg-card/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
+      <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-card/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
         <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center justify-between px-4 md:px-6">
           <div className="flex min-w-0 items-center gap-2">
             <Button
@@ -100,7 +100,7 @@ export function ConsoleLayout() {
       <Dialog open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <DialogContent
           showCloseButton={false}
-          className="left-0 top-0 h-dvh max-h-dvh w-[86vw] max-w-[320px] translate-x-0 translate-y-0 rounded-none border-r border-border/60 bg-card p-4 pt-5"
+          className="left-0 top-0 h-dvh max-h-dvh w-[86vw] max-w-[320px] translate-x-0 translate-y-0 rounded-none border-r border-border/60 bg-card p-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
         >
           <DialogTitle className="sr-only">{t('nav.menu', { defaultValue: '菜单' })}</DialogTitle>
           <div className="flex h-full flex-col">

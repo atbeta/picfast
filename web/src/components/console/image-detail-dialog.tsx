@@ -86,7 +86,7 @@ export function ImageDetailDialog({
         {loading && <LoadingState compact className="py-6" />}
 
         {image && (
-          <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-6 sm:p-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border/50 hover:[&::-webkit-scrollbar-thumb]:bg-border">
+          <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:space-y-6 sm:p-6 sm:pb-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border/50 hover:[&::-webkit-scrollbar-thumb]:bg-border">
             <div className="group relative flex justify-center rounded-xl border border-border/40 bg-muted/20 p-3 sm:p-4">
               <Button
                 variant="ghost"
@@ -180,8 +180,8 @@ export function ImageDetailDialog({
                       <div key={fmt} className="group flex items-start gap-2 rounded-lg border border-border/40 bg-muted/30 px-2.5 py-2 transition-colors hover:border-primary/30 hover:bg-muted/50 sm:items-center sm:gap-3 sm:px-3">
                         <span className="w-12 shrink-0 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground sm:w-14 sm:pt-0">{fmt}</span>
                         <code className="min-w-0 flex-1 break-all text-[11px] font-medium text-foreground bg-background/50 px-2 py-1 rounded-md border border-border/30 sm:text-xs">{val}</code>
-                        <Button variant="ghost" size="icon-xs" onClick={() => onCopy(val)} className="mt-0.5 shrink-0 border border-border/50 hover:border-primary hover:bg-primary hover:text-primary-foreground sm:mt-0" title={t('upload.copy')}>
-                          <Copy className="size-3" />
+                        <Button variant="ghost" size="icon-xs" onClick={() => onCopy(val)} className="mt-0.5 size-8 shrink-0 border border-border/50 hover:border-primary hover:bg-primary hover:text-primary-foreground sm:mt-0 sm:size-6" title={t('upload.copy')}>
+                          <Copy className="size-3.5 sm:size-3" />
                         </Button>
                       </div>
                     ))}

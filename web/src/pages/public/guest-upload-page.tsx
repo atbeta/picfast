@@ -71,7 +71,7 @@ export function GuestUploadPage() {
       {showNotice && (
         <div className="text-center space-y-4">
           {noticeTitle !== '' && (
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/70 dark:from-white dark:to-white/60">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/70 dark:from-white dark:to-white/60">
               {noticeTitle}
             </h1>
           )}

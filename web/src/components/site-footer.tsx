@@ -19,7 +19,7 @@ export function SiteFooter({ config }: { config: SiteConfig }) {
   ].filter(item => item.text && item.text.trim() !== '')
 
   return (
-    <footer className="relative z-10 mx-auto w-full max-w-[1400px] px-6 pb-8 text-xs text-muted-foreground">
+    <footer className="relative z-10 mx-auto w-full max-w-[1400px] px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] text-xs text-muted-foreground">
       <div className="flex flex-col gap-2 border-t border-border/40 pt-4">
         {footerItems.length > 0 && (
           <div className="flex flex-wrap items-center justify-center gap-3">

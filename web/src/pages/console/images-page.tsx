@@ -289,7 +289,7 @@ export function ImagesPage() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {data && <span className="text-sm font-medium text-muted-foreground">{t('images.pagination', { total: data.total })}</span>}
             {currentAlbum && (
               <Button
@@ -304,11 +304,11 @@ export function ImagesPage() {
               </Button>
             )}
             {!batchMode ? (
-            <Button type="button" variant="outline" onClick={() => setBatchMode(true)}>
+            <Button type="button" variant="outline" className="h-9 sm:h-8" onClick={() => setBatchMode(true)}>
               {t('images.batchManage', { defaultValue: '批量管理' })}
             </Button>
           ) : (
-            <Button type="button" variant="outline" onClick={exitBatch}>
+            <Button type="button" variant="outline" className="h-9 sm:h-8" onClick={exitBatch}>
               {t('images.exitBatch', { defaultValue: '退出管理' })}
             </Button>
           )}
@@ -438,18 +438,18 @@ export function ImagesPage() {
 
       {/* Batch bar */}
       {batchMode && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/[0.08] px-3 py-2.5">
+        <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/[0.08] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
             onClick={toggleSelectAll}
-            className="group inline-flex items-center gap-3 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+            className="group inline-flex shrink-0 items-center gap-3 self-start text-sm font-medium text-primary transition-colors hover:text-primary/80"
           >
             <span className={`inline-flex size-6 items-center justify-center rounded-full border transition-colors ${data && selectedKeys.size === data.items.length && data.items.length > 0 ? 'border-primary bg-primary text-primary-foreground' : 'border-primary/40 bg-background text-transparent'}`}>
               <Check className="size-3.5" />
             </span>
             <span>{t('images.selectAll', { defaultValue: '全选' })} ({selectedKeys.size} / {data?.items.length ?? 0})</span>
           </button>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:justify-end sm:overflow-visible sm:px-0 sm:pb-0">
             <Select
               value="none"
               items={{
@@ -458,7 +458,7 @@ export function ImagesPage() {
               }}
               onValueChange={(val) => val !== null && batchChangeAlbum(val as string)}
             >
-              <SelectTrigger className="h-8 w-[160px] text-xs font-medium border-primary/20 bg-background hover:bg-muted" disabled={selectedKeys.size === 0 || batchProcessing}>
+              <SelectTrigger className="h-9 w-[150px] shrink-0 sm:h-8 sm:w-[160px] text-xs font-medium border-primary/20 bg-background hover:bg-muted" disabled={selectedKeys.size === 0 || batchProcessing}>
                 <SelectValue placeholder={t('images.batchMove', { defaultValue: '批量移动至...' })} />
               </SelectTrigger>
               <SelectContent>
@@ -468,19 +468,19 @@ export function ImagesPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button type="button" size="sm" variant="outline" onClick={() => batchCopyLinks('markdown')} disabled={selectedKeys.size === 0 || batchProcessing}>
+            <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 sm:h-7" onClick={() => batchCopyLinks('markdown')} disabled={selectedKeys.size === 0 || batchProcessing}>
               <Copy className="size-3.5" />
               {t('images.batchCopyMarkdown', { defaultValue: '复制 Markdown' })}
             </Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => batchCopyLinks('html')} disabled={selectedKeys.size === 0 || batchProcessing}>
+            <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 sm:h-7" onClick={() => batchCopyLinks('html')} disabled={selectedKeys.size === 0 || batchProcessing}>
               <Copy className="size-3.5" />
               {t('images.batchCopyHtml', { defaultValue: '复制 HTML' })}
             </Button>
-            <Button type="button" size="sm" variant="outline" onClick={batchDownload} disabled={selectedKeys.size === 0 || batchProcessing}>
+            <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 sm:h-7" onClick={batchDownload} disabled={selectedKeys.size === 0 || batchProcessing}>
               <Download className="size-3.5" />
               {t('images.batchDownload', { defaultValue: '下载' })}
             </Button>
-            <Button type="button" size="sm" variant="destructive" onClick={() => setShowBatchConfirm(true)} disabled={selectedKeys.size === 0 || batchProcessing}>
+            <Button type="button" size="sm" variant="destructive" className="h-9 shrink-0 sm:h-7" onClick={() => setShowBatchConfirm(true)} disabled={selectedKeys.size === 0 || batchProcessing}>
               <Trash2 className="size-3.5" />
               {batchProcessing ? '…' : t('images.delete')}
             </Button>

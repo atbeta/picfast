@@ -112,6 +112,23 @@ body {
   border-radius: var(--pf-logo-radius);
 }
 
+/* ===== Mobile / safe-area helpers ===== */
+/* viewport-fit=cover lets content reach notch edges; use Tailwind arbitrary
+   values like pt-[env(safe-area-inset-top)] on chrome that must stay inside
+   the safe region on notched devices. */
+
+@media (pointer: coarse) {
+  /* Remove the default tap highlight on touch devices. */
+  a,
+  button,
+  [role='button'],
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
 /* Density & motion are static site-wide CSS variables. Components
    opt in with calc(gap * var(--pf-density)) / transition-duration:
    var(--pf-motion-duration). Override per-site via custom_css. */
@@ -203,6 +220,15 @@ input[type='number'] {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* Mobile-only safety net against accidental full-page horizontal scroll.
+     Scoped to small screens so desktop layout/overflow is never affected.
+     `clip` (unlike `hidden`) does not create a scroll container, so
+     `position: sticky` descendants keep working. */
+  @media (max-width: 639px) {
+    body {
+      overflow-x: clip;
+    }
   }
   html {
     @apply font-sans;

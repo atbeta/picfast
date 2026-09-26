@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatFileSize } from '../lib/upload'
-import { Copy, Check, ExternalLink } from 'lucide-react'
+import { Copy, Check, ExternalLink, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { copyToClipboard } from '@/lib/clipboard'
 
@@ -61,11 +61,21 @@ function CopyRow({ item }: { item: CopyItem }) {
 export function UploadResultCard({ result }: UploadResultCardProps) {
   const { t } = useTranslation()
   const [primaryCopied, setPrimaryCopied] = useState(false)
+  const [urlCopied, setUrlCopied] = useState(false)
+  const [showAll, setShowAll] = useState(false)
 
-  const copyPrimary = async () => {
+  // Desktop keeps the original primary action (Markdown); phones additionally
+  // get a one-tap "copy link" action up front.
+  const copyMarkdown = async () => {
     await copyToClipboard(result.links.markdown)
     setPrimaryCopied(true)
     setTimeout(() => setPrimaryCopied(false), 2000)
+  }
+
+  const copyUrl = async () => {
+    await copyToClipboard(result.links.url)
+    setUrlCopied(true)
+    setTimeout(() => setUrlCopied(false), 2000)
   }
 
   const items: CopyItem[] = [
@@ -80,11 +90,11 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
 
   return (
     <div className="group overflow-hidden rounded-2xl border border-border/50 bg-card/60 shadow-sm transition-colors duration-150 hover:border-border/80">
-      <div className="flex flex-col sm:flex-row sm:items-start gap-6 p-6">
+      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:gap-6 sm:p-6">
         {/* Image Preview */}
-        <div className="relative shrink-0">
+        <div className="relative w-full shrink-0 sm:w-auto">
           <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-primary/20 to-transparent opacity-0 transition-opacity duration-150 group-hover:opacity-100 blur-md" />
-          <div className="relative h-32 w-32 sm:h-40 sm:w-40 overflow-hidden rounded-xl border border-border/60 bg-muted/30 shadow-sm">
+          <div className="relative h-44 w-full overflow-hidden rounded-xl border border-border/60 bg-muted/30 shadow-sm sm:h-40 sm:w-40">
             {(result.links.thumbnail_url || result.extension === 'svg' || result.extension === 'ico') ? (
               <img
                 src={result.links.thumbnail_url || result.links.url}
@@ -102,12 +112,12 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
 
         {/* Details & Links */}
         <div className="min-w-0 flex-1 flex flex-col justify-center">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="truncate text-lg font-bold tracking-tight text-foreground" title={result.origin_name}>
+              <h3 className="break-all text-base font-bold tracking-tight text-foreground sm:truncate sm:text-lg" title={result.origin_name}>
                 {result.origin_name}
               </h3>
-              <div className="mt-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-muted-foreground sm:flex-nowrap sm:gap-2">
                 <span className="bg-muted px-2 py-0.5 rounded-full border border-border/50">{result.width}×{result.height}</span>
                 <span className="bg-muted px-2 py-0.5 rounded-full border border-border/50">{formatFileSize(result.size_bytes)}</span>
                 <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider">{result.extension}</span>
@@ -132,29 +142,47 @@ export function UploadResultCard({ result }: UploadResultCardProps) {
               <Button
                 type="button"
                 size="sm"
-                onClick={copyPrimary}
-                className="gap-2"
+                onClick={copyUrl}
+                className="h-10 flex-1 gap-2 sm:hidden"
+              >
+                {urlCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                {urlCopied ? t('upload.copied') : t('upload.copyLink')}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={copyMarkdown}
+                className="h-10 flex-1 gap-2 sm:h-7 sm:flex-none"
               >
                 {primaryCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
                 {primaryCopied ? t('upload.copied') : 'Markdown'}
               </Button>
               <a
-              href={result.links.url} 
-              target="_blank" 
-              rel="noreferrer"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm transition-colors duration-150 hover:bg-primary hover:text-primary-foreground cursor-pointer"
-              title="Open Original"
-            >
-              <ExternalLink className="h-4 w-4" />
+                href={result.links.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background/50 text-primary shadow-sm transition-colors duration-150 hover:bg-primary hover:text-primary-foreground sm:h-8 sm:w-8 sm:rounded-full sm:border-0 sm:bg-primary/10"
+                title={t('upload.openOriginal')}
+              >
+                <ExternalLink className="h-4 w-4" />
               </a>
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className={`space-y-2 ${showAll ? 'block' : 'hidden sm:block'}`}>
             {items.map((item) => (
               <CopyRow key={item.label} item={item} />
             ))}
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowAll((v) => !v)}
+            className="mt-3 inline-flex h-8 items-center gap-1 self-start text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground sm:hidden"
+          >
+            <ChevronDown className={`size-4 transition-transform ${showAll ? 'rotate-180' : ''}`} />
+            {showAll ? t('upload.lessFormats') : t('upload.moreFormats')}
+          </button>
         </div>
       </div>
     </div>

@@ -22,7 +22,7 @@ export function PublicLayout() {
         <div className="absolute bottom-[-10%] right-[-10%] h-[40%] w-[40%] rounded-full bg-info/20 blur-[120px]" />
       </div>
 
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/60 pt-[env(safe-area-inset-top)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex min-w-0 items-center gap-3 transition-opacity duration-150 hover:opacity-80">
             <div className="pf-site-logo h-9 w-9 shrink-0 overflow-hidden rounded-xl shadow-sm">
@@ -68,7 +68,7 @@ export function PublicLayout() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-6xl px-6 py-12 md:py-20">
+      <main className="relative z-10 mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12 md:py-20">
         <Outlet />
       </main>
     </div>
