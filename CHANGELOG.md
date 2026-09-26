@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.0](https://github.com/atbeta/picfast/compare/v0.23.1...v0.24.0) (2026-09-26)
+
+
+### Features
+
+* **web:** add mobile-first upload and image browsing ([83d37fe](https://github.com/atbeta/picfast/commit/83d37fe4e377be9c99dae925b77ae94301f6e031))
+
 ## [0.23.1](https://github.com/atbeta/picfast/compare/v0.23.0...v0.23.1) (2026-08-29)
 
 
