@@ -90,16 +90,16 @@ export function AdminModerationPage() {
       {data && data.items.length > 0 && (
         <>
           <div className="overflow-x-auto rounded-xl border border-border/50 bg-card/80 shadow-sm">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[820px] table-fixed text-sm">
               <thead>
                 <tr className="border-b border-border/50 bg-muted/35 text-left text-xs text-muted-foreground">
-                  <th className="px-4 py-3 font-medium whitespace-nowrap">{t('admin.colPreview')}</th>
+                  <th className="w-16 px-4 py-3 font-medium whitespace-nowrap">{t('admin.colPreview')}</th>
                   <th className="px-3 py-3 font-medium whitespace-nowrap">{t('admin.imageKey')}</th>
                   <th className="px-3 py-3 font-medium whitespace-nowrap">{t('admin.colName')}</th>
-                  <th className="px-3 py-3 font-medium whitespace-nowrap">{t('admin.colSize')}</th>
-                  <th className="px-3 py-3 font-medium whitespace-nowrap">{t('images.permission', { defaultValue: '权限' })}</th>
-                  <th className="px-3 py-3 font-medium whitespace-nowrap">{t('admin.colDate')}</th>
-                  <th className="px-4 py-3 font-medium text-right whitespace-nowrap">{t('admin.colActions')}</th>
+                  <th className="w-[90px] px-3 py-3 font-medium whitespace-nowrap">{t('admin.colSize')}</th>
+                  <th className="w-[80px] px-3 py-3 font-medium whitespace-nowrap">{t('images.permission', { defaultValue: '权限' })}</th>
+                  <th className="w-[110px] px-3 py-3 font-medium whitespace-nowrap">{t('admin.colDate')}</th>
+                  <th className="w-[180px] px-4 py-3 font-medium text-right whitespace-nowrap">{t('admin.colActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
@@ -114,8 +114,8 @@ export function AdminModerationPage() {
                         </div>
                       )}
                     </td>
-                    <td className="max-w-[120px] truncate px-3 py-3 font-mono text-xs text-muted-foreground">{img.key}</td>
-                    <td className="max-w-[180px] truncate px-3 py-3 text-foreground">{img.origin_name}</td>
+                    <td className="truncate px-3 py-3 font-mono text-xs text-muted-foreground">{img.key}</td>
+                    <td className="truncate px-3 py-3 text-foreground">{img.origin_name}</td>
                     <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">{formatFileSize(img.size_bytes)}</td>
                     <td className="px-3 py-3">
                       <span className={['rounded px-1.5 py-0.5 text-xs font-medium', img.permission === 1 ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning'].join(' ')}>

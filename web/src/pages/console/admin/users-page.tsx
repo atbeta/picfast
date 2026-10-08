@@ -227,36 +227,36 @@ export function AdminUsersPage() {
           </div>
 
           <div className="hidden overflow-x-auto rounded-xl border border-border/50 bg-card/80 shadow-sm md:block">
-            <table className="w-full text-sm">
+            <table className="w-full table-fixed text-sm">
               <thead>
                 <tr className="border-b border-border/50 bg-muted/35 text-left text-xs text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">ID</th>
+                  <th className="w-[56px] px-4 py-3 font-medium">ID</th>
                   <th className="px-3 py-3 font-medium">{t('admin.colEmail')}</th>
                   <th className="px-3 py-3 font-medium">{t('admin.colName')}</th>
-                  <th className="px-3 py-3 font-medium">
+                  <th className="w-[90px] px-3 py-3 font-medium">
                     <div className="flex items-center gap-1">
                       {t('admin.colRole')}
                     </div>
                   </th>
-                  <th className="px-3 py-3 font-medium">{t('admin.colGroup', { defaultValue: '分组' })}</th>
-                  <th className="px-3 py-3 font-medium">{t('admin.colStatus')}</th>
-                  <th className="px-3 py-3 font-medium">{t('admin.colImages')}</th>
-                  <th className="px-3 py-3 font-medium">{t('admin.usedCapacity', { defaultValue: '已用容量' })}</th>
-                  <th className="px-4 py-3 font-medium text-right">{t('admin.colActions')}</th>
+                  <th className="w-[110px] px-3 py-3 font-medium">{t('admin.colGroup', { defaultValue: '分组' })}</th>
+                  <th className="w-[80px] px-3 py-3 font-medium">{t('admin.colStatus')}</th>
+                  <th className="w-[80px] px-3 py-3 font-medium">{t('admin.colImages')}</th>
+                  <th className="w-[160px] px-3 py-3 font-medium">{t('admin.usedCapacity', { defaultValue: '已用容量' })}</th>
+                  <th className="w-[132px] px-4 py-3 font-medium text-right">{t('admin.colActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {data.items.map((u) => (
                   <tr key={u.id} className="group hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3 text-muted-foreground">{u.id}</td>
-                    <td className="px-3 py-3 text-foreground">{u.email}</td>
-                    <td className="px-3 py-3 text-foreground">{u.name}</td>
+                    <td className="truncate px-3 py-3 text-foreground">{u.email}</td>
+                    <td className="truncate px-3 py-3 text-foreground">{u.name}</td>
                     <td className="px-3 py-3">
                       <span className={['rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider', u.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'].join(' ')}>
                         {u.role}
                       </span>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="truncate px-3 py-3">
                       {u.group_id ? (
                         <span className="rounded px-1.5 py-0.5 text-xs font-medium bg-muted/50 text-foreground border border-border/50">
                           {groups.find(g => g.id === u.group_id)?.name || u.group_id}
