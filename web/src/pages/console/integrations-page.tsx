@@ -294,7 +294,7 @@ URL to file: %url%`,
             <pre className="overflow-x-auto rounded-lg bg-muted/50 border border-border/50 p-4 text-sm leading-relaxed text-muted-foreground">
               <code>{configs.mcp}</code>
             </pre>
-            <button type="button" onClick={() => onCopy(configs.mcp, 'mcp')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
+            <button type="button" onClick={() => onCopy(configs.mcp, 'mcp')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm sm:opacity-0 shadow-sm transition-opacity duration-150 sm:group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
               <Copy className="size-4" />
             </button>
           </div>
@@ -316,7 +316,7 @@ URL to file: %url%`,
             <pre className="overflow-x-auto rounded-lg bg-muted/50 border border-border/50 p-4 text-sm leading-relaxed text-muted-foreground">
               <code>{configs.sharex}</code>
             </pre>
-            <button type="button" onClick={() => onCopy(configs.sharex, 'sharex')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
+            <button type="button" onClick={() => onCopy(configs.sharex, 'sharex')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm sm:opacity-0 shadow-sm transition-opacity duration-150 sm:group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
               <Copy className="size-4" />
             </button>
           </div>
@@ -355,7 +355,7 @@ URL to file: %url%`,
               <pre className="overflow-x-auto rounded-lg bg-muted/50 border border-border/50 p-4 text-sm leading-relaxed text-muted-foreground">
                 <code>{configs.flatPicgo}</code>
               </pre>
-              <button type="button" onClick={() => onCopy(configs.flatPicgo, 'flat-picgo')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
+              <button type="button" onClick={() => onCopy(configs.flatPicgo, 'flat-picgo')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm sm:opacity-0 shadow-sm transition-opacity duration-150 sm:group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
                 <Copy className="size-4" />
               </button>
             </div>
@@ -373,7 +373,7 @@ URL to file: %url%`,
               <pre className="overflow-x-auto rounded-lg bg-muted/50 border border-border/50 p-4 text-sm leading-relaxed text-muted-foreground">
                 <code>{configs.flatUPic}</code>
               </pre>
-              <button type="button" onClick={() => onCopy(configs.flatUPic, 'flat-upic')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
+              <button type="button" onClick={() => onCopy(configs.flatUPic, 'flat-upic')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm sm:opacity-0 shadow-sm transition-opacity duration-150 sm:group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
                 <Copy className="size-4" />
               </button>
             </div>
@@ -391,7 +391,7 @@ URL to file: %url%`,
               <pre className="overflow-x-auto rounded-lg bg-muted/50 border border-border/50 p-4 text-sm leading-relaxed text-muted-foreground">
                 <code>{configs.flatDropshare}</code>
               </pre>
-              <button type="button" onClick={() => onCopy(configs.flatDropshare, 'flat-dropshare')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
+              <button type="button" onClick={() => onCopy(configs.flatDropshare, 'flat-dropshare')} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm sm:opacity-0 shadow-sm transition-opacity duration-150 sm:group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
                 <Copy className="size-4" />
               </button>
             </div>
@@ -429,7 +429,7 @@ URL to file: %url%`,
               <button type="button" onClick={() => {
                 const text = `"picfast.baseUrl": "${apiURL}"` + (tk !== '<YOUR_API_TOKEN>' ? `\n"picfast.apiToken": "${tk}"` : '')
                 onCopy(text, 'vscode-config')
-              }} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
+              }} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-background backdrop-blur-sm sm:opacity-0 shadow-sm transition-opacity duration-150 sm:group-hover:opacity-100 hover:border-primary hover:bg-primary hover:text-primary-foreground cursor-pointer" title={t('upload.copy')}>
                 <Copy className="size-4" />
               </button>
             </div>

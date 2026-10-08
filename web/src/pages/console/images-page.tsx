@@ -566,7 +566,7 @@ export function ImagesPage() {
                   {!batchMode && (
                     <button
                       type="button"
-                      className="absolute right-2 top-2 z-10 inline-flex size-7 items-center justify-center rounded-full bg-black/40 text-white/80 opacity-0 backdrop-blur-sm transition-all duration-200 hover:bg-destructive hover:text-white group-hover:opacity-100"
+                      className="absolute right-2 top-2 z-10 inline-flex size-7 items-center justify-center rounded-full bg-black/40 text-white/80 sm:opacity-0 backdrop-blur-sm transition-all duration-200 hover:bg-destructive hover:text-white sm:group-hover:opacity-100"
                       onClick={(e) => {
                         e.stopPropagation()
                         setDeleteTarget(img.key)
