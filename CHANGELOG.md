@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.24.1](https://github.com/atbeta/picfast/compare/v0.24.0...v0.24.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* **web:** make hover-only actions usable on touch ([0bbc8e0](https://github.com/atbeta/picfast/commit/0bbc8e07b78a9552f7107ba9f7a828bef60189a4))
+* **web:** stop long table columns from squeezing others ([31f7aa4](https://github.com/atbeta/picfast/commit/31f7aa4e6e0e8662c71495dee22b6b3c9404bb7a))
+
 ## [0.24.0](https://github.com/atbeta/picfast/compare/v0.23.1...v0.24.0) (2026-09-26)
 
 
