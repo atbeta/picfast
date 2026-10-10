@@ -28,6 +28,8 @@ type StrategyType string
 const (
 	StrategyTypeLocal  StrategyType = "local"
 	StrategyTypeS3     StrategyType = "s3"
+	StrategyTypeTOS    StrategyType = "tos"
+	StrategyTypeOBS    StrategyType = "obs"
 	StrategyTypeKodo   StrategyType = "kodo"
 	StrategyTypeOSS    StrategyType = "oss"
 	StrategyTypeCOS    StrategyType = "cos"
@@ -89,6 +91,7 @@ type S3StrategyConfig struct {
 	AccessKeyID     string `json:"access_key"`
 	SecretAccessKey string `json:"secret_key"`
 	URL             string `json:"url"`
+	UsePathStyle    *bool  `json:"use_path_style"`
 }
 
 type KodoStrategyConfig struct {

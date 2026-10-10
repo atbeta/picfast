@@ -30,7 +30,7 @@
 | 后端 | Go 1.26, Chi Router, pgx/v5, sqlc, JWT |
 | 前端 | React 19, TypeScript, Vite, React Router, Tailwind CSS v4 |
 | 数据库 | PostgreSQL 16 |
-| 存储 | 本地 / S3 兼容 / 七牛 Kodo / 阿里云 OSS / 腾讯云 COS / WebDAV |
+| 存储 | 本地 / S3 兼容 / 火山引擎 TOS / 华为云 OBS / 七牛 Kodo / 阿里云 OSS / 腾讯云 COS / WebDAV |
 | 可观测 | Prometheus、健康检查 |
 
 ## 功能

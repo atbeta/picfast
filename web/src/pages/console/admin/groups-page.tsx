@@ -426,25 +426,27 @@ export function AdminGroupsPage() {
 
       {groups && groups.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-border bg-card/80 shadow-sm">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[720px] table-fixed text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground bg-muted/50">
                 <th className="px-4 py-3 font-medium">{t('admin.colName')}</th>
-                <th className="px-4 py-3 font-medium">{t('admin.userCount', { defaultValue: '用户数' })}</th>
-                <th className="px-4 py-3 font-medium">{t('admin.imageCount', { defaultValue: '图片数' })}</th>
-                <th className="px-4 py-3 font-medium">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</th>
-                <th className="px-4 py-3 font-medium">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</th>
+                <th className="w-[80px] px-4 py-3 font-medium">{t('admin.userCount', { defaultValue: '用户数' })}</th>
+                <th className="w-[90px] px-4 py-3 font-medium">{t('admin.imageCount', { defaultValue: '图片数' })}</th>
+                <th className="w-[110px] px-4 py-3 font-medium">{t('admin.maxFileSize', { defaultValue: '最大文件' })}</th>
+                <th className="w-[110px] px-4 py-3 font-medium">{t('admin.limitPerDay', { defaultValue: '每日上限' })}</th>
                 <th className="px-4 py-3 font-medium">{t('admin.availableStrategies', { defaultValue: '策略' })}</th>
-                <th className="px-4 py-3 font-medium">{t('admin.colActions')}</th>
+                <th className="w-[96px] px-4 py-3 font-medium">{t('admin.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {groups.map((g) => (
                 <tr key={g.id} className="group hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3 font-medium">
-                    {g.name}
-                    {g.is_default && <span className="ml-2 rounded-lg bg-primary/10 px-1.5 py-0.5 text-xs text-primary">{t('admin.default')}</span>}
-                    {g.is_guest && <span className="ml-2 rounded-lg bg-success/10 px-1.5 py-0.5 text-xs text-success">{t('admin.guest')}</span>}
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="truncate">{g.name}</span>
+                      {g.is_default && <span className="shrink-0 rounded-lg bg-primary/10 px-1.5 py-0.5 text-xs text-primary">{t('admin.default')}</span>}
+                      {g.is_guest && <span className="shrink-0 rounded-lg bg-success/10 px-1.5 py-0.5 text-xs text-success">{t('admin.guest')}</span>}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{g.is_guest ? '-' : g.user_count}</td>
                   <td className="px-4 py-3 text-muted-foreground">{g.image_count}</td>

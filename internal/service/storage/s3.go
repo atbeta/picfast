@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"strings"
 
 	"github.com/atbeta/picfast/internal/domain"
@@ -15,28 +16,46 @@ import (
 )
 
 type S3Storage struct {
-	client *s3.Client
-	bucket string
-	url    string
+	client       *s3.Client
+	bucket       string
+	url          string
+	endpoint     string
+	usePathStyle bool
 }
 
 func init() {
-	Register(string(domain.StrategyTypeS3), func(cfg json.RawMessage) (Storage, error) {
-		return NewS3Storage(cfg)
+	registerS3Compatible(domain.StrategyTypeS3, true)
+	registerS3Compatible(domain.StrategyTypeTOS, false)
+	registerS3Compatible(domain.StrategyTypeOBS, false)
+}
+
+// registerS3Compatible wires a type to the S3-compatible client. defaultPathStyle
+// selects the addressing style when the config does not set use_path_style
+// explicitly: path-style for generic S3/MinIO, virtual-hosted for providers such
+// as Volcengine TOS and Huawei Cloud OBS that require or prefer it.
+func registerS3Compatible(typ domain.StrategyType, defaultPathStyle bool) {
+	Register(string(typ), func(cfg json.RawMessage) (Storage, error) {
+		return newS3Storage(typ, cfg, defaultPathStyle)
 	})
-	RegisterValidator(string(domain.StrategyTypeS3), func(cfg json.RawMessage) error {
+	RegisterValidator(string(typ), func(cfg json.RawMessage) error {
 		var c domain.S3StrategyConfig
 		if err := json.Unmarshal(cfg, &c); err != nil {
 			return err
 		}
 		if c.Endpoint == "" || c.Bucket == "" || c.AccessKeyID == "" || c.SecretAccessKey == "" {
-			return fmt.Errorf("endpoint, bucket, access_key, and secret_key are required for S3 storage")
+			return fmt.Errorf("endpoint, bucket, access_key, and secret_key are required for %s storage", typ)
 		}
 		return nil
 	})
 }
 
+// NewS3Storage builds a generic S3-compatible storage using path-style
+// addressing by default, preserved for backward compatibility.
 func NewS3Storage(cfg json.RawMessage) (*S3Storage, error) {
+	return newS3Storage(domain.StrategyTypeS3, cfg, true)
+}
+
+func newS3Storage(typ domain.StrategyType, cfg json.RawMessage, defaultPathStyle bool) (*S3Storage, error) {
 	var c domain.S3StrategyConfig
 	if err := json.Unmarshal(cfg, &c); err != nil {
 		return nil, err
@@ -49,18 +68,27 @@ func NewS3Storage(cfg json.RawMessage) (*S3Storage, error) {
 		region = "auto"
 	}
 
+	// Path-style addressing is the default for broad S3-compatible support.
+	// Providers such as Volcengine TOS require virtual-hosted-style (false).
+	usePathStyle := defaultPathStyle
+	if c.UsePathStyle != nil {
+		usePathStyle = *c.UsePathStyle
+	}
+
 	client := s3.New(s3.Options{
 		Region:               region,
 		Credentials:          creds,
 		BaseEndpoint:         aws.String(c.Endpoint),
-		UsePathStyle:         true,
+		UsePathStyle:         usePathStyle,
 		AuthSchemePreference: []string{"sigv4"},
 	})
 
 	return &S3Storage{
-		client: client,
-		bucket: c.Bucket,
-		url:    c.URL,
+		client:       client,
+		bucket:       c.Bucket,
+		url:          c.URL,
+		endpoint:     c.Endpoint,
+		usePathStyle: usePathStyle,
 	}, nil
 }
 
@@ -112,9 +140,28 @@ func (s *S3Storage) Delete(ctx context.Context, path string) error {
 
 func (s *S3Storage) URL(pathname string) string {
 	if s.url != "" {
-		return strings.TrimRight(s.url, "/") + "/" + strings.TrimLeft(pathname, "/")
+		return joinPublicURL(s.url, pathname)
 	}
-	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucket, s.client.Options().Region, pathname)
+	key := strings.TrimLeft(pathname, "/")
+
+	// Fall back to deriving the public object URL from the configured endpoint
+	// so custom S3-compatible providers (TOS, OBS, MinIO, ...) produce correct
+	// links even when no explicit access URL is set.
+	scheme := "https"
+	host := ""
+	if u, err := url.Parse(s.endpoint); err == nil && u.Host != "" {
+		host = u.Host
+		if u.Scheme != "" {
+			scheme = u.Scheme
+		}
+	}
+	if host == "" || strings.HasSuffix(host, ".amazonaws.com") {
+		return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucket, s.client.Options().Region, key)
+	}
+	if s.usePathStyle {
+		return fmt.Sprintf("%s://%s/%s/%s", scheme, host, s.bucket, key)
+	}
+	return fmt.Sprintf("%s://%s.%s/%s", scheme, s.bucket, host, key)
 }
 
 func (s *S3Storage) Close() error { return nil }

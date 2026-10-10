@@ -257,36 +257,36 @@ export function AdminAuditLogsPage() {
           </div>
 
           <div className="hidden overflow-x-auto rounded-xl border border-border/50 bg-card/80 md:block">
-            <table className="min-w-full text-sm">
+            <table className="w-full table-fixed text-sm">
               <thead className="bg-muted/40 text-left">
                 <tr>
-                  <th className="px-4 py-3 font-medium">{t('common.createdAt')}</th>
-                  <th className="px-4 py-3 font-medium">{t('admin.auditColActor', { defaultValue: '操作者' })}</th>
-                  <th className="px-4 py-3 font-medium">{t('admin.auditAction', { defaultValue: '动作' })}</th>
+                  <th className="w-[180px] whitespace-nowrap px-4 py-3 font-medium">{t('common.createdAt')}</th>
+                  <th className="w-[190px] px-4 py-3 font-medium">{t('admin.auditColActor', { defaultValue: '操作者' })}</th>
+                  <th className="w-[150px] px-4 py-3 font-medium">{t('admin.auditAction', { defaultValue: '动作' })}</th>
                   <th className="px-4 py-3 font-medium">{t('admin.auditResource', { defaultValue: '资源' })}</th>
-                  <th className="px-4 py-3 font-medium">IP</th>
+                  <th className="w-[190px] px-4 py-3 font-medium">IP</th>
                 </tr>
               </thead>
               <tbody>
                 {data.items.map((item) => (
                   <Fragment key={item.id}>
                     <tr className="border-t border-border/40 align-top">
-                      <td className="px-4 py-3 text-muted-foreground">{new Date(item.created_at).toLocaleString()}</td>
-                      <td className="px-4 py-3">
+                      <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{new Date(item.created_at).toLocaleString()}</td>
+                      <td className="truncate px-4 py-3">
                         {item.actor_email ??
                           (item.details?.guest === true ? t('admin.auditActorGuest', { defaultValue: '游客' }) : '—')}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary" title={item.action}>
+                        <span className="inline-block max-w-full truncate rounded bg-primary/10 px-2 py-0.5 align-middle text-xs font-medium text-primary" title={item.action}>
                           {auditActionLabel(item.action, t)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="text-xs text-muted-foreground">{item.resource_type}</div>
-                        <div className="font-medium">{item.resource_name || item.resource_id || '-'}</div>
+                        <div className="truncate text-xs text-muted-foreground">{item.resource_type}</div>
+                        <div className="truncate font-medium" title={item.resource_name || item.resource_id || undefined}>{item.resource_name || item.resource_id || '-'}</div>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        <div>{item.ip || '-'}</div>
+                        <div className="truncate" title={item.ip || undefined}>{item.ip || '-'}</div>
                         <Button
                           variant="link"
                           size="xs"

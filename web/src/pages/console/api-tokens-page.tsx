@@ -326,24 +326,24 @@ export function ApiTokensPage() {
 
           <div className="hidden overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm md:block">
             <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full table-fixed text-left text-sm">
               <thead className="border-b border-border/50 bg-muted/50 text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-medium">{t('tokens.namePlaceholder', { defaultValue: '名称' })}</th>
                   <th className="px-4 py-3 font-medium">{t('tokens.scopes', { defaultValue: '权限' })}</th>
-                  <th className="px-4 py-3 font-medium">{t('tokens.lastUsedAt', { defaultValue: '上次使用' }).replace('{{date}}', '')}</th>
-                  <th className="px-4 py-3 font-medium">{t('tokens.createdColumn', { defaultValue: '创建时间' })}</th>
-                  <th className="px-4 py-3 font-medium">{t('tokens.expiresColumn', { defaultValue: '过期时间' })}</th>
-                  <th className="px-4 py-3 font-medium">{t('common.actions', { defaultValue: '操作' })}</th>
+                  <th className="w-[190px] px-4 py-3 font-medium">{t('tokens.lastUsedAt', { defaultValue: '上次使用' }).replace('{{date}}', '')}</th>
+                  <th className="w-[190px] px-4 py-3 font-medium">{t('tokens.createdColumn', { defaultValue: '创建时间' })}</th>
+                  <th className="w-[190px] px-4 py-3 font-medium">{t('tokens.expiresColumn', { defaultValue: '过期时间' })}</th>
+                  <th className="w-[72px] px-4 py-3 font-medium">{t('common.actions', { defaultValue: '操作' })}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {tokens.map((tk) => (
                   <tr key={tk.id} className="group hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3 font-medium text-foreground">
-                      <div className="flex items-center gap-2">
-                        <KeyRound className="size-4 text-muted-foreground" />
-                        {tk.name}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <KeyRound className="size-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{tk.name}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -355,7 +355,7 @@ export function ApiTokensPage() {
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                       {isRealDate(tk.last_used_at) ? (
                         <div className="flex items-center gap-1.5">
                           <History className="size-3.5" />
@@ -367,13 +367,13 @@ export function ApiTokensPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="size-3.5" />
                         {formatDate(tk.created_at)}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                       {isRealDate(tk.expires_at) ? (
                         <div className={`flex items-center gap-1.5 ${isExpiringSoon(tk.expires_at) ? 'text-destructive/90' : 'text-amber-500/90'}`}>
                           <Clock className="size-3.5" />
