@@ -17,3 +17,8 @@ updates:
       web:
         patterns:
           - "*"
+    ignore:
+      # vite >= 8.1 ships a rolldown that breaks the production bundle
+      # ("TypeError: t is not a function" / blank page). See rolldown/rolldown#10228.
+      - dependency-name: "vite"
+        versions: [">=8.1.0"]

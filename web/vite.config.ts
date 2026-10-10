@@ -1,3 +1,7 @@
+// NOTE: vite is pinned to ~8.0.16 (rolldown 1.0.3). vite >= 8.1 ships a rolldown
+// that tree-shakes the CJS __commonJS helper yet keeps a dangling export, which
+// makes react-vendor throw "TypeError: t is not a function" at runtime and ships
+// a blank page. See rolldown/rolldown#10228. Do not bump vite until that is fixed.
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
