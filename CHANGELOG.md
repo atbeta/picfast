@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.1](https://github.com/atbeta/picfast/compare/v0.25.0...v0.25.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **web:** pin vite to 8.0.x to restore the production bundle ([0e17015](https://github.com/atbeta/picfast/commit/0e1701576009cdd76e43fb7ccd47f5e57ee1b8f6))
+
 ## [0.25.0](https://github.com/atbeta/picfast/compare/v0.24.1...v0.25.0) (2026-10-10)
 
 
