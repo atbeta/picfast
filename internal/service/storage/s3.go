@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"strings"
 
 	"github.com/atbeta/picfast/internal/domain"
@@ -15,9 +16,11 @@ import (
 )
 
 type S3Storage struct {
-	client *s3.Client
-	bucket string
-	url    string
+	client       *s3.Client
+	bucket       string
+	url          string
+	endpoint     string
+	usePathStyle bool
 }
 
 func init() {
@@ -81,9 +84,11 @@ func newS3Storage(typ domain.StrategyType, cfg json.RawMessage, defaultPathStyle
 	})
 
 	return &S3Storage{
-		client: client,
-		bucket: c.Bucket,
-		url:    c.URL,
+		client:       client,
+		bucket:       c.Bucket,
+		url:          c.URL,
+		endpoint:     c.Endpoint,
+		usePathStyle: usePathStyle,
 	}, nil
 }
 
@@ -135,9 +140,28 @@ func (s *S3Storage) Delete(ctx context.Context, path string) error {
 
 func (s *S3Storage) URL(pathname string) string {
 	if s.url != "" {
-		return strings.TrimRight(s.url, "/") + "/" + strings.TrimLeft(pathname, "/")
+		return joinPublicURL(s.url, pathname)
 	}
-	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucket, s.client.Options().Region, pathname)
+	key := strings.TrimLeft(pathname, "/")
+
+	// Fall back to deriving the public object URL from the configured endpoint
+	// so custom S3-compatible providers (TOS, OBS, MinIO, ...) produce correct
+	// links even when no explicit access URL is set.
+	scheme := "https"
+	host := ""
+	if u, err := url.Parse(s.endpoint); err == nil && u.Host != "" {
+		host = u.Host
+		if u.Scheme != "" {
+			scheme = u.Scheme
+		}
+	}
+	if host == "" || strings.HasSuffix(host, ".amazonaws.com") {
+		return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucket, s.client.Options().Region, key)
+	}
+	if s.usePathStyle {
+		return fmt.Sprintf("%s://%s/%s/%s", scheme, host, s.bucket, key)
+	}
+	return fmt.Sprintf("%s://%s.%s/%s", scheme, s.bucket, host, key)
 }
 
 func (s *S3Storage) Close() error { return nil }

@@ -56,3 +56,49 @@ func TestS3CompatibleValidator(t *testing.T) {
 		}
 	}
 }
+
+func TestS3StorageURL(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  string
+		typ  string
+		want string
+	}{
+		{
+			name: "explicit url wins",
+			typ:  "s3",
+			cfg:  `{"endpoint":"https://s3.example.com","bucket":"b","access_key":"ak","secret_key":"sk","url":"https://cdn.example.com/"}`,
+			want: "https://cdn.example.com/a/b.png",
+		},
+		{
+			name: "tos derives virtual-hosted from endpoint",
+			typ:  "tos",
+			cfg:  `{"endpoint":"https://tos-s3-cn-beijing.volces.com","bucket":"beta","access_key":"ak","secret_key":"sk"}`,
+			want: "https://beta.tos-s3-cn-beijing.volces.com/a/b.png",
+		},
+		{
+			name: "generic s3 custom endpoint uses path-style",
+			typ:  "s3",
+			cfg:  `{"endpoint":"https://minio.local:9000","bucket":"b","access_key":"ak","secret_key":"sk"}`,
+			want: "https://minio.local:9000/b/a/b.png",
+		},
+		{
+			name: "aws endpoint keeps amazonaws fallback",
+			typ:  "s3",
+			cfg:  `{"endpoint":"https://s3.us-east-1.amazonaws.com","region":"us-east-1","bucket":"b","access_key":"ak","secret_key":"sk"}`,
+			want: "https://b.s3.us-east-1.amazonaws.com/a/b.png",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, err := New(tt.typ, json.RawMessage(tt.cfg))
+			if err != nil {
+				t.Fatalf("New(%s) error: %v", tt.typ, err)
+			}
+			if got := s.URL("a/b.png"); got != tt.want {
+				t.Fatalf("URL() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

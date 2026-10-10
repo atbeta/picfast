@@ -373,7 +373,7 @@ export function AdminStrategiesPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
-                    <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldEndpoint')}</label>
+                    <label className="mb-1 block text-sm font-medium text-foreground">{form.type === 's3' ? t('admin.fieldEndpoint') : t('admin.fieldS3Endpoint', { defaultValue: 'S3 端点' })}</label>
                     <input value={form.s3Endpoint} onChange={(e) => update('s3Endpoint', e.target.value)} placeholder={form.type === 'tos' ? 'https://tos-s3-cn-beijing.volces.com' : form.type === 'obs' ? 'https://obs.cn-north-4.myhuaweicloud.com' : 'https://s3.<region>.amazonaws.com 或 https://s3.example.com'} className={inputCls} />
                   </div>
                   <div>
