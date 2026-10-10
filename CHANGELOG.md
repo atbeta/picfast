@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.25.0](https://github.com/atbeta/picfast/compare/v0.24.1...v0.25.0) (2026-10-10)
+
+
+### Features
+
+* **storage:** support Volcengine TOS and Huawei OBS ([4865983](https://github.com/atbeta/picfast/commit/4865983578924318f75efeda8729c059f1bc7630))
+
+
+### Bug Fixes
+
+* **storage:** derive S3 object URL from endpoint when unset ([3396c97](https://github.com/atbeta/picfast/commit/3396c978a68e35a28d1b2ce3c0a56cf2ef27645c))
+
 ## [0.24.1](https://github.com/atbeta/picfast/compare/v0.24.0...v0.24.1) (2026-10-08)
 
 
