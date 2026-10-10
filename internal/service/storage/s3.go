@@ -21,22 +21,38 @@ type S3Storage struct {
 }
 
 func init() {
-	Register(string(domain.StrategyTypeS3), func(cfg json.RawMessage) (Storage, error) {
-		return NewS3Storage(cfg)
+	registerS3Compatible(domain.StrategyTypeS3, true)
+	registerS3Compatible(domain.StrategyTypeTOS, false)
+	registerS3Compatible(domain.StrategyTypeOBS, false)
+}
+
+// registerS3Compatible wires a type to the S3-compatible client. defaultPathStyle
+// selects the addressing style when the config does not set use_path_style
+// explicitly: path-style for generic S3/MinIO, virtual-hosted for providers such
+// as Volcengine TOS and Huawei Cloud OBS that require or prefer it.
+func registerS3Compatible(typ domain.StrategyType, defaultPathStyle bool) {
+	Register(string(typ), func(cfg json.RawMessage) (Storage, error) {
+		return newS3Storage(typ, cfg, defaultPathStyle)
 	})
-	RegisterValidator(string(domain.StrategyTypeS3), func(cfg json.RawMessage) error {
+	RegisterValidator(string(typ), func(cfg json.RawMessage) error {
 		var c domain.S3StrategyConfig
 		if err := json.Unmarshal(cfg, &c); err != nil {
 			return err
 		}
 		if c.Endpoint == "" || c.Bucket == "" || c.AccessKeyID == "" || c.SecretAccessKey == "" {
-			return fmt.Errorf("endpoint, bucket, access_key, and secret_key are required for S3 storage")
+			return fmt.Errorf("endpoint, bucket, access_key, and secret_key are required for %s storage", typ)
 		}
 		return nil
 	})
 }
 
+// NewS3Storage builds a generic S3-compatible storage using path-style
+// addressing by default, preserved for backward compatibility.
 func NewS3Storage(cfg json.RawMessage) (*S3Storage, error) {
+	return newS3Storage(domain.StrategyTypeS3, cfg, true)
+}
+
+func newS3Storage(typ domain.StrategyType, cfg json.RawMessage, defaultPathStyle bool) (*S3Storage, error) {
 	var c domain.S3StrategyConfig
 	if err := json.Unmarshal(cfg, &c); err != nil {
 		return nil, err
@@ -49,11 +65,18 @@ func NewS3Storage(cfg json.RawMessage) (*S3Storage, error) {
 		region = "auto"
 	}
 
+	// Path-style addressing is the default for broad S3-compatible support.
+	// Providers such as Volcengine TOS require virtual-hosted-style (false).
+	usePathStyle := defaultPathStyle
+	if c.UsePathStyle != nil {
+		usePathStyle = *c.UsePathStyle
+	}
+
 	client := s3.New(s3.Options{
 		Region:               region,
 		Credentials:          creds,
 		BaseEndpoint:         aws.String(c.Endpoint),
-		UsePathStyle:         true,
+		UsePathStyle:         usePathStyle,
 		AuthSchemePreference: []string{"sigv4"},
 	})
 

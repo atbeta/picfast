@@ -36,6 +36,7 @@ interface StrategyForm {
   s3AccessKey: string
   s3SecretKey: string
   s3URL: string
+  s3UsePathStyle: boolean
   // kodo
   kodoAccessKey: string
   kodoSecretKey: string
@@ -74,6 +75,7 @@ function emptyForm(): StrategyForm {
     s3AccessKey: '',
     s3SecretKey: '',
     s3URL: '',
+    s3UsePathStyle: true,
     kodoAccessKey: '',
     kodoSecretKey: '',
     kodoBucket: '',
@@ -103,6 +105,8 @@ function formToConfigs(form: StrategyForm): Record<string, unknown> {
     case 'local':
       return { root: form.localRoot, url: '/i' }
     case 's3':
+    case 'tos':
+    case 'obs':
       return {
         endpoint: form.s3Endpoint,
         region: form.s3Region,
@@ -110,6 +114,7 @@ function formToConfigs(form: StrategyForm): Record<string, unknown> {
         access_key: form.s3AccessKey,
         secret_key: form.s3SecretKey,
         url: form.s3URL,
+        use_path_style: form.s3UsePathStyle,
         ...(linkMode && { link_mode: linkMode }),
       }
     case 'kodo':
@@ -168,6 +173,7 @@ function strategyToForm(s: AdminStrategy): StrategyForm {
     s3AccessKey: (c.access_key as string) || '',
     s3SecretKey: (c.secret_key as string) || '',
     s3URL: (c.url as string) || '',
+    s3UsePathStyle: c.use_path_style !== false,
     kodoAccessKey: (c.access_key as string) || '',
     kodoSecretKey: (c.secret_key as string) || '',
     kodoBucket: (c.bucket as string) || '',
@@ -197,12 +203,25 @@ function isStrategyType(type: string): type is StorageStrategyType {
   return storageStrategyTypes.includes(type as StorageStrategyType)
 }
 
+// defaultUsePathStyle returns the addressing style a provider expects unless the
+// config overrides it: path-style for generic S3/MinIO, virtual-hosted for
+// Volcengine TOS and Huawei Cloud OBS.
+function defaultUsePathStyle(type: StorageStrategyType): boolean {
+  return type === 's3'
+}
+
+function isS3Compatible(type: StorageStrategyType): boolean {
+  return type === 's3' || type === 'tos' || type === 'obs'
+}
+
 function requiredFieldsComplete(form: StrategyForm): boolean {
   const has = (...values: string[]) => values.every((value) => value.trim().length > 0)
   switch (form.type) {
     case 'local':
       return has(form.localRoot)
     case 's3':
+    case 'tos':
+    case 'obs':
       return has(form.s3Endpoint, form.s3Bucket, form.s3AccessKey, form.s3SecretKey)
     case 'kodo':
       return has(form.kodoAccessKey, form.kodoSecretKey, form.kodoBucket, form.kodoDomain)
@@ -316,7 +335,10 @@ export function AdminStrategiesPage() {
               <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.colType', { defaultValue: '类型' })}</label>
               <Select 
           value={form.type} 
-          onValueChange={(val) => typeof val === 'string' && isStrategyType(val) && update('type', val)}
+          onValueChange={(val) => {
+            if (typeof val !== 'string' || !isStrategyType(val)) return
+            setForm((prev) => ({ ...prev, type: val, s3UsePathStyle: defaultUsePathStyle(val) }))
+          }}
           items={Object.fromEntries(storageStrategyTypes.map((type) => [type, storageStrategyLabel(t, type)]))}
               >
                 <SelectTrigger className="h-10 w-full bg-background border-input">
@@ -337,20 +359,26 @@ export function AdminStrategiesPage() {
               </div>
             )}
 
-            {form.type === 's3' && (
+            {isS3Compatible(form.type) && (
               <>
                 <div className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
-                  <strong>{t('admin.fieldEndpoint')}</strong> {t('admin.s3EndpointHint', { defaultValue: '是 S3 API 地址（上传用），' })}
-                  <strong>{t('admin.fieldURL')}</strong> {t('admin.s3URLHint', { defaultValue: '是图片公开访问地址（浏览用）。两者通常不同。' })}
+                  {form.type === 's3' && (
+                    <>
+                      <strong>{t('admin.fieldEndpoint')}</strong> {t('admin.s3EndpointHint', { defaultValue: '是 S3 API 地址（上传用），' })}
+                      <strong>{t('admin.fieldURL')}</strong> {t('admin.s3URLHint', { defaultValue: '是图片公开访问地址（浏览用）。两者通常不同。' })}
+                    </>
+                  )}
+                  {form.type === 'tos' && t('admin.tosHint', { defaultValue: '火山引擎 TOS 仅支持虚拟主机寻址。Endpoint 填 S3 外网域名，如 https://tos-s3-cn-beijing.volces.com，Region 填地域 ID，如 cn-beijing。' })}
+                  {form.type === 'obs' && t('admin.obsHint', { defaultValue: '华为云 OBS 通过 S3 兼容协议接入。Endpoint 填 obs.<region>.myhuaweicloud.com，Region 填地域 ID，如 cn-north-4。' })}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldEndpoint')}</label>
-                    <input value={form.s3Endpoint} onChange={(e) => update('s3Endpoint', e.target.value)} placeholder="https://s3.<region>.amazonaws.com 或 https://s3.example.com" className={inputCls} />
+                    <input value={form.s3Endpoint} onChange={(e) => update('s3Endpoint', e.target.value)} placeholder={form.type === 'tos' ? 'https://tos-s3-cn-beijing.volces.com' : form.type === 'obs' ? 'https://obs.cn-north-4.myhuaweicloud.com' : 'https://s3.<region>.amazonaws.com 或 https://s3.example.com'} className={inputCls} />
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldRegion')}</label>
-                    <input value={form.s3Region} onChange={(e) => update('s3Region', e.target.value)} placeholder="us-east-1 / cn-north-1 / auto" className={inputCls} />
+                    <input value={form.s3Region} onChange={(e) => update('s3Region', e.target.value)} placeholder={form.type === 'tos' ? 'cn-beijing / cn-shanghai / cn-guangzhou' : form.type === 'obs' ? 'cn-north-4 / cn-east-3 / cn-south-1' : 'us-east-1 / cn-north-1 / auto'} className={inputCls} />
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.fieldBucket')}</label>
@@ -368,6 +396,20 @@ export function AdminStrategiesPage() {
                     <label className="mb-1 block text-sm font-medium text-foreground">{t('admin.accessURL', { defaultValue: '访问 URL' })}</label>
                     <input value={form.s3URL} onChange={(e) => update('s3URL', e.target.value)} placeholder="https://img.example.com" className={inputCls} />
                   </div>
+                  <label className="col-span-2 flex items-start gap-3 rounded-lg border border-border/60 p-3 text-sm text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={form.s3UsePathStyle}
+                      onChange={(e) => update('s3UsePathStyle', e.target.checked)}
+                      className="mt-0.5 size-4 rounded border-input"
+                    />
+                    <div className="space-y-1">
+                      <span className="font-medium">{t('admin.s3PathStyle', { defaultValue: '路径寻址（Path-Style）' })}</span>
+                      <p className="text-xs text-muted-foreground">
+                        {t('admin.s3PathStyleHint', { defaultValue: '开启后使用 endpoint/bucket 形式（MinIO、泛用 S3 等）。火山引擎 TOS、华为云 OBS 等要求虚拟主机寻址，请关闭。' })}
+                      </p>
+                    </div>
+                  </label>
                 </div>
               </>
             )}
@@ -477,7 +519,7 @@ export function AdminStrategiesPage() {
               </div>
             )}
 
-            {['s3', 'oss', 'cos', 'kodo', 'webdav'].includes(form.type) && (
+            {['s3', 'tos', 'obs', 'oss', 'cos', 'kodo', 'webdav'].includes(form.type) && (
               <label className="flex items-start gap-3 rounded-lg border border-border/60 p-3 text-sm text-foreground">
                 <input
                   type="checkbox"
