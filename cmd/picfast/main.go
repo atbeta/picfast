@@ -34,8 +34,13 @@ import (
 )
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "maintenance" {
-		os.Exit(runMaintenanceCommand(context.Background(), os.Args[2:], os.Stdout, os.Stderr))
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "maintenance":
+			os.Exit(runMaintenanceCommand(context.Background(), os.Args[2:], os.Stdout, os.Stderr))
+		case "migrate":
+			os.Exit(runMigrateCommand(context.Background(), os.Args[2:], os.Stdout, os.Stderr))
+		}
 	}
 
 	vips.Startup(&vips.Config{
@@ -70,7 +75,11 @@ func main() {
 
 	slog.Info("starting picfast", "port", cfg.Server.Port)
 
-	runMigrations(cfg.Database.URL)
+	if cfg.Database.AutoMigrate {
+		runMigrations(cfg.Database.URL)
+	} else {
+		slog.Info("auto migrate disabled; run `picfast migrate` before starting")
+	}
 
 	pool, err := pgxpool.New(context.Background(), cfg.Database.URL)
 	if err != nil {

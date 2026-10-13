@@ -40,7 +40,8 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	URL string `mapstructure:"url"`
+	URL         string `mapstructure:"url"`
+	AutoMigrate bool   `mapstructure:"auto_migrate"`
 }
 
 type JWTConfig struct {
@@ -422,6 +423,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.expired_cleanup_batch_size", 100)
 
 	v.SetDefault("database.url", "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable")
+	v.SetDefault("database.auto_migrate", true)
 
 	v.SetDefault("jwt.secret", DefaultJWTSecret)
 	v.SetDefault("jwt.access_ttl", 15*time.Minute)

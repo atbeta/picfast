@@ -6,6 +6,7 @@ server:
 
 database:
   url: "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable"
+  auto_migrate: true        # false skips migrations at startup; run `picfast migrate` yourself first
 
 jwt:
   secret: "change-me-in-production"
