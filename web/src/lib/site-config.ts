@@ -31,6 +31,13 @@ export interface SiteConfig {
   github_url: string
   setup_required: boolean
   oauth_providers?: Array<{ id: string; display_name: string }>
+  // Present on builds that report their image backend; absent means full
+  // support (backward compatibility with older servers).
+  image_capabilities?: {
+    backend: string
+    webp_output: boolean
+    watermark: boolean
+  }
 }
 
 export async function getSiteConfig(): Promise<SiteConfig> {

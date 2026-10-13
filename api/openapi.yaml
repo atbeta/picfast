@@ -2309,6 +2309,21 @@ components:
         setup_required:
           type: boolean
           description: True when the instance has no users and must complete first-run setup.
+        image_capabilities:
+          type: object
+          description: >-
+            Feature set of the image backend this build was compiled with.
+            Clients should treat a missing field as full support.
+          properties:
+            backend:
+              type: string
+              description: Image backend identifier (e.g. "vips" or "go").
+            webp_output:
+              type: boolean
+              description: Whether the backend can encode WebP output.
+            watermark:
+              type: boolean
+              description: Whether text watermark compositing is available.
 
     VersionResponse:
       type: object
