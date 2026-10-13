@@ -121,3 +121,23 @@ picfast migrate
 ```bash
 picfast maintenance repair-thumbnails --apply
 ```
+
+## 默认存储策略（首次启动）
+
+当数据库中尚无任何存储策略时，可用环境变量指定首个策略的类型与配置：
+
+```bash
+export PICFAST_STORAGE_DEFAULT_TYPE=s3
+export PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://s3.example.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","url":"https://cdn.example.com"}'
+```
+
+Cloudflare R2（S3 兼容）示例：
+
+```bash
+export PICFAST_STORAGE_DEFAULT_TYPE=s3
+export PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://<account>.r2.cloudflarestorage.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","use_path_style":true}'
+```
+
+配置仅在没有现存策略时生效；策略已存在则忽略并记录日志。也可以在 `config.yaml` 中以 YAML map 形式书写 `storage.default_config`。
+
+> ⚠️ 容器 PaaS（无持久卷）上默认的 `local` 存储位于临时磁盘，实例重建后上传文件即丢失 — 部署到此类平台时务必配置持久后端。

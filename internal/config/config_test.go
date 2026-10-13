@@ -1,7 +1,9 @@
 package config
 
 import (
+	"encoding/json"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -320,6 +322,87 @@ func TestLoadReadsAutoMigrateFromEnv(t *testing.T) {
 
 	if cfg.Database.AutoMigrate {
 		t.Fatal("expected auto_migrate to be disabled from env")
+	}
+}
+
+func TestLoadStorageDefaultTypeDefaultsLocal(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	unsetEnv(t, "PICFAST_STORAGE_DEFAULT_TYPE")
+	unsetEnv(t, "PICFAST_STORAGE_DEFAULT_CONFIG")
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.Storage.DefaultType != "local" {
+		t.Fatalf("DefaultType = %q, want local", cfg.Storage.DefaultType)
+	}
+	if cfg.Storage.DefaultConfig != nil {
+		t.Fatalf("DefaultConfig = %s, want nil", cfg.Storage.DefaultConfig)
+	}
+}
+
+func TestLoadReadsStorageDefaultsFromEnv(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+	t.Setenv("PICFAST_STORAGE_DEFAULT_TYPE", "s3")
+	t.Setenv("PICFAST_STORAGE_DEFAULT_CONFIG", `  {"endpoint":"https://s3.example.com","bucket":"pics"} `)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.Storage.DefaultType != "s3" {
+		t.Fatalf("DefaultType = %q, want s3", cfg.Storage.DefaultType)
+	}
+	if string(cfg.Storage.DefaultConfig) != `{"endpoint":"https://s3.example.com","bucket":"pics"}` {
+		t.Fatalf("DefaultConfig = %s, want trimmed JSON", cfg.Storage.DefaultConfig)
+	}
+}
+
+func TestLoadStorageDefaultConfigFromYAMLMap(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+	configYAML := `storage:
+  default_type: s3
+  default_config:
+    endpoint: "https://account.r2.cloudflarestorage.com"
+    region: auto
+    bucket: pics
+    access_key: AKID
+    secret_key: SECRET
+    use_path_style: true
+`
+	if err := os.WriteFile(filepath.Join(tempDir, "config.yaml"), []byte(configYAML), 0o644); err != nil {
+		t.Fatalf("write config.yaml: %v", err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.Storage.DefaultType != "s3" {
+		t.Fatalf("DefaultType = %q, want s3", cfg.Storage.DefaultType)
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal(cfg.Storage.DefaultConfig, &parsed); err != nil {
+		t.Fatalf("DefaultConfig is not JSON: %v (%s)", err, cfg.Storage.DefaultConfig)
+	}
+	if parsed["endpoint"] != "https://account.r2.cloudflarestorage.com" {
+		t.Fatalf("endpoint = %v", parsed["endpoint"])
+	}
+	if parsed["use_path_style"] != true {
+		t.Fatalf("use_path_style = %v", parsed["use_path_style"])
 	}
 }
 

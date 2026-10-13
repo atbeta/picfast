@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
@@ -26,9 +28,9 @@ func bootstrapCoreData(ctx context.Context, queries *sqlc.Queries, cfg *config.C
 		return fmt.Errorf("ensure guest group: %w", err)
 	}
 
-	strategy, err := ensureLocalStrategy(ctx, queries, cfg)
+	strategy, err := ensureDefaultStrategy(ctx, queries, cfg)
 	if err != nil {
-		return fmt.Errorf("ensure local strategy: %w", err)
+		return fmt.Errorf("ensure default strategy: %w", err)
 	}
 
 	_ = queries.AddGroupStrategy(ctx, sqlc.AddGroupStrategyParams{
@@ -115,9 +117,12 @@ func ensureGuestGroup(ctx context.Context, queries *sqlc.Queries) (sqlc.Group, e
 	return updated, err
 }
 
-func ensureLocalStrategy(ctx context.Context, queries *sqlc.Queries, cfg *config.Config) (sqlc.Strategy, error) {
+func ensureDefaultStrategy(ctx context.Context, queries *sqlc.Queries, cfg *config.Config) (sqlc.Strategy, error) {
 	strategies, err := queries.ListStrategies(ctx)
 	if err == nil && len(strategies) > 0 {
+		if !isLocalDefaultType(cfg.Storage.DefaultType) {
+			slog.Info("default storage settings ignored because strategies already exist", "type", cfg.Storage.DefaultType)
+		}
 		if strategies[0].StrategyType == string(domain.StrategyTypeLocal) {
 			updated, updateErr := queries.UpdateStrategy(ctx, sqlc.UpdateStrategyParams{
 				ID:           strategies[0].ID,
@@ -132,15 +137,40 @@ func ensureLocalStrategy(ctx context.Context, queries *sqlc.Queries, cfg *config
 		return strategies[0], nil
 	}
 
+	if isLocalDefaultType(cfg.Storage.DefaultType) {
+		created, err := queries.CreateStrategy(ctx, sqlc.CreateStrategyParams{
+			Name:         "Local Storage",
+			StrategyType: string(domain.StrategyTypeLocal),
+			Configs:      localBootstrapStrategyConfig(cfg.Storage.LocalRoot, cfg.Server.BaseURL+"/i"),
+		})
+		if err == nil {
+			slog.Info("created local storage strategy", "id", created.ID)
+		}
+		return created, err
+	}
+
+	defaultType := strings.TrimSpace(cfg.Storage.DefaultType)
+	if !storage.IsKnownType(defaultType) {
+		return sqlc.Strategy{}, fmt.Errorf("unknown storage default_type %q", defaultType)
+	}
+	if err := storage.ValidateConfig(defaultType, cfg.Storage.DefaultConfig); err != nil {
+		return sqlc.Strategy{}, fmt.Errorf("invalid storage default_config for type %q: %w", defaultType, err)
+	}
 	created, err := queries.CreateStrategy(ctx, sqlc.CreateStrategyParams{
-		Name:         "Local Storage",
-		StrategyType: string(domain.StrategyTypeLocal),
-		Configs:      localBootstrapStrategyConfig(cfg.Storage.LocalRoot, cfg.Server.BaseURL+"/i"),
+		Name:         "Default Storage",
+		StrategyType: defaultType,
+		Configs:      cfg.Storage.DefaultConfig,
 	})
 	if err == nil {
-		slog.Info("created local storage strategy", "id", created.ID)
+		// Never log the config: it contains storage credentials.
+		slog.Info("created default storage strategy", "id", created.ID, "type", defaultType)
 	}
 	return created, err
+}
+
+func isLocalDefaultType(typ string) bool {
+	t := strings.TrimSpace(typ)
+	return t == "" || t == string(domain.StrategyTypeLocal)
 }
 
 func ensureAdminUser(ctx context.Context, queries *sqlc.Queries, cfg *config.Config, groupID int64) error {
