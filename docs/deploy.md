@@ -92,3 +92,12 @@ export PICFAST_SERVER_TRUSTED_PROXIES="10.0.0.0/8,172.16.0.0/12"
 4. 后续业务代码通过 `clientip.FromRequest(r)` 统一获取真实客户端 IP（基于上下文中的原始地址判定受信关系）
 
 **注意**：未配置 `trusted_proxies` 时，`RealIP` 中间件不会生效，`X-Forwarded-For` 头将被忽略。
+
+## 健康检查端点
+
+PicFast 在服务根路径暴露两个探针，适用于负载均衡器与容器平台的健康检查：
+
+- `GET /healthz` — 存活探针，始终返回 200，不访问数据库或磁盘
+- `GET /readyz` — 就绪探针，仅做数据库连通性检查，失败返回 503
+
+如果反向代理只转发 `/api` 前缀，请确认这两个路径可达（或单独配置转发规则）。

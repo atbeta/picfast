@@ -36,6 +36,8 @@ Useful env vars / 常用环境变量:
 - `PORT` — listen port injected by PaaS platforms; ignored when `PICFAST_SERVER_PORT` is set / PaaS 注入的监听端口，`PICFAST_SERVER_PORT` 优先
 - `PICFAST_SERVER_METRICS_ENABLED=false` — disable the standalone `/metrics` listener / 关闭独立 metrics 监听端口
 
+Health probes at the server root / 根路径健康探针: `GET /healthz` (liveness, no DB/disk access), `GET /readyz` (readiness, DB ping → 503 on failure).
+
 ## Docker Compose
 
 ```bash

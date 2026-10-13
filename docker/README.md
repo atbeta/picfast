@@ -110,3 +110,8 @@ scrape_configs:
 - `PICFAST_JWT_SECRET` — JWT 签名密钥（生产必填）
 - `PORT` — PaaS 平台注入的监听端口（未设置 `PICFAST_SERVER_PORT` 时生效）
 - `PICFAST_SERVER_METRICS_ENABLED` — 设为 `false` 可关闭独立的 `/metrics` 监听端口
+
+健康检查端点（服务根路径，无需鉴权）：
+
+- `GET /healthz` — 存活探针，不访问数据库或磁盘
+- `GET /readyz` — 就绪探针，仅检查数据库连通性，失败返回 503

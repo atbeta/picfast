@@ -111,6 +111,33 @@ func New(
 		}
 	})
 
+	// Liveness probe: no DB or disk access; safe for PaaS health checks.
+	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(map[string]string{"status": "ok"}); err != nil {
+			slog.Warn("failed to write healthz response", "error", err)
+		}
+	})
+
+	// Readiness probe: database ping only.
+	r.Get("/readyz", func(w http.ResponseWriter, r *http.Request) {
+		status := map[string]string{"status": "ok"}
+		code := http.StatusOK
+
+		if err := pool.Ping(r.Context()); err != nil {
+			status["status"] = "unavailable"
+			status["database"] = err.Error()
+			code = http.StatusServiceUnavailable
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(code)
+		if err := json.NewEncoder(w).Encode(status); err != nil {
+			slog.Warn("failed to write readyz response", "error", err)
+		}
+	})
+
 	serveOpenAPISpec := func(format string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
