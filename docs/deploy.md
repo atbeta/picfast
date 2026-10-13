@@ -112,6 +112,16 @@ export PICFAST_DATABASE_AUTO_MIGRATE=false
 picfast migrate
 ```
 
+## 托管 Postgres 与连接池
+
+使用事务模式（transaction mode）连接池的托管 Postgres（Supabase 的 `:6543` 端口、Neon 的 `-pooler` 主机、pgbouncer transaction pooling）时，pgx 默认的语句缓存在池化连接上不可靠 —— 在 `database.url` / `PICFAST_DATABASE_URL` 的查询串追加 `default_query_exec_mode=exec` 即可：
+
+```
+postgres://user:pass@host:6543/db?sslmode=require&default_query_exec_mode=exec
+```
+
+也可以改用直连/会话模式的连接串。后台任务的互斥锁使用事务级咨询锁，两种模式下均能正常工作。
+
 ## 后台任务（webhook 投递与清理）
 
 PicFast 的后台任务包含 webhook 投递（outbox → 各订阅端点）与每小时清理（过期图片、webhook 投递日志、审计日志）。默认在进程内按 `webhook.worker_interval`（webhook）与每小时（清理）自动运行，适用于常驻部署。

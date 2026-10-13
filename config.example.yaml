@@ -6,6 +6,9 @@ server:
 
 database:
   url: "postgres://picfast:picfast@localhost:5432/picfast?sslmode=disable"
+  # 托管 Postgres 的事务模式连接池（Supabase :6543、Neon -pooler 主机、pgbouncer
+  # transaction mode）会破坏 pgx 默认的语句缓存 —— 在连接串追加
+  # `&default_query_exec_mode=exec`，或改用直连/会话模式的连接串。
   auto_migrate: true        # false skips migrations at startup; run `picfast migrate` yourself first
 
 jwt:
