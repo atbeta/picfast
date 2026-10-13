@@ -527,15 +527,27 @@ func findStrategyByID(strategies []sqlc.Strategy, id int64) (sqlc.Strategy, bool
 
 func processUploadImage(fileData []byte, ext string, cfg imageProcessingConfig) processedUploadImage {
 	result := processedUploadImage{data: fileData}
-	if cfg.SkipProcessing {
-		if w, h, err := ReadImageDimensions(fileData); err == nil {
-			result.width = w
-			result.height = h
+	// Best effort: when no processing result supplies dimensions, read them
+	// from the image header so the DB row doesn't get width/height 0.
+	fillDims := func() {
+		if result.width == 0 {
+			if w, h, err := ReadImageDimensions(result.data); err == nil {
+				result.width = w
+				result.height = h
+			}
 		}
+	}
+	if cfg.SkipProcessing {
+		fillDims()
 		return result
 	}
 	skipExts := map[string]bool{"gif": true, "svg": true, "ico": true}
 	if skipExts[ext] {
+		// gif headers are decodable so dims are still recorded; svg/ico are
+		// not image.Decode-able and keep width/height 0.
+		if ext == "gif" {
+			fillDims()
+		}
 		return result
 	}
 
@@ -550,6 +562,12 @@ func processUploadImage(fileData []byte, ext string, cfg imageProcessingConfig) 
 	}
 
 	needProcess := cfg.Format != "" || cfg.Quality < 100 || cfg.StripExif
+	if needProcess && normalizeExportFormat(targetFormat) == "webp" && !Capabilities().WebPOutput {
+		// Effective output is WebP (e.g. a webp source upload with no format
+		// override): nothing else can be applied without re-encoding, skip.
+		slog.Debug("webp output unsupported by image backend, skipping processing")
+		needProcess = false
+	}
 	if needProcess {
 		processedImg, err := ProcessImage(result.data, targetFormat, cfg.Quality, cfg.StripExif)
 		if err != nil {
@@ -575,6 +593,7 @@ func processUploadImage(fileData []byte, ext string, cfg imageProcessingConfig) 
 		}
 	}
 
+	fillDims()
 	return result
 }
 

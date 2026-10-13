@@ -22,6 +22,10 @@ type ProcessedImage struct {
 // encode (e.g. WebP output under the pure-Go build).
 var ErrFormatUnsupported = errors.New("image format unsupported by this build")
 
+// ErrImageTooLarge marks inputs whose declared dimensions exceed the pure-Go
+// backend's decode pixel cap (decompression-bomb guard).
+var ErrImageTooLarge = errors.New("image exceeds decode pixel limit")
+
 // ProcessingParams holds on-the-fly image processing parameters parsed from
 // the URL variant suffix (e.g. @w_300,h_200,q_80,f_webp).
 type ProcessingParams struct {
