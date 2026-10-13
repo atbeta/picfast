@@ -22,6 +22,7 @@ type Config struct {
 	App         AppConfig      `mapstructure:"app"`
 	OAuth       OAuthConfig    `mapstructure:"oauth"`
 	Webhook     WebhookConfig  `mapstructure:"webhook"`
+	Jobs        JobsConfig     `mapstructure:"jobs"`
 	SecretKey   string         `mapstructure:"secret_key"`
 	secretBytes []byte
 }
@@ -136,6 +137,12 @@ type WebhookConfig struct {
 	AllowPrivateURLs bool          `mapstructure:"allow_private_urls"`
 	WorkerInterval   time.Duration `mapstructure:"worker_interval"`
 	DeliveryTimeout  time.Duration `mapstructure:"delivery_timeout"`
+}
+
+type JobsConfig struct {
+	Embedded bool   `mapstructure:"embedded"`
+	// Token guards POST /internal/jobs/run; empty disables the endpoint.
+	Token string `mapstructure:"token"`
 }
 
 type Setter struct {
@@ -499,6 +506,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("webhook.allow_private_urls", false)
 	v.SetDefault("webhook.worker_interval", 5*time.Second)
 	v.SetDefault("webhook.delivery_timeout", 10*time.Second)
+
+	v.SetDefault("jobs.embedded", true)
+	v.SetDefault("jobs.token", "")
 
 	v.SetDefault("secret_key", "")
 }

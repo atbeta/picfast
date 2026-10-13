@@ -112,6 +112,61 @@ export PICFAST_DATABASE_AUTO_MIGRATE=false
 picfast migrate
 ```
 
+## 后台任务（webhook 投递与清理）
+
+PicFast 的后台任务包含 webhook 投递（outbox → 各订阅端点）与每小时清理（过期图片、webhook 投递日志、审计日志）。默认在进程内按 `webhook.worker_interval`（webhook）与每小时（清理）自动运行，适用于常驻部署。
+
+在无常驻进程的平台（serverless / 容器实例会在响应后回收）上可关闭内置调度，改为外部定时触发：
+
+```bash
+export PICFAST_JOBS_EMBEDDED=false   # 关闭进程内调度
+export PICFAST_JOBS_TOKEN=<随机长令牌>   # 启用 POST /internal/jobs/run（Bearer 鉴权；不设置则不注册该端点）
+```
+
+两种触发方式等价，按需任选：
+
+- **HTTP**：`POST /internal/jobs/run`，请求头 `Authorization: Bearer $PICFAST_JOBS_TOKEN`，同步执行一轮并返回 JSON 报告（任务失败返回 500）
+- **CLI**：`picfast jobs run`（同一镜像/二进制），同步执行一轮并把报告打印为 JSON，失败时退出码为 1
+
+外部调度示例：
+
+```yaml
+# Google Cloud Scheduler —— HTTP 触发，建议每分钟一次
+gcloud scheduler jobs create http picfast-jobs \
+  --schedule="* * * * *" \
+  --uri="https://<host>/internal/jobs/run" \
+  --http-method=POST \
+  --headers="Authorization=Bearer $PICFAST_JOBS_TOKEN"
+```
+
+```yaml
+# GitHub Actions —— .github/workflows/jobs.yml
+on:
+  schedule:
+    - cron: "* * * * *"   # GitHub 最短间隔约 5 分钟
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS -X POST -H "Authorization: Bearer ${{ secrets.PICFAST_JOBS_TOKEN }}" https://<host>/internal/jobs/run
+```
+
+```bash
+# Fly.io —— 用同一镜像定时执行 CLI
+fly machine run <image> --schedule hourly picfast jobs run
+```
+
+```bash
+# Railway —— cron 服务直接执行
+picfast jobs run
+```
+
+注意：
+
+- `embedded=false` 时 webhook 投递延迟取决于外部调度频率，建议每分钟触发一次
+- 多实例并发触发是安全的：各任务通过 Postgres 咨询锁串行执行，重复触发只会标记为 `skipped`
+- 限流器是按实例生效的：多副本部署时每实例独立计数，实际限额约等于配置值 × 实例数
+
 ## 缩略图存储
 
 缩略图随图片保存在同一存储策略的 `_picfast/thumbnails/` 对象路径下，`/t/{md5}.png` 仍由应用统一提供（缺失时会从原图惰性重建并回写存储）。`storage.thumbnail_dir` 现在只是只读的旧版回退目录，仅用于继续提供升级前生成的磁盘缩略图，服务不会向其中写入新文件。

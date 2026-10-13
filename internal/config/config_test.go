@@ -426,3 +426,37 @@ func TestRuntimeSnapshotsCanRunConcurrentlyWithSetters(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestJobsConfigDefaults(t *testing.T) {
+	unsetEnv(t, "PICFAST_JOBS_EMBEDDED")
+	unsetEnv(t, "PICFAST_JOBS_TOKEN")
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if !cfg.Jobs.Embedded {
+		t.Fatal("jobs.embedded should default to true")
+	}
+	if cfg.Jobs.Token != "" {
+		t.Fatalf("jobs.token should default to empty, got %q", cfg.Jobs.Token)
+	}
+}
+
+func TestJobsConfigFromEnv(t *testing.T) {
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+	t.Setenv("PICFAST_JOBS_EMBEDDED", "false")
+	t.Setenv("PICFAST_JOBS_TOKEN", "jobs-secret")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.Jobs.Embedded {
+		t.Fatal("jobs.embedded should be false from env")
+	}
+	if cfg.Jobs.Token != "jobs-secret" {
+		t.Fatalf("jobs.token = %q, want jobs-secret", cfg.Jobs.Token)
+	}
+}

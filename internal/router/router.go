@@ -3,6 +3,7 @@ package router
 import (
 	"bytes"
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -21,6 +22,7 @@ import (
 	"github.com/atbeta/picfast/internal/events"
 	"github.com/atbeta/picfast/internal/handler"
 	"github.com/atbeta/picfast/internal/handler/middleware"
+	"github.com/atbeta/picfast/internal/jobs"
 	"github.com/atbeta/picfast/internal/service"
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/service/moderation"
@@ -33,10 +35,6 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// webhookDeliveryRetentionDays 是 webhook 投递日志与 outbox 事件的保留天数，
-// 到期由每小时的清理任务删除（见 .ai/phase1-events-spec.md §13.4）。
-const webhookDeliveryRetentionDays = 90
-
 func New(
 	queries *sqlc.Queries,
 	pool *pgxpool.Pool,
@@ -44,7 +42,7 @@ func New(
 	jwtSvc *handler.JWTService,
 	spaHandler *handler.SPAHandler,
 	mailSender mailservice.Sender,
-) (http.Handler, *webhook.Worker) {
+) (http.Handler, *jobs.Runner) {
 	r := chi.NewRouter()
 
 	r.Use(middleware.StructuredLogger)
@@ -224,45 +222,15 @@ func New(
 	deleteSvc := service.NewDeleteService(queries, pool, cfg.Storage.ThumbnailDir, eventEmitter)
 
 	webhookSvc := webhook.NewService(queries, cfg.Webhook.MaxPerUser, cfg.SecretKeyBytes())
-	webhookDelivery := webhook.NewDeliveryService(queries, cfg.Webhook.DeliveryTimeout, cfg.Webhook.AllowHTTP, cfg.Webhook.AllowPrivateURLs, cfg.SecretKeyBytes())
-	webhookWorker := webhook.NewWorker(queries, pool, webhookDelivery, cfg.Webhook.WorkerInterval, 20, cfg.App.EnableDummyOCR, 5)
-	whHandler := handler.NewWebhookHandler(queries, webhookSvc, webhookDelivery)
-	if cfg.Webhook.Enabled {
-		webhookWorker.Start()
-	}
+	runner := jobs.NewRunner(queries, pool, cfg)
+	whHandler := handler.NewWebhookHandler(queries, webhookSvc, runner.Delivery())
 
-	go func() {
-		ticker := time.NewTicker(1 * time.Hour)
-		defer ticker.Stop()
-		for range ticker.C {
-			deleted, err := deleteSvc.CleanExpiredImages(context.Background(), int32(cfg.Server.ExpiredCleanupBatchSize))
-			if err != nil {
-				slog.Warn("failed to clean expired images", "error", err)
-			} else if deleted > 0 {
-				slog.Info("cleaned expired images", "deleted", deleted)
-			}
-			if cfg.Webhook.Enabled {
-				ctx := context.Background()
-				if n, err := queries.DeleteOldWebhookDeliveries(ctx, webhookDeliveryRetentionDays); err != nil {
-					slog.Warn("failed to clean old webhook deliveries", "error", err)
-				} else if n > 0 {
-					slog.Info("cleaned old webhook deliveries", "deleted", n)
-				}
-				if n, err := queries.DeleteOldOutboxEvents(ctx, webhookDeliveryRetentionDays); err != nil {
-					slog.Warn("failed to clean old outbox events", "error", err)
-				} else if n > 0 {
-					slog.Info("cleaned old outbox events", "deleted", n)
-				}
-			}
-			if retentionDays := int32(cfg.AppSnapshot().AuditLogRetentionDays); retentionDays > 0 {
-				if n, err := queries.DeleteOldAuditLogs(context.Background(), retentionDays); err != nil {
-					slog.Warn("failed to clean old audit logs", "error", err)
-				} else if n > 0 {
-					slog.Info("cleaned old audit logs", "deleted", n)
-				}
-			}
-		}
-	}()
+	// External trigger for the background jobs, for deployments where the
+	// embedded scheduler is disabled (jobs.embedded=false). Guarded by a
+	// bearer token; when jobs.token is empty the route is not registered.
+	if cfg.Jobs.Token != "" {
+		r.Post("/internal/jobs/run", jobsRunHandler(runner, cfg.Jobs.Token))
+	}
 
 	// Handlers
 	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg, mailSender, eventEmitter)
@@ -585,7 +553,35 @@ func New(
 		r.NotFound(spaHandler.Serve)
 	}
 
-	return r, webhookWorker
+	return r, runner
+}
+
+// jobsRunHandler serves POST /internal/jobs/run: bearer-token checked, then
+// one synchronous RunOnce. The run context survives client disconnects
+// (WithoutCancel) so a dropped HTTP request cannot abort a delivery halfway.
+func jobsRunHandler(runner *jobs.Runner, token string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		provided, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+		if !ok || subtle.ConstantTimeCompare([]byte(provided), []byte(token)) != 1 {
+			w.Header().Set("WWW-Authenticate", "Bearer")
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 55*time.Second)
+		defer cancel()
+		report := runner.RunOnce(ctx)
+
+		w.Header().Set("Content-Type", "application/json")
+		status := http.StatusOK
+		if report.Failed() {
+			status = http.StatusInternalServerError
+		}
+		w.WriteHeader(status)
+		if err := json.NewEncoder(w).Encode(report); err != nil {
+			slog.Warn("failed to write jobs report", "error", err)
+		}
+	}
 }
 
 func normalizeJSON(raw json.RawMessage) json.RawMessage {

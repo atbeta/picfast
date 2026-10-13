@@ -110,6 +110,8 @@ scrape_configs:
 - `PICFAST_JWT_SECRET` — JWT 签名密钥（生产必填）
 - `PORT` — PaaS 平台注入的监听端口（未设置 `PICFAST_SERVER_PORT` 时生效）
 - `PICFAST_SERVER_METRICS_ENABLED` — 设为 `false` 可关闭独立的 `/metrics` 监听端口
+- `PICFAST_JOBS_EMBEDDED` — 设为 `false` 关闭进程内后台任务调度（webhook 投递、每小时清理），改用外部定时触发 `POST /internal/jobs/run` 或 `picfast jobs run`
+- `PICFAST_JOBS_TOKEN` — `POST /internal/jobs/run` 的 Bearer 令牌；不设置则不注册该端点
 - `PICFAST_STORAGE_DEFAULT_TYPE` + `PICFAST_STORAGE_DEFAULT_CONFIG` — 首次启动（数据库尚无任何存储策略）时创建默认存储策略的类型与 JSON 配置，仅在首次启动生效；策略已存在时被忽略。示例（S3）：`PICFAST_STORAGE_DEFAULT_TYPE=s3`，`PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://s3.example.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","url":"https://cdn.example.com"}'`；Cloudflare R2（S3 兼容）：`"endpoint":"https://<account>.r2.cloudflarestorage.com"`、`"region":"auto"`、`"use_path_style":true`。
 
 > ⚠️ 容器 PaaS（无持久卷）上默认的 `local` 存储位于临时磁盘，实例重建后上传文件即丢失 — 请用上述变量配置 S3/R2 等持久后端。
@@ -120,3 +122,5 @@ scrape_configs:
 - `GET /readyz` — 就绪探针，仅检查数据库连通性，失败返回 503
 
 数据库迁移已嵌入二进制，启动时自动执行。设 `PICFAST_DATABASE_AUTO_MIGRATE=false` 可关闭自动迁移，改为在启动前手动运行 `picfast migrate`（例如多副本/容器 PaaS 部署时由 Job 统一执行）。
+
+后台任务（webhook 投递、过期图片/日志清理）默认在进程内调度。设 `PICFAST_JOBS_EMBEDDED=false` 后可由外部调度器触发：HTTP `POST /internal/jobs/run`（需 `Authorization: Bearer $PICFAST_JOBS_TOKEN`）或 CLI `picfast jobs run`。webhook 投递延迟等于触发频率，建议每分钟一次；多实例并发触发安全（Postgres 咨询锁）。注意限流器按实例计数，多副本时实际限额约为配置值 × 实例数。

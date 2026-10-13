@@ -71,3 +71,7 @@ app:
   analytics_provider: ""       # plausible | umami | ga4 | baidu | custom
   analytics_config: "{}"       # provider-specific JSON; configurable in admin console
   theme_config: "{}"           # theme preset/tokens/custom CSS JSON; configurable in admin console
+
+jobs:
+  embedded: true              # false disables in-process scheduling; trigger POST /internal/jobs/run or `picfast jobs run` externally
+  token: ""                   # bearer token for POST /internal/jobs/run; empty disables the endpoint. Env: PICFAST_JOBS_EMBEDDED, PICFAST_JOBS_TOKEN
