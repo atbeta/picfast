@@ -73,3 +73,24 @@ func TestAdminObservabilitySummary(t *testing.T) {
 		t.Fatalf("storage_strategies = %#v, want one item", data["storage_strategies"])
 	}
 }
+
+func TestAdminObservabilityMetricsEnabledDisabled(t *testing.T) {
+	env := newTestEnv(t)
+	group, _, admin := env.seedSetup(t)
+	makeAdmin(t, env, admin.ID)
+
+	env.Config.Server.MetricsEnabled = false
+	env.rebuildRouter()
+
+	req := env.authReq(t, http.MethodGet, "/api/v1/admin/observability/summary", nil, admin.ID, domain.RoleAdmin, group.ID)
+	rec := doReq(env.Router, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body: %s", rec.Code, rec.Body.String())
+	}
+
+	data := respDataMap(t, parseResp(t, rec))
+	config := nestedMap(t, data["config"])
+	if config["metrics_enabled"] != false {
+		t.Fatalf("metrics_enabled = %v, want false", config["metrics_enabled"])
+	}
+}

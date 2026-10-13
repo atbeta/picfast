@@ -62,7 +62,7 @@ func (h *AdminObservabilityHandler) Summary(w http.ResponseWriter, r *http.Reque
 		"usage":              usage,
 		"storage_strategies": strategies,
 		"config": map[string]any{
-			"metrics_enabled":   true,
+			"metrics_enabled":   server.MetricsEnabled,
 			"pprof_enabled":     server.EnablePprof,
 			"moderation_mode":   app.ModerationMode,
 			"audit_upload_logs": app.AuditUploadLogs,
