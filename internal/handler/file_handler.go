@@ -1,8 +1,12 @@
 package handler
 
 import (
+	"bytes"
+	"context"
+	"errors"
 	"log/slog"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -14,6 +18,7 @@ import (
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/sync/singleflight"
 )
 
 var md5HashRegex = regexp.MustCompile(`^[a-f0-9]{32}$`)
@@ -22,6 +27,7 @@ type FileHandler struct {
 	db       *sqlc.Queries
 	baseURL  string
 	thumbDir string
+	thumbSfg singleflight.Group
 }
 
 func NewFileHandler(db *sqlc.Queries, baseURL, thumbDir string) *FileHandler {
@@ -297,37 +303,107 @@ func (h *FileHandler) ServeThumbnail(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=2592000, s-maxage=60")
 	}
 
-	filePath := filepath.Join(h.thumbDir, md5Hash+".png")
-	ww := &serveStatusWriter{ResponseWriter: w, statusCode: http.StatusOK}
-	http.ServeFile(ww, r, filePath)
-	if ww.statusCode == http.StatusNotFound {
-		result = "not_found"
-		return
+	data, found := h.loadThumbnailFromStores(r.Context(), images, md5Hash)
+	if !found {
+		data, found = h.loadLegacyThumbnail(md5Hash)
 	}
-	if ww.statusCode >= http.StatusInternalServerError {
-		result = "error"
-		return
+	if !found {
+		v, err, _ := h.thumbSfg.Do(md5Hash, func() (any, error) {
+			// WithoutCancel: the first caller's client disconnect must not
+			// abort regeneration for every waiter sharing this md5.
+			ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 30*time.Second)
+			defer cancel()
+			return h.regenerateThumbnail(ctx, images, md5Hash)
+		})
+		if err != nil {
+			result = "not_found"
+			http.NotFound(w, r)
+			return
+		}
+		data = v.([]byte)
 	}
+
 	result = "success"
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("ETag", `"t-`+md5Hash+`"`)
+	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(data))
 }
 
-type serveStatusWriter struct {
-	http.ResponseWriter
-	statusCode int
-	written    bool
-}
-
-func (w *serveStatusWriter) WriteHeader(code int) {
-	if !w.written {
-		w.statusCode = code
-		w.written = true
+// loadThumbnailFromStores reads the persisted thumbnail from each distinct
+// image strategy in order; the first successful read wins.
+func (h *FileHandler) loadThumbnailFromStores(ctx context.Context, images []sqlc.Image, md5 string) ([]byte, bool) {
+	objPath := service.ThumbnailObjectPath(md5)
+	seen := make(map[int64]bool)
+	for _, img := range images {
+		if !img.StrategyID.Valid || seen[img.StrategyID.Int64] {
+			continue
+		}
+		seen[img.StrategyID.Int64] = true
+		strategy, err := h.db.GetStrategyByID(ctx, img.StrategyID.Int64)
+		if err != nil {
+			continue
+		}
+		store, err := service.GetStorageForStrategy(strategy)
+		if err != nil {
+			continue
+		}
+		data, err := store.Read(ctx, objPath)
+		store.Close()
+		if err == nil {
+			return data, true
+		}
 	}
-	w.ResponseWriter.WriteHeader(code)
+	return nil, false
 }
 
-func (w *serveStatusWriter) Write(b []byte) (int, error) {
-	if !w.written {
-		w.written = true
+// loadLegacyThumbnail falls back to the pre-storage thumbnail directory for
+// installs that still have on-disk thumbnails.
+func (h *FileHandler) loadLegacyThumbnail(md5 string) ([]byte, bool) {
+	if h.thumbDir == "" {
+		return nil, false
 	}
-	return w.ResponseWriter.Write(b)
+	data, err := os.ReadFile(filepath.Join(h.thumbDir, md5+".png"))
+	if err != nil {
+		return nil, false
+	}
+	return data, true
+}
+
+// regenerateThumbnail lazily rebuilds a thumbnail from the first readable
+// original object and best-effort writes it back into that image's storage
+// strategy so subsequent requests are served from storage.
+func (h *FileHandler) regenerateThumbnail(ctx context.Context, images []sqlc.Image, md5 string) ([]byte, error) {
+	for _, img := range images {
+		if !img.StrategyID.Valid {
+			continue
+		}
+		strategy, err := h.db.GetStrategyByID(ctx, img.StrategyID.Int64)
+		if err != nil {
+			continue
+		}
+		store, err := service.GetStorageForStrategy(strategy)
+		if err != nil {
+			continue
+		}
+		pathname := img.Name
+		if img.Path != "" && img.Path != "." {
+			pathname = img.Path + "/" + img.Name
+		}
+		data, err := store.Read(ctx, pathname)
+		if err != nil {
+			store.Close()
+			continue
+		}
+		png, err := service.RenderThumbnail(data, img.Extension)
+		if err != nil {
+			store.Close()
+			return nil, err
+		}
+		if err := store.Write(ctx, service.ThumbnailObjectPath(md5), png, "image/png"); err != nil {
+			slog.Warn("thumbnail write-back failed", "md5", md5, "error", err)
+		}
+		store.Close()
+		return png, nil
+	}
+	return nil, errors.New("no readable source object")
 }

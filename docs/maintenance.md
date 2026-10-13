@@ -117,7 +117,7 @@ Each inventory item should preserve enough data to locate and verify the real ob
 - `strategy_id`, strategy name, strategy type, strategy config
 - object path derived from `path + name`
 - expected size, md5, sha1, mimetype, extension
-- thumbnail path derived from `md5 + ".png"` when thumbnails are expected
+- thumbnail object path `_picfast/thumbnails/{md5}.png` inside the image's storage strategy (plus the legacy `thumbnail_dir` file `{md5}.png`) when thumbnails are expected
 
 The inventory layer should not mutate data. It exists so backup, doctor, and future repair commands all scan the same source of truth.
 
@@ -132,11 +132,13 @@ Object verification checks:
 - md5 mismatch
 - sha1 mismatch
 
-Thumbnail verification checks:
+Thumbnail verification checks (strategy storage first, legacy `thumbnail_dir` second):
 
 - skipped for `svg` and `ico`
-- missing thumbnail
-- thumbnail file exists but is not readable
+- `ok` when the thumbnail object exists in the image's storage strategy
+- `legacy` when only the on-disk `thumbnail_dir` file exists (still servable, flagged for migration)
+- `missing` when neither exists
+- `unreadable` when the strategy store cannot be initialized
 
 Verification rules are part of the maintenance contract. If thumbnail policy changes later, such as generating thumbnails for `ico`, the rule should evolve through `format_version` or an explicit verifier rule version so old reports and backups remain understandable.
 
@@ -189,7 +191,7 @@ Implementation order:
 3. `backup`: same-version export with manifest.
 4. `restore --dry-run`: preflight only.
 5. `restore`: guarded destructive restore.
-6. `repair-thumbnails`: rebuild missing thumbnails.
+6. `repair-thumbnails`: rebuild missing or legacy-only thumbnails into image storage.
 
 ## Restore Safety
 

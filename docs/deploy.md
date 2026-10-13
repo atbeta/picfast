@@ -111,3 +111,13 @@ export PICFAST_DATABASE_AUTO_MIGRATE=false
 # 在启动服务前单独执行（同一镜像/二进制）
 picfast migrate
 ```
+
+## 缩略图存储
+
+缩略图随图片保存在同一存储策略的 `_picfast/thumbnails/` 对象路径下，`/t/{md5}.png` 仍由应用统一提供（缺失时会从原图惰性重建并回写存储）。`storage.thumbnail_dir` 现在只是只读的旧版回退目录，仅用于继续提供升级前生成的磁盘缩略图，服务不会向其中写入新文件。
+
+将旧磁盘缩略图迁移到存储策略：
+
+```bash
+picfast maintenance repair-thumbnails --apply
+```

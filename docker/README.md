@@ -29,7 +29,7 @@ docker compose up -d
 
 数据落盘在当前目录下：
 - Postgres：`./data/postgres`
-- 上传与缩略图：`./data/uploads`、`./data/thumbnails`（`init-permissions` 自动修正权限）
+- 上传与缩略图：`./data/uploads`；缩略图随图片存入各存储策略的 `_picfast/thumbnails/`，`./data/thumbnails` 仅作旧版回退（`init-permissions` 自动修正权限）。迁移旧缩略图：`picfast maintenance repair-thumbnails --apply`
 - 维护备份：`./data/backups`（管理后台「维护与迁移」页的默认命令会写入这里）
 
 ---

@@ -87,7 +87,7 @@ func New(
 			code = http.StatusServiceUnavailable
 		}
 
-		for _, dir := range []string{cfg.Storage.LocalRoot, cfg.Storage.ThumbnailDir} {
+		for _, dir := range []string{cfg.Storage.LocalRoot} {
 			if dir == "" {
 				continue
 			}
@@ -316,11 +316,6 @@ func New(
 
 	// Thumbnail serving: /t/{hash}.png
 	r.With(middleware.OptionalAuth(middleware.NewJWTAuthenticator(jwtSvc))).Get("/t/{hash}.png", fileHandler.ServeThumbnail)
-
-	// Ensure thumbnail directory exists
-	if err := os.MkdirAll(cfg.Storage.ThumbnailDir, 0755); err != nil {
-		slog.Warn("failed to ensure thumbnail directory", "dir", cfg.Storage.ThumbnailDir, "error", err)
-	}
 
 	r.Route("/api/v1", func(r chi.Router) {
 		// Public site config
