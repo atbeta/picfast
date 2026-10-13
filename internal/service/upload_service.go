@@ -539,6 +539,11 @@ func processUploadImage(fileData []byte, ext string, cfg imageProcessingConfig) 
 		return result
 	}
 
+	if cfg.Format == "webp" && !Capabilities().WebPOutput {
+		// The pure-Go backend cannot encode WebP; keep the source format but
+		// still apply quality/strip processing.
+		cfg.Format = ""
+	}
 	targetFormat := cfg.Format
 	if targetFormat == "" {
 		targetFormat = ext
@@ -557,7 +562,9 @@ func processUploadImage(fileData []byte, ext string, cfg imageProcessingConfig) 
 		}
 	}
 
-	if cfg.EnableWatermark && cfg.WatermarkConfigs != nil && cfg.WatermarkConfigs.Text != "" {
+	if cfg.EnableWatermark && !Capabilities().Watermark {
+		slog.Debug("watermark requested but unsupported by image backend, skipping")
+	} else if cfg.EnableWatermark && cfg.WatermarkConfigs != nil && cfg.WatermarkConfigs.Text != "" {
 		wmCfg := WatermarkConfig(*cfg.WatermarkConfigs)
 		watermarked, err := ApplyWatermark(result.data, wmCfg, targetFormat, cfg.Quality)
 		if err != nil {

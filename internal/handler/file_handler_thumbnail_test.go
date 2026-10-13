@@ -1,7 +1,10 @@
 package handler_test
 
 import (
+	"bytes"
 	"encoding/json"
+	"image"
+	"image/png"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,6 +16,19 @@ import (
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
 )
+
+// validPNG returns a decodable PNG. The shared pngBytes() fixture has a bad
+// zlib checksum that libvips tolerates but the pure-Go decoder rejects, so
+// tests exercising decode paths need a well-formed source.
+func validPNG(t *testing.T) []byte {
+	t.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatalf("encode png: %v", err)
+	}
+	return buf.Bytes()
+}
 
 // strategyThumbPath returns the on-disk location a local strategy uses for the
 // thumbnail object of md5.
@@ -67,6 +83,11 @@ func TestFileHandlerThumbnailLazyRegen(t *testing.T) {
 	const md5 = "55555555555555555555555555555555"
 	img := createTestImage(t, env, owner.ID, group.ID, strategy.ID, "thumb-regen", "png", int16(domain.PermissionPublic))
 	updateImageMD5(t, env, img.ID, md5)
+	// The default fixture is not decodable by the pure-Go backend; overwrite
+	// the stored object with a well-formed PNG so lazy regen exercises decode.
+	if err := os.WriteFile(filepath.Join(env.Config.Storage.LocalRoot, img.Name), validPNG(t), 0o644); err != nil {
+		t.Fatalf("write source object: %v", err)
+	}
 
 	req := newJSONReq(t, http.MethodGet, "/t/"+md5+".png", nil)
 	rec := doReq(env.Router, req)

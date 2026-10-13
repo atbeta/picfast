@@ -4,28 +4,8 @@ package service
 
 import (
 	"bytes"
-	"image"
-	"image/color"
-	"image/jpeg"
-	"image/png"
 	"testing"
 )
-
-func createTestImage(format string, width, height int) []byte {
-	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			img.Set(x, y, color.RGBA{50, 100, 150, 255})
-		}
-	}
-	var buf bytes.Buffer
-	if format == "png" {
-		png.Encode(&buf, img)
-	} else {
-		jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90})
-	}
-	return buf.Bytes()
-}
 
 func TestProcessImageJPEG(t *testing.T) {
 	data := createTestImage("jpeg", 200, 200)
