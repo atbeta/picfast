@@ -63,6 +63,23 @@ func (s *DeleteService) CleanExpiredImages(ctx context.Context, batchSize int32)
 }
 
 func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) error {
+	// Sibling rows sharing this md5 decide two things: a same-strategy
+	// md5+sha1 dup shares the stored object and its thumbnail (keep both),
+	// and any md5 sibling keeps the legacy on-disk thumbnail fallback file.
+	hasMd5Siblings := false
+	hasStorageDup := false
+	if siblings, err := s.db.GetImagesByMD5(ctx, img.Md5); err == nil {
+		for _, sib := range siblings {
+			if sib.ID == img.ID {
+				continue
+			}
+			hasMd5Siblings = true
+			if sib.StrategyID == img.StrategyID && sib.Sha1 == img.Sha1 {
+				hasStorageDup = true
+			}
+		}
+	}
+
 	shouldDeleteFile := true
 	if img.StrategyID.Valid {
 		dup, err := s.db.FindDuplicateImage(ctx, sqlc.FindDuplicateImageParams{
@@ -74,17 +91,10 @@ func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) e
 			shouldDeleteFile = false
 		}
 	}
-
-	// Other rows sharing this md5 still rely on the legacy thumbnail fallback
-	// and (same-strategy dups) the persisted thumbnail object.
-	hasMd5Siblings := false
-	if siblings, err := s.db.GetImagesByMD5(ctx, img.Md5); err == nil {
-		for _, sib := range siblings {
-			if sib.ID != img.ID {
-				hasMd5Siblings = true
-				break
-			}
-		}
+	// FindDuplicateImage has no id exclusion and can return img itself; the
+	// sibling scan is the authoritative same-strategy dup check.
+	if hasStorageDup {
+		shouldDeleteFile = false
 	}
 
 	if shouldDeleteFile && img.StrategyID.Valid {
@@ -100,13 +110,11 @@ func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) e
 				if err := store.Delete(ctx, pathname); err != nil {
 					slog.Warn("failed to delete file from storage", "error", err)
 				}
-				// Cross-strategy md5 siblings never read this strategy's
-				// thumbnail object, so it is only kept for same-strategy
-				// dups (shouldDeleteFile=false).
-				if !hasMd5Siblings {
-					if err := store.Delete(ctx, ThumbnailObjectPath(img.Md5)); err != nil && !isNotFoundError(err) {
-						slog.Warn("failed to delete thumbnail from storage", "md5", img.Md5, "error", err)
-					}
+				// Same-md5 siblings in other strategies never read this
+				// strategy's thumbnail object, and same-strategy dups are
+				// covered by shouldDeleteFile=false.
+				if err := store.Delete(ctx, ThumbnailObjectPath(img.Md5)); err != nil && !isNotFoundError(err) {
+					slog.Warn("failed to delete thumbnail from storage", "md5", img.Md5, "error", err)
 				}
 			}
 		}
