@@ -109,6 +109,62 @@ paths:
                     type: string
                     description: Database error detail
 
+  /internal/jobs/run:
+    servers:
+      - url: http://localhost:8080
+    post:
+      tags: [system]
+      summary: Run background jobs once
+      description: >-
+        Served at the server root (outside /api/v1) and only registered when
+        jobs.token is configured. Runs one synchronous pass of the background
+        jobs (webhook dispatch, then cleanup) and returns a per-task report.
+        Intended for external schedulers (e.g. Cloud Scheduler, cron) when
+        jobs.embedded is false. Multiple instances are safe: runs are
+        serialized by database advisory locks.
+      security:
+        - JobsTokenAuth: []
+      responses:
+        "200":
+          description: Jobs report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhooks:
+                    type: object
+                    properties:
+                      state:
+                        type: string
+                        enum: [ran, skipped, disabled]
+                      counts:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                      error:
+                        type: string
+                      duration_ms:
+                        type: integer
+                  cleanup:
+                    type: object
+                    properties:
+                      state:
+                        type: string
+                        enum: [ran, skipped, disabled]
+                      counts:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                      error:
+                        type: string
+                      duration_ms:
+                        type: integer
+        "401":
+          description: Missing or invalid bearer token
+        "500":
+          description: One or more tasks failed; report contains error details
+
   /setup/status:
     get:
       tags: [setup]
@@ -1508,6 +1564,10 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    JobsTokenAuth:
+      type: http
+      scheme: bearer
+      description: Shared secret configured via jobs.token / PICFAST_JOBS_TOKEN (not a JWT).
 
   parameters:
     PageParam:

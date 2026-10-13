@@ -40,6 +40,8 @@ func main() {
 			os.Exit(runMaintenanceCommand(context.Background(), os.Args[2:], os.Stdout, os.Stderr))
 		case "migrate":
 			os.Exit(runMigrateCommand(context.Background(), os.Args[2:], os.Stdout, os.Stderr))
+		case "jobs":
+			os.Exit(runJobsCommand(context.Background(), os.Args[2:], os.Stdout, os.Stderr))
 		}
 	}
 
@@ -113,7 +115,13 @@ func main() {
 		slog.Info("serving frontend", "dir", webDir)
 	}
 
-	r, webhookWorker := router.New(queries, pool, cfg, jwtSvc, spaHandler, mailSender)
+	r, runner := router.New(queries, pool, cfg, jwtSvc, spaHandler, mailSender)
+
+	if cfg.Jobs.Embedded {
+		runner.Start()
+	} else {
+		slog.Info("embedded background jobs disabled; trigger POST /internal/jobs/run or `picfast jobs run` on a schedule")
+	}
 
 	var metricsSrv *http.Server
 	if cfg.Server.MetricsEnabled {
@@ -164,7 +172,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	webhookWorker.Stop()
+	runner.Stop()
 
 	if metricsSrv != nil {
 		if err := metricsSrv.Shutdown(ctx); err != nil {
