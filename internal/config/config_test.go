@@ -1,10 +1,27 @@
 package config
 
 import (
+	"os"
 	"sync"
 	"testing"
 	"time"
 )
+
+// unsetEnv removes an env var for the duration of the test, restoring any
+// previous value afterwards. Use together with t.Chdir'd temp dirs so tests
+// are not influenced by the ambient process environment.
+func unsetEnv(t *testing.T, key string) {
+	t.Helper()
+	old, had := os.LookupEnv(key)
+	if err := os.Unsetenv(key); err != nil {
+		t.Fatalf("unsetenv %s: %v", key, err)
+	}
+	t.Cleanup(func() {
+		if had {
+			_ = os.Setenv(key, old)
+		}
+	})
+}
 
 func TestLoadReadsAdminCredentialsFromEnv(t *testing.T) {
 	tempDir := t.TempDir()
@@ -181,6 +198,94 @@ func TestRuntimeSnapshotsFollowSetterUpdates(t *testing.T) {
 	}
 	if app.DefaultImageTTL != time.Hour {
 		t.Fatalf("DefaultImageTTL = %s", app.DefaultImageTTL)
+	}
+}
+
+func TestLoadReadsPortFromEnv(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	unsetEnv(t, "PICFAST_SERVER_PORT")
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+	t.Setenv("PORT", "9999")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.Server.Port != 9999 {
+		t.Fatalf("Port = %d, want 9999 from $PORT", cfg.Server.Port)
+	}
+}
+
+func TestLoadPicfastServerPortWinsOverPort(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+	t.Setenv("PICFAST_SERVER_PORT", "1234")
+	t.Setenv("PORT", "9999")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.Server.Port != 1234 {
+		t.Fatalf("Port = %d, want 1234 from PICFAST_SERVER_PORT", cfg.Server.Port)
+	}
+}
+
+func TestLoadPortDefaultsTo8080(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	unsetEnv(t, "PICFAST_SERVER_PORT")
+	unsetEnv(t, "PORT")
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.Server.Port != 8080 {
+		t.Fatalf("Port = %d, want default 8080", cfg.Server.Port)
+	}
+}
+
+func TestLoadMetricsEnabledDefaultsTrue(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	unsetEnv(t, "PICFAST_SERVER_METRICS_ENABLED")
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if !cfg.Server.MetricsEnabled {
+		t.Fatal("expected metrics_enabled to default to true")
+	}
+}
+
+func TestLoadReadsMetricsEnabledFromEnv(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+	t.Setenv("PICFAST_SERVER_METRICS_ENABLED", "false")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.Server.MetricsEnabled {
+		t.Fatal("expected metrics_enabled to be disabled from env")
 	}
 }
 

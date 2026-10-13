@@ -108,3 +108,5 @@ scrape_configs:
 - `PICFAST_DATABASE_URL` — 数据库连接串（必填）
 - `PICFAST_SERVER_BASE_URL` — 站点对外访问地址
 - `PICFAST_JWT_SECRET` — JWT 签名密钥（生产必填）
+- `PORT` — PaaS 平台注入的监听端口（未设置 `PICFAST_SERVER_PORT` 时生效）
+- `PICFAST_SERVER_METRICS_ENABLED` — 设为 `false` 可关闭独立的 `/metrics` 监听端口
