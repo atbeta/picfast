@@ -103,6 +103,17 @@ func TestComputePHashInvalidData(t *testing.T) {
 	}
 }
 
+func TestComputePHashRejectsOversizedImage(t *testing.T) {
+	old := maxDecodePixels
+	maxDecodePixels = 100 // 64x64 test image now exceeds the cap
+	t.Cleanup(func() { maxDecodePixels = old })
+
+	data := generateTestPNG(t, color.RGBA{R: 128, G: 128, B: 128, A: 255})
+	if _, err := ComputePHash(data); err != ErrImageTooLarge {
+		t.Fatalf("expected ErrImageTooLarge, got %v", err)
+	}
+}
+
 func bitCount(x uint64) int {
 	c := 0
 	for x != 0 {
