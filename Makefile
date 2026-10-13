@@ -28,6 +28,9 @@ frontend:
 build:
 	go build -ldflags "$(LDFLAGS)" -o ./bin/picfast ./cmd/picfast
 
+build-slim:
+	CGO_ENABLED=0 go build -tags novips -ldflags "$(LDFLAGS)" -o ./bin/picfast-slim ./cmd/picfast
+
 build-full: frontend build
 
 run: build
@@ -86,6 +89,9 @@ docker-logs:
 
 test:
 	go test -v -count=1 ./...
+
+test-slim:
+	CGO_ENABLED=0 go test -tags novips -count=1 ./internal/service/... ./internal/handler/... ./cmd/picfast/...
 
 docker-test-db:
 	docker run -d --name picfast-test-db -e POSTGRES_USER=picfast -e POSTGRES_PASSWORD=picfast -e POSTGRES_DB=picfast_test -p 5433:5432 postgres:16-alpine
