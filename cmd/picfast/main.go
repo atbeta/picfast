@@ -16,7 +16,9 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source"
+	"github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -26,6 +28,7 @@ import (
 	"github.com/atbeta/picfast/internal/router"
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/sqlc"
+	"github.com/atbeta/picfast/migrations"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -178,16 +181,10 @@ func migrateDatabaseURL(dbURL string) string {
 }
 
 func runMigrations(dbURL string) {
-	source, err := resolveMigrationSource()
+	m, err := newMigrator(dbURL)
 	if err != nil {
-		slog.Warn("migration source error", "error", err)
-		return
-	}
-
-	m, err := migrate.New(source, migrateDatabaseURL(dbURL))
-	if err != nil {
-		slog.Warn("migration source error", "error", err)
-		return
+		slog.Error("migration source error", "error", err)
+		os.Exit(1)
 	}
 	defer m.Close()
 
@@ -198,7 +195,35 @@ func runMigrations(dbURL string) {
 	slog.Info("migrations applied")
 }
 
-func resolveMigrationSource() (string, error) {
+// newMigrator returns a configured migrator; shared by server startup and the
+// `picfast migrate` subcommand.
+func newMigrator(dbURL string) (*migrate.Migrate, error) {
+	name, src, err := newMigrationSource()
+	if err != nil {
+		return nil, err
+	}
+	return migrate.NewWithSourceInstance(name, src, migrateDatabaseURL(dbURL))
+}
+
+// newMigrationSource resolves the migration source in order:
+// PICFAST_MIGRATIONS_DIR (when it points at a directory) → well-known disk
+// directories → the migration files embedded in the binary.
+func newMigrationSource() (string, source.Driver, error) {
+	if dir, ok := resolveMigrationsDir(); ok {
+		drv, err := (&file.File{}).Open("file://" + dir)
+		if err != nil {
+			return "", nil, err
+		}
+		return "file", drv, nil
+	}
+	drv, err := iofs.New(migrations.FS, ".")
+	if err != nil {
+		return "", nil, err
+	}
+	return "iofs", drv, nil
+}
+
+func resolveMigrationsDir() (string, bool) {
 	candidates := []string{
 		os.Getenv("PICFAST_MIGRATIONS_DIR"),
 		"migrations",
@@ -216,12 +241,12 @@ func resolveMigrationSource() (string, error) {
 		}
 		abs, err := filepath.Abs(candidate)
 		if err != nil {
-			return "", err
+			continue
 		}
-		return "file://" + abs, nil
+		return abs, true
 	}
 
-	return "", fmt.Errorf("no migrations directory found")
+	return "", false
 }
 
 func resolveWebDir(configured string) string {

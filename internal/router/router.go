@@ -1,6 +1,7 @@
 package router
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atbeta/picfast/api"
 	"github.com/atbeta/picfast/internal/clientip"
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/docsui"
@@ -147,8 +149,8 @@ func New(
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			raw, err := os.ReadFile("api/openapi.yaml")
-			if err != nil {
+			raw := bytes.Clone(api.OpenAPISpec)
+			if len(raw) == 0 {
 				http.Error(w, "openapi spec not found", http.StatusNotFound)
 				return
 			}
