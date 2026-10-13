@@ -67,7 +67,7 @@ Commands:
   backup              Create a versioned backup archive
   inspect             Validate backup manifest and checksums
   restore             Restore a backup archive after guarded preflight checks
-  repair-thumbnails   Rebuild missing thumbnails from readable source objects
+  repair-thumbnails   Rebuild missing or legacy-only thumbnails into image storage
   recalc-phash        Recompute perceptual hashes for images missing one`)
 }
 
@@ -153,7 +153,7 @@ func runMaintenanceDoctor(ctx context.Context, args []string, stdout, stderr io.
 				report.AddObjectCheck(verifier.VerifyObject(ctx, item))
 			}
 			if !*skipThumbnails {
-				report.AddThumbnailCheck(verifier.VerifyThumbnail(item))
+				report.AddThumbnailCheck(verifier.VerifyThumbnail(ctx, item))
 			}
 		}
 		if !*all || len(items) < int(scanLimit) {
@@ -567,7 +567,7 @@ func runMaintenanceRepairThumbnails(ctx context.Context, args []string, stdout, 
 	fs := flag.NewFlagSet("picfast maintenance repair-thumbnails", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	jsonOutput := fs.Bool("json", false, "write the report as JSON")
-	apply := fs.Bool("apply", false, "write missing thumbnails; without this flag the command is a dry run")
+	apply := fs.Bool("apply", false, "write missing or legacy-only thumbnails into image storage; without this flag the command is a dry run")
 	limit := fs.Int("limit", 500, "maximum images to scan in this run")
 	offset := fs.Int("offset", 0, "image offset for this run")
 	all := fs.Bool("all", false, "scan all images in batches")
@@ -630,7 +630,7 @@ func runMaintenanceRepairThumbnails(ctx context.Context, args []string, stdout, 
 			ThumbnailDir:  cfg.Storage.ThumbnailDir,
 			ObjectTimeout: *objectTimeout,
 		},
-		Generator: picservice.GenerateThumbnail,
+		Generator: picservice.StoreThumbnail,
 	}
 	result := maintenance.RepairResult{GeneratedAt: time.Now().UTC(), Apply: *apply}
 	scanLimit := int32(*limit)

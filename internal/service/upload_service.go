@@ -180,31 +180,27 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	}
 	dedup := existing.ID != 0
 
-	// Step 10: Write to storage and resolve strategy URL
+	// Step 10: Write to storage and resolve strategy URL.
+	// The store stays open until after thumbnail generation below.
 	store, err := s.getStorage(strategy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init storage: %w", err)
 	}
+	defer store.Close()
 	var strategyPublicURL string
 	if !dedup {
-		defer store.Close()
 		if err := store.Write(ctx, pathname, fileData, mimetypeFromExt(ext)); err != nil {
 			return nil, fmt.Errorf("failed to write file: %w", err)
 		}
-		strategyPublicURL = store.URL(pathname)
-		// local/webdav strategies always serve through the /i/{key}.{ext} proxy.
-		// Other strategies do so only when link_mode is "proxy".
-		if strategy.StrategyType == "local" || strategy.StrategyType == "webdav" || IsProxyLinkMode(strategy.Configs) {
-			strategyPublicURL = ""
-		}
 	} else {
-		store.Close()
 		// Reuse existing file path so all dedup records point to the same file
 		pathname = existing.Path + "/" + existing.Name
-		strategyPublicURL = store.URL(pathname)
-		if strategy.StrategyType == "local" || strategy.StrategyType == "webdav" || IsProxyLinkMode(strategy.Configs) {
-			strategyPublicURL = ""
-		}
+	}
+	strategyPublicURL = store.URL(pathname)
+	// local/webdav strategies always serve through the /i/{key}.{ext} proxy.
+	// Other strategies do so only when link_mode is "proxy".
+	if strategy.StrategyType == "local" || strategy.StrategyType == "webdav" || IsProxyLinkMode(strategy.Configs) {
+		strategyPublicURL = ""
 	}
 
 	// Step 11: Save DB record
@@ -319,9 +315,11 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		}
 	}
 
-	// Step 13: Generate thumbnail (synchronous to avoid race with frontend)
+	// Step 13: Generate thumbnail into the image's storage strategy
+	// (synchronous to avoid race with frontend). Runs on dedup too so the
+	// thumbnail object exists for every image sharing the md5.
 	thumbStatus := "completed"
-	if thumbErr := GenerateThumbnail(fileData, ext, s.config.Storage.ThumbnailDir, md5Hash); thumbErr != nil {
+	if thumbErr := StoreThumbnail(ctx, store, fileData, ext, md5Hash); thumbErr != nil {
 		slog.Warn("thumbnail generation failed", "md5", md5Hash, "error", thumbErr)
 		thumbStatus = "failed"
 	}

@@ -15,6 +15,10 @@ jwt:
 
 storage:
   local_root: "./data/uploads"
+  # Read-only legacy fallback for thumbnails generated before they moved into
+  # image storage. New thumbnails live with the image in its storage strategy
+  # under _picfast/thumbnails/. Migrate old files with:
+  #   picfast maintenance repair-thumbnails --apply
   thumbnail_dir: "./data/thumbnails"
 
 mail:

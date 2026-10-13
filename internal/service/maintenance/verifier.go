@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/service/storage"
 )
 
@@ -31,6 +32,7 @@ const (
 	ThumbnailStatusOK         ThumbnailStatus = "ok"
 	ThumbnailStatusSkipped    ThumbnailStatus = "skipped"
 	ThumbnailStatusMissing    ThumbnailStatus = "missing"
+	ThumbnailStatusLegacy     ThumbnailStatus = "legacy"
 	ThumbnailStatusUnreadable ThumbnailStatus = "unreadable"
 )
 
@@ -122,7 +124,9 @@ func (v Verifier) VerifyObject(ctx context.Context, item InventoryItem) ObjectCh
 	return check
 }
 
-func (v Verifier) VerifyThumbnail(item InventoryItem) ThumbnailCheck {
+// VerifyThumbnail checks whether a thumbnail is servable: first inside the
+// image's storage strategy, then in the legacy on-disk directory.
+func (v Verifier) VerifyThumbnail(ctx context.Context, item InventoryItem) ThumbnailCheck {
 	name := item.ThumbnailName()
 	check := ThumbnailCheck{
 		ImageID: item.ImageID,
@@ -132,17 +136,48 @@ func (v Verifier) VerifyThumbnail(item InventoryItem) ThumbnailCheck {
 		check.Status = ThumbnailStatusSkipped
 		return check
 	}
-	check.Path = filepath.Join(v.ThumbnailDir, name)
-	if _, err := os.Stat(check.Path); err != nil {
-		if os.IsNotExist(err) {
-			check.Status = ThumbnailStatusMissing
-			return check
-		}
+	if item.StrategyID == nil || item.StrategyType == "" {
+		check.Status = ThumbnailStatusUnreadable
+		check.Error = "missing strategy"
+		return check
+	}
+	if v.ObjectTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, v.ObjectTimeout)
+		defer cancel()
+	}
+
+	factory := v.StorageFactory
+	if factory == nil {
+		factory = DefaultStorageFactory{}
+	}
+	store, err := factory.New(item.StrategyType, item.StrategyConfig)
+	if err != nil {
 		check.Status = ThumbnailStatusUnreadable
 		check.Error = err.Error()
 		return check
 	}
-	check.Status = ThumbnailStatusOK
+	defer store.Close()
+
+	objPath := service.ThumbnailObjectPath(item.MD5)
+	if _, err := store.Read(ctx, objPath); err == nil {
+		check.Path = objPath
+		check.Status = ThumbnailStatusOK
+		return check
+	}
+
+	// Pre-storage thumbnails lived in a shared on-disk directory. They still
+	// serve through the handler fallback but should be migrated into storage.
+	if v.ThumbnailDir != "" {
+		legacyPath := filepath.Join(v.ThumbnailDir, name)
+		if info, err := os.Stat(legacyPath); err == nil && !info.IsDir() {
+			check.Path = legacyPath
+			check.Status = ThumbnailStatusLegacy
+			return check
+		}
+	}
+
+	check.Status = ThumbnailStatusMissing
 	return check
 }
 
@@ -200,6 +235,20 @@ func (r *Report) AddThumbnailCheck(check ThumbnailCheck) {
 		r.Thumbnails.Skipped++
 		return
 	}
+	if check.Status == ThumbnailStatusLegacy {
+		// Legacy thumbnails still serve, but flag them so the report shows
+		// what should be migrated into image storage.
+		r.Thumbnails.OK++
+		r.Findings = append(r.Findings, ReportFinding{
+			ImageID: check.ImageID,
+			Key:     check.Key,
+			Kind:    "thumbnail",
+			Status:  string(check.Status),
+			Path:    check.Path,
+			Error:   check.Error,
+		})
+		return
+	}
 	r.Thumbnails.Failed++
 	r.Findings = append(r.Findings, ReportFinding{
 		ImageID: check.ImageID,
@@ -220,7 +269,7 @@ func VerifyBatch(ctx context.Context, verifier Verifier, items []InventoryItem) 
 		default:
 		}
 		report.AddObjectCheck(verifier.VerifyObject(ctx, item))
-		report.AddThumbnailCheck(verifier.VerifyThumbnail(item))
+		report.AddThumbnailCheck(verifier.VerifyThumbnail(ctx, item))
 	}
 	return report, nil
 }

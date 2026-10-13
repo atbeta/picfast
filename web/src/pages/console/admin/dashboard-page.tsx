@@ -178,7 +178,7 @@ export function AdminDashboardPage() {
                   <HealthBadge item={observability.health.uploads} />
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">{t('admin.observabilityThumbnails', { defaultValue: '缩略图目录' })}</span>
+                  <span className="text-muted-foreground">{t('admin.observabilityThumbnails', { defaultValue: '旧缩略图目录' })}</span>
                   <HealthBadge item={observability.health.thumbnails} />
                 </div>
                 <div className="flex items-center justify-between gap-3">

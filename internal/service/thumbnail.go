@@ -1,55 +1,94 @@
 package service
 
 import (
+	"context"
+	"errors"
 	"log/slog"
 	"os"
-	"path/filepath"
+	"strings"
 	"time"
 
 	picmetrics "github.com/atbeta/picfast/internal/metrics"
+	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
 const ThumbnailMaxSize = 400
 
-func GenerateThumbnail(data []byte, extension, thumbnailDir, md5Hash string) error {
+// thumbnailPrefix is the object path prefix for thumbnails stored inside an
+// image's storage strategy. It is prefixed so lifecycle tooling can tell
+// PicFast-managed objects apart from user uploads.
+const thumbnailPrefix = "_picfast/thumbnails/"
+
+// ThumbnailObjectPath returns the object path of a thumbnail inside the
+// image's storage strategy.
+func ThumbnailObjectPath(md5 string) string {
+	return thumbnailPrefix + md5 + ".png"
+}
+
+// ErrThumbnailSkipped marks image types that never get a thumbnail.
+var ErrThumbnailSkipped = errors.New("thumbnail skipped for this image type")
+
+// RenderThumbnail renders a PNG thumbnail for data. It performs no storage IO:
+// SVG and ICO inputs return ErrThumbnailSkipped.
+func RenderThumbnail(data []byte, extension string) ([]byte, error) {
 	start := time.Now()
-	// SVG and ICO: skip thumbnail generation
 	if extension == "svg" || extension == "ico" {
 		picmetrics.ObserveThumbnailGeneration("success", "skipped", time.Since(start))
-		return nil
+		return nil, ErrThumbnailSkipped
 	}
 
 	thumb, err := vips.NewThumbnailFromBuffer(data, ThumbnailMaxSize, ThumbnailMaxSize, vips.InterestingNone)
 	if err != nil {
-		slog.Warn("thumbnail decode/resize failed", "md5", md5Hash, "ext", extension, "error", err)
 		picmetrics.ObserveThumbnailGeneration("error", "decode_failed", time.Since(start))
-		return nil // best effort, don't fail upload
+		return nil, err
 	}
 	defer thumb.Close()
 
-	if err := os.MkdirAll(thumbnailDir, 0755); err != nil {
-		slog.Error("thumbnail mkdir failed", "dir", thumbnailDir, "error", err)
-		picmetrics.ObserveThumbnailGeneration("error", "write_failed", time.Since(start))
-		return err
-	}
-
-	outPath := filepath.Join(thumbnailDir, md5Hash+".png")
-	p := vips.NewPngExportParams()
-	out, _, err := thumb.ExportPng(p)
+	out, _, err := thumb.ExportPng(vips.NewPngExportParams())
 	if err != nil {
-		slog.Error("thumbnail export failed", "path", outPath, "error", err)
 		picmetrics.ObserveThumbnailGeneration("error", "encode_failed", time.Since(start))
-		return err
+		return nil, err
 	}
 
-	if err := os.WriteFile(outPath, out, 0644); err != nil {
-		slog.Error("thumbnail write failed", "path", outPath, "error", err)
+	picmetrics.ObserveThumbnailGeneration("success", picmetrics.ReasonNone, time.Since(start))
+	return out, nil
+}
+
+// StoreThumbnail renders a thumbnail for data and writes it into the image's
+// storage strategy. Rendering is best effort: skipped types and decode
+// failures return nil, matching historical upload behavior. Storage write
+// failures are returned to the caller.
+func StoreThumbnail(ctx context.Context, store storage.Storage, data []byte, extension, md5 string) error {
+	png, err := RenderThumbnail(data, extension)
+	if err != nil {
+		if !errors.Is(err, ErrThumbnailSkipped) {
+			slog.Warn("thumbnail decode/resize failed", "md5", md5, "ext", extension, "error", err)
+		}
+		return nil // best effort, don't fail upload
+	}
+
+	path := ThumbnailObjectPath(md5)
+	start := time.Now()
+	if err := store.Write(ctx, path, png, "image/png"); err != nil {
+		slog.Error("thumbnail write failed", "path", path, "error", err)
 		picmetrics.ObserveThumbnailGeneration("error", "write_failed", time.Since(start))
 		return err
 	}
-
-	slog.Info("thumbnail generated", "path", outPath, "md5", md5Hash)
-	picmetrics.ObserveThumbnailGeneration("success", picmetrics.ReasonNone, time.Since(start))
+	slog.Info("thumbnail generated", "path", path, "md5", md5)
 	return nil
+}
+
+// isNotFoundError reports whether a storage error means the object simply does
+// not exist. Backends do not share a typed not-found error, so this matches the
+// common shapes.
+func isNotFoundError(err error) bool {
+	if err == nil || errors.Is(err, os.ErrNotExist) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "not found") ||
+		strings.Contains(msg, "nosuchkey") ||
+		strings.Contains(msg, "no such key") ||
+		strings.Contains(msg, "404")
 }

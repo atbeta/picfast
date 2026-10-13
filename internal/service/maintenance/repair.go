@@ -3,9 +3,14 @@ package maintenance
 import (
 	"context"
 	"time"
+
+	"github.com/atbeta/picfast/internal/service"
+	"github.com/atbeta/picfast/internal/service/storage"
 )
 
-type ThumbnailGenerator func(data []byte, extension, thumbnailDir, md5Hash string) error
+// ThumbnailGenerator renders a thumbnail for data and writes it into store at
+// the strategy-owned thumbnail object path.
+type ThumbnailGenerator func(ctx context.Context, store storage.Storage, data []byte, extension, md5 string) error
 
 type RepairStatus string
 
@@ -63,7 +68,7 @@ func (r ThumbnailRepairer) Repair(ctx context.Context, items []InventoryItem, op
 			MD5:     item.MD5,
 		}
 
-		thumb := r.Verifier.VerifyThumbnail(item)
+		thumb := r.Verifier.VerifyThumbnail(ctx, item)
 		itemResult.Path = thumb.Path
 		if thumb.Status == ThumbnailStatusOK {
 			itemResult.Status = RepairStatusSkippedExisting
@@ -93,7 +98,7 @@ func (r ThumbnailRepairer) Repair(ctx context.Context, items []InventoryItem, op
 			continue
 		}
 
-		data, status, errText := r.readObject(ctx, item, opts.ObjectTimeout)
+		data, store, status, errText := r.readObject(ctx, item, opts.ObjectTimeout)
 		if status != "" {
 			itemResult.Status = status
 			itemResult.Error = errText
@@ -101,13 +106,16 @@ func (r ThumbnailRepairer) Repair(ctx context.Context, items []InventoryItem, op
 			result.Items = append(result.Items, itemResult)
 			continue
 		}
-		if err := r.Generator(data, item.Extension, r.Verifier.ThumbnailDir, item.MD5); err != nil {
+		if err := r.Generator(ctx, store, data, item.Extension, item.MD5); err != nil {
+			store.Close()
 			itemResult.Status = RepairStatusGenerateFailed
 			itemResult.Error = err.Error()
 			result.Failed++
 			result.Items = append(result.Items, itemResult)
 			continue
 		}
+		store.Close()
+		itemResult.Path = service.ThumbnailObjectPath(item.MD5)
 		itemResult.Status = RepairStatusRepaired
 		result.Repaired++
 		if item.MD5 != "" {
@@ -119,9 +127,12 @@ func (r ThumbnailRepairer) Repair(ctx context.Context, items []InventoryItem, op
 	return result
 }
 
-func (r ThumbnailRepairer) readObject(ctx context.Context, item InventoryItem, timeout time.Duration) ([]byte, RepairStatus, string) {
+// readObject returns the source object together with its open strategy store;
+// the caller owns closing the store so the same store can receive the
+// regenerated thumbnail.
+func (r ThumbnailRepairer) readObject(ctx context.Context, item InventoryItem, timeout time.Duration) ([]byte, storage.Storage, RepairStatus, string) {
 	if item.StrategyID == nil || item.StrategyType == "" {
-		return nil, RepairStatusMissingStrategy, ""
+		return nil, nil, RepairStatusMissingStrategy, ""
 	}
 	if timeout > 0 {
 		var cancel context.CancelFunc
@@ -134,13 +145,12 @@ func (r ThumbnailRepairer) readObject(ctx context.Context, item InventoryItem, t
 	}
 	store, err := factory.New(item.StrategyType, item.StrategyConfig)
 	if err != nil {
-		return nil, RepairStatusInitFailed, err.Error()
+		return nil, nil, RepairStatusInitFailed, err.Error()
 	}
-	defer store.Close()
-
 	data, err := store.Read(ctx, item.ObjectPath)
 	if err != nil {
-		return nil, RepairStatusReadFailed, err.Error()
+		store.Close()
+		return nil, nil, RepairStatusReadFailed, err.Error()
 	}
-	return data, "", ""
+	return data, store, "", ""
 }

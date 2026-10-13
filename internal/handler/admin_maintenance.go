@@ -58,9 +58,9 @@ func (h *AdminMaintenanceHandler) Summary(w http.ResponseWriter, r *http.Request
 	phashCoverage := h.phashStats(ctx)
 	thumbnailStats := h.thumbnailStats()
 
-	Success(w, map[string]any{
-		"generated_at":   time.Now().UTC(),
-		"risks":          risks,
+	resp := map[string]any{
+		"generated_at": time.Now().UTC(),
+		"risks":        risks,
 		"storage": map[string]any{
 			"disk":       di,
 			"strategies": strategies,
@@ -69,8 +69,11 @@ func (h *AdminMaintenanceHandler) Summary(w http.ResponseWriter, r *http.Request
 		"backup":         backupInfo,
 		"database":       dbTables,
 		"phash_coverage": phashCoverage,
-		"thumbnails":     thumbnailStats,
-	})
+	}
+	if thumbnailStats != nil {
+		resp["thumbnails"] = thumbnailStats
+	}
+	Success(w, resp)
 }
 
 func (h *AdminMaintenanceHandler) collectRisks(ctx context.Context, usage map[string]any, strategies []map[string]any) []map[string]any {
@@ -221,10 +224,16 @@ func (h *AdminMaintenanceHandler) phashStats(ctx context.Context) map[string]any
 	}
 }
 
+// thumbnailStats counts files left in the legacy on-disk thumbnail
+// directory. Thumbnails now live in image storage, so nil is returned (and
+// the key omitted) when the legacy directory does not exist.
 func (h *AdminMaintenanceHandler) thumbnailStats() map[string]any {
 	thumbDir := h.cfg.Storage.ThumbnailDir
 	if thumbDir == "" {
-		return map[string]any{"error": "not configured"}
+		return nil
+	}
+	if info, err := os.Stat(thumbDir); err != nil || !info.IsDir() {
+		return nil
 	}
 
 	entries, err := os.ReadDir(thumbDir)

@@ -40,6 +40,8 @@ Health probes at the server root / 根路径健康探针: `GET /healthz` (livene
 
 Migrations are embedded and run automatically at startup / 迁移已嵌入二进制并随启动自动执行. Set `PICFAST_DATABASE_AUTO_MIGRATE=false` and run `docker run --rm <image> migrate` first if you prefer to migrate out of band / 如需手动控制可先执行 `migrate` 子命令。
 
+Thumbnails are stored with each image in its storage strategy under `_picfast/thumbnails/`; `storage.thumbnail_dir` is a read-only legacy fallback only / 缩略图随图片保存在各存储策略的 `_picfast/thumbnails/` 下，`storage.thumbnail_dir` 仅作只读旧版回退。Migrate existing on-disk files with `picfast maintenance repair-thumbnails --apply` / 可执行 `picfast maintenance repair-thumbnails --apply` 迁移旧文件。
+
 ## Docker Compose
 
 ```bash

@@ -75,6 +75,18 @@ func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) e
 		}
 	}
 
+	// Other rows sharing this md5 still rely on the legacy thumbnail fallback
+	// and (same-strategy dups) the persisted thumbnail object.
+	hasMd5Siblings := false
+	if siblings, err := s.db.GetImagesByMD5(ctx, img.Md5); err == nil {
+		for _, sib := range siblings {
+			if sib.ID != img.ID {
+				hasMd5Siblings = true
+				break
+			}
+		}
+	}
+
 	if shouldDeleteFile && img.StrategyID.Valid {
 		strategy, err := s.db.GetStrategyByID(ctx, img.StrategyID.Int64)
 		if err == nil {
@@ -88,12 +100,23 @@ func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) e
 				if err := store.Delete(ctx, pathname); err != nil {
 					slog.Warn("failed to delete file from storage", "error", err)
 				}
+				// Cross-strategy md5 siblings never read this strategy's
+				// thumbnail object, so it is only kept for same-strategy
+				// dups (shouldDeleteFile=false).
+				if !hasMd5Siblings {
+					if err := store.Delete(ctx, ThumbnailObjectPath(img.Md5)); err != nil && !isNotFoundError(err) {
+						slog.Warn("failed to delete thumbnail from storage", "md5", img.Md5, "error", err)
+					}
+				}
 			}
 		}
 	}
 
-	thumbPath := filepath.Join(s.thumbDir, img.Md5+".png")
-	os.Remove(thumbPath)
+	// The on-disk thumbnail dir is a legacy fallback; only remove the file
+	// when no other image row shares this md5.
+	if s.thumbDir != "" && !hasMd5Siblings {
+		os.Remove(filepath.Join(s.thumbDir, img.Md5+".png"))
+	}
 
 	userID := img.UserID
 	albumID := img.AlbumID
