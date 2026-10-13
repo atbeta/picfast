@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -41,16 +42,16 @@ func RenderThumbnail(data []byte, extension string) ([]byte, error) {
 }
 
 // StoreThumbnail renders a thumbnail for data and writes it into the image's
-// storage strategy. Rendering is best effort: skipped types and decode
-// failures return nil, matching historical upload behavior. Storage write
-// failures are returned to the caller.
+// storage strategy. Skipped types (SVG, ICO) return nil; other render failures
+// are returned wrapped so callers can mark the thumbnail as failed instead of
+// silently recording it as complete. Storage write failures are returned too.
 func StoreThumbnail(ctx context.Context, store storage.Storage, data []byte, extension, md5 string) error {
 	png, err := RenderThumbnail(data, extension)
 	if err != nil {
-		if !errors.Is(err, ErrThumbnailSkipped) {
-			slog.Warn("thumbnail decode/resize failed", "md5", md5, "ext", extension, "error", err)
+		if errors.Is(err, ErrThumbnailSkipped) {
+			return nil
 		}
-		return nil // best effort, don't fail upload
+		return fmt.Errorf("render thumbnail: %w", err)
 	}
 
 	path := ThumbnailObjectPath(md5)
