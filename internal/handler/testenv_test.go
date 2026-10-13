@@ -55,8 +55,9 @@ func newTestEnv(t *testing.T) *testEnv {
 
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			Port:    0,
-			BaseURL: "http://localhost:0",
+			Port:           0,
+			BaseURL:        "http://localhost:0",
+			MetricsEnabled: true,
 		},
 		JWT: config.JWTConfig{
 			Secret:     "test-secret",
