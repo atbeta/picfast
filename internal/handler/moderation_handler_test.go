@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/atbeta/picfast/internal/testutil"
@@ -98,4 +99,39 @@ func TestAdminModeration(t *testing.T) {
 			t.Fatalf("status = %d, want 400", rec.Code)
 		}
 	})
+}
+
+// TestModerationModeRuntimeSwitch verifies that changing app.moderation_mode
+// takes effect on the next request without rebuilding the router.
+func TestModerationModeRuntimeSwitch(t *testing.T) {
+	env := newTestEnv(t)
+	group, _, user := env.seedSetup(t)
+	token := env.generateToken(t, user.ID, domain.RoleUser, group.ID)
+	setter := config.NewSetter(env.Config)
+
+	moderationStatusOf := func(id int64) string {
+		t.Helper()
+		img, err := env.DB.GetImageByID(t.Context(), id)
+		if err != nil {
+			t.Fatalf("GetImageByID: %v", err)
+		}
+		return img.ModerationStatus
+	}
+
+	_, id := uploadAndGetImage(t, env, token)
+	if s := moderationStatusOf(id); s != "approved" {
+		t.Fatalf("default mode moderation_status = %q, want approved", s)
+	}
+
+	setter.SetModerationMode("manual")
+	_, id = uploadAndGetImage(t, env, token)
+	if s := moderationStatusOf(id); s != "pending" {
+		t.Fatalf("manual mode moderation_status = %q, want pending", s)
+	}
+
+	setter.SetModerationMode("disabled")
+	_, id = uploadAndGetImage(t, env, token)
+	if s := moderationStatusOf(id); s != "approved" {
+		t.Fatalf("disabled mode moderation_status = %q, want approved", s)
+	}
 }

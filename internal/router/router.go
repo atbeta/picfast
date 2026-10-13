@@ -257,22 +257,14 @@ func New(
 	adminObservabilityHandler := handler.NewAdminObservabilityHandler(queries, pool, cfg, mailSender != nil && mailSender.Ready())
 	adminMaintenanceHandler := handler.NewAdminMaintenanceHandler(queries, pool, cfg, adminObservabilityHandler, deleteSvc)
 
-	// Content Moderation
-	app := cfg.AppSnapshot()
-	modMode, err := moderation.ParseMode(app.ModerationMode)
-	if err != nil {
-		slog.Warn("invalid moderation mode, disabling moderation", "mode", app.ModerationMode, "error", err)
-	}
-	if modMode == "" {
-		modMode = moderation.ModeDisabled
-	}
-	moderator, err := moderation.New(modMode, queries)
-	if err != nil {
-		slog.Warn("failed to create moderator", "mode", modMode, "error", err)
-		moderator = moderation.NewNoopModerator()
-	}
+	// Content Moderation — resolved per request so admin setting changes take
+	// effect without a restart. The initial For call preserves the startup
+	// warning for a misconfigured mode.
+	modResolver := moderation.NewResolver(queries)
+	modResolver.For(cfg.AppSnapshot().ModerationMode)
 	modMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			moderator := modResolver.For(cfg.AppSnapshot().ModerationMode)
 			next.ServeHTTP(w, r.WithContext(moderation.WithModerator(r.Context(), moderator)))
 		})
 	}
