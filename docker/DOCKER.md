@@ -40,6 +40,8 @@ Health probes at the server root / 根路径健康探针: `GET /healthz` (livene
 
 Migrations are embedded and run automatically at startup / 迁移已嵌入二进制并随启动自动执行. Set `PICFAST_DATABASE_AUTO_MIGRATE=false` and run `docker run --rm <image> migrate` first if you prefer to migrate out of band / 如需手动控制可先执行 `migrate` 子命令。
 
+Managed Postgres behind transaction-mode poolers (Supabase `:6543`, Neon `-pooler`, pgbouncer) / 事务模式连接池的托管 Postgres: append `default_query_exec_mode=exec` to the `PICFAST_DATABASE_URL` query string, or use the direct/session connection string — pgx's default statement cache is unreliable behind transaction poolers / 在连接串追加该参数或改用直连串。
+
 Background jobs (webhook dispatch, hourly cleanup) run embedded by default / 后台任务（webhook 投递、每小时清理）默认在进程内运行. With `PICFAST_JOBS_EMBEDDED=false`, trigger them externally: `POST /internal/jobs/run` with `Authorization: Bearer $PICFAST_JOBS_TOKEN`, or `picfast jobs run` / 设为 false 后由外部调度器触发上述端点或 CLI. Webhook latency equals the schedule frequency — every minute recommended / webhook 延迟等于触发频率，建议每分钟一次. Concurrent triggers across instances are safe (Postgres advisory locks) / 多实例并发触发安全（咨询锁）. Note the rate limiter counts per instance / 限流器按实例计数.
 
 Thumbnails are stored with each image in its storage strategy under `_picfast/thumbnails/`; `storage.thumbnail_dir` is a read-only legacy fallback only / 缩略图随图片保存在各存储策略的 `_picfast/thumbnails/` 下，`storage.thumbnail_dir` 仅作只读旧版回退。Migrate existing on-disk files with `picfast maintenance repair-thumbnails --apply` / 可执行 `picfast maintenance repair-thumbnails --apply` 迁移旧文件。
