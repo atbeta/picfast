@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -19,7 +18,6 @@ import (
 	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/atbeta/picfast/internal/clientip"
@@ -27,6 +25,7 @@ import (
 	"github.com/atbeta/picfast/internal/handler"
 	"github.com/atbeta/picfast/internal/router"
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
+	"github.com/atbeta/picfast/internal/sitesettings"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/atbeta/picfast/migrations"
 
@@ -96,7 +95,8 @@ func main() {
 	}
 
 	queries := sqlc.New(pool)
-	if err := applyPersistedSiteSettings(context.Background(), queries, cfg); err != nil {
+	settingsUpdatedAt, err := sitesettings.Load(context.Background(), queries, cfg)
+	if err != nil {
 		slog.Error("failed to load persisted site settings", "error", err)
 		os.Exit(1)
 	}
@@ -115,7 +115,8 @@ func main() {
 		slog.Info("serving frontend", "dir", webDir)
 	}
 
-	r, runner := router.New(queries, pool, cfg, jwtSvc, spaHandler, mailSender)
+	r, runner := router.New(queries, pool, cfg, jwtSvc, spaHandler, mailSender,
+		sitesettings.NewRefresher(queries, cfg, settingsUpdatedAt))
 
 	if cfg.Jobs.Embedded {
 		runner.Start()
@@ -280,54 +281,4 @@ func resolveWebDir(configured string) string {
 	}
 
 	return ""
-}
-
-func applyPersistedSiteSettings(ctx context.Context, queries *sqlc.Queries, cfg *config.Config) error {
-	settings, err := queries.GetSiteSettings(ctx)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil
-		}
-		return err
-	}
-
-	cfg.App.Name = settings.AppName
-	cfg.Server.BaseURL = settings.AppUrl
-	cfg.App.SiteDescription = settings.SiteDescription
-	cfg.App.FaviconURL = settings.FaviconUrl
-	cfg.App.AllowGuestUpload = settings.AllowGuestUpload
-	cfg.App.GuestCapacityBytes = settings.GuestCapacityBytes
-	cfg.App.AllowRegistration = settings.AllowRegistration
-	cfg.App.AllowOauthRegistration = settings.AllowOauthRegistration
-	cfg.App.AllowUserImageProcessing = settings.AllowUserImageProcessing
-	cfg.App.SkipImageProcessing = settings.SkipImageProcessing
-	cfg.App.RequireEmailVerification = settings.RequireEmailVerification
-	cfg.App.UserInitialCapacity = settings.UserInitialCapacity
-	if settings.DefaultImageTtl == "" {
-		cfg.App.DefaultImageTTL = 0
-	} else {
-		d, err := time.ParseDuration(settings.DefaultImageTtl)
-		if err != nil {
-			return fmt.Errorf("parse persisted default_image_ttl: %w", err)
-		}
-		cfg.App.DefaultImageTTL = d
-	}
-	if settings.GuestImageTtl == "" {
-		cfg.App.GuestImageTTL = 0
-	} else {
-		d, err := time.ParseDuration(settings.GuestImageTtl)
-		if err != nil {
-			return fmt.Errorf("parse persisted guest_image_ttl: %w", err)
-		}
-		cfg.App.GuestImageTTL = d
-	}
-	cfg.App.ModerationMode = settings.ModerationMode
-	cfg.App.FooterText1 = settings.FooterText1
-	cfg.App.FooterLink1 = settings.FooterLink1
-	cfg.App.FooterText2 = settings.FooterText2
-	cfg.App.FooterLink2 = settings.FooterLink2
-	cfg.App.AnalyticsProvider = settings.AnalyticsProvider
-	cfg.App.AnalyticsConfig = settings.AnalyticsConfig
-	cfg.App.ThemeConfig = settings.ThemeConfig
-	return nil
 }

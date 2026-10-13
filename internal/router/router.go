@@ -27,6 +27,7 @@ import (
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/service/moderation"
 	"github.com/atbeta/picfast/internal/service/webhook"
+	"github.com/atbeta/picfast/internal/sitesettings"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/atbeta/picfast/internal/version"
 	"github.com/go-chi/chi/v5"
@@ -42,12 +43,18 @@ func New(
 	jwtSvc *handler.JWTService,
 	spaHandler *handler.SPAHandler,
 	mailSender mailservice.Sender,
+	refresher *sitesettings.Refresher,
 ) (http.Handler, *jobs.Runner) {
 	r := chi.NewRouter()
 
 	r.Use(middleware.StructuredLogger)
 	r.Use(middleware.SecurityHeaders(cfg))
 	r.Use(chimw.Recoverer)
+	// Re-read site_settings saved by another instance at most once per
+	// refresh interval; local writes already update this process.
+	if refresher != nil {
+		r.Use(refresher.Middleware)
+	}
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := context.WithValue(r.Context(), domain.ContextKeyOriginalAddr, r.RemoteAddr)
