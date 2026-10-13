@@ -110,6 +110,9 @@ scrape_configs:
 - `PICFAST_JWT_SECRET` — JWT 签名密钥（生产必填）
 - `PORT` — PaaS 平台注入的监听端口（未设置 `PICFAST_SERVER_PORT` 时生效）
 - `PICFAST_SERVER_METRICS_ENABLED` — 设为 `false` 可关闭独立的 `/metrics` 监听端口
+- `PICFAST_STORAGE_DEFAULT_TYPE` + `PICFAST_STORAGE_DEFAULT_CONFIG` — 首次启动（数据库尚无任何存储策略）时创建默认存储策略的类型与 JSON 配置，仅在首次启动生效；策略已存在时被忽略。示例（S3）：`PICFAST_STORAGE_DEFAULT_TYPE=s3`，`PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://s3.example.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","url":"https://cdn.example.com"}'`；Cloudflare R2（S3 兼容）：`"endpoint":"https://<account>.r2.cloudflarestorage.com"`、`"region":"auto"`、`"use_path_style":true`。
+
+> ⚠️ 容器 PaaS（无持久卷）上默认的 `local` 存储位于临时磁盘，实例重建后上传文件即丢失 — 请用上述变量配置 S3/R2 等持久后端。
 
 健康检查端点（服务根路径，无需鉴权）：
 

@@ -20,6 +20,20 @@ storage:
   # under _picfast/thumbnails/. Migrate old files with:
   #   picfast maintenance repair-thumbnails --apply
   thumbnail_dir: "./data/thumbnails"
+  # First-boot storage strategy (applied only when no strategy exists yet).
+  # WARNING: on container PaaS the default "local" storage is ephemeral —
+  # set a durable backend (e.g. s3) or uploads will be lost on redeploy.
+  # Env: PICFAST_STORAGE_DEFAULT_TYPE, PICFAST_STORAGE_DEFAULT_CONFIG (JSON).
+  #
+  # S3 example:
+  #   default_type: "s3"
+  #   default_config: '{"endpoint":"https://s3.example.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","url":"https://cdn.example.com"}'
+  #
+  # Cloudflare R2 example (S3-compatible):
+  #   default_type: "s3"
+  #   default_config: '{"endpoint":"https://<account>.r2.cloudflarestorage.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","url":"https://cdn.example.com","use_path_style":true}'
+  default_type: "local"
+  # default_config: ""
 
 mail:
   host: "127.0.0.1"

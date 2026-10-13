@@ -56,6 +56,10 @@ const DefaultJWTSecret = "change-me-in-production"
 type StorageConfig struct {
 	LocalRoot    string `mapstructure:"local_root"`
 	ThumbnailDir string `mapstructure:"thumbnail_dir"`
+	DefaultType  string `mapstructure:"default_type"`
+	// DefaultConfig is parsed manually in Load: mapstructure cannot decode a
+	// YAML map into json.RawMessage, so the mapstructure tag must skip it.
+	DefaultConfig json.RawMessage `mapstructure:"-"`
 }
 
 type MailConfig struct {
@@ -391,6 +395,20 @@ func Load() (*Config, error) {
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("unmarshal config: %w", err)
 	}
+	// storage.default_config accepts a JSON string (env var or quoted YAML
+	// scalar) or a YAML map, which is normalized to JSON here.
+	if v.IsSet("storage.default_config") {
+		switch raw := v.Get("storage.default_config").(type) {
+		case string:
+			if s := strings.TrimSpace(raw); s != "" {
+				cfg.Storage.DefaultConfig = json.RawMessage(s)
+			}
+		case map[string]any:
+			if b, err := json.Marshal(raw); err == nil {
+				cfg.Storage.DefaultConfig = json.RawMessage(b)
+			}
+		}
+	}
 	if v.IsSet("app.analytics_config") {
 		if raw := strings.TrimSpace(v.GetString("app.analytics_config")); raw != "" {
 			cfg.App.AnalyticsConfig = json.RawMessage(raw)
@@ -432,6 +450,7 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("storage.local_root", "./data/uploads")
 	v.SetDefault("storage.thumbnail_dir", "./data/thumbnails")
+	v.SetDefault("storage.default_type", "local")
 
 	v.SetDefault("mail.host", "")
 	v.SetDefault("mail.port", 587)

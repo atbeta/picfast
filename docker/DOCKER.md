@@ -42,6 +42,8 @@ Migrations are embedded and run automatically at startup / 迁移已嵌入二进
 
 Thumbnails are stored with each image in its storage strategy under `_picfast/thumbnails/`; `storage.thumbnail_dir` is a read-only legacy fallback only / 缩略图随图片保存在各存储策略的 `_picfast/thumbnails/` 下，`storage.thumbnail_dir` 仅作只读旧版回退。Migrate existing on-disk files with `picfast maintenance repair-thumbnails --apply` / 可执行 `picfast maintenance repair-thumbnails --apply` 迁移旧文件。
 
+First-boot storage strategy / 首次启动的默认存储策略: `PICFAST_STORAGE_DEFAULT_TYPE` + `PICFAST_STORAGE_DEFAULT_CONFIG` (JSON) create the default strategy only when none exists yet / 仅在数据库尚无存储策略时生效. S3 example / S3 示例: `{"endpoint":"https://s3.example.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","url":"https://cdn.example.com"}`. Cloudflare R2 (S3-compatible) / R2 示例: `"endpoint":"https://<account>.r2.cloudflarestorage.com"`, `"region":"auto"`, `"use_path_style":true`. ⚠️ On container PaaS the default `local` storage is ephemeral — configure a durable backend or uploads are lost on redeploy / 容器 PaaS 上默认 local 存储位于临时磁盘，重部署即丢失，请配置持久后端。
+
 ## Docker Compose
 
 ```bash
