@@ -85,6 +85,9 @@ docker-down:
 docker-logs:
 	docker compose -f docker/docker-compose.dev.yml logs -f app
 
+image-slim:
+	docker build -f docker/Dockerfile.slim -t picfast:slim-local .
+
 ## Testing
 
 test:

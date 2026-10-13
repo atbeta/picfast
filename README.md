@@ -100,6 +100,15 @@ docker run -d --name picfast --network picfast-net -p 18080:8080 \
 
 打开 `http://localhost:18080` 完成初始化向导。无人值守部署时同时设置 `PICFAST_APP_ADMIN_EMAIL` 和 `PICFAST_APP_ADMIN_PASSWORD` 即可跳过向导。
 
+### 镜像选择
+
+| 标签 | 说明 |
+|------|------|
+| `latest` / `vX.Y.Z` | **完整镜像**：内置 libvips，支持 WebP 输出、文字水印、以及基于 `pg_dump` 的维护备份/恢复。 |
+| `slim` / `vX.Y.Z-slim` | **精简镜像**：纯 Go 构建（无 libvips/CGO），镜像更小、冷启动更快，推荐用于容器 PaaS；不支持 WebP 输出与文字水印，也不含 `pg_dump` 维护备份/恢复。 |
+
+注意：精简镜像在重新编码时不会保留 EXIF 元数据（即使未开启“去除 EXIF”）。
+
 可观测性：Docker Compose 默认让 metrics 在容器内 `:9190` 监听，不发布到宿主机；Prometheus 可在同一 Docker 网络抓取 `app:9190/metrics`。健康探针 `GET /healthz`（存活）与 `GET /readyz`（就绪，检查数据库）暴露在服务根路径，可用于容器平台健康检查。通用 Compose、Traefik 模板及 `.env` 示例详见 **[docker/README.md](docker/README.md)**。
 
 ## 常用命令

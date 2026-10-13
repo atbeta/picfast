@@ -1,0 +1,50 @@
+# Slim image: pure-Go backend, no libvips/CGO, distroless runtime.
+# Compared to docker/Dockerfile this drops WebP output, text watermarking, and
+# pg_dump-based maintenance backup in exchange for a much smaller image and
+# faster cold start (recommended for container PaaS with ephemeral disks).
+
+# ---- Stage 1: Build Frontend ----
+FROM node:24-slim AS frontend-builder
+
+WORKDIR /web
+COPY web/package.json web/pnpm-lock.yaml* ./
+RUN npm install -g pnpm@10.33.0 && pnpm install --frozen-lockfile
+
+COPY web/ .
+RUN pnpm build && mv dist /web-dist
+
+# ---- Stage 2: Build Backend (pure Go, no libvips) ----
+FROM golang:1.26-bookworm AS backend-builder
+
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+ARG VERSION=dev
+ARG COMMIT=unknown
+ARG BUILD_TIME=unknown
+RUN CGO_ENABLED=0 go build -tags novips -trimpath \
+    -ldflags="-s -w -X github.com/atbeta/picfast/internal/version.Version=${VERSION} -X github.com/atbeta/picfast/internal/version.Commit=${COMMIT} -X github.com/atbeta/picfast/internal/version.BuildTime=${BUILD_TIME}" \
+    -o /picfast ./cmd/picfast
+
+# Distroless has no shell or package manager, so the data directories are
+# created here and copied with the nonroot uid/gid (65532) applied.
+RUN mkdir -p /app/data/uploads /app/data/thumbnails
+
+# ---- Stage 3: Runtime ----
+FROM gcr.io/distroless/static-debian12:nonroot
+
+COPY --from=backend-builder /picfast /usr/local/bin/picfast
+COPY --from=frontend-builder /web-dist /web-dist
+COPY --from=backend-builder --chown=65532:65532 /app/data /app/data
+
+WORKDIR /app
+
+EXPOSE 8080
+
+ENV PICFAST_SERVER_WEB_DIR=/web-dist
+
+USER nonroot
+
+ENTRYPOINT ["/usr/local/bin/picfast"]

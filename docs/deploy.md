@@ -93,6 +93,11 @@ export PICFAST_SERVER_TRUSTED_PROXIES="10.0.0.0/8,172.16.0.0/12"
 
 **注意**：未配置 `trusted_proxies` 时，`RealIP` 中间件不会生效，`X-Forwarded-For` 头将被忽略。
 
+## 镜像变体
+
+- **`latest` / `vX.Y.Z`（完整镜像）**：内置 libvips，支持 WebP 输出、文字水印、以及基于 `pg_dump` 的维护备份/恢复。
+- **`slim` / `vX.Y.Z-slim`（精简镜像）**：纯 Go 构建（`CGO_ENABLED=0`，无 libvips），镜像更小、冷启动更快，推荐用于容器 PaaS。不支持 WebP 输出与文字水印，也不含 `pg_dump` 维护备份/恢复；注意即使未开启“去除 EXIF”，重新编码的图片也不会保留 EXIF 元数据。
+
 ## 健康检查端点
 
 PicFast 在服务根路径暴露两个探针，适用于负载均衡器与容器平台的健康检查：

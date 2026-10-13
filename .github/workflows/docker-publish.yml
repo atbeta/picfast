@@ -15,7 +15,12 @@ concurrency:
 
 jobs:
   docker:
+    name: docker (${{ matrix.variant }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [full, slim]
     permissions:
       contents: read
       id-token: write
@@ -49,8 +54,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME || 'xbeta' }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
+      - name: Extract Docker metadata (full)
+        id: meta-full
+        if: matrix.variant == 'full'
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE_NAME }}
@@ -61,22 +67,36 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=sha-
 
+      - name: Extract Docker metadata (slim)
+        id: meta-slim
+        if: matrix.variant == 'slim'
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          flavor: latest=false,suffix=-slim
+          tags: |
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+            type=raw,value=slim
+
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile
+          file: ${{ matrix.variant == 'full' && 'docker/Dockerfile' || 'docker/Dockerfile.slim' }}
           build-args: |
             VERSION=${{ steps.build-meta.outputs.version }}
             COMMIT=${{ steps.build-meta.outputs.commit }}
             BUILD_TIME=${{ steps.build-meta.outputs.build_time }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ steps.meta-full.outputs.tags || steps.meta-slim.outputs.tags }}
+          labels: ${{ steps.meta-full.outputs.labels || steps.meta-slim.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.variant }}
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
