@@ -67,7 +67,7 @@ lint:
 	cd web && pnpm exec tsc -b --pretty false
 
 openapi-lint:
-	pnpm --package=@redocly/cli dlx redocly lint --config .redocly.yaml api/openapi.yaml
+	pnpm --package=@redocly/cli@2.59.0 dlx redocly lint --config .redocly.yaml api/openapi.yaml
 
 ## Dependencies
 
