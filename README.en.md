@@ -100,6 +100,15 @@ docker run -d --name picfast --network picfast-net -p 18080:8080 \
 
 Open `http://localhost:18080` and follow the setup wizard. For headless deployments, set both `PICFAST_APP_ADMIN_EMAIL` and `PICFAST_APP_ADMIN_PASSWORD` to skip the wizard.
 
+### Image variants
+
+| Tag | Description |
+|-----|-------------|
+| `latest` / `vX.Y.Z` | **Full image**: ships libvips — WebP output, text watermark, and `pg_dump`-based maintenance backup/restore. |
+| `slim` / `vX.Y.Z-slim` | **Slim image**: pure-Go build (no libvips/CGO), smaller and faster cold start — recommended for container PaaS. No WebP output or text watermark, and no `pg_dump`-based maintenance backup/restore. |
+
+Note: the slim image does not preserve EXIF metadata when re-encoding (even when "strip EXIF" is off).
+
 Observability: Docker Compose listens for metrics on container-local `:9190` without publishing it to the host. Prometheus can scrape `app:9190/metrics` from the same Docker network. Health probes `GET /healthz` (liveness) and `GET /readyz` (readiness, checks the database) are served at the server root for container platform health checks. See **[docker/README.md](docker/README.md)** for the generic Compose file, Traefik template, and `.env` examples.
 
 ## Common Commands

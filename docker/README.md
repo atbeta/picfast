@@ -38,7 +38,8 @@ docker compose up -d
 
 | 文件 | 用途 |
 |------|------|
-| [`Dockerfile`](Dockerfile) | 多阶段构建镜像 |
+| [`Dockerfile`](Dockerfile) | 多阶段构建镜像（完整版，含 libvips） |
+| [`Dockerfile.slim`](Dockerfile.slim) | 精简镜像：纯 Go 构建，无 libvips/CGO，distroless 运行时 |
 | [`docker-compose.yml`](docker-compose.yml) | **推荐**：PostgreSQL + PicFast，自行接入反代 |
 | [`docker-compose.traefik.yml`](docker-compose.traefik.yml) | Traefik 方案（需已运行 Traefik 并配置证书） |
 | [`docker-compose.dev.yml`](docker-compose.dev.yml) | 本地开发：PostgreSQL + Mailpit + PicFast |
@@ -103,7 +104,11 @@ scrape_configs:
 
 ## 仅用镜像（无 Compose）
 
-最小示例见 [DOCKER.md](DOCKER.md)。核心变量：
+最小示例见 [DOCKER.md](DOCKER.md)。
+
+镜像变体：`latest`/`vX` 为完整镜像（libvips：WebP 输出、文字水印、`pg_dump` 维护备份/恢复）；`slim`/`vX-slim` 为纯 Go 精简镜像（distroless，无 libvips/CGO，镜像更小、冷启动更快），不支持 WebP 输出、文字水印与 `pg_dump` 备份 —— 推荐容器 PaaS 使用。注意：精简镜像重新编码时不保留 EXIF 元数据。
+
+核心变量：
 
 - `PICFAST_DATABASE_URL` — 数据库连接串（必填）
 - `PICFAST_SERVER_BASE_URL` — 站点对外访问地址
