@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/events"
 	"github.com/atbeta/picfast/internal/service"
+	"github.com/atbeta/picfast/internal/sqlc"
 )
 
 // strategyThumbPath returns the on-disk location a local strategy uses for the
@@ -121,6 +123,61 @@ func TestDeleteRetainsThumbnailForSameMD5Sibling(t *testing.T) {
 	}
 	if _, err := os.Stat(strategyThumbPath(env, md5)); err != nil {
 		t.Fatalf("strategy thumbnail should be retained: %v", err)
+	}
+	legacyPath := filepath.Join(env.Config.Storage.ThumbnailDir, md5+".png")
+	if _, err := os.Stat(legacyPath); err != nil {
+		t.Fatalf("legacy thumbnail should be retained: %v", err)
+	}
+}
+
+// TestDeleteRemovesOwnStrategyThumbnailWithCrossStrategySibling covers the
+// same-md5-in-another-strategy case: deleting A must remove A's strategy
+// thumbnail object (B never reads it), while B's own strategy thumbnail and
+// the legacy file stay.
+func TestDeleteRemovesOwnStrategyThumbnailWithCrossStrategySibling(t *testing.T) {
+	env := newTestEnv(t)
+	group, _, owner := env.seedSetup(t)
+	strategy1 := seedStrategyForEnv(t, env, group.ID)
+
+	// Second local strategy rooted in its own temp dir.
+	root2 := t.TempDir()
+	configs2, _ := json.Marshal(domain.LocalStrategyConfig{Root: root2, URL: "/i"})
+	strategy2, err := env.DB.CreateStrategy(t.Context(), sqlc.CreateStrategyParams{
+		Name:         "Test Local 2",
+		StrategyType: "local",
+		Configs:      configs2,
+	})
+	if err != nil {
+		t.Fatalf("create second strategy: %v", err)
+	}
+
+	const md5 = "88888888888888888888888888888888"
+	imgA := createTestImage(t, env, owner.ID, group.ID, strategy1.ID, "xstrat-a", "png", int16(domain.PermissionPublic))
+	imgB := createTestImage(t, env, owner.ID, group.ID, strategy2.ID, "xstrat-b", "png", int16(domain.PermissionPublic))
+	// Same content => same md5+sha1, but different strategies, so each is the
+	// only image of its kind in its own strategy.
+	updateImageMD5(t, env, imgA.ID, md5)
+	updateImageMD5(t, env, imgB.ID, md5)
+
+	writeStrategyThumbnail(t, env, md5) // S1
+	s2Thumb := filepath.Join(root2, "_picfast", "thumbnails", md5+".png")
+	if err := os.MkdirAll(filepath.Dir(s2Thumb), 0o755); err != nil {
+		t.Fatalf("mkdir s2 thumbnail dir: %v", err)
+	}
+	if err := os.WriteFile(s2Thumb, pngBytes(), 0o644); err != nil {
+		t.Fatalf("write s2 thumbnail: %v", err)
+	}
+	writeThumbnail(t, env, md5) // legacy on-disk fallback
+
+	deleter := service.NewDeleteService(env.DB, env.Pool, env.Config.Storage.ThumbnailDir, events.NewCollectEmitter())
+	if err := deleter.DeleteImage(t.Context(), imgA.ID); err != nil {
+		t.Fatalf("delete image: %v", err)
+	}
+	if _, err := os.Stat(strategyThumbPath(env, md5)); !os.IsNotExist(err) {
+		t.Fatalf("S1 thumbnail should be removed, stat err = %v", err)
+	}
+	if _, err := os.Stat(s2Thumb); err != nil {
+		t.Fatalf("S2 thumbnail should be retained: %v", err)
 	}
 	legacyPath := filepath.Join(env.Config.Storage.ThumbnailDir, md5+".png")
 	if _, err := os.Stat(legacyPath); err != nil {
