@@ -58,6 +58,57 @@ paths:
                       data:
                         $ref: "#/components/schemas/VersionResponse"
 
+  /healthz:
+    servers:
+      - url: http://localhost:8080
+    get:
+      tags: [system]
+      summary: Liveness probe
+      description: Served at the server root (outside /api/v1). Always returns 200 without touching the database or filesystem; intended for container/PaaS health checks.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /readyz:
+    servers:
+      - url: http://localhost:8080
+    get:
+      tags: [system]
+      summary: Readiness probe
+      description: Served at the server root (outside /api/v1). Pings the database and reports readiness; intended for container/PaaS readiness checks.
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+        "503":
+          description: Not ready (database unreachable)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: unavailable
+                  database:
+                    type: string
+                    description: Database error detail
+
   /setup/status:
     get:
       tags: [setup]
