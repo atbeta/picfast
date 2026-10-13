@@ -14,11 +14,19 @@ import (
 	"github.com/atbeta/picfast/internal/sqlc"
 )
 
+// outboxBatchSize caps how many pending outbox events one pass converts to
+// deliveries.
+const outboxBatchSize = 100
+
 // Result summarizes a single RunOnce pass.
 type Result struct {
 	// Skipped is true when another instance or run already held the
 	// webhook advisory lock.
-	Skipped             bool `json:"skipped"`
+	Skipped bool `json:"skipped"`
+	// More is true when either list filled its batch, meaning more pending
+	// rows are likely waiting for another pass. Rows that keep failing do
+	// not set More — looping on them would spin the drain budget.
+	More                bool `json:"more"`
 	OutboxProcessed     int  `json:"outbox_processed"`
 	DeliveriesAttempted int  `json:"deliveries_attempted"`
 }
@@ -110,11 +118,14 @@ func (w *Worker) runPass(ctx context.Context, res *Result) error {
 }
 
 func (w *Worker) processOutbox(ctx context.Context, res *Result) error {
-	events, err := w.db.ListPendingOutboxEvents(ctx, 100)
+	events, err := w.db.ListPendingOutboxEvents(ctx, outboxBatchSize)
 	if err != nil {
 		return err
 	}
 	res.OutboxProcessed += len(events)
+	if len(events) == outboxBatchSize {
+		res.More = true
+	}
 
 	ocrSem := make(chan struct{}, w.ocrConcurrency)
 	var wg sync.WaitGroup
@@ -211,6 +222,9 @@ func (w *Worker) dispatchPending(ctx context.Context, res *Result) {
 		return
 	}
 	res.DeliveriesAttempted += len(deliveries)
+	if int32(len(deliveries)) == limit {
+		res.More = true
+	}
 
 	// Dispatches run detached from ctx: each HTTP request carries its own
 	// delivery timeout and the status update must still be written when a

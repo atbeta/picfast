@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
 	"github.com/atbeta/picfast/internal/pglock"
+	"github.com/atbeta/picfast/internal/service/webhook"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/atbeta/picfast/internal/testutil"
 )
@@ -103,5 +105,80 @@ func TestCleanupSkippedWhenLockHeld(t *testing.T) {
 	}
 	if rep.Webhooks.State != stateDisabled {
 		t.Fatalf("webhooks state = %q, want %q", rep.Webhooks.State, stateDisabled)
+	}
+}
+
+// A delivery that fails before its status is updated stays pending and is
+// re-listed by every pass — the drain loop must exit after the partial pass
+// instead of spinning for the whole budget.
+func TestRunOnceDoesNotSpinOnStuckDelivery(t *testing.T) {
+	pool, q := testutil.SetupDB(t)
+	ctx := context.Background()
+
+	group := testutil.SeedDefaultGroup(t, q)
+	user := testutil.SeedUser(t, q, group.ID, "hook@example.com", "password123", "user")
+
+	encKey := make([]byte, 32)
+	for i := range encKey {
+		encKey[i] = byte(i)
+	}
+	wh, err := webhook.NewService(q, 10, encKey).Create(ctx, webhook.CreateParams{
+		UserID: user.ID,
+		Name:   "stuck",
+		URL:    "https://example.com/hook",
+		Events: []string{"image.uploaded"},
+	})
+	if err != nil {
+		t.Fatalf("create webhook: %v", err)
+	}
+
+	// Valid JSONB but not a valid events.Envelope (occurred_at is not a
+	// timestamp): dispatch fails at unmarshal before any status update, so
+	// the delivery remains pending forever.
+	evt, err := q.InsertOutboxEvent(ctx, sqlc.InsertOutboxEventParams{
+		Type:           "image.uploaded",
+		Version:        "1",
+		IdempotencyKey: "stuck-1",
+		Payload:        json.RawMessage(`{"occurred_at":"bogus"}`),
+		// NULL owner matches no webhook, so processOutbox marks the event
+		// dispatched instead of creating a second delivery.
+		OwnerUserID: pgtype.Int8{},
+	})
+	if err != nil {
+		t.Fatalf("insert outbox event: %v", err)
+	}
+	d, err := q.CreateWebhookDelivery(ctx, sqlc.CreateWebhookDeliveryParams{
+		WebhookID:      wh.ID,
+		OutboxEventID:  evt.ID,
+		RequestHeaders: json.RawMessage(`{}`),
+	})
+	if err != nil {
+		t.Fatalf("create delivery: %v", err)
+	}
+
+	cfg := testRunnerConfig(t)
+	cfg.Webhook.Enabled = true
+	runner := NewRunner(q, pool, cfg)
+
+	start := time.Now()
+	report := runner.RunOnce(ctx)
+	elapsed := time.Since(start)
+
+	if elapsed > 2*time.Second {
+		t.Fatalf("RunOnce took %v, want < 2s", elapsed)
+	}
+	if report.Webhooks.State != stateRan || report.Webhooks.Error != "" {
+		t.Fatalf("webhooks report = %+v", report.Webhooks)
+	}
+	if got := report.Webhooks.Counts["deliveries_attempted"]; got != 1 {
+		t.Fatalf("deliveries_attempted = %d, want 1", got)
+	}
+
+	var status string
+	if err := pool.QueryRow(ctx, "SELECT status FROM webhook_deliveries WHERE id = $1", d.ID).Scan(&status); err != nil {
+		t.Fatalf("query delivery status: %v", err)
+	}
+	if status != "pending" {
+		t.Fatalf("stuck delivery status = %q, want pending", status)
 	}
 }

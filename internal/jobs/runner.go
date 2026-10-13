@@ -122,7 +122,10 @@ func (r *Runner) runWebhooks(ctx context.Context) TaskReport {
 			rep.State = stateSkipped
 			return rep
 		}
-		if res.OutboxProcessed == 0 && res.DeliveriesAttempted == 0 {
+		// Keep draining only while passes come back full. A partial pass —
+		// including rows stuck pending after a failed dispatch — stops the
+		// loop instead of spinning on unprocessable work.
+		if !res.More {
 			return rep
 		}
 		if time.Now().After(deadline) {
