@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { Settings, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/lib/auth-context'
 import { usePersonalization } from '@/lib/use-personalization'
+import { getSiteConfig } from '@/lib/site-config'
 import { extractErrorMessage } from '@/lib/error-handler'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -48,6 +50,7 @@ export function ImageProcessingDialog() {
   const { t } = useTranslation()
   const { user, updateProfile } = useAuth()
   const { workflow } = usePersonalization()
+  const { data: site } = useQuery({ queryKey: ['site-config'], queryFn: getSiteConfig })
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(() => readImageProcessing(user?.settings))
@@ -67,6 +70,14 @@ export function ImageProcessingDialog() {
   }
 
   const allowUserImageProcessing = workflow.allowUserImageProcessing
+
+  // Absent capability data means an older server: treat as full support.
+  const imageCaps = site?.image_capabilities
+  const webpSupported = imageCaps?.webp_output ?? true
+  const watermarkSupported = imageCaps?.watermark ?? true
+  // A saved "webp" preference is displayed as "origin" when WebP output is
+  // unavailable; it is only rewritten if the user explicitly saves.
+  const displayFormat = form.imageFormat === 'webp' && !webpSupported ? 'origin' : form.imageFormat
 
   const onOpenChange = (next: boolean) => {
     if (next) setForm(readImageProcessing(user?.settings))
@@ -138,6 +149,13 @@ export function ImageProcessingDialog() {
         </DialogHeader>
 
         <div className="space-y-4">
+          {(!webpSupported || !watermarkSupported) && (
+            <p className="text-xs text-muted-foreground">
+              {t('settings.imageBackendLimited', {
+                defaultValue: '当前部署使用精简图像引擎：不支持 WebP 输出与文字水印。',
+              })}
+            </p>
+          )}
           <Field
             label={t('settings.imageSaveQuality', { defaultValue: '压缩质量' })}
             disabled={!allowUserImageProcessing}
@@ -158,7 +176,7 @@ export function ImageProcessingDialog() {
             disabled={!allowUserImageProcessing}
           >
             <select
-              value={form.imageFormat}
+              value={displayFormat}
               onChange={(e) => setField('imageFormat', e.target.value)}
               disabled={!allowUserImageProcessing}
               className={fieldInputCls}
@@ -166,7 +184,7 @@ export function ImageProcessingDialog() {
               <option value="origin">{t('settings.keepOriginalFormat', { defaultValue: '保持原格式' })}</option>
               <option value="jpeg">JPEG</option>
               <option value="png">PNG</option>
-              <option value="webp">WebP</option>
+              {webpSupported && <option value="webp">WebP</option>}
             </select>
           </Field>
 
@@ -178,15 +196,17 @@ export function ImageProcessingDialog() {
             />
           </Field>
 
-          <Field label={t('settings.enableWatermark', { defaultValue: '启用文字水印' })} disabled={!allowUserImageProcessing}>
-            <Switch
-              checked={form.enableWatermark}
-              onCheckedChange={(v) => setField('enableWatermark', v)}
-              disabled={!allowUserImageProcessing}
-            />
-          </Field>
+          {watermarkSupported && (
+            <>
+              <Field label={t('settings.enableWatermark', { defaultValue: '启用文字水印' })} disabled={!allowUserImageProcessing}>
+                <Switch
+                  checked={form.enableWatermark}
+                  onCheckedChange={(v) => setField('enableWatermark', v)}
+                  disabled={!allowUserImageProcessing}
+                />
+              </Field>
 
-          {form.enableWatermark && (
+              {form.enableWatermark && (
             <div className="space-y-4 rounded-lg border border-border/60 bg-muted/30 p-4">
               <Field
                 label={t('settings.watermarkText', { defaultValue: '水印文本' })}
@@ -261,6 +281,8 @@ export function ImageProcessingDialog() {
                 </Field>
               </div>
             </div>
+              )}
+            </>
           )}
         </div>
 

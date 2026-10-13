@@ -332,6 +332,7 @@ func New(
 					"github_url":                  version.DefaultGitHubURL(),
 				"setup_required":              setupRequired,
 				"oauth_providers":             providerList,
+				"image_capabilities":          service.Capabilities(),
 			})
 		})
 		r.Get("/version", func(w http.ResponseWriter, r *http.Request) {
