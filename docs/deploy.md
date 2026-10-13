@@ -96,7 +96,7 @@ export PICFAST_SERVER_TRUSTED_PROXIES="10.0.0.0/8,172.16.0.0/12"
 ## 镜像变体
 
 - **`latest` / `vX.Y.Z`（完整镜像）**：内置 libvips，支持 WebP 输出、文字水印、以及基于 `pg_dump` 的维护备份/恢复。
-- **`slim` / `vX.Y.Z-slim`（精简镜像）**：纯 Go 构建（`CGO_ENABLED=0`，无 libvips），镜像更小、冷启动更快，推荐用于容器 PaaS。不支持 WebP 输出与文字水印，也不含 `pg_dump` 维护备份/恢复；注意即使未开启“去除 EXIF”，重新编码的图片也不会保留 EXIF 元数据。
+- **`slim` / `vX.Y.Z-slim`（精简镜像）**：纯 Go 构建（`CGO_ENABLED=0`，无 libvips），镜像更小、冷启动更快，推荐用于容器 PaaS。不支持 WebP 输出与文字水印，也不含 `pg_dump` 维护备份/恢复；注意即使未开启“去除 EXIF”，重新编码的图片也不会保留 EXIF 元数据，且无法对 WebP 源图做动态缩放/压缩——对 `.webp` 文件请求 `@w_`/`@q_` 变体将返回原图（WebP 缩略图仍可正常生成）。
 
 ## 健康检查端点
 
@@ -194,6 +194,8 @@ picfast jobs run
 ## 缩略图存储
 
 缩略图随图片保存在同一存储策略的 `_picfast/thumbnails/` 对象路径下，`/t/{md5}.png` 仍由应用统一提供（缺失时会从原图惰性重建并回写存储）。`storage.thumbnail_dir` 现在只是只读的旧版回退目录，仅用于继续提供升级前生成的磁盘缩略图，服务不会向其中写入新文件。
+
+注意：每次未命中缓存的缩略图请求都会从对象存储读取一次。公开图片的响应已带 `Cache-Control: public`，大量画廊/列表页流量建议在应用前挂 CDN 或缓存层。
 
 将旧磁盘缩略图迁移到存储策略：
 

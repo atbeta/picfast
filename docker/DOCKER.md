@@ -31,7 +31,7 @@ docker run -d \
 
 Open http://localhost:18080 — follow the setup wizard / 打开后跟随引导向导创建管理员。
 
-Image variants / 镜像变体: `latest`/`vX` is the full image (libvips — WebP output, text watermark, `pg_dump`-based maintenance backup/restore) / 完整镜像（含 libvips）; `slim`/`vX-slim` is a pure-Go distroless build — smaller, faster cold start, no libvips/CGO, recommended for container PaaS / 纯 Go 精简镜像，推荐容器 PaaS. Slim has no WebP output, no text watermark, and no `pg_dump` backup/restore / slim 不支持 WebP 输出、文字水印与 pg_dump 备份. Caveat: re-encoded images do not keep EXIF metadata on slim even when stripping is off / 精简镜像即使未开启“去除 EXIF”，重新编码也不保留 EXIF。
+Image variants / 镜像变体: `latest`/`vX` is the full image (libvips — WebP output, text watermark, `pg_dump`-based maintenance backup/restore) / 完整镜像（含 libvips）; `slim`/`vX-slim` is a pure-Go distroless build — smaller, faster cold start, no libvips/CGO, recommended for container PaaS / 纯 Go 精简镜像，推荐容器 PaaS. Slim has no WebP output, no text watermark, and no `pg_dump` backup/restore / slim 不支持 WebP 输出、文字水印与 pg_dump 备份. Caveat: re-encoded images do not keep EXIF metadata on slim even when stripping is off, and slim cannot resize/re-encode WebP sources on the fly (`@w_`/`@q_` on a `.webp` returns the original; WebP thumbnails still work) / 精简镜像即使未开启“去除 EXIF”，重新编码也不保留 EXIF，且无法对 WebP 源图动态缩放/压缩（`.webp` 的 `@w_`/`@q_` 变体返回原图；WebP 缩略图仍可生成）。
 
 Useful env vars / 常用环境变量:
 
