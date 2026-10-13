@@ -1,3 +1,5 @@
+//go:build !novips
+
 package service
 
 import (
@@ -6,18 +8,8 @@ import (
 	"image/color"
 	"image/jpeg"
 	"image/png"
-	"os"
 	"testing"
-
-	"github.com/davidbyttow/govips/v2/vips"
 )
-
-func TestMain(m *testing.M) {
-	vips.Startup(nil)
-	code := m.Run()
-	vips.Shutdown()
-	os.Exit(code)
-}
 
 func createTestImage(format string, width, height int) []byte {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))

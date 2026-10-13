@@ -1,3 +1,5 @@
+//go:build !novips
+
 package service
 
 import (
