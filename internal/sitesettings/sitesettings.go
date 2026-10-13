@@ -57,6 +57,10 @@ func Apply(cfg *config.Config, s sqlc.SiteSetting) error {
 		c.App.AnalyticsProvider = s.AnalyticsProvider
 		c.App.AnalyticsConfig = s.AnalyticsConfig
 		c.App.ThemeConfig = s.ThemeConfig
+		c.App.ShowPoweredBy = s.ShowPoweredBy
+		c.App.GuestUploadNoticeTitle = s.GuestUploadNoticeTitle
+		c.App.GuestUploadNoticeSubtitle = s.GuestUploadNoticeSubtitle
+		c.App.ShowLoginLink = s.ShowLoginLink
 	})
 	return nil
 }

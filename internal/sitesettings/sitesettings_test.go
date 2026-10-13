@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
@@ -18,15 +19,19 @@ func TestApplyMapsFields(t *testing.T) {
 	cfg.App.Name = "before"
 
 	err := Apply(cfg, sqlc.SiteSetting{
-		AppName:                "PicFast Two",
-		AppUrl:                 "https://pics.example.com",
-		DefaultImageTtl:        "24h",
-		GuestImageTtl:          "1h",
-		AllowRegistration:      true,
-		ModerationMode:         "manual",
-		AnalyticsConfig:        json.RawMessage(`{"a":1}`),
-		ThemeConfig:            json.RawMessage(`{}`),
-		AllowOauthRegistration: true,
+		AppName:                   "PicFast Two",
+		AppUrl:                    "https://pics.example.com",
+		DefaultImageTtl:           "24h",
+		GuestImageTtl:             "1h",
+		AllowRegistration:         true,
+		ModerationMode:            "manual",
+		AnalyticsConfig:           json.RawMessage(`{"a":1}`),
+		ThemeConfig:               json.RawMessage(`{}`),
+		AllowOauthRegistration:    true,
+		ShowPoweredBy:             false,
+		ShowLoginLink:             false,
+		GuestUploadNoticeTitle:    "Notice title",
+		GuestUploadNoticeSubtitle: "Notice subtitle",
 	})
 	if err != nil {
 		t.Fatalf("Apply: %v", err)
@@ -44,6 +49,107 @@ func TestApplyMapsFields(t *testing.T) {
 	}
 	if cfg.ServerSnapshot().BaseURL != "https://pics.example.com" {
 		t.Fatalf("base_url = %q", cfg.ServerSnapshot().BaseURL)
+	}
+	// cfg defaults are true for the toggles below; set distinct sentinel values
+	// via Apply to prove they propagated.
+	if app.ShowPoweredBy || app.ShowLoginLink {
+		t.Fatalf("toggles not applied: %+v", app)
+	}
+	if app.GuestUploadNoticeTitle != "Notice title" || app.GuestUploadNoticeSubtitle != "Notice subtitle" {
+		t.Fatalf("guest notice not applied: %+v", app)
+	}
+}
+
+// TestApplyCoversAllSiteSettingFields fails when a new sqlc.SiteSetting column
+// is neither applied by Apply nor explicitly allowlisted here, forcing a
+// decision on whether it should propagate to other instances.
+func TestApplyCoversAllSiteSettingFields(t *testing.T) {
+	// Columns intentionally not applied: row metadata only.
+	unapplied := map[string]bool{
+		"ID":        true,
+		"CreatedAt": true,
+		"UpdatedAt": true,
+	}
+
+	// field name -> probe asserting the applied value on the config snapshot.
+	cfg := &config.Config{}
+	err := Apply(cfg, sqlc.SiteSetting{
+		AppName:                   "n",
+		AppUrl:                    "u",
+		AllowGuestUpload:          true,
+		AllowRegistration:         true,
+		RequireEmailVerification:  true,
+		UserInitialCapacity:       123,
+		DefaultImageTtl:           "2h",
+		ModerationMode:            "manual",
+		SiteDescription:           "d",
+		AnalyticsProvider:         "plausible",
+		AnalyticsConfig:           json.RawMessage(`{"x":1}`),
+		FaviconUrl:                "f",
+		GuestCapacityBytes:        456,
+		AllowUserImageProcessing:  true,
+		FooterText1:               "t1",
+		FooterLink1:               "l1",
+		FooterText2:               "t2",
+		FooterLink2:               "l2",
+		GuestImageTtl:             "3h",
+		ThemeConfig:               json.RawMessage(`{"y":2}`),
+		AllowOauthRegistration:    true,
+		SkipImageProcessing:       true,
+		ShowPoweredBy:             true,
+		GuestUploadNoticeTitle:    "gt",
+		GuestUploadNoticeSubtitle: "gs",
+		ShowLoginLink:             true,
+	})
+	if err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
+	app := cfg.AppSnapshot()
+	server := cfg.ServerSnapshot()
+
+	probes := map[string]func() bool{
+		"AppName":                   func() bool { return app.Name == "n" },
+		"AppUrl":                    func() bool { return server.BaseURL == "u" },
+		"AllowGuestUpload":          func() bool { return app.AllowGuestUpload },
+		"AllowRegistration":         func() bool { return app.AllowRegistration },
+		"RequireEmailVerification":  func() bool { return app.RequireEmailVerification },
+		"UserInitialCapacity":       func() bool { return app.UserInitialCapacity == 123 },
+		"DefaultImageTtl":           func() bool { return app.DefaultImageTTL == 2*time.Hour },
+		"ModerationMode":            func() bool { return app.ModerationMode == "manual" },
+		"SiteDescription":           func() bool { return app.SiteDescription == "d" },
+		"AnalyticsProvider":         func() bool { return app.AnalyticsProvider == "plausible" },
+		"AnalyticsConfig":           func() bool { return string(app.AnalyticsConfig) == `{"x":1}` },
+		"FaviconUrl":                func() bool { return app.FaviconURL == "f" },
+		"GuestCapacityBytes":        func() bool { return app.GuestCapacityBytes == 456 },
+		"AllowUserImageProcessing":  func() bool { return app.AllowUserImageProcessing },
+		"FooterText1":               func() bool { return app.FooterText1 == "t1" },
+		"FooterLink1":               func() bool { return app.FooterLink1 == "l1" },
+		"FooterText2":               func() bool { return app.FooterText2 == "t2" },
+		"FooterLink2":               func() bool { return app.FooterLink2 == "l2" },
+		"GuestImageTtl":             func() bool { return app.GuestImageTTL == 3*time.Hour },
+		"ThemeConfig":               func() bool { return string(app.ThemeConfig) == `{"y":2}` },
+		"AllowOauthRegistration":    func() bool { return app.AllowOauthRegistration },
+		"SkipImageProcessing":       func() bool { return app.SkipImageProcessing },
+		"ShowPoweredBy":             func() bool { return app.ShowPoweredBy },
+		"GuestUploadNoticeTitle":    func() bool { return app.GuestUploadNoticeTitle == "gt" },
+		"GuestUploadNoticeSubtitle": func() bool { return app.GuestUploadNoticeSubtitle == "gs" },
+		"ShowLoginLink":             func() bool { return app.ShowLoginLink },
+	}
+
+	typ := reflect.TypeOf(sqlc.SiteSetting{})
+	for i := 0; i < typ.NumField(); i++ {
+		name := typ.Field(i).Name
+		if unapplied[name] {
+			continue
+		}
+		probe, ok := probes[name]
+		if !ok {
+			t.Errorf("SiteSetting.%s is neither applied nor allowlisted — update Apply or the allowlist", name)
+			continue
+		}
+		if !probe() {
+			t.Errorf("SiteSetting.%s was not applied to config", name)
+		}
 	}
 }
 
