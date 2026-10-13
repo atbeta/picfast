@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source"
@@ -24,6 +23,7 @@ import (
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/handler"
 	"github.com/atbeta/picfast/internal/router"
+	"github.com/atbeta/picfast/internal/service"
 	mailservice "github.com/atbeta/picfast/internal/service/mail"
 	"github.com/atbeta/picfast/internal/sitesettings"
 	"github.com/atbeta/picfast/internal/sqlc"
@@ -44,13 +44,9 @@ func main() {
 		}
 	}
 
-	vips.Startup(&vips.Config{
-		ConcurrencyLevel: 2,
-		MaxCacheFiles:    0,
-		MaxCacheMem:      100 * 1024 * 1024,
-		MaxCacheSize:     500,
-	})
-	defer vips.Shutdown()
+	service.StartupImaging()
+	defer service.ShutdownImaging()
+	slog.Info("image backend", "backend", service.Capabilities().Backend)
 
 	cfg, err := config.Load()
 	if err != nil {

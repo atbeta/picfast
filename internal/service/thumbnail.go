@@ -10,7 +10,6 @@ import (
 
 	picmetrics "github.com/atbeta/picfast/internal/metrics"
 	"github.com/atbeta/picfast/internal/service/storage"
-	"github.com/davidbyttow/govips/v2/vips"
 )
 
 const ThumbnailMaxSize = 400
@@ -30,29 +29,15 @@ func ThumbnailObjectPath(md5 string) string {
 var ErrThumbnailSkipped = errors.New("thumbnail skipped for this image type")
 
 // RenderThumbnail renders a PNG thumbnail for data. It performs no storage IO:
-// SVG and ICO inputs return ErrThumbnailSkipped.
+// SVG and ICO inputs return ErrThumbnailSkipped. The pixel work lives in the
+// per-backend renderThumbnailCore (libvips or pure Go).
 func RenderThumbnail(data []byte, extension string) ([]byte, error) {
 	start := time.Now()
 	if extension == "svg" || extension == "ico" {
 		picmetrics.ObserveThumbnailGeneration("success", "skipped", time.Since(start))
 		return nil, ErrThumbnailSkipped
 	}
-
-	thumb, err := vips.NewThumbnailFromBuffer(data, ThumbnailMaxSize, ThumbnailMaxSize, vips.InterestingNone)
-	if err != nil {
-		picmetrics.ObserveThumbnailGeneration("error", "decode_failed", time.Since(start))
-		return nil, err
-	}
-	defer thumb.Close()
-
-	out, _, err := thumb.ExportPng(vips.NewPngExportParams())
-	if err != nil {
-		picmetrics.ObserveThumbnailGeneration("error", "encode_failed", time.Since(start))
-		return nil, err
-	}
-
-	picmetrics.ObserveThumbnailGeneration("success", picmetrics.ReasonNone, time.Since(start))
-	return out, nil
+	return renderThumbnailCore(data)
 }
 
 // StoreThumbnail renders a thumbnail for data and writes it into the image's

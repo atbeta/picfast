@@ -19,7 +19,6 @@ import (
 	"github.com/atbeta/picfast/internal/service/maintenance"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/atbeta/picfast/internal/version"
-	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -592,13 +591,8 @@ func runMaintenanceRepairThumbnails(ctx context.Context, args []string, stdout, 
 		return 2
 	}
 	if *apply {
-		vips.Startup(&vips.Config{
-			ConcurrencyLevel: 2,
-			MaxCacheFiles:    0,
-			MaxCacheMem:      100 * 1024 * 1024,
-			MaxCacheSize:     500,
-		})
-		defer vips.Shutdown()
+		picservice.StartupImaging()
+		defer picservice.ShutdownImaging()
 	}
 
 	progress := !*jsonOutput
