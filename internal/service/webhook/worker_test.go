@@ -3,6 +3,7 @@ package webhook
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -162,5 +163,64 @@ func TestRunOnceWaitsForDeliveryCompletion(t *testing.T) {
 	}
 	if status != "delivered" {
 		t.Fatalf("expected delivery status %q, got %q", "delivered", status)
+	}
+}
+
+// A pass that fills the delivery batch must report More so the drain loop
+// keeps going; the same stuck deliveries would otherwise hide the backlog.
+func TestRunOnceReportsMoreWhenBatchFull(t *testing.T) {
+	pool, q := testutil.SetupDB(t)
+	ctx := context.Background()
+
+	group := testutil.SeedDefaultGroup(t, q)
+	user := testutil.SeedUser(t, q, group.ID, "full@example.com", "password123", "user")
+
+	encKey := make([]byte, 32)
+	for i := range encKey {
+		encKey[i] = byte(i)
+	}
+	wh, err := NewService(q, 10, encKey).Create(ctx, CreateParams{
+		UserID: user.ID,
+		Name:   "full-batch",
+		URL:    "https://example.com/hook",
+		Events: []string{"image.uploaded"},
+	})
+	if err != nil {
+		t.Fatalf("create webhook: %v", err)
+	}
+
+	const concurrency = 20
+	// Payloads unmarshal-fail so deliveries stay pending; owner is NULL so
+	// processOutbox creates no additional deliveries.
+	for i := 0; i < concurrency; i++ {
+		evt, err := q.InsertOutboxEvent(ctx, sqlc.InsertOutboxEventParams{
+			Type:           "image.uploaded",
+			Version:        "1",
+			IdempotencyKey: fmt.Sprintf("full-%d", i),
+			Payload:        json.RawMessage(`{"occurred_at":"bogus"}`),
+			OwnerUserID:    pgtype.Int8{},
+		})
+		if err != nil {
+			t.Fatalf("insert event %d: %v", i, err)
+		}
+		if _, err := q.CreateWebhookDelivery(ctx, sqlc.CreateWebhookDeliveryParams{
+			WebhookID:      wh.ID,
+			OutboxEventID:  evt.ID,
+			RequestHeaders: json.RawMessage(`{}`),
+		}); err != nil {
+			t.Fatalf("create delivery %d: %v", i, err)
+		}
+	}
+
+	worker := NewWorker(q, pool, NewDeliveryService(q, 10*time.Second, true, true, encKey), time.Minute, concurrency, false, 1)
+	res, err := worker.RunOnce(ctx)
+	if err != nil {
+		t.Fatalf("RunOnce: %v", err)
+	}
+	if !res.More {
+		t.Fatalf("More = false with a full batch: %+v", res)
+	}
+	if res.DeliveriesAttempted != concurrency {
+		t.Fatalf("DeliveriesAttempted = %d, want %d", res.DeliveriesAttempted, concurrency)
 	}
 }
