@@ -103,15 +103,20 @@ func main() {
 
 	r, webhookWorker := router.New(queries, pool, cfg, jwtSvc, spaHandler, mailSender)
 
-	metricsMux := http.NewServeMux()
-	metricsMux.Handle("/metrics", promhttp.Handler())
+	var metricsSrv *http.Server
+	if cfg.Server.MetricsEnabled {
+		metricsMux := http.NewServeMux()
+		metricsMux.Handle("/metrics", promhttp.Handler())
 
-	metricsSrv := &http.Server{
-		Addr:         cfg.Server.MetricsAddr,
-		Handler:      metricsMux,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		metricsSrv = &http.Server{
+			Addr:         cfg.Server.MetricsAddr,
+			Handler:      metricsMux,
+			ReadTimeout:  10 * time.Second,
+			WriteTimeout: 10 * time.Second,
+			IdleTimeout:  60 * time.Second,
+		}
+	} else {
+		slog.Info("metrics server disabled", "addr", cfg.Server.MetricsAddr)
 	}
 
 	srv := &http.Server{
@@ -130,12 +135,14 @@ func main() {
 		}
 	}()
 
-	go func() {
-		slog.Info("metrics server listening", "addr", metricsSrv.Addr)
-		if err := metricsSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("metrics server error", "error", err)
-		}
-	}()
+	if metricsSrv != nil {
+		go func() {
+			slog.Info("metrics server listening", "addr", metricsSrv.Addr)
+			if err := metricsSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				slog.Error("metrics server error", "error", err)
+			}
+		}()
+	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -147,8 +154,10 @@ func main() {
 
 	webhookWorker.Stop()
 
-	if err := metricsSrv.Shutdown(ctx); err != nil {
-		slog.Error("metrics server forced to shutdown", "error", err)
+	if metricsSrv != nil {
+		if err := metricsSrv.Shutdown(ctx); err != nil {
+			slog.Error("metrics server forced to shutdown", "error", err)
+		}
 	}
 	if err := srv.Shutdown(ctx); err != nil {
 		slog.Error("server forced to shutdown", "error", err)

@@ -28,6 +28,7 @@ type Config struct {
 
 type ServerConfig struct {
 	Port                    int           `mapstructure:"port"`
+	MetricsEnabled          bool          `mapstructure:"metrics_enabled"`
 	MetricsAddr             string        `mapstructure:"metrics_addr"`
 	MetricsPort             int           `mapstructure:"metrics_port"` // legacy fallback for metrics_addr
 	BaseURL                 string        `mapstructure:"base_url"`
@@ -372,6 +373,11 @@ func Load() (*Config, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
+	// PaaS platforms inject $PORT; PICFAST_SERVER_PORT still wins when both are set.
+	if err := v.BindEnv("server.port", "PICFAST_SERVER_PORT", "PORT"); err != nil {
+		return nil, fmt.Errorf("bind env server.port: %w", err)
+	}
+
 	setDefaults(v)
 
 	if err := v.ReadInConfig(); err != nil {
@@ -406,6 +412,7 @@ func Load() (*Config, error) {
 
 func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.port", 8080)
+	v.SetDefault("server.metrics_enabled", true)
 	v.SetDefault("server.metrics_addr", "")
 	v.SetDefault("server.metrics_port", 9090)
 	v.SetDefault("server.base_url", "http://localhost:8080")

@@ -31,6 +31,11 @@ docker run -d \
 
 Open http://localhost:18080 — follow the setup wizard / 打开后跟随引导向导创建管理员。
 
+Useful env vars / 常用环境变量:
+
+- `PORT` — listen port injected by PaaS platforms; ignored when `PICFAST_SERVER_PORT` is set / PaaS 注入的监听端口，`PICFAST_SERVER_PORT` 优先
+- `PICFAST_SERVER_METRICS_ENABLED=false` — disable the standalone `/metrics` listener / 关闭独立 metrics 监听端口
+
 ## Docker Compose
 
 ```bash
