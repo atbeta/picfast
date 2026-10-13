@@ -84,6 +84,9 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
+	if n := pool.Config().MaxConns; n < 3 {
+		slog.Warn("database pool is small for background jobs: a running job holds one connection for its advisory lock while issuing queries on others", "max_conns", n, "recommend", "pool_max_conns >= 3")
+	}
 
 	if err := pool.Ping(context.Background()); err != nil {
 		slog.Error("failed to ping database", "error", err)

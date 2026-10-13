@@ -24,8 +24,10 @@ type Result struct {
 	// webhook advisory lock.
 	Skipped bool `json:"skipped"`
 	// More is true when either list filled its batch, meaning more pending
-	// rows are likely waiting for another pass. Rows that keep failing do
-	// not set More — looping on them would spin the drain budget.
+	// rows are likely waiting for another pass. A full batch of failing
+	// deliveries also reports More once more — the first retry delay is 0,
+	// so they are re-listed immediately — and the drain budget bounds how
+	// long that may continue.
 	More                bool `json:"more"`
 	OutboxProcessed     int  `json:"outbox_processed"`
 	DeliveriesAttempted int  `json:"deliveries_attempted"`
@@ -39,8 +41,11 @@ type Worker struct {
 	concurrency    int
 	enableOCR      bool
 	ocrConcurrency int
-	quit           chan struct{}
-	wg             sync.WaitGroup
+	// ocrFunc runs the OCR task for one outbox event. It is a field so
+	// tests can substitute a fast stub.
+	ocrFunc func(db *sqlc.Queries, event sqlc.OutboxEvent)
+	quit    chan struct{}
+	wg      sync.WaitGroup
 }
 
 func NewWorker(db *sqlc.Queries, pool *pgxpool.Pool, delivery *DeliveryService, interval time.Duration, concurrency int, enableOCR bool, ocrConcurrency int) *Worker {
@@ -52,6 +57,7 @@ func NewWorker(db *sqlc.Queries, pool *pgxpool.Pool, delivery *DeliveryService, 
 		concurrency:    concurrency,
 		enableOCR:      enableOCR,
 		ocrConcurrency: ocrConcurrency,
+		ocrFunc:        service.DummyOCRProcessor,
 		quit:           make(chan struct{}),
 	}
 }
@@ -93,13 +99,17 @@ func (w *Worker) tick() {
 // RunOnce performs one full pass — pending outbox events then pending
 // deliveries — under a Postgres advisory lock so concurrent instances (or
 // overlapping invocations on this instance) cannot dispatch the same
-// delivery twice. It waits for every spawned goroutine before returning, so
-// a delivery row is no longer pending once RunOnce completes.
+// delivery twice. The lock is released once deliveries are dispatched; OCR
+// goroutines spawned by the pass are awaited afterwards, before RunOnce
+// returns — they must not extend the lock hold, but serverless callers must
+// still not abandon them after the HTTP response.
 func (w *Worker) RunOnce(ctx context.Context) (Result, error) {
 	var res Result
+	var ocrWG sync.WaitGroup
 	acquired, err := pglock.TryWithLock(ctx, w.pool, pglock.KeyJobsWebhooks, func(ctx context.Context) error {
-		return w.runPass(ctx, &res)
+		return w.runPass(ctx, &res, &ocrWG)
 	})
+	ocrWG.Wait()
 	if err != nil {
 		return res, err
 	}
@@ -107,9 +117,9 @@ func (w *Worker) RunOnce(ctx context.Context) (Result, error) {
 	return res, nil
 }
 
-func (w *Worker) runPass(ctx context.Context, res *Result) error {
+func (w *Worker) runPass(ctx context.Context, res *Result, ocrWG *sync.WaitGroup) error {
 	var retErr error
-	if err := w.processOutbox(ctx, res); err != nil {
+	if err := w.processOutbox(ctx, res, ocrWG); err != nil {
 		slog.Warn("webhook worker: process outbox failed", "error", err)
 		retErr = err
 	}
@@ -117,7 +127,7 @@ func (w *Worker) runPass(ctx context.Context, res *Result) error {
 	return retErr
 }
 
-func (w *Worker) processOutbox(ctx context.Context, res *Result) error {
+func (w *Worker) processOutbox(ctx context.Context, res *Result, ocrWG *sync.WaitGroup) error {
 	events, err := w.db.ListPendingOutboxEvents(ctx, outboxBatchSize)
 	if err != nil {
 		return err
@@ -127,18 +137,21 @@ func (w *Worker) processOutbox(ctx context.Context, res *Result) error {
 		res.More = true
 	}
 
+	// OCR goroutines join the caller-owned WaitGroup and are awaited by
+	// RunOnce after the advisory lock is released, so slow OCR work does
+	// not keep the lock held. ocrSem bounds concurrent OCR work; it is
+	// acquired inside the goroutine so spawning never blocks the pass.
 	ocrSem := make(chan struct{}, w.ocrConcurrency)
-	var wg sync.WaitGroup
 
 	for _, event := range events {
 		if w.enableOCR {
 			event := event
-			ocrSem <- struct{}{}
-			wg.Add(1)
+			ocrWG.Add(1)
 			go func() {
-				defer wg.Done()
+				defer ocrWG.Done()
+				ocrSem <- struct{}{}
 				defer func() { <-ocrSem }()
-				service.DummyOCRProcessor(w.db, event)
+				w.ocrFunc(w.db, event)
 			}()
 		}
 
@@ -147,7 +160,6 @@ func (w *Worker) processOutbox(ctx context.Context, res *Result) error {
 		}
 	}
 
-	wg.Wait()
 	return nil
 }
 

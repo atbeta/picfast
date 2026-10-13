@@ -128,6 +128,6 @@ scrape_configs:
 
 数据库迁移已嵌入二进制，启动时自动执行。设 `PICFAST_DATABASE_AUTO_MIGRATE=false` 可关闭自动迁移，改为在启动前手动运行 `picfast migrate`（例如多副本/容器 PaaS 部署时由 Job 统一执行）。
 
-托管 Postgres 的事务模式连接池（Supabase `:6543`、Neon `-pooler`、pgbouncer）：在 `PICFAST_DATABASE_URL` 查询串追加 `default_query_exec_mode=exec`，或改用直连连接串 —— pgx 默认语句缓存在事务池化下不可靠。
+托管 Postgres 的事务模式连接池（Supabase `:6543`、Neon `-pooler`、pgbouncer）：在 `PICFAST_DATABASE_URL` 查询串追加 `default_query_exec_mode=exec`，或改用直连连接串 —— pgx 默认语句缓存在事务池化下不可靠。保持 `pool_max_conns >= 3`（后台任务持锁占用一条连接，另需连接执行查询）；服务端 `idle_in_transaction_session_timeout` 不宜低于约 60 秒，否则会提前释放任务锁。
 
 后台任务（webhook 投递、过期图片/日志清理）默认在进程内调度。设 `PICFAST_JOBS_EMBEDDED=false` 后可由外部调度器触发：HTTP `POST /internal/jobs/run`（需 `Authorization: Bearer $PICFAST_JOBS_TOKEN`）或 CLI `picfast jobs run`。webhook 投递延迟等于触发频率，建议每分钟一次；多实例并发触发安全（Postgres 咨询锁）。注意限流器按实例计数，多副本时实际限额约为配置值 × 实例数。

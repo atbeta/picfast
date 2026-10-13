@@ -50,6 +50,9 @@ func runJobsCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 		return 1
 	}
 	defer pool.Close()
+	if n := pool.Config().MaxConns; n < 3 {
+		fmt.Fprintf(stderr, "warning: pool max_conns=%d is small for background jobs: a running job holds one connection for its advisory lock while issuing queries on others; set pool_max_conns >= 3\n", n)
+	}
 
 	if err := pool.Ping(ctx); err != nil {
 		fmt.Fprintf(stderr, "failed to ping database: %v\n", err)

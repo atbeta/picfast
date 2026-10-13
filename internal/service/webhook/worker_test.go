@@ -224,3 +224,64 @@ func TestRunOnceReportsMoreWhenBatchFull(t *testing.T) {
 		t.Fatalf("DeliveriesAttempted = %d, want %d", res.DeliveriesAttempted, concurrency)
 	}
 }
+
+// OCR goroutines must not extend the advisory-lock hold: a second RunOnce
+// started while the first run's OCR work is still blocked must acquire the
+// lock (not report Skipped), while the first RunOnce still waits for OCR to
+// finish before returning.
+func TestRunOnceReleasesLockWhileOCRRuns(t *testing.T) {
+	pool, q := testutil.SetupDB(t)
+	defer pool.Close()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	worker := newTestWorker(t, q, pool, srv.URL)
+	worker.enableOCR = true
+	ocrStarted := make(chan struct{})
+	releaseOCR := make(chan struct{})
+	var ocrOnce sync.Once
+	worker.ocrFunc = func(db *sqlc.Queries, event sqlc.OutboxEvent) {
+		ocrOnce.Do(func() { close(ocrStarted) })
+		<-releaseOCR
+	}
+
+	firstDone := make(chan Result, 1)
+	go func() {
+		res, err := worker.RunOnce(context.Background())
+		if err != nil {
+			t.Errorf("first RunOnce: %v", err)
+		}
+		firstDone <- res
+	}()
+
+	// Wait until the first pass spawned its OCR goroutine.
+	select {
+	case <-ocrStarted:
+	case <-time.After(10 * time.Second):
+		t.Fatal("OCR goroutine did not start")
+	}
+
+	// The first run keeps waiting on OCR, but the advisory lock must already
+	// be free: poll a second RunOnce until it is not skipped.
+	deadline := time.Now().Add(5 * time.Second)
+	var res2 Result
+	for {
+		res2, _ = worker.RunOnce(context.Background())
+		if !res2.Skipped || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	close(releaseOCR)
+
+	res1 := <-firstDone
+	if res1.Skipped {
+		t.Fatal("first RunOnce unexpectedly skipped")
+	}
+	if res2.Skipped {
+		t.Fatal("second RunOnce skipped while first was still running OCR: lock outlived the pass")
+	}
+}
