@@ -38,6 +38,8 @@ Useful env vars / 常用环境变量:
 
 Health probes at the server root / 根路径健康探针: `GET /healthz` (liveness, no DB/disk access), `GET /readyz` (readiness, DB ping → 503 on failure).
 
+Migrations are embedded and run automatically at startup / 迁移已嵌入二进制并随启动自动执行. Set `PICFAST_DATABASE_AUTO_MIGRATE=false` and run `docker run --rm <image> migrate` first if you prefer to migrate out of band / 如需手动控制可先执行 `migrate` 子命令。
+
 ## Docker Compose
 
 ```bash

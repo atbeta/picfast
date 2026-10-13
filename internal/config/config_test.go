@@ -289,6 +289,40 @@ func TestLoadReadsMetricsEnabledFromEnv(t *testing.T) {
 	}
 }
 
+func TestLoadAutoMigrateDefaultsTrue(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	unsetEnv(t, "PICFAST_DATABASE_AUTO_MIGRATE")
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if !cfg.Database.AutoMigrate {
+		t.Fatal("expected auto_migrate to default to true")
+	}
+}
+
+func TestLoadReadsAutoMigrateFromEnv(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	t.Setenv("PICFAST_JWT_SECRET", "test-secret")
+	t.Setenv("PICFAST_DATABASE_AUTO_MIGRATE", "false")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+
+	if cfg.Database.AutoMigrate {
+		t.Fatal("expected auto_migrate to be disabled from env")
+	}
+}
+
 func TestRuntimeSnapshotsCanRunConcurrentlyWithSetters(t *testing.T) {
 	cfg := &Config{}
 	setter := NewSetter(cfg)

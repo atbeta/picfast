@@ -115,3 +115,5 @@ scrape_configs:
 
 - `GET /healthz` — 存活探针，不访问数据库或磁盘
 - `GET /readyz` — 就绪探针，仅检查数据库连通性，失败返回 503
+
+数据库迁移已嵌入二进制，启动时自动执行。设 `PICFAST_DATABASE_AUTO_MIGRATE=false` 可关闭自动迁移，改为在启动前手动运行 `picfast migrate`（例如多副本/容器 PaaS 部署时由 Job 统一执行）。
