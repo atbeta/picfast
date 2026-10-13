@@ -132,7 +132,7 @@ func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) e
 	default:
 		e.Actor = events.UserActor("", "", domain.PgInt8Val(img.UserID))
 	}
-	events.EmitAsync(s.emitter, e)
+	events.EmitBestEffort(ctx, s.emitter, e)
 
 	return nil
 }

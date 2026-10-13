@@ -12,17 +12,24 @@ type Emitter interface {
 	Emit(ctx context.Context, event Envelope) error
 }
 
-func EmitAsync(emitter Emitter, events ...Envelope) {
-	go func() {
-		defer func() { recover() }()
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		for _, event := range events {
-			if err := emitter.Emit(ctx, event); err != nil {
+// EmitBestEffort emits events synchronously on a detached context derived from
+// ctx (canceled requests still emit, bounded by a 5s timeout). Failures and
+// panics are logged and never propagated.
+func EmitBestEffort(ctx context.Context, emitter Emitter, events ...Envelope) {
+	emitCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	for _, event := range events {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Warn("event emit panicked", "type", event.Type, "panic", r)
+				}
+			}()
+			if err := emitter.Emit(emitCtx, event); err != nil {
 				slog.Warn("event emit failed", "type", event.Type, "error", err)
 			}
-		}
-	}()
+		}()
+	}
 }
 
 type LogEmitter struct{}
