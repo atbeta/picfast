@@ -205,3 +205,7 @@ Restore should always run preflight checks before changing anything:
 - archive checksums are valid
 
 The first restore implementation should be same-version only. Cross-version behavior should be enabled deliberately after the v1 backup format has real usage.
+
+## pHash Recalculation
+
+`POST /api/v1/admin/maintenance/recalc-phash` runs the recalculation in a background goroutine that continues after the response. Runs are serialized across instances by a Postgres advisory lock (`pglock.KeyRecalcPHash`), so a second trigger — from any instance — receives 409 while one is in flight. On serverless platforms where an instance may be recycled after responding, prefer the CLI instead: `picfast maintenance recalc-phash`.

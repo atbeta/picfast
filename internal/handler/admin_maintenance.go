@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/atbeta/picfast/internal/config"
+	"github.com/atbeta/picfast/internal/pglock"
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -18,12 +18,11 @@ import (
 )
 
 type AdminMaintenanceHandler struct {
-	db            *sqlc.Queries
-	pool          *pgxpool.Pool
-	cfg           *config.Config
-	obsHandler    *AdminObservabilityHandler
-	deleter       *service.DeleteService
-	recalcRunning atomic.Bool
+	db         *sqlc.Queries
+	pool       *pgxpool.Pool
+	cfg        *config.Config
+	obsHandler *AdminObservabilityHandler
+	deleter    *service.DeleteService
 }
 
 func NewAdminMaintenanceHandler(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Config, obsHandler *AdminObservabilityHandler, deleter *service.DeleteService) *AdminMaintenanceHandler {
@@ -259,20 +258,27 @@ func (h *AdminMaintenanceHandler) CleanupExpired(w http.ResponseWriter, r *http.
 }
 
 func (h *AdminMaintenanceHandler) RecalcPHash(w http.ResponseWriter, r *http.Request) {
-	if h.recalcRunning.Swap(true) {
+	// The advisory lock keeps the "already running" check correct across
+	// instances, unlike a per-process atomic flag.
+	release, ok, err := pglock.Acquire(r.Context(), h.pool, pglock.KeyRecalcPHash)
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to acquire recalc-phash lock")
+		return
+	}
+	if !ok {
 		Fail(w, http.StatusConflict, "recalc-phash is already running")
 		return
 	}
 
 	maxID, err := h.db.GetMaxImageID(r.Context())
 	if err != nil {
-		h.recalcRunning.Store(false)
+		release()
 		Fail(w, http.StatusInternalServerError, "failed to get max image id")
 		return
 	}
 
 	go func() {
-		defer h.recalcRunning.Store(false)
+		defer release()
 		bgCtx := context.Background()
 		processed := 0
 		skipped := 0
