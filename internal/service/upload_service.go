@@ -347,7 +347,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		actor = events.UserActor(identity.email, identity.name, identity.userID)
 	}
 
-	events.EmitAsync(s.emitter,
+	events.EmitBestEffort(ctx, s.emitter,
 		events.BuildImageUploadedWithActor(img, events.ImageLinks{
 			URL:          links.URL,
 			ThumbnailURL: links.ThumbnailURL,

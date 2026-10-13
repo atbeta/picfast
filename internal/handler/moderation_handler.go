@@ -102,7 +102,7 @@ func (h *ModerationHandler) Approve(w http.ResponseWriter, r *http.Request) {
 	} else {
 		ev := events.BuildModerationReviewed(id, img.Key, string(moderation.StatusApproved), adminID, "approved by admin", domain.PgInt8PtrVal(img.UserID))
 		ev.Actor = events.AdminActor(adminID)
-		events.EmitAsync(h.emitter, ev)
+		events.EmitBestEffort(r.Context(), h.emitter, ev)
 	}
 
 	SuccessMessage(w, "image approved")
@@ -149,7 +149,7 @@ func (h *ModerationHandler) Reject(w http.ResponseWriter, r *http.Request) {
 	} else {
 		ev := events.BuildModerationReviewed(id, img.Key, string(moderation.StatusRejected), adminID, reqBody.Reason, domain.PgInt8PtrVal(img.UserID))
 		ev.Actor = events.AdminActor(adminID)
-		events.EmitAsync(h.emitter, ev)
+		events.EmitBestEffort(r.Context(), h.emitter, ev)
 	}
 
 	SuccessMessage(w, "image rejected")

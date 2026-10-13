@@ -313,24 +313,47 @@ func TestLogEmitter(t *testing.T) {
 	}
 }
 
-func TestEmitAsyncDoesNotPanicOnFailedEmit(t *testing.T) {
-	// Verify that EmitAsync with a failing emitter does not panic.
+// ctxProbeEmitter records how many times Emit ran and whether the emit
+// context was already canceled at emit time.
+type ctxProbeEmitter struct {
+	emitted int
+	ctxErr  error
+}
+
+func (e *ctxProbeEmitter) Emit(ctx context.Context, _ Envelope) error {
+	e.emitted++
+	e.ctxErr = ctx.Err()
+	return nil
+}
+
+type panicEmitter struct{}
+
+func (panicEmitter) Emit(context.Context, Envelope) error {
+	panic("emit boom")
+}
+
+func TestEmitBestEffortDoesNotPanicOnFailedEmit(t *testing.T) {
+	// Verify that EmitBestEffort with a failing emitter does not panic.
 	// This simulates the contract: emit failure must not affect the caller.
 	e := BuildImageUploaded(testImage(), ImageLinks{URL: "https://example.com", ThumbnailURL: "https://example.com/thumb"})
-	EmitAsync(FailEmitter{}, e)
-	// Give the goroutine time to run.
-	time.Sleep(10 * time.Millisecond)
+	EmitBestEffort(context.Background(), FailEmitter{}, e)
 	// If we reached here without panicking, the test passes.
 }
 
-func TestEmitAsyncSequential(t *testing.T) {
+func TestEmitBestEffortRecoversPanics(t *testing.T) {
+	e := BuildImageUploaded(testImage(), ImageLinks{URL: "https://example.com", ThumbnailURL: "https://example.com/thumb"})
+	EmitBestEffort(context.Background(), panicEmitter{}, e)
+	// If we reached here without panicking, the test passes.
+}
+
+func TestEmitBestEffortSequential(t *testing.T) {
 	emitter := NewCollectEmitter()
 	e1 := BuildImageUploaded(testImage(), ImageLinks{URL: "https://example.com", ThumbnailURL: "https://example.com/thumb"})
 	e2 := BuildImageProcessed(testImage(), 100, 50, true, "completed", "approved", "noop")
 
-	EmitAsync(emitter, e1, e2)
-	time.Sleep(10 * time.Millisecond)
+	EmitBestEffort(context.Background(), emitter, e1, e2)
 
+	// Emission is synchronous: events are visible immediately after return.
 	if len(emitter.Events) != 2 {
 		t.Errorf("expected 2 events, got %d", len(emitter.Events))
 	}
@@ -339,5 +362,22 @@ func TestEmitAsyncSequential(t *testing.T) {
 	}
 	if emitter.Events[1].Type != TypeImageProcessed {
 		t.Errorf("expected second event to be %s, got %s", TypeImageProcessed, emitter.Events[1].Type)
+	}
+}
+
+func TestEmitBestEffortEmitsOnCanceledParent(t *testing.T) {
+	emitter := &ctxProbeEmitter{}
+	e := BuildImageUploaded(testImage(), ImageLinks{URL: "https://example.com", ThumbnailURL: "https://example.com/thumb"})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	EmitBestEffort(ctx, emitter, e)
+
+	if emitter.emitted != 1 {
+		t.Fatalf("emitted = %d, want 1", emitter.emitted)
+	}
+	if emitter.ctxErr != nil {
+		t.Fatalf("emit context err = %v, want nil (WithoutCancel)", emitter.ctxErr)
 	}
 }
