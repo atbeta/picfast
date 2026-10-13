@@ -124,7 +124,10 @@ func (r *Runner) runWebhooks(ctx context.Context) TaskReport {
 		}
 		// Keep draining only while passes come back full. A partial pass —
 		// including rows stuck pending after a failed dispatch — stops the
-		// loop instead of spinning on unprocessable work.
+		// loop instead of spinning on unprocessable work. A full batch of
+		// failing deliveries can still report More on the next pass (the
+		// first retry delay is 0, so they are re-listed immediately);
+		// webhookBudget bounds how long that may continue.
 		if !res.More {
 			return rep
 		}

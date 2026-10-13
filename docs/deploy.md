@@ -127,6 +127,11 @@ postgres://user:pass@host:6543/db?sslmode=require&default_query_exec_mode=exec
 
 也可以改用直连/会话模式的连接串。后台任务的互斥锁使用事务级咨询锁，两种模式下均能正常工作。
 
+连接池注意事项：
+
+- 保持 `pool_max_conns >= 3`：后台任务运行期间会占用一条连接持有咨询锁，同时需要其它连接执行查询；启动时连接池过小会打印警告。
+- 若服务端设置了 `idle_in_transaction_session_timeout`，不要低于约 60 秒：锁在整个任务事务期间保持，过短的超时会让数据库提前释放后台任务的锁。
+
 ## 后台任务（webhook 投递与清理）
 
 PicFast 的后台任务包含 webhook 投递（outbox → 各订阅端点）与每小时清理（过期图片、webhook 投递日志、审计日志）。默认在进程内按 `webhook.worker_interval`（webhook）与每小时（清理）自动运行，适用于常驻部署。
