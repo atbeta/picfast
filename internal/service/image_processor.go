@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"errors"
 	"image"
 	_ "image/gif"  // register decoder for pure-Go paths and DecodeConfig probes
@@ -22,9 +23,33 @@ type ProcessedImage struct {
 // encode (e.g. WebP output under the pure-Go build).
 var ErrFormatUnsupported = errors.New("image format unsupported by this build")
 
-// ErrImageTooLarge marks inputs whose declared dimensions exceed the pure-Go
-// backend's decode pixel cap (decompression-bomb guard).
+// ErrImageTooLarge marks inputs whose declared dimensions exceed the decode
+// pixel cap (decompression-bomb guard).
 var ErrImageTooLarge = errors.New("image exceeds decode pixel limit")
+
+// maxDecodePixels bounds decoded image dimensions. stdlib decoding allocates
+// the full bitmap — peak memory is roughly decoder buffer + NRGBA copy (+
+// another NRGBA when EXIF orientation applies), ≈ 3× w·h·4 bytes, ~750MB at
+// the limit worst case; still far below unbounded. A var so tests can lower it.
+var maxDecodePixels int64 = 64_000_000
+
+// decodeImageBounded decodes image data after checking its declared
+// dimensions against maxDecodePixels, returning ErrImageTooLarge for
+// oversized inputs without allocating the pixel buffer.
+func decodeImageBounded(data []byte) (image.Image, string, error) {
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return nil, "", err
+	}
+	if int64(cfg.Width)*int64(cfg.Height) > maxDecodePixels {
+		return nil, "", ErrImageTooLarge
+	}
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, "", err
+	}
+	return img, format, nil
+}
 
 // ProcessingParams holds on-the-fly image processing parameters parsed from
 // the URL variant suffix (e.g. @w_300,h_200,q_80,f_webp).

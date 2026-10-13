@@ -1,20 +1,19 @@
 package service
 
 import (
-	"bytes"
 	"image"
 	"math"
 	"sort"
 
+	_ "golang.org/x/image/webp"
 	_ "image/jpeg"
 	_ "image/png"
-	_ "golang.org/x/image/webp"
 
 	"golang.org/x/image/draw"
 )
 
 func ComputePHash(data []byte) (uint64, error) {
-	src, _, err := image.Decode(bytes.NewReader(data))
+	src, _, err := decodeImageBounded(data)
 	if err != nil {
 		return 0, err
 	}

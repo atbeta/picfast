@@ -12,6 +12,10 @@ import (
 func renderThumbnailCore(data []byte) ([]byte, error) {
 	start := time.Now()
 
+	// Bound concurrent decodes; held until the PNG encode below completes.
+	decodeSem <- struct{}{}
+	defer func() { <-decodeSem }()
+
 	img, err := decodeAutoOriented(data)
 	if err != nil {
 		picmetrics.ObserveThumbnailGeneration("error", "decode_failed", time.Since(start))

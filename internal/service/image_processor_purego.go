@@ -16,11 +16,11 @@ import (
 // defaultJPEGQuality mirrors govips NewJpegExportParams (quality 80/100).
 const defaultJPEGQuality = 80
 
-// maxDecodePixels bounds decoded image dimensions. Unlike libvips, which
-// shrinks on load, stdlib decoding allocates the full bitmap — a small crafted
-// file with huge dimensions (decompression bomb) could OOM a constrained
-// instance. 64MP ≈ 256MB of NRGBA worst case. A var so tests can lower it.
-var maxDecodePixels int64 = 64_000_000
+// decodeSem bounds concurrent full-image decodes on the pure-Go backend,
+// mirroring the vips backend's ConcurrencyLevel of 2. Unlike libvips, stdlib
+// decoders allocate the whole bitmap per call, so unbounded concurrency could
+// spike memory on constrained instances.
+var decodeSem = make(chan struct{}, 2)
 
 // exifOrientation reads the EXIF Orientation tag (1-8). Non-JPEG input or
 // missing/invalid tags return 1 (normal).
@@ -90,14 +90,7 @@ func orientNRGBA(src *image.NRGBA, o int) *image.NRGBA {
 // matching the vips backend's AutoRotate import behavior. Inputs whose header
 // reports more than maxDecodePixels are rejected before any pixel allocation.
 func decodeAutoOriented(data []byte) (image.Image, error) {
-	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	if int64(cfg.Width)*int64(cfg.Height) > maxDecodePixels {
-		return nil, ErrImageTooLarge
-	}
-	img, _, err := image.Decode(bytes.NewReader(data))
+	img, _, err := decodeImageBounded(data)
 	if err != nil {
 		return nil, err
 	}
@@ -207,6 +200,9 @@ func ReadImageDimensions(data []byte) (int, int, error) {
 }
 
 func ProcessImage(data []byte, saveFormat string, quality int, stripExif bool) (*ProcessedImage, error) {
+	decodeSem <- struct{}{}
+	defer func() { <-decodeSem }()
+
 	img, err := decodeAutoOriented(data)
 	if err != nil {
 		return nil, err
@@ -239,6 +235,9 @@ func ResizeImageToWidth(data []byte, formatHint string, width int) ([]byte, erro
 	if format == "gif" {
 		return data, nil // keep animated/static gif behavior unchanged for now
 	}
+
+	decodeSem <- struct{}{}
+	defer func() { <-decodeSem }()
 
 	img, err := decodeAutoOriented(data)
 	if err != nil {
@@ -287,6 +286,9 @@ func ProcessImageOnTheFly(data []byte, sourceFormat string, p ProcessingParams) 
 	if exportFormat == "webp" {
 		return data, false // WebP output unsupported by this backend
 	}
+
+	decodeSem <- struct{}{}
+	defer func() { <-decodeSem }()
 
 	img, err := decodeAutoOriented(data)
 	if err != nil {
