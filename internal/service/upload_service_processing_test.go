@@ -2,6 +2,8 @@ package service
 
 import (
 	"bytes"
+	"image"
+	"image/gif"
 	"testing"
 
 	"github.com/atbeta/picfast/internal/config"
@@ -90,6 +92,36 @@ func TestProcessUploadImageSkipsAllProcessing(t *testing.T) {
 	// dimensions should be read from the image header
 	if result.width != 1 || result.height != 1 {
 		t.Fatalf("expected dimensions 1x1, got %dx%d", result.width, result.height)
+	}
+}
+
+func TestProcessUploadImageFillsDimsWithoutProcessing(t *testing.T) {
+	data := createTestImage("png", 120, 60)
+	// No format override, quality 100, no strip -> nothing to process, but
+	// dimensions should still be read from the header.
+	cfg := imageProcessingConfig{Quality: 100}
+	result := processUploadImage(data, "png", cfg)
+	if result.processed {
+		t.Fatal("expected unprocessed result")
+	}
+	if result.width != 120 || result.height != 60 {
+		t.Fatalf("expected dims 120x60, got %dx%d", result.width, result.height)
+	}
+}
+
+func TestProcessUploadImageFillsGifDims(t *testing.T) {
+	var buf bytes.Buffer
+	gif.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 16, 9)), nil)
+	result := processUploadImage(buf.Bytes(), "gif", imageProcessingConfig{Quality: 50})
+	if result.width != 16 || result.height != 9 {
+		t.Fatalf("expected dims 16x9, got %dx%d", result.width, result.height)
+	}
+
+	// svg/ico stay 0: their headers are not decodable by either backend probe.
+	svg := []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>`)
+	result = processUploadImage(svg, "svg", imageProcessingConfig{Quality: 50})
+	if result.width != 0 || result.height != 0 {
+		t.Fatalf("expected dims 0x0 for svg, got %dx%d", result.width, result.height)
 	}
 }
 

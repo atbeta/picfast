@@ -16,6 +16,12 @@ import (
 // defaultJPEGQuality mirrors govips NewJpegExportParams (quality 80/100).
 const defaultJPEGQuality = 80
 
+// maxDecodePixels bounds decoded image dimensions. Unlike libvips, which
+// shrinks on load, stdlib decoding allocates the full bitmap — a small crafted
+// file with huge dimensions (decompression bomb) could OOM a constrained
+// instance. 64MP ≈ 256MB of NRGBA worst case. A var so tests can lower it.
+var maxDecodePixels int64 = 64_000_000
+
 // exifOrientation reads the EXIF Orientation tag (1-8). Non-JPEG input or
 // missing/invalid tags return 1 (normal).
 func exifOrientation(data []byte) int {
@@ -81,8 +87,16 @@ func orientNRGBA(src *image.NRGBA, o int) *image.NRGBA {
 }
 
 // decodeAutoOriented decodes image data and applies EXIF orientation,
-// matching the vips backend's AutoRotate import behavior.
+// matching the vips backend's AutoRotate import behavior. Inputs whose header
+// reports more than maxDecodePixels are rejected before any pixel allocation.
 func decodeAutoOriented(data []byte) (image.Image, error) {
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	if int64(cfg.Width)*int64(cfg.Height) > maxDecodePixels {
+		return nil, ErrImageTooLarge
+	}
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		return nil, err

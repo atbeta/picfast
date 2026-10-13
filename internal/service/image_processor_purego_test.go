@@ -332,6 +332,32 @@ func TestApplyWatermarkUnsupported(t *testing.T) {
 	}
 }
 
+func TestDecodeRejectsDecompressionBomb(t *testing.T) {
+	old := maxDecodePixels
+	maxDecodePixels = 100 // pixels — a 20x20 image now exceeds the cap
+	t.Cleanup(func() { maxDecodePixels = old })
+
+	data := createTestImage("png", 20, 20)
+
+	if _, err := decodeAutoOriented(data); err != ErrImageTooLarge {
+		t.Fatalf("decodeAutoOriented: expected ErrImageTooLarge, got %v", err)
+	}
+	if _, err := ProcessImage(data, "jpeg", 50, false); err != ErrImageTooLarge {
+		t.Fatalf("ProcessImage: expected ErrImageTooLarge, got %v", err)
+	}
+	if _, err := RenderThumbnail(data, "png"); err != ErrImageTooLarge {
+		t.Fatalf("RenderThumbnail: expected ErrImageTooLarge, got %v", err)
+	}
+	out, ok := ProcessImageOnTheFly(data, "png", ProcessingParams{Width: 10})
+	if ok || !bytes.Equal(out, data) {
+		t.Fatal("expected (data,false) for oversized on-the-fly input")
+	}
+	// Header probe is unaffected.
+	if w, h, err := ReadImageDimensions(data); err != nil || w != 20 || h != 20 {
+		t.Fatalf("ReadImageDimensions: %dx%d err=%v", w, h, err)
+	}
+}
+
 func TestCapabilitiesPureGo(t *testing.T) {
 	c := Capabilities()
 	if c.Backend != "go" || c.WebPOutput || c.Watermark {
