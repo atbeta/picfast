@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -79,10 +80,18 @@ func TestStoreThumbnailWriteFailure(t *testing.T) {
 	}
 }
 
-func TestStoreThumbnailDecodeFailureIsBestEffort(t *testing.T) {
+func TestStoreThumbnailDecodeFailureReturnsError(t *testing.T) {
 	store := newTestLocalStorage(t, t.TempDir())
 	const md5 = "0123456789abcdef0123456789abcdef"
-	if err := StoreThumbnail(context.Background(), store, []byte("not an image"), "png", md5); err != nil {
-		t.Fatalf("expected nil for undecodable data, got %v", err)
+	err := StoreThumbnail(context.Background(), store, []byte("not an image"), "png", md5)
+	if err == nil {
+		t.Fatal("expected render error for undecodable data, got nil")
+	}
+	if errors.Is(err, ErrThumbnailSkipped) {
+		t.Fatalf("undecodable data should not be a skip: %v", err)
+	}
+	// Nothing must have been written for the failed render.
+	if _, readErr := store.Read(context.Background(), ThumbnailObjectPath(md5)); !isNotFoundError(readErr) {
+		t.Fatalf("thumbnail object exists despite render failure (read err = %v)", readErr)
 	}
 }
