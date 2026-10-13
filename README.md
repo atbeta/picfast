@@ -107,7 +107,7 @@ docker run -d --name picfast --network picfast-net -p 18080:8080 \
 | `latest` / `vX.Y.Z` | **完整镜像**：内置 libvips，支持 WebP 输出、文字水印、以及基于 `pg_dump` 的维护备份/恢复。 |
 | `slim` / `vX.Y.Z-slim` | **精简镜像**：纯 Go 构建（无 libvips/CGO），镜像更小、冷启动更快，推荐用于容器 PaaS；不支持 WebP 输出与文字水印，也不含 `pg_dump` 维护备份/恢复。 |
 
-注意：精简镜像在重新编码时不会保留 EXIF 元数据（即使未开启“去除 EXIF”）。
+注意：精简镜像在重新编码时不会保留 EXIF 元数据（即使未开启“去除 EXIF”）；且无法对 WebP 源图做动态缩放/压缩——对 `.webp` 文件请求 `@w_`/`@q_` 变体将返回原图（WebP 缩略图仍可正常生成）。
 
 可观测性：Docker Compose 默认让 metrics 在容器内 `:9190` 监听，不发布到宿主机；Prometheus 可在同一 Docker 网络抓取 `app:9190/metrics`。健康探针 `GET /healthz`（存活）与 `GET /readyz`（就绪，检查数据库）暴露在服务根路径，可用于容器平台健康检查。通用 Compose、Traefik 模板及 `.env` 示例详见 **[docker/README.md](docker/README.md)**。
 
