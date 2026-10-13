@@ -7,12 +7,25 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/atbeta/picfast/internal/pglock"
 	"github.com/atbeta/picfast/internal/service"
 	"github.com/atbeta/picfast/internal/sqlc"
 )
 
+// Result summarizes a single RunOnce pass.
+type Result struct {
+	// Skipped is true when another instance or run already held the
+	// webhook advisory lock.
+	Skipped             bool `json:"skipped"`
+	OutboxProcessed     int  `json:"outbox_processed"`
+	DeliveriesAttempted int  `json:"deliveries_attempted"`
+}
+
 type Worker struct {
 	db             *sqlc.Queries
+	pool           *pgxpool.Pool
 	delivery       *DeliveryService
 	interval       time.Duration
 	concurrency    int
@@ -22,9 +35,10 @@ type Worker struct {
 	wg             sync.WaitGroup
 }
 
-func NewWorker(db *sqlc.Queries, delivery *DeliveryService, interval time.Duration, concurrency int, enableOCR bool, ocrConcurrency int) *Worker {
+func NewWorker(db *sqlc.Queries, pool *pgxpool.Pool, delivery *DeliveryService, interval time.Duration, concurrency int, enableOCR bool, ocrConcurrency int) *Worker {
 	return &Worker{
 		db:             db,
+		pool:           pool,
 		delivery:       delivery,
 		interval:       interval,
 		concurrency:    concurrency,
@@ -63,26 +77,55 @@ func (w *Worker) tick() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if err := w.processOutbox(ctx); err != nil {
-		slog.Warn("webhook worker: process outbox failed", "error", err)
+	if _, err := w.RunOnce(ctx); err != nil {
+		slog.Warn("webhook worker: run failed", "error", err)
 	}
-
-	w.dispatchPending(ctx)
 }
 
-func (w *Worker) processOutbox(ctx context.Context) error {
+// RunOnce performs one full pass — pending outbox events then pending
+// deliveries — under a Postgres advisory lock so concurrent instances (or
+// overlapping invocations on this instance) cannot dispatch the same
+// delivery twice. It waits for every spawned goroutine before returning, so
+// a delivery row is no longer pending once RunOnce completes.
+func (w *Worker) RunOnce(ctx context.Context) (Result, error) {
+	var res Result
+	acquired, err := pglock.TryWithLock(ctx, w.pool, pglock.KeyJobsWebhooks, func(ctx context.Context) error {
+		return w.runPass(ctx, &res)
+	})
+	if err != nil {
+		return res, err
+	}
+	res.Skipped = !acquired
+	return res, nil
+}
+
+func (w *Worker) runPass(ctx context.Context, res *Result) error {
+	var retErr error
+	if err := w.processOutbox(ctx, res); err != nil {
+		slog.Warn("webhook worker: process outbox failed", "error", err)
+		retErr = err
+	}
+	w.dispatchPending(ctx, res)
+	return retErr
+}
+
+func (w *Worker) processOutbox(ctx context.Context, res *Result) error {
 	events, err := w.db.ListPendingOutboxEvents(ctx, 100)
 	if err != nil {
 		return err
 	}
+	res.OutboxProcessed += len(events)
 
 	ocrSem := make(chan struct{}, w.ocrConcurrency)
+	var wg sync.WaitGroup
 
 	for _, event := range events {
 		if w.enableOCR {
 			event := event
 			ocrSem <- struct{}{}
+			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				defer func() { <-ocrSem }()
 				service.DummyOCRProcessor(w.db, event)
 			}()
@@ -93,6 +136,7 @@ func (w *Worker) processOutbox(ctx context.Context) error {
 		}
 	}
 
+	wg.Wait()
 	return nil
 }
 
@@ -156,7 +200,7 @@ func eventOwnerMatches(event sqlc.OutboxEvent, wh sqlc.Webhook) bool {
 	return false
 }
 
-func (w *Worker) dispatchPending(ctx context.Context) {
+func (w *Worker) dispatchPending(ctx context.Context, res *Result) {
 	limit := int32(w.concurrency)
 	if limit < 1 {
 		limit = 10
@@ -166,18 +210,27 @@ func (w *Worker) dispatchPending(ctx context.Context) {
 		slog.Warn("webhook worker: list pending deliveries failed", "error", err)
 		return
 	}
+	res.DeliveriesAttempted += len(deliveries)
 
+	// Dispatches run detached from ctx: each HTTP request carries its own
+	// delivery timeout and the status update must still be written when a
+	// caller's deadline fires mid-pass. The WaitGroup keeps the advisory
+	// lock held until every dispatch finishes.
 	bgCtx := context.Background()
 	sem := make(chan struct{}, w.concurrency)
+	var wg sync.WaitGroup
 
 	for _, d := range deliveries {
 		d := d
 		sem <- struct{}{}
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			defer func() { <-sem }()
 			if err := w.delivery.Dispatch(bgCtx, d); err != nil {
 				slog.Warn("webhook worker: dispatch error", "error", err)
 			}
 		}()
 	}
+	wg.Wait()
 }
