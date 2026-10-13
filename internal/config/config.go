@@ -284,6 +284,14 @@ func (s *Setter) SetThemeConfig(cfg json.RawMessage) {
 	s.cfg.App.ThemeConfig = cfg
 }
 
+// Update runs fn while holding the config write lock. fn must not call
+// snapshot or other locking methods on c.
+func (c *Config) Update(fn func(c *Config)) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	fn(c)
+}
+
 func (c *Config) AppSnapshot() AppConfig {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
