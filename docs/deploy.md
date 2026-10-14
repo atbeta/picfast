@@ -117,6 +117,10 @@ export PICFAST_DATABASE_AUTO_MIGRATE=false
 picfast migrate
 ```
 
+- 多副本同时启动时，golang-migrate 用 PostgreSQL 会话级咨询锁串行执行迁移：只有一个实例实际应用迁移，其余实例等待后发现无变更即继续启动。
+- 迁移失败时服务直接退出（与此前版本行为一致）。若应用账号没有建表/改表权限（部分托管 PG 会分配受限账号），请设置 `PICFAST_DATABASE_AUTO_MIGRATE=false`，并用有 DDL 权限的账号单独执行 `picfast migrate`。
+- 因为迁移锁是会话级的，事务模式连接池（见下节）不能可靠地持有它：使用 Supabase `:6543` / Neon `-pooler` 等池化连接串时，请关闭自动迁移，并用直连/会话模式连接串执行迁移，例如 `PICFAST_DATABASE_URL=<直连串> picfast migrate`。
+
 ## 托管 Postgres 与连接池
 
 使用事务模式（transaction mode）连接池的托管 Postgres（Supabase 的 `:6543` 端口、Neon 的 `-pooler` 主机、pgbouncer transaction pooling）时，pgx 默认的语句缓存在池化连接上不可靠 —— 在 `database.url` / `PICFAST_DATABASE_URL` 的查询串追加 `default_query_exec_mode=exec` 即可：
