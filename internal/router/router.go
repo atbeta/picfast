@@ -232,13 +232,6 @@ func New(
 	runner := jobs.NewRunner(queries, pool, cfg)
 	whHandler := handler.NewWebhookHandler(queries, webhookSvc, runner.Delivery())
 
-	// External trigger for the background jobs, for deployments where the
-	// embedded scheduler is disabled (jobs.embedded=false). Guarded by a
-	// bearer token; when jobs.token is empty the route is not registered.
-	if cfg.Jobs.Token != "" {
-		r.Post("/internal/jobs/run", jobsRunHandler(runner, cfg.Jobs.Token))
-	}
-
 	// Handlers
 	authHandler := handler.NewAuthHandler(queries, pool, jwtSvc, cfg, mailSender, eventEmitter)
 	oauthHandler := handler.NewOAuthHandler(queries, pool, jwtSvc, cfg)
@@ -274,8 +267,19 @@ func New(
 	oauthStartLimiter := middleware.NewRateLimiter(10, time.Minute)
 	oauthCallbackLimiter := middleware.NewRateLimiter(5, time.Minute)
 	oauthLinkLimiter := middleware.NewRateLimiter(10, time.Minute)
+	jobsLimiter := middleware.NewRateLimiter(10, time.Minute)
 	clientIPKey := func(r *http.Request) string {
 		return clientip.FromRequest(r)
+	}
+
+	// External trigger for the background jobs, for deployments where the
+	// embedded scheduler is disabled (jobs.embedded=false). Guarded by a
+	// bearer token; when jobs.token is empty the route is not registered.
+	// Rate limiting runs before the token check so token guessing is also
+	// throttled.
+	if cfg.Jobs.Token != "" {
+		r.With(middleware.RateLimit("jobs", jobsLimiter, clientIPKey)).
+			Post("/internal/jobs/run", jobsRunHandler(runner, cfg.Jobs.Token))
 	}
 
 	// Image file serving: /i/{key}.{ext} — with OptionalAuth so private images can be accessed by owner

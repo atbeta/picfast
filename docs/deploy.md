@@ -149,7 +149,7 @@ export PICFAST_JOBS_TOKEN=<随机长令牌>   # 启用 POST /internal/jobs/run�
 
 两种触发方式等价，按需任选：
 
-- **HTTP**：`POST /internal/jobs/run`，请求头 `Authorization: Bearer $PICFAST_JOBS_TOKEN`，同步执行一轮并返回 JSON 报告（任务失败返回 500）
+- **HTTP**：`POST /internal/jobs/run`，请求头 `Authorization: Bearer $PICFAST_JOBS_TOKEN`，同步执行一轮并返回 JSON 报告（任务失败返回 500）。该端点按来源 IP 限流（每分钟 10 次），正常每分钟触发一次不受影响。
 - **CLI**：`picfast jobs run`（同一镜像/二进制），同步执行一轮并把报告打印为 JSON，失败时退出码为 1
 
 外部调度示例：
