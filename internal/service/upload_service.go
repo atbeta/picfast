@@ -31,6 +31,9 @@ type UploadService struct {
 	pool    *pgxpool.Pool
 	config  *config.Config
 	emitter events.Emitter
+	// newStorage builds the storage backend for a strategy; a field so
+	// tests can substitute a fake.
+	newStorage func(sqlc.Strategy) (storage.Storage, error)
 
 	totalImages atomic.Int64
 	countInit   sync.Once
@@ -64,7 +67,7 @@ type processedUploadImage struct {
 }
 
 func NewUploadService(db *sqlc.Queries, pool *pgxpool.Pool, cfg *config.Config, emitter events.Emitter) *UploadService {
-	return &UploadService{db: db, pool: pool, config: cfg, emitter: emitter}
+	return &UploadService{db: db, pool: pool, config: cfg, emitter: emitter, newStorage: GetStorageForStrategy}
 }
 
 // totalImagesCount lazily seeds the atomic counter from the database,
@@ -181,15 +184,37 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	dedup := existing.ID != 0
 
 	// Step 10: Write to storage and resolve strategy URL.
-	// The store stays open until after thumbnail generation below.
+	// Thumbnail generation runs in a goroutine so its remote write overlaps
+	// the original write, the DB insert, and moderation. waitThumbnail joins
+	// it exactly once; deferring the join AFTER store.Close makes it run
+	// first (LIFO), so the goroutine is always finished before the store
+	// closes — Upload never returns with it still running. The buffered
+	// channel keeps the goroutine unblocked on early returns, and recover
+	// turns a panic (previously caught by chi's Recoverer on the request
+	// goroutine) into a result error.
 	store, err := s.getStorage(strategy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init storage: %w", err)
 	}
 	defer func() { _ = store.Close() }()
+	thumbErrCh := make(chan error, 1)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				thumbErrCh <- fmt.Errorf("thumbnail generation panicked: %v", r)
+			}
+		}()
+		thumbErrCh <- StoreThumbnail(ctx, store, fileData, ext, md5Hash)
+	}()
+	waitThumbnail := sync.OnceValue(func() error { return <-thumbErrCh })
+	defer func() { _ = waitThumbnail() }()
 	var strategyPublicURL string
 	if !dedup {
 		if err := store.Write(ctx, pathname, fileData, mimetypeFromExt(ext)); err != nil {
+			_ = waitThumbnail()
+			if delErr := store.Delete(ctx, ThumbnailObjectPath(md5Hash)); delErr != nil && !isNotFoundError(delErr) {
+				slog.Warn("thumbnail rollback cleanup failed", "path", ThumbnailObjectPath(md5Hash), "error", delErr)
+			}
 			return nil, fmt.Errorf("failed to write file: %w", err)
 		}
 	} else {
@@ -269,6 +294,10 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	})
 	if err != nil {
 		if !dedup {
+			_ = waitThumbnail()
+			if delErr := store.Delete(ctx, ThumbnailObjectPath(md5Hash)); delErr != nil && !isNotFoundError(delErr) {
+				slog.Warn("thumbnail rollback cleanup failed", "path", ThumbnailObjectPath(md5Hash), "error", delErr)
+			}
 			store, delErr := s.getStorage(strategy)
 			if delErr != nil {
 				slog.Warn("failed to get storage for rollback cleanup", "error", delErr)
@@ -315,11 +344,11 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 		}
 	}
 
-	// Step 13: Generate thumbnail into the image's storage strategy
-	// (synchronous to avoid race with frontend). Runs on dedup too so the
-	// thumbnail object exists for every image sharing the md5.
+	// Step 13: Join the thumbnail goroutine started at Step 10 — the object
+	// was written into the image's storage strategy. Runs on dedup too so
+	// the thumbnail object exists for every image sharing the md5.
 	thumbStatus := "completed"
-	if thumbErr := StoreThumbnail(ctx, store, fileData, ext, md5Hash); thumbErr != nil {
+	if thumbErr := waitThumbnail(); thumbErr != nil {
 		slog.Warn("thumbnail generation failed", "md5", md5Hash, "error", thumbErr)
 		thumbStatus = "failed"
 	}
@@ -357,7 +386,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 }
 
 func (s *UploadService) getStorage(strategy sqlc.Strategy) (storage.Storage, error) {
-	return GetStorageForStrategy(strategy)
+	return s.newStorage(strategy)
 }
 
 func (s *UploadService) applyDefaultTTL(params UploadParams) UploadParams {
