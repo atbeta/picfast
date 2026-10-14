@@ -20,20 +20,20 @@ func runMigrateCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		case "up":
 			args = args[1:]
 		default:
-			fmt.Fprintf(stderr, "unknown migrate command: %s\n\n", args[0])
+			_, _ = fmt.Fprintf(stderr, "unknown migrate command: %s\n\n", args[0])
 			printMigrateUsage(stderr)
 			return 2
 		}
 	}
 	if len(args) > 0 {
-		fmt.Fprintf(stderr, "unexpected migrate argument: %s\n\n", args[0])
+		_, _ = fmt.Fprintf(stderr, "unexpected migrate argument: %s\n\n", args[0])
 		printMigrateUsage(stderr)
 		return 2
 	}
 
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Fprintf(stderr, "failed to load config: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "failed to load config: %v\n", err)
 		return 1
 	}
 
