@@ -149,7 +149,7 @@ func (r ThumbnailRepairer) readObject(ctx context.Context, item InventoryItem, t
 	}
 	data, err := store.Read(ctx, item.ObjectPath)
 	if err != nil {
-		store.Close()
+		_ = store.Close()
 		return nil, nil, RepairStatusReadFailed, err.Error()
 	}
 	return data, store, "", ""
