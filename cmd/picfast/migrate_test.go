@@ -61,7 +61,7 @@ func TestRunMigrateCommandUpAppliesMigrations(t *testing.T) {
 	if err != nil {
 		t.Skipf("test postgres unavailable: %v", err)
 	}
-	defer admin.Close(ctx)
+	defer func() { _ = admin.Close(ctx) }()
 
 	dbName := fmt.Sprintf("picfast_migrate_cli_%d_%d", os.Getpid(), time.Now().UnixNano())
 	if _, err := admin.Exec(ctx, "CREATE DATABASE "+pgx.Identifier{dbName}.Sanitize()); err != nil {
@@ -84,7 +84,7 @@ func TestRunMigrateCommandUpAppliesMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("connect scratch database: %v", err)
 	}
-	defer conn.Close(ctx)
+	defer func() { _ = conn.Close(ctx) }()
 
 	var version int64
 	var dirty bool

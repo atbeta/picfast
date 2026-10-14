@@ -111,7 +111,9 @@ func TestProcessUploadImageFillsDimsWithoutProcessing(t *testing.T) {
 
 func TestProcessUploadImageFillsGifDims(t *testing.T) {
 	var buf bytes.Buffer
-	gif.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 16, 9)), nil)
+	if err := gif.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 16, 9)), nil); err != nil {
+		t.Fatalf("gif.Encode failed: %v", err)
+	}
 	result := processUploadImage(buf.Bytes(), "gif", imageProcessingConfig{Quality: 50})
 	if result.width != 16 || result.height != 9 {
 		t.Fatalf("expected dims 16x9, got %dx%d", result.width, result.height)

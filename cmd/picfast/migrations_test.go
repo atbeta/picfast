@@ -32,7 +32,7 @@ func TestNewMigrationSourceFallsBackToEmbedded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newMigrationSource: %v", err)
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	if name != "iofs" {
 		t.Fatalf("source name = %q, want iofs (embedded)", name)
@@ -54,7 +54,7 @@ func TestNewMigrationSourceIgnoresInvalidEnvDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newMigrationSource: %v", err)
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	if name != "iofs" {
 		t.Fatalf("source name = %q, want iofs (embedded)", name)
@@ -72,7 +72,7 @@ func TestNewMigrationSourcePrefersEnvDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newMigrationSource: %v", err)
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	if name != "file" {
 		t.Fatalf("source name = %q, want file", name)

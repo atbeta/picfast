@@ -28,19 +28,19 @@ func runJobsCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 	case "run":
 		args = args[1:]
 	default:
-		fmt.Fprintf(stderr, "unknown jobs command: %s\n\n", args[0])
+		_, _ = fmt.Fprintf(stderr, "unknown jobs command: %s\n\n", args[0])
 		printJobsUsage(stderr)
 		return 2
 	}
 	if len(args) > 0 {
-		fmt.Fprintf(stderr, "unexpected jobs argument: %s\n\n", args[0])
+		_, _ = fmt.Fprintf(stderr, "unexpected jobs argument: %s\n\n", args[0])
 		printJobsUsage(stderr)
 		return 2
 	}
 
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Fprintf(stderr, "failed to load config: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "failed to load config: %v\n", err)
 		return 1
 	}
 
@@ -63,10 +63,10 @@ func runJobsCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 
 	out, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
-		fmt.Fprintf(stderr, "failed to encode report: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "failed to encode report: %v\n", err)
 		return 1
 	}
-	fmt.Fprintln(stdout, string(out))
+	_, _ = fmt.Fprintln(stdout, string(out))
 
 	if report.Failed() {
 		return 1
@@ -75,7 +75,7 @@ func runJobsCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 }
 
 func printJobsUsage(w io.Writer) {
-	fmt.Fprintln(w, `Usage:
+	_, _ = fmt.Fprintln(w, `Usage:
   picfast jobs run
 
 Commands:

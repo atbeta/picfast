@@ -39,30 +39,30 @@ func runMigrateCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 
 	m, err := newMigrator(cfg.Database.URL)
 	if err != nil {
-		fmt.Fprintf(stderr, "failed to open migration source: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "failed to open migration source: %v\n", err)
 		return 1
 	}
-	defer m.Close()
+	defer func() { _, _ = m.Close() }()
 
 	if err := m.Up(); err != nil {
 		if err == migrate.ErrNoChange {
-			fmt.Fprintln(stdout, "migrations already up to date")
+			_, _ = fmt.Fprintln(stdout, "migrations already up to date")
 			return 0
 		}
-		fmt.Fprintf(stderr, "migration failed: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "migration failed: %v\n", err)
 		return 1
 	}
 
 	if version, dirty, err := m.Version(); err == nil {
-		fmt.Fprintf(stdout, "migrations applied: version=%d dirty=%t\n", version, dirty)
+		_, _ = fmt.Fprintf(stdout, "migrations applied: version=%d dirty=%t\n", version, dirty)
 	} else {
-		fmt.Fprintln(stdout, "migrations applied")
+		_, _ = fmt.Fprintln(stdout, "migrations applied")
 	}
 	return 0
 }
 
 func printMigrateUsage(w io.Writer) {
-	fmt.Fprintln(w, `Usage:
+	_, _ = fmt.Fprintln(w, `Usage:
   picfast migrate [up]
 
 Commands:

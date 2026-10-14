@@ -123,7 +123,7 @@ func (s *DeleteService) deleteImageRecord(ctx context.Context, img sqlc.Image) e
 	// The on-disk thumbnail dir is a legacy fallback; only remove the file
 	// when no other image row shares this md5.
 	if s.thumbDir != "" && !hasMd5Siblings {
-		os.Remove(filepath.Join(s.thumbDir, img.Md5+".png"))
+		_ = os.Remove(filepath.Join(s.thumbDir, img.Md5+".png"))
 	}
 
 	userID := img.UserID
