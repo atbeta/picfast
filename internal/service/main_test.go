@@ -28,9 +28,13 @@ func createTestImage(format string, width, height int) []byte {
 	}
 	var buf bytes.Buffer
 	if format == "png" {
-		png.Encode(&buf, img)
+		if err := png.Encode(&buf, img); err != nil {
+			panic(err)
+		}
 	} else {
-		jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90})
+		if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90}); err != nil {
+			panic(err)
+		}
 	}
 	return buf.Bytes()
 }

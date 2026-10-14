@@ -107,14 +107,14 @@ func (r ThumbnailRepairer) Repair(ctx context.Context, items []InventoryItem, op
 			continue
 		}
 		if err := r.Generator(ctx, store, data, item.Extension, item.MD5); err != nil {
-			store.Close()
+			_ = store.Close()
 			itemResult.Status = RepairStatusGenerateFailed
 			itemResult.Error = err.Error()
 			result.Failed++
 			result.Items = append(result.Items, itemResult)
 			continue
 		}
-		store.Close()
+		_ = store.Close()
 		itemResult.Path = service.ThumbnailObjectPath(item.MD5)
 		itemResult.Status = RepairStatusRepaired
 		result.Repaired++

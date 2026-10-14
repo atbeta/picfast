@@ -29,7 +29,7 @@ func newTestLocalStorage(t *testing.T, root string) storage.Storage {
 	if err != nil {
 		t.Fatalf("storage.New: %v", err)
 	}
-	t.Cleanup(func() { store.Close() })
+	t.Cleanup(func() { _ = store.Close() })
 	return store
 }
 

@@ -186,7 +186,7 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 	if err != nil {
 		return nil, fmt.Errorf("failed to init storage: %w", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 	var strategyPublicURL string
 	if !dedup {
 		if err := store.Write(ctx, pathname, fileData, mimetypeFromExt(ext)); err != nil {
