@@ -391,18 +391,18 @@ func (h *FileHandler) regenerateThumbnail(ctx context.Context, images []sqlc.Ima
 		}
 		data, err := store.Read(ctx, pathname)
 		if err != nil {
-			store.Close()
+			_ = store.Close()
 			continue
 		}
 		png, err := service.RenderThumbnail(data, img.Extension)
 		if err != nil {
-			store.Close()
+			_ = store.Close()
 			return nil, err
 		}
 		if err := store.Write(ctx, service.ThumbnailObjectPath(md5), png, "image/png"); err != nil {
 			slog.Warn("thumbnail write-back failed", "md5", md5, "error", err)
 		}
-		store.Close()
+		_ = store.Close()
 		return png, nil
 	}
 	return nil, errors.New("no readable source object")
