@@ -348,7 +348,7 @@ func (h *FileHandler) loadThumbnailFromStores(ctx context.Context, images []sqlc
 			continue
 		}
 		data, err := store.Read(ctx, objPath)
-		store.Close()
+		_ = store.Close()
 		if err == nil {
 			return data, true
 		}

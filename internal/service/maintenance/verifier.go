@@ -157,7 +157,7 @@ func (v Verifier) VerifyThumbnail(ctx context.Context, item InventoryItem) Thumb
 		check.Error = err.Error()
 		return check
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	objPath := service.ThumbnailObjectPath(item.MD5)
 	if _, err := store.Read(ctx, objPath); err == nil {
