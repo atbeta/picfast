@@ -65,3 +65,28 @@ func TestJobsEndpointAuth(t *testing.T) {
 		}
 	})
 }
+
+// The jobs endpoint is rate limited per source IP before the token check:
+// 10 requests/minute, so even wrong-token attempts are throttled.
+func TestJobsEndpointRateLimit(t *testing.T) {
+	env := newTestEnv(t)
+	env.Config.Jobs.Token = "test-jobs-token"
+	env.rebuildRouter()
+
+	newReq := func() *http.Request {
+		req := httptest.NewRequest(http.MethodPost, "/internal/jobs/run", nil)
+		req.Header.Set("Authorization", "Bearer wrong-token")
+		return req
+	}
+
+	for i := 1; i <= 10; i++ {
+		rec := doReq(env.Router, newReq())
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("request %d: status = %d, want 401", i, rec.Code)
+		}
+	}
+	rec := doReq(env.Router, newReq())
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("11th request: status = %d, want 429", rec.Code)
+	}
+}
