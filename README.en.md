@@ -109,6 +109,20 @@ Open `http://localhost:18080` and follow the setup wizard. For headless deployme
 
 Note: the slim image does not preserve EXIF metadata when re-encoding (even when "strip EXIF" is off), and it cannot resize/re-encode WebP sources on the fly — `@w_`/`@q_` variants on a `.webp` file return the original (WebP thumbnails still work).
 
+### One-click deploy on Render (Free instance, no credit card)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/atbeta/picfast)
+
+The button reads [`render.yaml`](render.yaml) from this repository and creates a single **Free** web service running the prebuilt slim image — no build, no registry, and no credit card. During creation Render prompts for a managed PostgreSQL connection string; [Neon](https://neon.com) is a good fit (free forever, no card — append `default_query_exec_mode=exec` when you use its pooled connection string).
+
+After it finishes:
+
+1. Open the site and complete the setup wizard;
+2. Set **Settings → Site URL** to the domain Render assigned (or your custom domain);
+3. Add an S3-compatible strategy under **Storage Strategies** — Backblaze B2 (10 GB free) or Neon Object Storage (5 GB free, path-style). The platform disk is ephemeral, so uploads left on local storage are lost when the instance is replaced.
+
+Free-instance trade-offs: 0.1 CPU / 512 MB RAM, spins down after 15 minutes without inbound traffic (~1 minute to spin back up), 750 instance hours per month. The blueprint lowers the per-file upload cap to 10 MiB so small instances are not pushed into OOM while decoding. Upgrade to a paid plan when you need on-time scheduled jobs, more memory, or a managed database — see [docs/serverless.md](docs/serverless.md) (Chinese).
+
 Observability: Docker Compose listens for metrics on container-local `:9190` without publishing it to the host. Prometheus can scrape `app:9190/metrics` from the same Docker network. Health probes `GET /healthz` (liveness) and `GET /readyz` (readiness, checks the database) are served at the server root for container platform health checks. See **[docker/README.md](docker/README.md)** for the generic Compose file, Traefik template, and `.env` examples.
 
 ## Common Commands

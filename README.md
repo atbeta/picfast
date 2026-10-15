@@ -109,6 +109,20 @@ docker run -d --name picfast --network picfast-net -p 18080:8080 \
 
 注意：精简镜像在重新编码时不会保留 EXIF 元数据（即使未开启“去除 EXIF”）；且无法对 WebP 源图做动态缩放/压缩——对 `.webp` 文件请求 `@w_`/`@q_` 变体将返回原图（WebP 缩略图仍可正常生成）。
 
+### 一键部署到 Render（免费档，不需要绑卡）
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/atbeta/picfast)
+
+按钮读取仓库根目录的 [`render.yaml`](render.yaml)，创建一个 **Free 档 Web 服务**，直接运行预构建的 slim 镜像（不重新构建、不需要镜像仓库，也不需要绑银行卡）。创建过程中会要求填一个托管 PostgreSQL 连接串——推荐 [Neon](https://neon.com)（永久免费、不需要绑卡；用池化连接串时记得追加 `default_query_exec_mode=exec`）。
+
+部署完成后：
+
+1. 打开站点完成初始化向导；
+2. 在「站点设置 → 站点地址」填入 Render 分配的域名（或你绑定的自定义域名）；
+3. 在「存储策略」添加 S3 兼容存储——推荐 Backblaze B2（10 GB 免费）或 Neon Object Storage（5 GB 免费，需 path-style），都不需要绑卡。平台磁盘是临时的，留在本地存储的图片会在实例重建后丢失。
+
+Free 档的取舍：0.1 CPU / 512 MB 内存、15 分钟无入站流量后休眠（再访问约 1 分钟启动）、每月 750 实例小时；模板已把单文件上传上限先降到 10 MiB，避免小内存下解码 OOM。需要 cron 准点投递 webhook、更大内存或托管数据库时，升级付费档并参考 [docs/serverless.md](docs/serverless.md)。
+
 可观测性：Docker Compose 默认让 metrics 在容器内 `:9190` 监听，不发布到宿主机；Prometheus 可在同一 Docker 网络抓取 `app:9190/metrics`。健康探针 `GET /healthz`（存活）与 `GET /readyz`（就绪，检查数据库）暴露在服务根路径，可用于容器平台健康检查。通用 Compose、Traefik 模板及 `.env` 示例详见 **[docker/README.md](docker/README.md)**。
 
 ## 常用命令

@@ -1,0 +1,38 @@
+# Render Blueprint —— 支撑 README 里「Deploy to Render」一键部署按钮（Free 档、不需要绑卡）。
+#
+# 会创建的只有一个资源：运行预构建 slim 镜像的 Free 档 Web 服务
+# （不重新构建、不需要镜像仓库）。刻意不创建 cron 服务与 Render Postgres：
+# Render 的 cron 没有免费档，免费 Postgres 也会在 30 天后过期，因此
+# 数据库请用外部免费托管 PG（推荐 Neon：永久免费、不需要绑卡）。
+#
+# Free 档的实际取舍（详见 docs/serverless.md）：
+#   0.1 CPU / 512 MB 内存；15 分钟无入站流量后休眠，再访问约 1 分钟启动；
+#   每月 750 实例小时。因为内存小，这里先把单文件上传上限降到 10 MiB。
+#   内置后台任务每 5 秒轮询一次数据库，会让 Neon 无法缩容到零而吃掉免费计算额度，
+#   若实例长期在线，可设 PICFAST_JOBS_EMBEDDED=false 并改用外部定时触发。
+#
+# 部署完成后：
+#   1. 打开站点完成初始化向导；
+#   2. 「站点设置 → 站点地址」填 Render 分配的域名；
+#   3. 「存储策略」添加 S3 兼容存储（推荐 Backblaze B2 10 GB 免费，
+#      或 Neon Object Storage 5 GB，两者都不需要绑卡）。
+
+services:
+  - type: web
+    name: picfast
+    runtime: image
+    image:
+      url: docker.io/xbeta/picfast:slim
+    region: singapore
+    plan: free
+    healthCheckPath: /readyz
+    maxShutdownDelaySeconds: 120
+    envVars:
+      - key: PICFAST_DATABASE_URL
+        sync: false            # 创建时粘贴托管 PG 连接串；池化串请追加 default_query_exec_mode=exec
+      - key: PICFAST_JWT_SECRET
+        generateValue: true
+      - key: PICFAST_SERVER_METRICS_ENABLED
+        value: "false"
+      - key: PICFAST_APP_MAX_UPLOAD_BYTES
+        value: "10485760"      # 10 MiB：Free 档 512 MB 内存下先留足解码余量

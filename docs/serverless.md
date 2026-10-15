@@ -18,6 +18,8 @@
 PICFAST_DATABASE_URL=postgres://user:pass@host:5432/picfast?sslmode=require
 ```
 
+- **免费且不需要绑卡的选项**：Neon（永久免费、无需绑卡：1 GB 存储 + 100 CU-小时/月、空闲 5 分钟缩容到零）、Aiven（free forever、无需绑卡）、Prisma Postgres（free forever、无需绑卡）。注意 Render 自带的免费 Postgres **创建 30 天后过期**，不建议长期使用。
+- **免费额度会被后台任务吃掉**：内置后台任务每 5 秒轮询一次数据库（`webhook.worker_interval`），只要实例在线，Neon 这类"空闲即缩容"的数据库就不会休眠——长期在线会消耗掉每月的计算额度。若因此超额，请设 `PICFAST_JOBS_EMBEDDED=false` 并改用外部定时触发（见 §1.3）。
 - **事务模式连接池**（Supabase `:6543`、Neon `-pooler`、pgbouncer）需在查询串追加 `default_query_exec_mode=exec`，或直接使用直连/会话模式串；pgx 的默认语句缓存在事务池化下不可靠。迁移也必须用直连串（见 §7）。
 - 保持 `pool_max_conns >= 3`：后台任务持锁时会占用一条连接，另需连接执行查询；过小会在启动时打印警告。
 - **PicFast 启动即连库**，连不上或 `pool.Ping` 失败会直接退出。如果托管数据库会在空闲后自动挂起（部分免费档），缩容到零后的第一次请求可能因为同时唤醒数据库而失败一次，建议把数据库保持在常驻状态，或给服务设置最小实例数 ≥ 1。
@@ -25,6 +27,9 @@ PICFAST_DATABASE_URL=postgres://user:pass@host:5432/picfast?sslmode=require
 ### 1.2 持久对象存储（不上 S3 就一定会丢图）
 
 这些平台的容器文件系统都是**临时**的：重启、重新部署、实例被回收都会丢数据，而且**没有平台允许把同一块卷共享给多个实例**，因此不能靠本地卷跑多副本。请使用 S3 兼容存储（R2 / TOS / OBS / Kodo / OSS / COS / MinIO 均可）。
+
+- **免费且不需要绑卡的选项**：Backblaze B2（前 10 GB 永久免费）、Tigris（5 GB）、Neon Object Storage（同一 Neon 账号内 5 GB；仅支持 path-style 与 SigV4，bucket 的公开读要在 Neon 控制台设置，否则把存储策略的 `link_mode` 设为 `proxy` 交给 PicFast 出图）。
+- ⚠️ **Cloudflare R2 需要绑定支付方式**才能开通，若坚持不绑卡请避开它。
 
 首次启动（数据库里还没有任何存储策略时）用环境变量创建默认策略：
 
@@ -147,6 +152,19 @@ PICFAST_APP_ADMIN_PASSWORD=<强密码>
 
 **结论**：不要把上传落在本地卷上。对象存储 + 无状态实例是这五个平台上唯一能稳定扩容的形态。
 
+### 4.1 绑卡与免费额度（2026-10 核对）
+
+| 平台 | 是否需要绑银行卡 | 免费额度 | 备注 |
+|------|------------------|----------|------|
+| **Render** | ❌ Free 档不需要 | 750 实例小时/月、0.1 CPU / 512 MB | **cron 没有免费档**；免费 Postgres **30 天后过期**；15 分钟无流量休眠、约 1 分钟启动 |
+| **Railway** | ❌ "No credit card required" | 30 天 $5 试用 → Free **$1/月** | 原生 cron 最短 5 分钟；睡醒后首个请求可能 502 |
+| **Fly.io** | ⚠️ 试用不需要，之后必须 | 2 机器小时或 7 天 | 不绑卡则应用会停跑 |
+| **Koyeb** | ✅ 必须绑卡 | 新用户只能订 Pro 及以上，需 $29 预授权 | 免费档文档还在，但新用户不可达 |
+| **Northflank** | ✅ 所有计划都要 | Dev Sandbox：2 服务 / 2 任务 / 1 addon | 官方明确要求先添加支付方式 |
+| **Zeabur** | ❌ 不需要 | Free 计划是"管理自有服务器" | 共享集群已停止接收新项目，等于没有免费算力 |
+
+**不绑卡的最小可用组合**：**Render Free（容器）+ Neon（PostgreSQL，永久免费）+ Backblaze B2 或 Neon Object Storage（对象存储）**——三项都不需要银行卡，Neon 一家即可同时提供 PG 与 5 GB 对象存储。需要 cron 准点投递或更大内存时，改用 Railway（原生 cron，最短 5 分钟）或 Render 付费档。
+
 ---
 
 ## 5. 各平台部署方式
@@ -232,9 +250,7 @@ fly deploy
 
 ### 5.3 Render
 
-**控制台步骤：** New → **Web Service** → Source 选 **Existing Image**，Image URL 填 `docker.io/xbeta/picfast:v0.26.0-slim`（镜像需为 `linux/amd64`，压缩后 ≤ 10 GB），然后设置环境变量、健康检查路径 `/readyz`、实例规格。
-
-**Blueprint（`render.yaml`）示例：**
+**一键部署（Free 档，不需要绑卡）：** 仓库根目录的 [`render.yaml`](../render.yaml) 就是给它用的配置，README 顶部的 Deploy to Render 按钮可直接创建。控制台里对应 New → **Web Service** → Source 选 **Existing Image** → Image URL 填 `docker.io/xbeta/picfast:v0.26.0-slim`（镜像需为 `linux/amd64`，压缩后 ≤ 10 GB）。
 
 ```yaml
 services:
@@ -242,45 +258,44 @@ services:
     name: picfast
     runtime: image
     image:
-      url: docker.io/xbeta/picfast:v0.26.0-slim
+      url: docker.io/xbeta/picfast:slim
     region: singapore
-    plan: 1c-2g                      # 1 vCPU / 2 GB；图片处理建议内存 ≥ 1 GB
+    plan: free                       # Free 档：0 美元、不需要绑卡
     healthCheckPath: /readyz
-    preDeployCommand: migrate        # 每次部署前执行一次（迁移用），见下方说明
     maxShutdownDelaySeconds: 120     # 默认 30s，最大 300s
     envVars:
       - key: PICFAST_DATABASE_URL
-        sync: false
+        sync: false                  # 创建时粘贴 Neon / Aiven 等免费托管 PG 连接串
       - key: PICFAST_JWT_SECRET
-        sync: false
-      - key: PICFAST_SERVER_BASE_URL
-        value: https://picfast.onrender.com
+        generateValue: true
       - key: PICFAST_SERVER_METRICS_ENABLED
         value: "false"
-      - key: PICFAST_JOBS_EMBEDDED
-        value: "false"
-      - key: PICFAST_DATABASE_AUTO_MIGRATE
-        value: "false"
+      - key: PICFAST_APP_MAX_UPLOAD_BYTES
+        value: "10485760"            # 512 MB 内存下先留足图片解码余量
+```
 
-  # 定时任务：同镜像的 Cron Job 服务
+- **端口**：Render 注入 `PORT`，web service 默认期望 **10000**；PicFast 会自动跟随 `PORT`，无需配置。服务必须绑定 `0.0.0.0`，Render 只转发一个 HTTP 端口（`PORT` 可用环境变量覆盖，但不要和 `PICFAST_SERVER_PORT` 同时设置成不同值）。
+- **健康检查**：默认是 TCP 探测；填了 `healthCheckPath` 后按 HTTP 检查，2xx/3xx 视为健康、5 秒内需响应，连续失败 15 秒摘流、60 秒重启实例。
+- **Free 档的取舍**：0.1 CPU / 512 MB 内存；15 分钟无入站流量后休眠、再访问约 1 分钟启动；每月 750 实例小时（休眠时不消耗）。实例休眠期间后台任务不运行。模板已把单文件上传上限降到 10 MiB。
+- **数据库**：模板刻意不创建 Render Postgres（免费档创建 30 天后过期），请在创建服务时粘贴 Neon / Aiven 等免费 PG 的连接串；池化串记得加 `default_query_exec_mode=exec`。
+- **对象存储**：部署完成后在控制台「存储策略」里添加（Backblaze B2 / Tigris / Neon Object Storage 都不需要绑卡）。
+- **迁移**：免费档保持默认的"启动时自动迁移"即可（多实例并发由咨询锁串行化）。付费档可改用 `preDeployCommand: migrate`——它在部署前于独立实例执行一次，注意命令要按 §2 里"覆盖 CMD"的语义写（`migrate`）。
+- **需要 cron 或更大内存时**：升级到付费档，并追加一个 cron 服务（Render 的 cron 没有免费档），此时把 Web 服务的 `PICFAST_JOBS_EMBEDDED` 设为 `false`，避免与外部触发重复：
+
+```yaml
   - type: cron
     name: picfast-jobs
     runtime: image
     image:
-      url: docker.io/xbeta/picfast:v0.26.0-slim
+      url: docker.io/xbeta/picfast:slim
     schedule: "*/5 * * * *"          # 全 UTC
-    dockerCommand: jobs run          # Docker 镜像的 cron 用 Docker Command 覆盖启动命令
+    dockerCommand: jobs run          # 覆盖 Dockerfile 的 CMD → picfast jobs run
     envVars:
       - key: PICFAST_DATABASE_URL
         sync: false
 ```
 
-- **端口**：Render 注入 `PORT`，web service 默认期望 **10000**；PicFast 会自动跟随 `PORT`，无需配置。服务必须绑定 `0.0.0.0`，Render 只转发一个 HTTP 端口（`PORT` 可用环境变量覆盖，但不要和 `PICFAST_SERVER_PORT` 同时设置成不同值）。
-- **健康检查**：默认是 TCP 探测；填了 `healthCheckPath` 后按 HTTP 检查，2xx/3xx 视为健康、5 秒内需响应，连续失败 15 秒摘流、60 秒重启实例。
-- **迁移**：`preDeployCommand` 每次部署前在独立实例执行一次，推荐 `migrate`（如果走得是完整命令行语义则用 `/usr/local/bin/picfast migrate`，见 §2）；它拿不到持久盘，也不适合依赖本地磁盘的操作。
 - **Docker Command 的语义**：它**覆盖 Dockerfile 的 `CMD`**，参数会追加到镜像 `ENTRYPOINT`，所以 `jobs run` 这样写即可。Render 文档建议"多条命令用 `/bin/sh -c` 串联"——slim 没有 shell，**这类写法在 slim 上不可用**（需要时改用完整镜像）。
-- **定时任务**：Cron Job 服务支持直接用预构建镜像，每次运行前会重新拉取镜像；Docker 镜像类型的 cron 没有独立 Command 输入框，用 **Docker Command** 覆盖启动命令（这里填 `jobs run`）。同一 cron 同时只有一个运行实例，超过 12 小时会被强制停止。
-- **缩容**：只有 Free 档会在空闲 15 分钟后休眠；付费档不会自动缩容到零，想省钱就用 Free 档 + 外部 PostgreSQL，或接受常驻。
 - **注意**：镜像型服务**不会**因为 tag 更新自动重新部署（包括 `latest`），升级请手动触发 Deploy latest reference 或重新部署。
 
 ### 5.4 Koyeb
@@ -417,3 +432,7 @@ curl -fsS -X POST https://pics.example.com/internal/jobs/run \
 | `.webp` 的 `@w_`/`@q_` 变体返回原图 | slim 不支持对 WebP 源图动态缩放/压缩（§2）。需要时改用完整镜像。 |
 | 迁移报 "dirty" 或连接被中断 | 用了事务模式池化连接串。迁移改用直连/会话模式串（§7）。 |
 | 升级后仍是旧版本 | 这些平台不会因为镜像 tag 移动而自动重新部署（Render、Koyeb 都是如此）。手动触发一次部署，或改用固定版本标签 + 明确的重部署流程。 |
+| 一键部署时被要求绑银行卡 | 旧模板里含 cron 服务与付费档（Render 的 cron 没有免费档）。现在 `render.yaml` 只用 Free 档、不建 cron 与 Postgres，无需绑卡。 |
+| Free 档（512 MB）上传稍大的图就失败 | 纯 Go 解码峰值约为 `3 × 宽 × 高 × 4` 字节，模板已把上传上限降到 10 MiB。继续下调 `PICFAST_APP_MAX_UPLOAD_BYTES`、关闭图片处理，或升级到内存 ≥ 1 GB 的档位。 |
+| 免费 PG 的月度额度很快用完 | 内置后台任务每 5 秒轮询数据库，会让 Neon 这类空闲缩容的库无法休眠。设 `PICFAST_JOBS_EMBEDDED=false` 改用外部定时触发，数据库即可在空闲 5 分钟后缩容到零。 |
+| 实例休眠一段时间后 webhook 没投递 | Free 档 15 分钟无入站流量会休眠，实例内调度随之暂停。需要准点投递请升级付费档并加 cron 服务，或用外部调度打 `POST /internal/jobs/run`。 |
