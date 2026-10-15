@@ -127,6 +127,7 @@ make docker-down
 |------|------|
 | 官网 | [picfast.dev](https://picfast.dev) |
 | Docker 部署 | [docker/README.md](docker/README.md) |
+| Serverless / 容器 PaaS 部署 | [docs/serverless.md](docs/serverless.md) |
 | 环境变量 | [.env.example](.env.example) |
 | OpenAPI | 启动后访问 `/docs`、`/openapi.yaml` |
 | MCP | [docs/mcp-api.md](docs/mcp-api.md) |

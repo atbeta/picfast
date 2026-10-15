@@ -226,3 +226,13 @@ export PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://<account>.r2.cloudfl
 配置仅在没有现存策略时生效；策略已存在则忽略并记录日志。也可以在 `config.yaml` 中以 YAML map 形式书写 `storage.default_config`。
 
 > ⚠️ 容器 PaaS（无持久卷）上默认的 `local` 存储位于临时磁盘，实例重建后上传文件即丢失 — 部署到此类平台时务必配置持久后端。
+
+## Serverless / 容器 PaaS 部署
+
+Fly.io、Railway、Render、Koyeb、Zeabur 等平台上实例磁盘是临时的、实例可能随时被回收，部署方式与反向代理场景不同：
+
+- 用 **slim 镜像**（`xbeta/picfast:slim` / `v0.26.0-slim`），体积小、冷启动快（能力差异见上节）；
+- 用 `PICFAST_STORAGE_DEFAULT_TYPE` + `PICFAST_STORAGE_DEFAULT_CONFIG` 指向 S3/R2 等持久后端；
+- 关闭内置调度（`PICFAST_JOBS_EMBEDDED=false`）并配置外部定时触发，或按平台能力使用发布钩子执行 `picfast migrate`。
+
+各平台的端口约定、探针、迁移钩子、定时任务写法与验收清单见 **[serverless.md](serverless.md)**。

@@ -104,7 +104,7 @@ scrape_configs:
 
 ## 仅用镜像（无 Compose）
 
-最小示例见 [DOCKER.md](DOCKER.md)。
+最小示例见 [DOCKER.md](DOCKER.md)；Fly.io / Railway / Render / Koyeb / Zeabur 等 serverless 平台的部署方式见 [../docs/serverless.md](../docs/serverless.md)。
 
 镜像变体：`latest`/`vX` 为完整镜像（libvips：WebP 输出、文字水印、`pg_dump` 维护备份/恢复）；`slim`/`vX-slim` 为纯 Go 精简镜像（distroless，无 libvips/CGO，镜像更小、冷启动更快），不支持 WebP 输出、文字水印与 `pg_dump` 备份 —— 推荐容器 PaaS 使用。注意：精简镜像重新编码时不保留 EXIF 元数据，且无法对 WebP 源图做动态缩放/压缩（`.webp` 的 `@w_`/`@q_` 变体返回原图；WebP 缩略图仍可生成）。
 
