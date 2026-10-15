@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.26.0](https://github.com/atbeta/picfast/compare/v0.25.1...v0.26.0) (2026-10-15)
+
+
+### Features
+
+* **cli:** add picfast migrate command ([c798824](https://github.com/atbeta/picfast/commit/c7988242f6e79a8eb71672d2a0e69b68e02134ff))
+* **docker:** publish a slim image without libvips ([d26468b](https://github.com/atbeta/picfast/commit/d26468b9d9550eee0508beac5d7e5aa15a1ab145))
+* **images:** build without libvips using the novips tag ([509d2b3](https://github.com/atbeta/picfast/commit/509d2b31b10beb0fb0a7050c4c155686cc7658dd))
+* **jobs:** trigger background jobs from an external scheduler ([e9bcfa2](https://github.com/atbeta/picfast/commit/e9bcfa25d155fcb5f6c0c5dce5a74ae9a8860cd7))
+* **server:** add /healthz and /readyz probes ([76ee29c](https://github.com/atbeta/picfast/commit/76ee29ca5cc4c1bf63272dca380ebfa788106e47))
+* **server:** listen on platform-injected PORT ([9267724](https://github.com/atbeta/picfast/commit/9267724d12de2c4eefbf2566d9b98b21f168349a))
+* **storage:** choose first-boot storage via environment ([4194705](https://github.com/atbeta/picfast/commit/4194705b64df4cffde6375a6bf59b612c6a22c6f))
+* **web:** hide image options the server cannot apply ([2dfa950](https://github.com/atbeta/picfast/commit/2dfa950dcfe5d86aabe5775fc770b1688b7b19a3))
+
+
+### Bug Fixes
+
+* **admin:** prevent concurrent pHash recalculation across instances ([6ca1ff4](https://github.com/atbeta/picfast/commit/6ca1ff4989d6d219effee54abf9872afad35d8bd))
+* **admin:** show actual metrics listener status in observability ([bbb8c9f](https://github.com/atbeta/picfast/commit/bbb8c9f1aeb6d4aa1db77e6449d74d6a02fd3752))
+* **auth:** cap reported mail cooldown at the configured window ([de4e4c6](https://github.com/atbeta/picfast/commit/de4e4c60388faa85c2f6e3a4a0235207d1528ef0))
+* **events:** keep webhook events when instances idle after response ([4857abc](https://github.com/atbeta/picfast/commit/4857abc79cc922ab222bf25c9596a9201e11768b))
+* **images:** cap decoded image size for perceptual hashing ([4adaf1b](https://github.com/atbeta/picfast/commit/4adaf1bca19884722f0843c2497bdeaac14fadb2))
+* **images:** keep shared files when deleting deduplicated images ([5e9ef15](https://github.com/atbeta/picfast/commit/5e9ef1571cb66ddfd1065b1b035eb6e6ab93ec1f))
+* **images:** keep thumbnails when instances restart ([a121bcd](https://github.com/atbeta/picfast/commit/a121bcd1165f395745d83d62c82795061e5f7df8))
+* **images:** record dimensions and guard memory on the slim backend ([04d9488](https://github.com/atbeta/picfast/commit/04d94882dd92638d4af8e3d3e0efccccd7de8bf3))
+* **images:** report failed thumbnail generation on upload ([f429cbf](https://github.com/atbeta/picfast/commit/f429cbf469e4593a9967dd5af0bfa38e93ac8656))
+* **jobs:** end external job runs when the webhook queue is drained ([9564577](https://github.com/atbeta/picfast/commit/956457769aac853c29e7df3f177dd5142cbbdbde))
+* **jobs:** keep job locks working behind connection poolers ([66f3195](https://github.com/atbeta/picfast/commit/66f31958e38952c8b5b3a3c0f90ca2d97770681f))
+* **jobs:** rate limit the external jobs endpoint ([984fb28](https://github.com/atbeta/picfast/commit/984fb28ad00d2c14cb1cd2d930dd940a3d91dd82))
+* **jobs:** release the webhook lock before waiting for OCR ([4e6292d](https://github.com/atbeta/picfast/commit/4e6292d0d6427e2867c9803ba3c904309097de55))
+* **lint:** handle errcheck in migrate command and file handler ([e847782](https://github.com/atbeta/picfast/commit/e847782558f0a4049bce8cb4d920173fb4b1876e))
+* **lint:** handle or ignore errcheck findings in backend code ([3fbedb7](https://github.com/atbeta/picfast/commit/3fbedb7724c840974394f93a6da9586453c856e1))
+* **lint:** handle remaining errcheck findings in jobs and storage ([0f17def](https://github.com/atbeta/picfast/commit/0f17defcf9f13e110e5a65510788432cb5efc9f4))
+* **moderation:** apply moderation mode changes without restart ([1240f19](https://github.com/atbeta/picfast/commit/1240f195503e8eb816b32e1a377bf8af87cba142))
+* **settings:** apply site settings changes on every instance ([dad4de2](https://github.com/atbeta/picfast/commit/dad4de2fbf5290d29286ea7d629c133bde464d74))
+* **settings:** keep footer, login link and guest notice settings ([e61dff1](https://github.com/atbeta/picfast/commit/e61dff1076160173d4a2a1d930d89079e8e4e1e3))
+* **webhooks:** stop duplicate deliveries on slow endpoints ([5cafa55](https://github.com/atbeta/picfast/commit/5cafa5561a82ae5a8cbb4a686f0092bc8028c6c8))
+
+
+### Performance Improvements
+
+* **upload:** overlap thumbnail write with original write ([eaa4143](https://github.com/atbeta/picfast/commit/eaa41435dde73582170551b7cca3c0c5c04a2296))
+
 ## [0.25.1](https://github.com/atbeta/picfast/compare/v0.25.0...v0.25.1) (2026-10-10)
 
 
