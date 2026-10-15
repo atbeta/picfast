@@ -1,0 +1,63 @@
+# Render Blueprint —— 支撑 README 里的「Deploy to Render」一键部署按钮。
+#
+# 一次点击会创建：
+#   1. picfast        —— Web 服务，直接运行预构建的 slim 镜像（不重新构建）
+#   2. picfast-db     —— Render Postgres，连接串自动注入为 PICFAST_DATABASE_URL
+#   3. picfast-jobs   —— Cron 服务，每 5 分钟执行一次 `picfast jobs run`
+#                        （webhook 投递 + 每小时清理，因为 Web 服务已关闭内置调度）
+#
+# 存储策略需要在部署完成后于管理后台「存储策略」中添加（S3 / Cloudflare R2 等）：
+# 平台磁盘是临时的，默认的本地存储会在实例重建后丢文件。
+#
+# 完整说明见 docs/serverless.md。
+
+databases:
+  - name: picfast-db
+    databaseName: picfast
+    user: picfast
+    postgresMajorVersion: "16"
+    plan: 0.1c-256mb
+    region: singapore
+
+services:
+  - type: web
+    name: picfast
+    runtime: image
+    image:
+      # 滚动标签，首次部署即可拿到当前版本；生产环境建议改成固定版本，例如
+      # docker.io/xbeta/picfast:v0.26.0-slim
+      url: docker.io/xbeta/picfast:slim
+    region: singapore
+    # slim 镜像用标准库解码图片（峰值内存约为像素数的 3 倍），1 GB 以下
+    # 实例建议同时下调 PICFAST_APP_MAX_UPLOAD_BYTES 或关闭图片处理。
+    plan: 1c-2g
+    healthCheckPath: /readyz
+    maxShutdownDelaySeconds: 120
+    envVars:
+      - key: PICFAST_DATABASE_URL
+        fromDatabase:
+          name: picfast-db
+          property: connectionString
+      - key: PICFAST_JWT_SECRET
+        generateValue: true
+      - key: PICFAST_JOBS_EMBEDDED
+        value: "false"
+      - key: PICFAST_SERVER_METRICS_ENABLED
+        value: "false"
+
+  - type: cron
+    name: picfast-jobs
+    runtime: image
+    image:
+      url: docker.io/xbeta/picfast:slim
+    region: singapore
+    plan: 0.5c-512mb
+    schedule: "*/5 * * * *"
+    # 覆盖镜像的 CMD（ENTRYPOINT 仍为 /usr/local/bin/picfast）：
+    # 等价于 `picfast jobs run`，执行一轮后退出。
+    dockerCommand: jobs run
+    envVars:
+      - key: PICFAST_DATABASE_URL
+        fromDatabase:
+          name: picfast-db
+          property: connectionString

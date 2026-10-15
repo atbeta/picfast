@@ -109,6 +109,19 @@ Open `http://localhost:18080` and follow the setup wizard. For headless deployme
 
 Note: the slim image does not preserve EXIF metadata when re-encoding (even when "strip EXIF" is off), and it cannot resize/re-encode WebP sources on the fly — `@w_`/`@q_` variants on a `.webp` file return the original (WebP thumbnails still work).
 
+### One-click deploy on Render (serverless)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/atbeta/picfast)
+
+The button reads [`render.yaml`](render.yaml) from this repository and provisions three resources at once: a **web service** running the prebuilt slim image (health check `/readyz`, generated JWT secret), a **Render Postgres** instance wired in as `PICFAST_DATABASE_URL`, and a **cron service** that runs `picfast jobs run` every 5 minutes for webhook delivery and hourly cleanup.
+
+After it finishes, open the site and complete the setup wizard, then:
+
+1. Set **Settings → Site URL** to the domain Render assigned (or your custom domain);
+2. Add an S3 / Cloudflare R2 strategy under **Storage Strategies** — the platform disk is ephemeral, so uploads left on local storage are lost when the instance is replaced.
+
+Other serverless / container PaaS targets (Fly.io, Railway, Koyeb, Zeabur) are documented in [docs/serverless.md](docs/serverless.md) (Chinese).
+
 Observability: Docker Compose listens for metrics on container-local `:9190` without publishing it to the host. Prometheus can scrape `app:9190/metrics` from the same Docker network. Health probes `GET /healthz` (liveness) and `GET /readyz` (readiness, checks the database) are served at the server root for container platform health checks. See **[docker/README.md](docker/README.md)** for the generic Compose file, Traefik template, and `.env` examples.
 
 ## Common Commands

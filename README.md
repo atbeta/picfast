@@ -109,6 +109,19 @@ docker run -d --name picfast --network picfast-net -p 18080:8080 \
 
 注意：精简镜像在重新编码时不会保留 EXIF 元数据（即使未开启“去除 EXIF”）；且无法对 WebP 源图做动态缩放/压缩——对 `.webp` 文件请求 `@w_`/`@q_` 变体将返回原图（WebP 缩略图仍可正常生成）。
 
+### 一键部署到 Render（serverless）
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/atbeta/picfast)
+
+按钮读取仓库根目录的 [`render.yaml`](render.yaml)，一次创建三样东西：运行预构建 slim 镜像的 **Web 服务**（健康检查 `/readyz`、自动生成 JWT 密钥）、**Render Postgres**（连接串自动注入），以及每 5 分钟执行 `picfast jobs run` 的 **Cron 服务**（负责 webhook 投递与每小时清理）。
+
+部署完成后打开站点完成初始化向导，然后：
+
+1. 在管理后台「站点设置 → 站点地址」填入 Render 分配的域名（或你绑定的自定义域名）；
+2. 在「存储策略」添加 S3 / Cloudflare R2 —— 平台磁盘是临时的，留在本地存储的上传文件会在实例重建后丢失。
+
+其它 serverless / 容器 PaaS（Fly.io、Railway、Koyeb、Zeabur）的部署方式见 [docs/serverless.md](docs/serverless.md)。
+
 可观测性：Docker Compose 默认让 metrics 在容器内 `:9190` 监听，不发布到宿主机；Prometheus 可在同一 Docker 网络抓取 `app:9190/metrics`。健康探针 `GET /healthz`（存活）与 `GET /readyz`（就绪，检查数据库）暴露在服务根路径，可用于容器平台健康检查。通用 Compose、Traefik 模板及 `.env` 示例详见 **[docker/README.md](docker/README.md)**。
 
 ## 常用命令
