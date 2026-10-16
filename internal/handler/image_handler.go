@@ -31,13 +31,17 @@ func extractStrategyURL(strategyType string, configs []byte) string {
 	if service.IsProxyLinkMode(configs) {
 		return ""
 	}
-	var raw map[string]string
+	// Strategy configs also carry non-string values (for example
+	// "use_path_style": true), so decode into map[string]any: decoding into
+	// map[string]string fails on those documents and used to drop the direct
+	// URL entirely for R2/MinIO-style configurations.
+	var raw map[string]any
 	if err := json.Unmarshal(configs, &raw); err != nil {
 		return ""
 	}
-	base := raw["url"]
+	base, _ := raw["url"].(string)
 	if base == "" {
-		base = raw["domain"] // Kodo uses "domain"
+		base, _ = raw["domain"].(string) // Kodo uses "domain"
 	}
 	return strings.TrimRight(base, "/")
 }

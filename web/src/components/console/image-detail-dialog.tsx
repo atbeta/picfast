@@ -264,8 +264,9 @@ export function ImageDetailDialog({
                       : status === 'skipped' ? 'statusSkipped'
                       : 'statusPending'
                     const statusLabel = t(`images.${statusKey}`)
-                    // 整条面板只在有异常/进行中时才出现，所以这里只让异常项发声，
-                    // 正常阶段保持弱化，避免抢走图片本身的注意力。
+                    // The strip only renders when something failed or is still
+                    // running, so only problem stages speak up and healthy ones
+                    // stay dimmed instead of competing with the image itself.
                     return (
                       <span
                         key={key}

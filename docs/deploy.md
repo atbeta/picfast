@@ -225,7 +225,17 @@ export PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://<account>.r2.cloudfl
 
 配置仅在没有现存策略时生效；策略已存在则忽略并**打印 WARN**（提示你去后台添加，或清空 `strategies` 表后重启）。也可以在 `config.yaml` 中以 YAML map 形式书写 `storage.default_config`。
 
-> 历史提示：0.26 及更早版本里，迁移 `008_seed_default` 会在建库时插入一条 `Default Local` 本地策略，导致上面这两个变量**永远被忽略**（日志里是 "default storage settings ignored because strategies already exist"）。该迁移已修正：新建数据库的首启会按环境变量创建策略，**已存在的数据库不受影响**——这类库请直接在管理后台「存储策略」里添加，或执行 `delete from strategies;` 后重启。
+> 历史提示：0.26 及更早版本里，迁移 `008_seed_default` 会在建库时插入一条 `Default Local` 本地策略，导致上面这两个变量**永远被忽略**（日志里是 "storage settings ignored because strategies already exist"）。该迁移已修正：新建数据库的首启会按环境变量创建策略，**已存在的数据库不受影响**，请按下面任一方式处理：
+>
+> 1. **推荐：管理后台「存储策略」**新增 S3/R2 策略并设为分组默认。旧策略保留、历史图片继续引用它，互不影响。
+> 2. 库还没上传过图片、想继续用环境变量这条路：`delete from strategies;` 后重启。**注意副作用**：`group_strategies` 会级联删除，而 `images.strategy_id` 是 `ON DELETE SET NULL` —— **有历史图片的库不要这么做**，否则这些图片会失去存储策略引用。
+> 3. 或者把现有那一行**就地改成**目标策略（保留分组映射与图片引用，适合没有历史图片的库）：
+>
+>    ```sql
+>    update strategies set name = 'Default Storage', strategy_type = 's3',
+>      configs = '{"endpoint":"...","region":"auto","bucket":"...","access_key":"...","secret_key":"...","link_mode":"proxy"}'::jsonb
+>    where id = 1;
+>    ```
 
 > ⚠️ 容器 PaaS（无持久卷）上默认的 `local` 存储位于临时磁盘，实例重建后上传文件即丢失 — 部署到此类平台时务必配置持久后端。
 

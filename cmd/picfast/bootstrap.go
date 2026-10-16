@@ -21,8 +21,10 @@ import (
 const bcryptCost = bcrypt.DefaultCost
 
 // bootstrapLockTimeout bounds how long an instance waits for another instance
-// to finish seeding a fresh database. A var so tests can shorten it.
-var bootstrapLockTimeout = 30 * time.Second
+// to finish seeding a fresh database, and also bounds the wait for a pooled
+// connection to take the lock. A var so tests can shorten it. The seeding pass
+// itself takes milliseconds, so this stays well inside PaaS boot-probe windows.
+var bootstrapLockTimeout = 10 * time.Second
 
 // bootstrapLockRetry is the polling interval while waiting for the lock.
 const bootstrapLockRetry = 200 * time.Millisecond
@@ -262,15 +264,21 @@ func localBootstrapStrategyConfig(root, url string) []byte {
 
 // acquireBootstrapLock takes the first-boot advisory lock, waiting up to
 // bootstrapLockTimeout for another instance that is seeding the database right
-// now. If the lock is still held when the timeout expires the pass continues
-// without it: the seeding helpers are idempotent, and refusing to start would
-// be worse than a rare duplicate the console can delete.
+// now. If the lock cannot be taken in time the pass continues without it: the
+// seeding helpers are idempotent, and refusing to start (or blocking forever on
+// a saturated connection pool) would be worse than a rare duplicate the console
+// can delete.
 func acquireBootstrapLock(ctx context.Context, pool *pgxpool.Pool) (func(), error) {
 	deadline := time.Now().Add(bootstrapLockTimeout)
 	for {
-		release, ok, err := pglock.Acquire(ctx, pool, pglock.KeyBootstrapDefaults)
+		// Bound the pool wait too: Acquire blocks until a pooled connection is
+		// free, and startup must not hang when the pool is saturated.
+		acquireCtx, cancel := context.WithTimeout(ctx, bootstrapLockTimeout)
+		release, ok, err := pglock.Acquire(acquireCtx, pool, pglock.KeyBootstrapDefaults)
+		cancel()
 		if err != nil {
-			return nil, fmt.Errorf("acquire bootstrap lock: %w", err)
+			slog.Warn("bootstrap lock unavailable; continuing without it", "error", err)
+			return func() {}, nil
 		}
 		if ok {
 			return release, nil

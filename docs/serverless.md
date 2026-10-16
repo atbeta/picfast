@@ -43,7 +43,11 @@ PICFAST_STORAGE_DEFAULT_TYPE=s3
 PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://<account>.r2.cloudflarestorage.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","use_path_style":true}'
 ```
 
-> 该变量**只在数据库尚无任何存储策略时生效**（首启）；策略已存在时会被忽略并打印 WARN，此时请在管理后台「存储策略」里添加，或清空 `strategies` 表后重启（`delete from strategies;`——会级联删除分组映射）。
+> 该变量**只在数据库尚无任何存储策略时生效**（首启）；策略已存在时会被忽略并打印 WARN。此时：
+>
+> - **推荐**：到管理后台「存储策略」新增 S3/R2 策略并设为分组默认（旧策略与历史图片不受影响）；
+> - 若这个库还没上传过图片、想继续走环境变量：`delete from strategies;` 后重启——**注意副作用**：`group_strategies` 会级联删除，`images.strategy_id` 会被置为 `NULL`，所以有历史图片时不要这么做；
+> - 或者把现有行**就地改造**（保留分组映射与图片引用）：`update strategies set name='Default Storage', strategy_type='s3', configs='{...}'::jsonb where id = 1;`
 >
 > ⚠️ **两个变量必须成对出现且 JSON 合法**：只设 `PICFAST_STORAGE_DEFAULT_TYPE`（例如 `s3`）而不给配置，或 JSON 写错，应用会在启动时直接退出（刻意 fail-fast，避免静默写本地盘导致丢图）。
 
