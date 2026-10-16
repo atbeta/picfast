@@ -246,45 +246,51 @@ export function ImageDetailDialog({
               if (!hasIssueOrPending) return null
 
               return (
-                <div className="space-y-3 rounded-xl border border-border/40 bg-muted/10 p-4">
-                  <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground border-b border-border/40 pb-2">
-                    <Activity className="size-4 text-primary" />
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-border/40 bg-muted/10 px-3 py-2 text-xs">
+                  <span className="inline-flex items-center gap-1.5 font-medium text-muted-foreground">
+                    <Activity className="size-3.5" />
                     {t('images.pipeline', { defaultValue: '处理流水线' })}
-                  </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {stages.map((key) => {
-                      const label = t(`images.pipeline${key.charAt(0).toUpperCase() + key.slice(1)}`)
-                      const status = pipeline[key] ?? 'pending'
-                      const isGood = status === 'completed' || status === 'approved'
-                      const isBad = status === 'failed' || status === 'rejected'
-                      const isSkipped = status === 'skipped'
-                      const statusKey = status === 'completed' ? 'statusCompleted'
-                        : status === 'approved' ? 'statusApproved'
-                        : status === 'rejected' ? 'statusRejected'
-                        : status === 'failed' ? 'statusFailed'
-                        : status === 'skipped' ? 'statusSkipped'
-                        : 'statusPending'
-                      return (
-                        <div key={key} className="flex flex-col items-center gap-1 rounded-lg border border-border/40 bg-background/50 p-3">
-                          {isGood ? <CheckCircle2 className="size-5 text-green-500" /> :
-                           isBad ? <XCircle className="size-5 text-red-500" /> :
-                           isSkipped ? <SkipForward className="size-5 text-muted-foreground" /> :
-                           <Clock className="size-5 text-yellow-500" />}
-                          <span className="text-xs font-medium text-muted-foreground">{label}</span>
-                          <span className={`text-xs font-semibold ${
-                            isGood ? 'text-green-600' :
-                            isBad ? 'text-red-600' :
-                            'text-yellow-600'
-                          }`}>
-                            {t(`images.${statusKey}`)}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <p className="text-xs text-muted-foreground text-right">
-                    {pipeline.updated_at && new Date(pipeline.updated_at).toLocaleString()}
-                  </p>
+                  </span>
+                  {stages.map((key) => {
+                    const label = t(`images.pipeline${key.charAt(0).toUpperCase() + key.slice(1)}`)
+                    const status = pipeline[key] ?? 'pending'
+                    const isGood = status === 'completed' || status === 'approved'
+                    const isBad = status === 'failed' || status === 'rejected'
+                    const isSkipped = status === 'skipped'
+                    const statusKey = status === 'completed' ? 'statusCompleted'
+                      : status === 'approved' ? 'statusApproved'
+                      : status === 'rejected' ? 'statusRejected'
+                      : status === 'failed' ? 'statusFailed'
+                      : status === 'skipped' ? 'statusSkipped'
+                      : 'statusPending'
+                    const statusLabel = t(`images.${statusKey}`)
+                    // 整条面板只在有异常/进行中时才出现，所以这里只让异常项发声，
+                    // 正常阶段保持弱化，避免抢走图片本身的注意力。
+                    return (
+                      <span
+                        key={key}
+                        title={`${label} · ${statusLabel}`}
+                        className={`inline-flex items-center gap-1 ${
+                          isBad ? 'font-medium text-red-500'
+                          : isGood ? 'text-muted-foreground/70'
+                          : isSkipped ? 'text-muted-foreground/60'
+                          : 'text-yellow-500'
+                        }`}
+                      >
+                        {isGood ? <CheckCircle2 className="size-3.5" /> :
+                         isBad ? <XCircle className="size-3.5" /> :
+                         isSkipped ? <SkipForward className="size-3.5" /> :
+                         <Clock className="size-3.5" />}
+                        {label}
+                        {!isGood && <span className="opacity-80">· {statusLabel}</span>}
+                      </span>
+                    )
+                  })}
+                  {pipeline.updated_at && (
+                    <span className="ml-auto text-muted-foreground/60">
+                      {new Date(pipeline.updated_at).toLocaleString()}
+                    </span>
+                  )}
                 </div>
               )
             })()}
