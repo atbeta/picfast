@@ -7,15 +7,34 @@
 #
 # Free 档的实际取舍（详见 docs/serverless.md）：
 #   0.1 CPU / 512 MB 内存；15 分钟无入站流量后休眠，再访问约 1 分钟启动；
-#   每月 750 实例小时。因为内存小，这里先把单文件上传上限降到 10 MiB。
+#   每月 750 实例小时；休眠时会丢本地文件系统上的改动。
 #   内置后台任务每 5 秒轮询一次数据库，会让 Neon 无法缩容到零而吃掉免费计算额度，
 #   若实例长期在线，可设 PICFAST_JOBS_EMBEDDED=false 并改用外部定时触发。
 #
-# 部署完成后：
-#   1. 打开站点完成初始化向导；
-#   2. 「站点设置 → 站点地址」填 Render 分配的域名；
-#   3. 「存储策略」添加 S3 兼容存储（推荐 Backblaze B2 10 GB 免费，
-#      或 Neon Object Storage 5 GB，两者都不需要绑卡）。
+# ============================ 存储策略怎么配 ============================
+# 平台磁盘是临时的，serverless 场景下**只有 S3 兼容存储才有意义**。两种做法：
+#
+# A) 推荐（零配置、不动本文件）：先按现状部署起来，然后登录后台
+#    「存储策略」→ 新建 S3 策略 → 填 endpoint / bucket / access key / secret，
+#    路径风格选 path-style（Neon Object Storage、MinIO、R2 都需要），
+#    链接模式选 proxy（私有桶不必公开），保存后设为分组默认即可，无需重新部署。
+#    免卡的免费额度可选：Backblaze B2（10 GB 永久免费）、Neon Object Storage（5 GB）。
+#
+# B) 想「首次启动就直接落到 S3」：把下面 envVars 里被注释掉的两个变量取消注释，
+#    并把 CONFIG 换成你自己的凭据（凭据准备好在点击部署之前就行）。
+#    ⚠️ 两个变量必须**成对出现且 JSON 合法**，否则应用会 fail-fast 直接退出
+#       （宁可起不来，也不要静默写本地盘然后丢图）。
+#    ⚠️ 只在**数据库里还没有任何存储策略**时生效：全新库 / 清库重来可以，
+#       已经跑过的库请走上面的 A 方案。
+#
+# 参考配置（Neon Object Storage，仅支持 path-style）：
+#   {"endpoint":"https://<project>.storage.<region>.aws.neon.tech","region":"<region>",
+#    "bucket":"picfast","access_key":"...","secret_key":"...",
+#    "use_path_style":true,"link_mode":"proxy"}
+# Cloudflare R2 形如：
+#   {"endpoint":"https://<account>.r2.cloudflarestorage.com","region":"auto",
+#    "bucket":"pics","access_key":"...","secret_key":"...","use_path_style":true,"link_mode":"proxy"}
+# ======================================================================
 
 services:
   - type: web
@@ -38,3 +57,7 @@ services:
         value: "false"
       - key: PICFAST_APP_MAX_UPLOAD_BYTES
         value: "10485760"      # 10 MiB：Free 档 512 MB 内存下先留足解码余量
+      # - key: PICFAST_STORAGE_DEFAULT_TYPE
+      #   value: s3
+      # - key: PICFAST_STORAGE_DEFAULT_CONFIG
+      #   value: '{"endpoint":"https://...","region":"auto","bucket":"picfast","access_key":"...","secret_key":"...","use_path_style":true,"link_mode":"proxy"}'
