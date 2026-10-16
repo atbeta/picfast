@@ -541,6 +541,43 @@ func imageResponse(img sqlc.Image, links domain.ImageLinks) ImageResponse {
 	}
 }
 
+// thumbnailStatus reports whether the image has a thumbnail. Thumbnails live
+// inside the image's storage strategy under _picfast/thumbnails/<md5>.png; the
+// legacy thumbnail_dir only holds pre-upgrade files. Statting the legacy
+// directory alone made every image on a strategy-based deployment (S3, R2 or a
+// local strategy root) report "failed" even though the thumbnail existed and
+// /t/<md5>.png served it.
+func (h *ImageHandler) thumbnailStatus(ctx context.Context, img sqlc.Image) string {
+	// Pre-upgrade thumbnails on local disk still count.
+	if h.thumbDir != "" {
+		if _, err := os.Stat(filepath.Join(h.thumbDir, img.Md5+".png")); err == nil {
+			return "completed"
+		}
+	}
+	if !img.StrategyID.Valid {
+		return "failed"
+	}
+	strategy, err := h.db.GetStrategyByID(ctx, img.StrategyID.Int64)
+	if err != nil {
+		slog.Warn("pipeline: strategy lookup failed", "image_id", img.ID, "error", err)
+		return "failed"
+	}
+	store, err := service.GetStorageForStrategy(strategy)
+	if err != nil {
+		slog.Warn("pipeline: storage init failed", "strategy_id", strategy.ID, "error", err)
+		return "failed"
+	}
+	defer func() { _ = store.Close() }()
+
+	if _, err := store.Read(ctx, service.ThumbnailObjectPath(img.Md5)); err != nil {
+		if !service.IsNotFoundError(err) {
+			slog.Warn("pipeline: thumbnail read failed", "md5", img.Md5, "error", err)
+		}
+		return "failed"
+	}
+	return "completed"
+}
+
 func (h *ImageHandler) Pipeline(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "key")
 
@@ -567,11 +604,7 @@ func (h *ImageHandler) Pipeline(w http.ResponseWriter, r *http.Request) {
 		processingStatus = "skipped"
 	}
 
-	thumbPath := filepath.Join(h.thumbDir, img.Md5+".png")
-	thumbStatus := "completed"
-	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
-		thumbStatus = "failed"
-	}
+	thumbStatus := h.thumbnailStatus(r.Context(), img)
 
 	moderationStatus := img.ModerationStatus
 	if moderationStatus == "" {

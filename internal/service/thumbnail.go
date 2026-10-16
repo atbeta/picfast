@@ -65,6 +65,13 @@ func StoreThumbnail(ctx context.Context, store storage.Storage, data []byte, ext
 	return nil
 }
 
+// IsNotFoundError reports whether a storage error means the object is simply
+// absent (rather than a backend or credential failure), so callers outside this
+// package can tell "no thumbnail yet" apart from "storage is broken".
+func IsNotFoundError(err error) bool {
+	return isNotFoundError(err)
+}
+
 // isNotFoundError reports whether a storage error means the object simply does
 // not exist. Backends do not share a typed not-found error, so this matches the
 // common shapes.

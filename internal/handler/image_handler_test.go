@@ -273,8 +273,10 @@ func TestImagePipeline(t *testing.T) {
 	if pipeline["processing"] == "" {
 		t.Fatalf("processing is empty")
 	}
-	if pipeline["thumbnail"] == "" {
-		t.Fatalf("thumbnail is empty")
+	// Thumbnails live in the image's storage strategy, not in the legacy
+	// thumbnail_dir the handler used to stat, so this must be "completed".
+	if pipeline["thumbnail"] != "completed" {
+		t.Fatalf("thumbnail = %v, want completed", pipeline["thumbnail"])
 	}
 	if pipeline["moderation"] == "" {
 		t.Fatalf("moderation is empty")
