@@ -41,6 +41,19 @@ func migrateDatabaseURL(dbURL string) string {
 // It registers t.Cleanup to truncate all tables and close the pool.
 func SetupDB(t *testing.T) (*pgxpool.Pool, *sqlc.Queries) {
 	t.Helper()
+	return setupDB(t, true)
+}
+
+// SetupDBWithoutTruncate is SetupDB without the initial truncate, so tests can
+// assert what the migrations themselves leave behind. Production databases are
+// never truncated, so state seeded by migrations only shows up here.
+func SetupDBWithoutTruncate(t *testing.T) (*pgxpool.Pool, *sqlc.Queries) {
+	t.Helper()
+	return setupDB(t, false)
+}
+
+func setupDB(t *testing.T, truncate bool) (*pgxpool.Pool, *sqlc.Queries) {
+	t.Helper()
 
 	dbURL := isolatedTestDBURL(t, testDBURL())
 	if err := ensureDatabaseExists(dbURL); err != nil {
@@ -74,7 +87,9 @@ func SetupDB(t *testing.T) (*pgxpool.Pool, *sqlc.Queries) {
 		t.Fatalf("ping test db: %v", err)
 	}
 
-	TruncateAll(t, pool)
+	if truncate {
+		TruncateAll(t, pool)
+	}
 
 	t.Cleanup(func() {
 		TruncateAll(t, pool)

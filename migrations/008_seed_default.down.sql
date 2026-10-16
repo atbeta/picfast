@@ -1,3 +1,3 @@
-DELETE FROM group_strategies WHERE group_id = 1 AND strategy_id = 1;
-DELETE FROM strategies WHERE id = 1;
+-- Only the group seeded by the up migration is removed; storage strategies are
+-- created by the application bootstrap, not by this migration.
 DELETE FROM groups WHERE id = 1;

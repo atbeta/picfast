@@ -1,3 +1,8 @@
+-- Seeds the default group only. The default storage strategy is deliberately
+-- NOT seeded here: bootstrapCoreData creates it on first start and honours
+-- PICFAST_STORAGE_DEFAULT_TYPE / PICFAST_STORAGE_DEFAULT_CONFIG. Seeding a
+-- local strategy here made every fresh database look like it "already had
+-- strategies", so the environment default was silently ignored.
 INSERT INTO groups (name, is_default, is_guest, configs) VALUES (
     'Default',
     TRUE,
@@ -18,11 +23,3 @@ INSERT INTO groups (name, is_default, is_guest, configs) VALUES (
         "is_enable_original_protection": false
     }'::jsonb
 );
-
-INSERT INTO strategies (name, strategy_type, configs) VALUES (
-    'Default Local',
-    'local',
-    '{"root": "./data/uploads", "url": "/i"}'::jsonb
-);
-
-INSERT INTO group_strategies (group_id, strategy_id) VALUES (1, 1);

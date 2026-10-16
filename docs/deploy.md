@@ -223,7 +223,9 @@ export PICFAST_STORAGE_DEFAULT_TYPE=s3
 export PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://<account>.r2.cloudflarestorage.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","use_path_style":true}'
 ```
 
-配置仅在没有现存策略时生效；策略已存在则忽略并记录日志。也可以在 `config.yaml` 中以 YAML map 形式书写 `storage.default_config`。
+配置仅在没有现存策略时生效；策略已存在则忽略并**打印 WARN**（提示你去后台添加，或清空 `strategies` 表后重启）。也可以在 `config.yaml` 中以 YAML map 形式书写 `storage.default_config`。
+
+> 历史提示：0.26 及更早版本里，迁移 `008_seed_default` 会在建库时插入一条 `Default Local` 本地策略，导致上面这两个变量**永远被忽略**（日志里是 "default storage settings ignored because strategies already exist"）。该迁移已修正：新建数据库的首启会按环境变量创建策略，**已存在的数据库不受影响**——这类库请直接在管理后台「存储策略」里添加，或执行 `delete from strategies;` 后重启。
 
 > ⚠️ 容器 PaaS（无持久卷）上默认的 `local` 存储位于临时磁盘，实例重建后上传文件即丢失 — 部署到此类平台时务必配置持久后端。
 

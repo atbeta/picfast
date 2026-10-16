@@ -121,7 +121,14 @@ func ensureDefaultStrategy(ctx context.Context, queries *sqlc.Queries, cfg *conf
 	strategies, err := queries.ListStrategies(ctx)
 	if err == nil && len(strategies) > 0 {
 		if !isLocalDefaultType(cfg.Storage.DefaultType) {
-			slog.Info("default storage settings ignored because strategies already exist", "type", cfg.Storage.DefaultType)
+			slog.Warn("ignoring storage.default_type because storage strategies already exist",
+				"type", cfg.Storage.DefaultType,
+				"strategies", len(strategies),
+				"hint", "add the strategy in the admin console, or remove the existing strategies so the environment default can seed one")
+		}
+		if len(cfg.Storage.DefaultConfig) > 0 && isLocalDefaultType(cfg.Storage.DefaultType) {
+			slog.Warn("ignoring storage.default_config because storage.default_type is local",
+				"hint", "set PICFAST_STORAGE_DEFAULT_TYPE (for example s3) as well")
 		}
 		if strategies[0].StrategyType == string(domain.StrategyTypeLocal) {
 			updated, updateErr := queries.UpdateStrategy(ctx, sqlc.UpdateStrategyParams{

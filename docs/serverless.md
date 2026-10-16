@@ -43,7 +43,9 @@ PICFAST_STORAGE_DEFAULT_TYPE=s3
 PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://<account>.r2.cloudflarestorage.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","use_path_style":true}'
 ```
 
-> 该变量**只在数据库尚无任何存储策略时生效**；策略已存在则忽略并记录日志。之后请在管理后台维护存储策略。缩略图会随图片写入同一策略的 `_picfast/thumbnails/` 路径。
+> 该变量**只在数据库尚无任何存储策略时生效**（首启）；策略已存在时会被忽略并打印 WARN，此时请在管理后台「存储策略」里添加，或清空 `strategies` 表后重启（`delete from strategies;`——会级联删除分组映射）。
+>
+> ⚠️ **两个变量必须成对出现且 JSON 合法**：只设 `PICFAST_STORAGE_DEFAULT_TYPE`（例如 `s3`）而不给配置，或 JSON 写错，应用会在启动时直接退出（刻意 fail-fast，避免静默写本地盘导致丢图）。
 
 ### 1.3 外部定时触发（webhook 与清理）
 
@@ -206,7 +208,10 @@ primary_region = "sin"           # 就近选择区域
   PICFAST_SERVER_METRICS_ENABLED = "false"
   PICFAST_JOBS_EMBEDDED = "false"
   PICFAST_DATABASE_AUTO_MIGRATE = "false"
-  PICFAST_STORAGE_DEFAULT_TYPE = "s3"
+  # 想用环境变量在首启建 S3 策略就必须成对给出，且 JSON 必须合法（否则启动失败）；
+  # 库里已有策略时这两个变量会被忽略（日志有 WARN），去后台「存储策略」添加即可。
+  # PICFAST_STORAGE_DEFAULT_TYPE = "s3"
+  # PICFAST_STORAGE_DEFAULT_CONFIG = '{"endpoint":"...","region":"auto","bucket":"...","access_key":"...","secret_key":"...","link_mode":"proxy"}'
 
 [http_service]
   internal_port = 8080
