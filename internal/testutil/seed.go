@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/atbeta/picfast/internal/domain"
@@ -14,18 +15,18 @@ import (
 func SeedDefaultGroup(t *testing.T, q *sqlc.Queries) sqlc.Group {
 	t.Helper()
 	cfg := domain.GroupConfig{
-		MaximumFileSize:            5242880,
-		AcceptedExtensions:         []string{"jpeg", "jpg", "png", "gif", "webp"},
-		LimitPerMinute:             20,
-		LimitPerHour:               100,
-		LimitPerDay:                300,
-		LimitPerMonth:              999,
-		PathNamingRule:             "{Y}/{m}/{d}",
-		FileNamingRule:             "{uniqid}",
-		ImageSaveQuality:           75,
-		ImageSaveFormat:            "",
-		IsEnableWatermark:          false,
-		WatermarkConfigs:  json.RawMessage(`{}`),
+		MaximumFileSize:    5242880,
+		AcceptedExtensions: []string{"jpeg", "jpg", "png", "gif", "webp"},
+		LimitPerMinute:     20,
+		LimitPerHour:       100,
+		LimitPerDay:        300,
+		LimitPerMonth:      999,
+		PathNamingRule:     "{Y}/{m}/{d}",
+		FileNamingRule:     "{uniqid}",
+		ImageSaveQuality:   75,
+		ImageSaveFormat:    "",
+		IsEnableWatermark:  false,
+		WatermarkConfigs:   json.RawMessage(`{}`),
 	}
 	configs, _ := json.Marshal(cfg)
 
@@ -44,7 +45,10 @@ func SeedDefaultGroup(t *testing.T, q *sqlc.Queries) sqlc.Group {
 // SeedStrategy creates a local strategy and links it to the group.
 func SeedStrategy(t *testing.T, q *sqlc.Queries, groupID int64) sqlc.Strategy {
 	t.Helper()
-	cfg := domain.LocalStrategyConfig{Root: "/tmp/test-uploads", URL: "/i"}
+	// A per-test directory keeps upload and thumbnail state from leaking
+	// between runs: with the previous shared /tmp path, a stale thumbnail left
+	// by an earlier run could mask a failing assertion.
+	cfg := domain.LocalStrategyConfig{Root: filepath.Join(t.TempDir(), "uploads"), URL: "/i"}
 	configs, _ := json.Marshal(cfg)
 
 	strategy, err := q.CreateStrategy(t.Context(), sqlc.CreateStrategyParams{
