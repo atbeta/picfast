@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.26.1](https://github.com/atbeta/picfast/compare/v0.26.0...v0.26.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* **bootstrap:** serialize first-boot seeding across instances ([f171a11](https://github.com/atbeta/picfast/commit/f171a11d847d856c15edf82160277519f8b472fa))
+* **docker:** publish the rolling slim tag without a duplicated suffix ([f938742](https://github.com/atbeta/picfast/commit/f938742222cfca40d1ff15f04099e553bda211cc))
+* **handler:** resolve direct storage URLs from configs with non-string values ([99a1e61](https://github.com/atbeta/picfast/commit/99a1e61246f79bd354638dd69ae8e81f171a0f6b))
+* **storage:** honour the environment storage default on fresh databases ([81f6d0d](https://github.com/atbeta/picfast/commit/81f6d0d7cc1a03a2616121b205b78540a805f817))
+* **storage:** keep link_mode when strategy configs carry non-string values ([a00824e](https://github.com/atbeta/picfast/commit/a00824e0502e55e4d10ac73815869332e55e7cee))
+
 ## [0.26.0](https://github.com/atbeta/picfast/compare/v0.25.1...v0.26.0) (2026-10-15)
 
 
