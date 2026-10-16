@@ -310,6 +310,14 @@ export function AdminStrategiesPage() {
           <h1 className="text-2xl font-bold tracking-tight">{t('admin.strategiesTitle')}</h1>
           <p className="text-sm text-muted-foreground">{t('admin.strategiesSubtitle', { defaultValue: '维护存储策略配置并统一上传落盘规则。' })}</p>
           <p className="mt-3 text-xs text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">{t('admin.strategiesUrlHint', { defaultValue: '本地存储通过 PicFast 代理访问。外部存储（S3/OSS/COS 等）将直接返回 CDN 地址，不受图片公开/私有权限控制。' })}</p>
+          {strategies?.some((s) => s.strategy_type === 'local') && (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+              {t('admin.strategiesEphemeralHint', {
+                defaultValue:
+                  '当前存在本地存储策略。容器 PaaS / serverless 部署的磁盘是临时的：实例休眠、重建或重新部署都会丢文件，请改用 S3 兼容存储（R2 / B2 / OSS / COS / TOS / OBS / Kodo / MinIO），并在创建后设为分组默认。',
+              })}
+            </p>
+          )}
         </div>
         <Button size="lg" onClick={openCreate}>
           {t('admin.create')}
