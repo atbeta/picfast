@@ -35,6 +35,10 @@ const (
 	KeyJobsCleanup int64 = 727002
 	// KeyRecalcPHash serializes the admin-triggered pHash recalculation.
 	KeyRecalcPHash int64 = 727003
+	// KeyBootstrapDefaults serializes first-boot seeding (default group,
+	// guest group, default storage strategy, admin user) so several instances
+	// starting against the same fresh database cannot seed duplicates.
+	KeyBootstrapDefaults int64 = 727004
 )
 
 const unlockTimeout = 5 * time.Second

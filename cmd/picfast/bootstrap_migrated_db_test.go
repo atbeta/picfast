@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"testing"
 
 	"github.com/atbeta/picfast/internal/config"
@@ -42,7 +43,7 @@ func TestBootstrapSeedsConfiguredStrategyOnMigratedDatabase(t *testing.T) {
 		},
 	}
 
-	if err := bootstrapCoreData(ctx, queries, cfg); err != nil {
+	if err := bootstrapCoreData(ctx, pool, queries, cfg); err != nil {
 		t.Fatalf("bootstrapCoreData: %v", err)
 	}
 
@@ -74,5 +75,49 @@ func TestBootstrapSeedsConfiguredStrategyOnMigratedDatabase(t *testing.T) {
 	}
 	if linked != 2 {
 		t.Fatalf("group_strategies = %d, want 2 (default + guest)", linked)
+	}
+}
+
+// Two instances booting against the same fresh database must not seed duplicate
+// rows. The migration used to pre-insert a strategy, which made the concurrent
+// path harmless; now that bootstrap owns the seeding, the advisory lock has to
+// serialize it.
+func TestBootstrapSerializesConcurrentFirstBoot(t *testing.T) {
+	pool, queries := testutil.SetupDB(t)
+	ctx := context.Background()
+
+	cfg := &config.Config{
+		Server:  config.ServerConfig{BaseURL: "https://picfast.example.com"},
+		Storage: config.StorageConfig{LocalRoot: "/app/data/uploads"},
+	}
+
+	var wg sync.WaitGroup
+	errs := make([]error, 2)
+	for i := range errs {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			errs[i] = bootstrapCoreData(ctx, pool, queries, cfg)
+		}(i)
+	}
+	wg.Wait()
+
+	for i, err := range errs {
+		if err != nil {
+			t.Fatalf("instance %d: bootstrapCoreData: %v", i, err)
+		}
+	}
+
+	for query, want := range map[string]int{
+		"SELECT COUNT(*) FROM strategies": 1,
+		"SELECT COUNT(*) FROM groups":     2,
+	} {
+		var got int
+		if err := pool.QueryRow(ctx, query).Scan(&got); err != nil {
+			t.Fatalf("%s: %v", query, err)
+		}
+		if got != want {
+			t.Errorf("%s = %d, want %d", query, got, want)
+		}
 	}
 }

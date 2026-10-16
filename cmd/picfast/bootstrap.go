@@ -6,18 +6,39 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/atbeta/picfast/internal/config"
 	"github.com/atbeta/picfast/internal/domain"
+	"github.com/atbeta/picfast/internal/pglock"
 	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const bcryptCost = bcrypt.DefaultCost
 
-func bootstrapCoreData(ctx context.Context, queries *sqlc.Queries, cfg *config.Config) error {
+// bootstrapLockTimeout bounds how long an instance waits for another instance
+// to finish seeding a fresh database. A var so tests can shorten it.
+var bootstrapLockTimeout = 30 * time.Second
+
+// bootstrapLockRetry is the polling interval while waiting for the lock.
+const bootstrapLockRetry = 200 * time.Millisecond
+
+// bootstrapCoreData seeds the rows the app cannot start without: the default
+// and guest groups, a default storage strategy, and the admin user (when
+// configured). Instances sharing a fresh database would otherwise race and seed
+// duplicates, so the whole pass runs under an advisory lock; the losers wait for
+// the winner and then find the rows already in place.
+func bootstrapCoreData(ctx context.Context, pool *pgxpool.Pool, queries *sqlc.Queries, cfg *config.Config) error {
+	release, err := acquireBootstrapLock(ctx, pool)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	defaultGroup, err := ensureDefaultGroup(ctx, queries)
 	if err != nil {
 		return fmt.Errorf("ensure default group: %w", err)
@@ -214,20 +235,20 @@ func ensureAdminUser(ctx context.Context, queries *sqlc.Queries, cfg *config.Con
 
 func defaultBootstrapGroupConfig() []byte {
 	cfg := domain.GroupConfig{
-		MaximumFileSize:            10 << 20,
-		AcceptedExtensions:         []string{"jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"},
-		LimitPerMinute:             60,
-		LimitPerHour:               500,
-		LimitPerDay:                2000,
-		LimitPerMonth:              50000,
-		UserCapacityBytes:          0,
-		PathNamingRule:             "{Y}/{m}/{d}",
-		FileNamingRule:             "{uniqid}",
-		ImageSaveQuality:           85,
-		ImageSaveFormat:            "",
-		IsEnableWatermark:          false,
-		WatermarkConfigs:    json.RawMessage(`{}`),
-		IsStripExif:         true,
+		MaximumFileSize:    10 << 20,
+		AcceptedExtensions: []string{"jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"},
+		LimitPerMinute:     60,
+		LimitPerHour:       500,
+		LimitPerDay:        2000,
+		LimitPerMonth:      50000,
+		UserCapacityBytes:  0,
+		PathNamingRule:     "{Y}/{m}/{d}",
+		FileNamingRule:     "{uniqid}",
+		ImageSaveQuality:   85,
+		ImageSaveFormat:    "",
+		IsEnableWatermark:  false,
+		WatermarkConfigs:   json.RawMessage(`{}`),
+		IsStripExif:        true,
 	}
 	b, _ := json.Marshal(cfg)
 	return b
@@ -237,4 +258,32 @@ func localBootstrapStrategyConfig(root, url string) []byte {
 	cfg := domain.LocalStrategyConfig{Root: root, URL: url}
 	b, _ := json.Marshal(cfg)
 	return b
+}
+
+// acquireBootstrapLock takes the first-boot advisory lock, waiting up to
+// bootstrapLockTimeout for another instance that is seeding the database right
+// now. If the lock is still held when the timeout expires the pass continues
+// without it: the seeding helpers are idempotent, and refusing to start would
+// be worse than a rare duplicate the console can delete.
+func acquireBootstrapLock(ctx context.Context, pool *pgxpool.Pool) (func(), error) {
+	deadline := time.Now().Add(bootstrapLockTimeout)
+	for {
+		release, ok, err := pglock.Acquire(ctx, pool, pglock.KeyBootstrapDefaults)
+		if err != nil {
+			return nil, fmt.Errorf("acquire bootstrap lock: %w", err)
+		}
+		if ok {
+			return release, nil
+		}
+		if time.Now().After(deadline) {
+			slog.Warn("continuing without the bootstrap lock; another instance is still seeding",
+				"waited", bootstrapLockTimeout)
+			return func() {}, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(bootstrapLockRetry):
+		}
+	}
 }

@@ -103,7 +103,7 @@ func main() {
 	clientip.SetTrustedProxies(cfg.Server.TrustedProxies)
 	mailSender := mailservice.NewSender(&cfg.Mail)
 
-	if err := bootstrapCoreData(context.Background(), queries, cfg); err != nil {
+	if err := bootstrapCoreData(context.Background(), pool, queries, cfg); err != nil {
 		slog.Error("failed to bootstrap core data", "error", err)
 		os.Exit(1)
 	}

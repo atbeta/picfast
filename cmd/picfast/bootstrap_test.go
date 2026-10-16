@@ -31,10 +31,10 @@ func TestBootstrapCoreData(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	if err := bootstrapCoreData(ctx, queries, cfg); err != nil {
+	if err := bootstrapCoreData(ctx, pool, queries, cfg); err != nil {
 		t.Fatalf("bootstrapCoreData returned error: %v", err)
 	}
-	if err := bootstrapCoreData(ctx, queries, cfg); err != nil {
+	if err := bootstrapCoreData(ctx, pool, queries, cfg); err != nil {
 		t.Fatalf("bootstrapCoreData second run returned error: %v", err)
 	}
 
@@ -88,7 +88,7 @@ func TestBootstrapCoreData(t *testing.T) {
 }
 
 func TestBootstrapCoreDataNormalizesLegacyCombinedGroup(t *testing.T) {
-	_, queries := testutil.SetupDB(t)
+	pool, queries := testutil.SetupDB(t)
 
 	cfg := &config.Config{
 		Server: config.ServerConfig{
@@ -121,7 +121,7 @@ func TestBootstrapCoreDataNormalizesLegacyCombinedGroup(t *testing.T) {
 		t.Fatalf("create legacy strategy: %v", err)
 	}
 
-	if err := bootstrapCoreData(context.Background(), queries, cfg); err != nil {
+	if err := bootstrapCoreData(context.Background(), pool, queries, cfg); err != nil {
 		t.Fatalf("bootstrapCoreData returned error: %v", err)
 	}
 
@@ -169,7 +169,7 @@ func TestBootstrapCreatesS3StrategyFromDefaultConfig(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	if err := bootstrapCoreData(ctx, queries, cfg); err != nil {
+	if err := bootstrapCoreData(ctx, pool, queries, cfg); err != nil {
 		t.Fatalf("bootstrapCoreData returned error: %v", err)
 	}
 
@@ -201,39 +201,39 @@ func TestBootstrapCreatesS3StrategyFromDefaultConfig(t *testing.T) {
 
 func TestBootstrapDefaultStorageInvalidConfig(t *testing.T) {
 	t.Run("unknown type", func(t *testing.T) {
-		_, queries := testutil.SetupDB(t)
+		pool, queries := testutil.SetupDB(t)
 		cfg := &config.Config{
 			Storage: config.StorageConfig{
 				DefaultType:   "not-a-backend",
 				DefaultConfig: json.RawMessage(`{}`),
 			},
 		}
-		err := bootstrapCoreData(context.Background(), queries, cfg)
+		err := bootstrapCoreData(context.Background(), pool, queries, cfg)
 		if err == nil || !strings.Contains(err.Error(), "unknown storage default_type") {
 			t.Fatalf("err = %v, want unknown default_type error", err)
 		}
 	})
 
 	t.Run("missing config", func(t *testing.T) {
-		_, queries := testutil.SetupDB(t)
+		pool, queries := testutil.SetupDB(t)
 		cfg := &config.Config{
 			Storage: config.StorageConfig{DefaultType: "s3"},
 		}
-		err := bootstrapCoreData(context.Background(), queries, cfg)
+		err := bootstrapCoreData(context.Background(), pool, queries, cfg)
 		if err == nil || !strings.Contains(err.Error(), "invalid storage default_config") {
 			t.Fatalf("err = %v, want invalid default_config error", err)
 		}
 	})
 
 	t.Run("incomplete s3 config", func(t *testing.T) {
-		_, queries := testutil.SetupDB(t)
+		pool, queries := testutil.SetupDB(t)
 		cfg := &config.Config{
 			Storage: config.StorageConfig{
 				DefaultType:   "s3",
 				DefaultConfig: json.RawMessage(`{"endpoint":"https://s3.example.com"}`),
 			},
 		}
-		err := bootstrapCoreData(context.Background(), queries, cfg)
+		err := bootstrapCoreData(context.Background(), pool, queries, cfg)
 		if err == nil || !strings.Contains(err.Error(), "invalid storage default_config") {
 			t.Fatalf("err = %v, want invalid default_config error", err)
 		}
@@ -266,7 +266,7 @@ func TestBootstrapIgnoresDefaultTypeWhenStrategiesExist(t *testing.T) {
 		},
 	}
 
-	if err := bootstrapCoreData(context.Background(), queries, cfg); err != nil {
+	if err := bootstrapCoreData(context.Background(), pool, queries, cfg); err != nil {
 		t.Fatalf("bootstrapCoreData returned error: %v", err)
 	}
 
