@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.3](https://github.com/atbeta/picfast/compare/v0.26.2...v0.26.3) (2026-10-16)
+
+
+### Bug Fixes
+
+* **storage:** treat an empty storage default config as unset ([1868e83](https://github.com/atbeta/picfast/commit/1868e836ec0440e56a67985711d4ed0a676a2366))
+
 ## [0.26.2](https://github.com/atbeta/picfast/compare/v0.26.1...v0.26.2) (2026-10-16)
 
 
