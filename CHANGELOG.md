@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.26.2](https://github.com/atbeta/picfast/compare/v0.26.1...v0.26.2) (2026-10-16)
+
+
+### Bug Fixes
+
+* **admin:** report thumbnail store health from the storage strategies ([de73986](https://github.com/atbeta/picfast/commit/de7398686dffb861262cf0e3e17f8d3d11f3253b))
+* **deploy:** drop maxShutdownDelaySeconds from the free Render blueprint ([e721187](https://github.com/atbeta/picfast/commit/e721187f05746c18a4a56178f2d07d38fb4f2666))
+* **images:** report thumbnail status from the storage strategy ([b1f7a30](https://github.com/atbeta/picfast/commit/b1f7a30378cd4983b06309d5dd8c318000baf28e))
+* **test:** use a valid PNG fixture and per-test storage roots ([4020c9e](https://github.com/atbeta/picfast/commit/4020c9efd354516a052ecae03667a2320db04ff4))
+
 ## [0.26.1](https://github.com/atbeta/picfast/compare/v0.26.0...v0.26.1) (2026-10-16)
 
 
