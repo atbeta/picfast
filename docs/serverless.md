@@ -49,7 +49,7 @@ PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://<account>.r2.cloudflarestor
 > - 若这个库还没上传过图片、想继续走环境变量：`delete from strategies;` 后重启——**注意副作用**：`group_strategies` 会级联删除，`images.strategy_id` 会被置为 `NULL`，所以有历史图片时不要这么做；
 > - 或者把现有行**就地改造**（保留分组映射与图片引用）：`update strategies set name='Default Storage', strategy_type='s3', configs='{...}'::jsonb where id = 1;`
 >
-> ⚠️ **两个变量必须成对出现且 JSON 合法**：只设 `PICFAST_STORAGE_DEFAULT_TYPE`（例如 `s3`）而不给配置，或 JSON 写错，应用会在启动时直接退出（刻意 fail-fast，避免静默写本地盘导致丢图）。
+> ⚠️ **留空与写错的后果不同**：只设 `PICFAST_STORAGE_DEFAULT_TYPE`（例如 `s3`）而把 `PICFAST_STORAGE_DEFAULT_CONFIG` 留空，应用会**回退到本地存储并打印 WARN**（这样 PaaS 的创建页可以把它做成“可填可不填”的提示项）；而 JSON **写错**时会拒绝启动（刻意 fail-fast，避免把打错的配置静默当作“用本地盘”从而丢图）。
 
 ### 1.3 外部定时触发（webhook 与清理）
 

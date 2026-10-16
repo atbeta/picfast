@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -167,7 +168,17 @@ func ensureDefaultStrategy(ctx context.Context, queries *sqlc.Queries, cfg *conf
 		return strategies[0], nil
 	}
 
-	if isLocalDefaultType(cfg.Storage.DefaultType) {
+	// A platform can prompt for the storage settings and let the operator leave
+	// them blank (the Render blueprint does): an empty config means "not
+	// configured yet", so fall back to local storage with a warning instead of
+	// refusing to start. Malformed JSON still fails loudly below.
+	if !isLocalDefaultType(cfg.Storage.DefaultType) && len(bytes.TrimSpace(cfg.Storage.DefaultConfig)) == 0 {
+		slog.Warn("storage.default_config is empty; using local storage instead",
+			"type", cfg.Storage.DefaultType,
+			"hint", "set PICFAST_STORAGE_DEFAULT_CONFIG (or add the strategy in the admin console) for durable storage")
+	}
+
+	if isLocalDefaultType(cfg.Storage.DefaultType) || len(bytes.TrimSpace(cfg.Storage.DefaultConfig)) == 0 {
 		created, err := queries.CreateStrategy(ctx, sqlc.CreateStrategyParams{
 			Name:         "Local Storage",
 			StrategyType: string(domain.StrategyTypeLocal),

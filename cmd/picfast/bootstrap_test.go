@@ -214,14 +214,24 @@ func TestBootstrapDefaultStorageInvalidConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("missing config", func(t *testing.T) {
+	// An empty config means "not configured yet" — a PaaS creation form can
+	// prompt for it and let the operator leave it blank — so bootstrap warns and
+	// falls back to local storage instead of refusing to start. Malformed and
+	// incomplete configs still fail, as the cases below and above assert.
+	t.Run("missing config falls back to local", func(t *testing.T) {
 		pool, queries := testutil.SetupDB(t)
 		cfg := &config.Config{
 			Storage: config.StorageConfig{DefaultType: "s3"},
 		}
-		err := bootstrapCoreData(context.Background(), pool, queries, cfg)
-		if err == nil || !strings.Contains(err.Error(), "invalid storage default_config") {
-			t.Fatalf("err = %v, want invalid default_config error", err)
+		if err := bootstrapCoreData(context.Background(), pool, queries, cfg); err != nil {
+			t.Fatalf("bootstrapCoreData: %v", err)
+		}
+		strategies, err := queries.ListStrategies(context.Background())
+		if err != nil {
+			t.Fatalf("ListStrategies: %v", err)
+		}
+		if len(strategies) != 1 || strategies[0].StrategyType != "local" {
+			t.Fatalf("strategies = %+v, want a single local strategy", strategies)
 		}
 	})
 
@@ -292,5 +302,53 @@ func assertCount(t *testing.T, pool *pgxpool.Pool, query string, want int) {
 	}
 	if got != want {
 		t.Fatalf("%s => %d, want %d", query, got, want)
+	}
+}
+
+// Whitespace-only values count as empty too (a form field can submit " ").
+func TestBootstrapFallsBackToLocalWhenStorageConfigBlank(t *testing.T) {
+	pool, queries := testutil.SetupDB(t)
+
+	cfg := &config.Config{
+		Server: config.ServerConfig{BaseURL: "https://picfast.example.com"},
+		Storage: config.StorageConfig{
+			LocalRoot:     "/app/data/uploads",
+			DefaultType:   "s3",
+			DefaultConfig: json.RawMessage("   "),
+		},
+	}
+
+	if err := bootstrapCoreData(context.Background(), pool, queries, cfg); err != nil {
+		t.Fatalf("bootstrapCoreData with blank storage config: %v", err)
+	}
+
+	strategies, err := queries.ListStrategies(context.Background())
+	if err != nil {
+		t.Fatalf("ListStrategies: %v", err)
+	}
+	if len(strategies) != 1 || strategies[0].StrategyType != "local" {
+		t.Fatalf("strategies = %+v, want a single local strategy", strategies)
+	}
+}
+
+// Malformed JSON is still a hard error: only *empty* means "not configured".
+func TestBootstrapRejectsMalformedStorageConfig(t *testing.T) {
+	pool, queries := testutil.SetupDB(t)
+
+	cfg := &config.Config{
+		Server: config.ServerConfig{BaseURL: "https://picfast.example.com"},
+		Storage: config.StorageConfig{
+			LocalRoot:     "/app/data/uploads",
+			DefaultType:   "s3",
+			DefaultConfig: json.RawMessage(`{"endpoint":`),
+		},
+	}
+
+	err := bootstrapCoreData(context.Background(), pool, queries, cfg)
+	if err == nil {
+		t.Fatal("bootstrapCoreData with malformed storage config returned nil, want an error")
+	}
+	if !strings.Contains(err.Error(), "invalid storage default_config") {
+		t.Fatalf("error = %v, want invalid storage default_config", err)
 	}
 }

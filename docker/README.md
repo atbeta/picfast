@@ -117,7 +117,7 @@ scrape_configs:
 - `PICFAST_SERVER_METRICS_ENABLED` — 设为 `false` 可关闭独立的 `/metrics` 监听端口
 - `PICFAST_JOBS_EMBEDDED` — 设为 `false` 关闭进程内后台任务调度（webhook 投递、每小时清理），改用外部定时触发 `POST /internal/jobs/run` 或 `picfast jobs run`
 - `PICFAST_JOBS_TOKEN` — `POST /internal/jobs/run` 的 Bearer 令牌；不设置则不注册该端点
-- `PICFAST_STORAGE_DEFAULT_TYPE` + `PICFAST_STORAGE_DEFAULT_CONFIG` — 首次启动（数据库尚无任何存储策略）时创建默认存储策略的类型与 JSON 配置。**必须成对给出且 JSON 合法**，否则启动即失败；库里已有策略时会被忽略并打印 WARN（0.26 及更早版本因迁移预置了一条本地策略，这两个变量实际从未生效过；新建数据库已修正）。已有策略的老库请在后台「存储策略」里**新增** S3/R2 策略并设为分组默认——若改用 `delete from strategies;` 清表重启，注意 `images.strategy_id` 会被置为 NULL（有历史图片时勿用）。示例（S3）：`PICFAST_STORAGE_DEFAULT_TYPE=s3`，`PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://s3.example.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","url":"https://cdn.example.com"}'`；Cloudflare R2（S3 兼容）：`"endpoint":"https://<account>.r2.cloudflarestorage.com"`、`"region":"auto"`、`"use_path_style":true`。
+- `PICFAST_STORAGE_DEFAULT_TYPE` + `PICFAST_STORAGE_DEFAULT_CONFIG` — 首次启动（数据库尚无任何存储策略）时创建默认存储策略的类型与 JSON 配置。`PICFAST_STORAGE_DEFAULT_CONFIG` **留空**时会回退到本地存储并打印 WARN，**JSON 写错**则启动失败（fail-fast）；库里已有策略时会被忽略并打印 WARN（0.26 及更早版本因迁移预置了一条本地策略，这两个变量实际从未生效过；新建数据库已修正）。已有策略的老库请在后台「存储策略」里**新增** S3/R2 策略并设为分组默认——若改用 `delete from strategies;` 清表重启，注意 `images.strategy_id` 会被置为 NULL（有历史图片时勿用）。示例（S3）：`PICFAST_STORAGE_DEFAULT_TYPE=s3`，`PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://s3.example.com","region":"auto","bucket":"pics","access_key":"AK","secret_key":"SK","url":"https://cdn.example.com"}'`；Cloudflare R2（S3 兼容）：`"endpoint":"https://<account>.r2.cloudflarestorage.com"`、`"region":"auto"`、`"use_path_style":true`。
 
 > ⚠️ 容器 PaaS（无持久卷）上默认的 `local` 存储位于临时磁盘，实例重建后上传文件即丢失 — 请用上述变量配置 S3/R2 等持久后端。
 
