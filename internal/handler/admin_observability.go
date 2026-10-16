@@ -54,7 +54,7 @@ func (h *AdminObservabilityHandler) Summary(w http.ResponseWriter, r *http.Reque
 		"health": map[string]any{
 			"database":   h.databaseHealth(ctx),
 			"uploads":    directoryHealth(h.cfg.Storage.LocalRoot),
-			"thumbnails": thumbnailHealth(h.cfg.Storage.ThumbnailDir),
+			"thumbnails": thumbnailStoreHealth(strategies, h.cfg.Storage.ThumbnailDir),
 			"mail":       h.mailHealth(app),
 		},
 		"runtime":            runtimeSummary(),
@@ -104,16 +104,37 @@ func (h *AdminObservabilityHandler) databaseHealth(ctx context.Context) map[stri
 	return map[string]any{"healthy": true}
 }
 
-// thumbnailHealth reports the legacy on-disk thumbnail directory. Thumbnails
-// now live in each image's storage strategy, so the directory is only
-// reported while it still exists as a read-only fallback (never created).
-func thumbnailHealth(path string) map[string]any {
-	if path != "" {
-		if info, err := os.Stat(path); err == nil && info.IsDir() {
-			return map[string]any{"healthy": true, "path": path}
+// thumbnailStoreHealth reports where thumbnails actually live: each image's
+// storage strategy, under _picfast/thumbnails/<md5>.png. The legacy
+// thumbnail_dir is only a read-only fallback for pre-upgrade files, so it is
+// reported as a diagnostic field instead of deciding the badge — judging by the
+// directory alone made every strategy-based deployment show 未启用 even though
+// thumbnails were being written to the strategy.
+func thumbnailStoreHealth(strategyHealth []map[string]any, legacyDir string) map[string]any {
+	if len(strategyHealth) == 0 {
+		return map[string]any{"status": "disabled"}
+	}
+
+	healthyStrategies := 0
+	for _, item := range strategyHealth {
+		if ok, _ := item["healthy"].(bool); ok {
+			healthyStrategies++
 		}
 	}
-	return map[string]any{"status": "disabled"}
+
+	out := map[string]any{
+		"healthy":            healthyStrategies > 0,
+		"strategies":         len(strategyHealth),
+		"strategies_healthy": healthyStrategies,
+		"thumbnail_prefix":   service.ThumbnailPrefix,
+	}
+	if legacyDir != "" {
+		out["legacy_dir"] = legacyDir
+		if info, err := os.Stat(legacyDir); err == nil && info.IsDir() {
+			out["legacy_dir_present"] = true
+		}
+	}
+	return out
 }
 
 func directoryHealth(path string) map[string]any {

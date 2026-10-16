@@ -47,7 +47,7 @@ func (f *fakeStorage) Write(ctx context.Context, path string, data []byte, conte
 	}
 	f.mu.Lock()
 	f.written[path] = data
-	if strings.HasPrefix(path, thumbnailPrefix) {
+	if strings.HasPrefix(path, ThumbnailPrefix) {
 		f.thumbWriteDone = true
 	}
 	f.mu.Unlock()
@@ -121,7 +121,7 @@ func TestUploadOverlapsThumbnailWrite(t *testing.T) {
 	var origOnce, thumbOnce sync.Once
 	fake := newFakeStorage()
 	fake.onWrite = func(path string) {
-		if strings.HasPrefix(path, thumbnailPrefix) {
+		if strings.HasPrefix(path, ThumbnailPrefix) {
 			thumbOnce.Do(func() { close(thumbStarted) })
 			select {
 			case <-origStarted:
@@ -158,7 +158,7 @@ func TestUploadOverlapsThumbnailWrite(t *testing.T) {
 	// Store re-encodes the upload, so the thumbnail md5 differs from the
 	// input's; assert by the managed prefix instead.
 	for path := range fake.written {
-		if strings.HasPrefix(path, thumbnailPrefix) {
+		if strings.HasPrefix(path, ThumbnailPrefix) {
 			return
 		}
 	}
@@ -171,7 +171,7 @@ func TestUploadOverlapsThumbnailWrite(t *testing.T) {
 func TestUploadOriginalWriteFailureCleansUpThumbnail(t *testing.T) {
 	fake := newFakeStorage()
 	fake.writeErrFor = func(path string) error {
-		if strings.HasPrefix(path, thumbnailPrefix) {
+		if strings.HasPrefix(path, ThumbnailPrefix) {
 			return nil
 		}
 		return errors.New("injected original write failure")
@@ -190,7 +190,7 @@ func TestUploadOriginalWriteFailureCleansUpThumbnail(t *testing.T) {
 
 	deleted := false
 	for _, p := range fake.deletedPaths() {
-		if strings.HasPrefix(p, thumbnailPrefix) {
+		if strings.HasPrefix(p, ThumbnailPrefix) {
 			deleted = true
 		}
 	}
@@ -207,7 +207,7 @@ func TestUploadOriginalWriteFailureCleansUpThumbnail(t *testing.T) {
 func TestUploadThumbnailPanicDoesNotCrash(t *testing.T) {
 	fake := newFakeStorage()
 	fake.onWrite = func(path string) {
-		if strings.HasPrefix(path, thumbnailPrefix) {
+		if strings.HasPrefix(path, ThumbnailPrefix) {
 			panic("boom")
 		}
 	}

@@ -15,15 +15,15 @@ import (
 
 const ThumbnailMaxSize = 400
 
-// thumbnailPrefix is the object path prefix for thumbnails stored inside an
+// ThumbnailPrefix is the object path prefix for thumbnails stored inside an
 // image's storage strategy. It is prefixed so lifecycle tooling can tell
 // PicFast-managed objects apart from user uploads.
-const thumbnailPrefix = "_picfast/thumbnails/"
+const ThumbnailPrefix = "_picfast/thumbnails/"
 
 // ThumbnailObjectPath returns the object path of a thumbnail inside the
 // image's storage strategy.
 func ThumbnailObjectPath(md5 string) string {
-	return thumbnailPrefix + md5 + ".png"
+	return ThumbnailPrefix + md5 + ".png"
 }
 
 // ErrThumbnailSkipped marks image types that never get a thumbnail.
