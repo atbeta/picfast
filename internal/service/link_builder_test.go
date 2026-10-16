@@ -97,3 +97,32 @@ func TestIsDirectLinkMode(t *testing.T) {
 		})
 	}
 }
+
+// Strategy configs carry non-string values such as "use_path_style": true.
+// Decoding them into map[string]string failed, which silently downgraded an
+// explicit proxy link mode to direct.
+func TestLinkModeWithNonStringConfigValues(t *testing.T) {
+	cases := []struct {
+		name  string
+		cfg   string
+		proxy bool
+	}{
+		{"proxy only", `{"endpoint":"https://s3.example.com","link_mode":"proxy"}`, true},
+		{"proxy with path style bool", `{"endpoint":"https://s3.example.com","use_path_style":true,"link_mode":"proxy"}`, true},
+		{"proxy with numeric value", `{"endpoint":"https://s3.example.com","connect_timeout":30,"link_mode":"proxy"}`, true},
+		{"direct with path style bool", `{"endpoint":"https://s3.example.com","use_path_style":false,"link_mode":"direct"}`, false},
+		{"absent defaults to direct", `{"endpoint":"https://s3.example.com","use_path_style":true}`, false},
+		{"invalid json", `{`, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := IsProxyLinkMode(json.RawMessage(tc.cfg)); got != tc.proxy {
+				t.Errorf("IsProxyLinkMode(%s) = %v, want %v", tc.cfg, got, tc.proxy)
+			}
+		})
+	}
+
+	if !IsDirectLinkMode(json.RawMessage(`{"use_path_style":true,"link_mode":"direct"}`)) {
+		t.Error("IsDirectLinkMode should survive non-string config values")
+	}
+}
