@@ -26,7 +26,9 @@ services:
     region: singapore
     plan: free
     healthCheckPath: /readyz
-    maxShutdownDelaySeconds: 120
+    # 注意：Free 档不支持 maxShutdownDelaySeconds / scaling / disk / one-off jobs，
+    # 所以这里不设——设了 Blueprint 校验会直接报
+    # "max shutdown delay is not supported for free tier services"。
     envVars:
       - key: PICFAST_DATABASE_URL
         sync: false            # 创建时粘贴托管 PG 连接串；池化串请追加 default_query_exec_mode=exec
