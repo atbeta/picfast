@@ -1,11 +1,11 @@
-# Render Blueprint —— 支撑 README 里「Deploy to Render」一键部署按钮（Free 档、不需要绑卡）。
+# Render Blueprint —— 支撑官网 Serverless 指南里的「Deploy to Render」一键部署按钮（Free 档、不需要绑卡）。
 #
 # 会创建的只有一个资源：运行预构建 slim 镜像的 Free 档 Web 服务
 # （不重新构建、不需要镜像仓库）。刻意不创建 cron 服务与 Render Postgres：
 # Render 的 cron 没有免费档，免费 Postgres 也会在 30 天后过期，因此
 # 数据库请用外部免费托管 PG（推荐 Neon：永久免费、不需要绑卡）。
 #
-# Free 档的实际取舍（详见 docs/serverless.md）：
+# Free 档的实际取舍（详见 https://picfast.dev/docs/serverless）：
 #   0.1 CPU / 512 MB 内存；15 分钟无入站流量后休眠，再访问约 1 分钟启动；
 #   每月 750 实例小时；休眠时会丢本地文件系统上的改动。
 #   内置后台任务每 5 秒轮询一次数据库，会让 Neon 无法缩容到零而吃掉免费计算额度，

@@ -241,10 +241,7 @@ export PICFAST_STORAGE_DEFAULT_CONFIG='{"endpoint":"https://<account>.r2.cloudfl
 
 ## Serverless / 容器 PaaS 部署
 
-Fly.io、Railway、Render、Koyeb、Zeabur 等平台上实例磁盘是临时的、实例可能随时被回收，部署方式与反向代理场景不同：
+Fly.io、Railway、Render、Koyeb、Zeabur 等平台的部署方式（slim 镜像、端口与探针、发布钩子、外部定时触发、免费额度与验收清单）已迁移到官网：
 
-- 用 **slim 镜像**（`xbeta/picfast:slim` / `v0.26.0-slim`），体积小、冷启动快（能力差异见上节）；
-- 用 `PICFAST_STORAGE_DEFAULT_TYPE` + `PICFAST_STORAGE_DEFAULT_CONFIG` 指向 S3/R2 等持久后端；
-- 关闭内置调度（`PICFAST_JOBS_EMBEDDED=false`）并配置外部定时触发，或按平台能力使用发布钩子执行 `picfast migrate`。
-
-各平台的端口约定、探针、迁移钩子、定时任务写法与验收清单见 **[serverless.md](serverless.md)**。
+- 中文：<https://picfast.dev/zh/docs/serverless>
+- English: <https://picfast.dev/docs/serverless>
