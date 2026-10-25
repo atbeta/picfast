@@ -1,6 +1,6 @@
 module github.com/atbeta/picfast
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
