@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.4](https://github.com/atbeta/picfast/compare/v0.26.3...v0.26.4) (2026-10-25)
+
+
+### Bug Fixes
+
+* **backend:** clear GO-2026-6809 with Go 1.26.10 ([358dec2](https://github.com/atbeta/picfast/commit/358dec2614ef8a140e8d39944b230125b20b1016))
+
 ## [0.26.3](https://github.com/atbeta/picfast/compare/v0.26.2...v0.26.3) (2026-10-16)
 
 
