@@ -22,3 +22,7 @@ updates:
       # ("TypeError: t is not a function" / blank page). See rolldown/rolldown#10228.
       - dependency-name: "vite"
         versions: [">=8.1.0"]
+      # typescript-eslint 8.72 peers TypeScript >=4.8.4 <6.1.0 and errors on TS 7.
+      # Keep the web toolchain on 6.0.x until that support lands.
+      - dependency-name: "typescript"
+        versions: [">=6.1.0"]
