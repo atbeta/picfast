@@ -438,18 +438,20 @@ func New(
 			r.Post("/webhook-deliveries/{id}/replay", whHandler.ReplayDelivery)
 		})
 
-		// Optional auth for guest upload (also accepts API tokens)
-		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries)).
+		// Optional auth for guest upload (also accepts API tokens). Tokens must
+		// carry the "write" scope: the JWT and guest paths have no scopes, so
+		// RequireScope only filters read-only API tokens.
+		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), middleware.RequireScope("write")).
 			Post("/upload", imageHandler.Upload)
 
 			// ShareX endpoints
 		sharexHandler := handler.NewShareXHandler(uploadSvc, cfg.Server.BaseURL, cfg.App.MaxUploadBytes, queries, cfg.App.AuditUploadLogs)
-		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
+		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), middleware.RequireScope("write"), modMiddleware).Post("/sharex/upload", sharexHandler.Upload)
 		r.Get("/sharex/config", sharexHandler.Config)
 
 		// Flat upload endpoints (PicGo, uPic, Dropshare, etc.)
 		flatHandler := handler.NewFlatUploadHandler(uploadSvc, cfg.Server.BaseURL, cfg.App.MaxUploadBytes, queries, cfg.App.AuditUploadLogs)
-		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), modMiddleware).Post("/flat/upload", flatHandler.Upload)
+		r.With(middleware.OptionalDualAuth(middleware.NewJWTAuthenticator(jwtSvc), queries), middleware.RequireScope("write"), modMiddleware).Post("/flat/upload", flatHandler.Upload)
 
 		// Admin routes
 		r.Route("/admin", func(r chi.Router) {

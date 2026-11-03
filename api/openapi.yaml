@@ -428,6 +428,9 @@ paths:
     post:
       tags: [images]
       summary: Upload an image (guest)
+      description: >-
+        Guest uploads need no credentials. When an API token is supplied it must
+        carry the `write` scope; JWT sessions are not scope-limited.
       security: []
       requestBody:
         required: true
@@ -1114,6 +1117,9 @@ paths:
     post:
       tags: [sharex]
       summary: Upload image for ShareX clients
+      description: >-
+        Guest uploads are supported. An API token must carry the `write` scope;
+        JWT sessions are not scope-limited.
       security: []
       requestBody:
         required: true
@@ -1157,6 +1163,8 @@ paths:
         Multipart upload endpoint that returns a flat JSON with url, thumbnail_url, markdown, bbcode, and html fields.
         Compatible with PicGo/PicList (web-uploader plugin), uPic (custom host), Dropshare (Custom API), and any client that accepts a simple URL response.
         Supports optional authentication via Bearer token or X-API-Token header.
+        When an API token is supplied it must carry the `write` scope; JWT
+        sessions are not scope-limited.
       security: []
       requestBody:
         required: true
