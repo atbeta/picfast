@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.26.4](https://github.com/atbeta/picfast/compare/v0.26.3...v0.26.4) (2026-11-03)
+
+
+### Bug Fixes
+
+* **backend:** clear GO-2026-6809 with Go 1.26.10 ([358dec2](https://github.com/atbeta/picfast/commit/358dec2614ef8a140e8d39944b230125b20b1016))
+* **strategies:** stop leaking storage credentials to every user ([4b82db9](https://github.com/atbeta/picfast/commit/4b82db9e6f7ec65ccd11da799875fdfeaef536f5))
+* **upload:** reject read-only API tokens on all upload paths ([be5c6fb](https://github.com/atbeta/picfast/commit/be5c6fb2dd136aafcf3e7637ba45593ed6398a64))
+
 ## [0.26.3](https://github.com/atbeta/picfast/compare/v0.26.2...v0.26.3) (2026-10-16)
 
 
