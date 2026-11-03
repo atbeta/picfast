@@ -2140,6 +2140,22 @@ components:
         configs:
           type: object
 
+    AvailableStrategy:
+      type: object
+      description: >-
+        Storage strategy the authenticated caller may upload to. Admin-only
+        fields such as `configs` (bucket credentials, WebDAV passwords) are
+        intentionally omitted.
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        strategy_type:
+          type: string
+          enum: [local, s3, kodo, oss, cos, webdav]
+
     AdminStrategyResponse:
       type: object
       properties:
@@ -2182,7 +2198,7 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/AdminStrategyResponse"
+            $ref: "#/components/schemas/AvailableStrategy"
 
     SettingsResponse:
       type: object

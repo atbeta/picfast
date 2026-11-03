@@ -399,8 +399,9 @@ func New(
 			r.With(middleware.RequireScope("write")).Put("/albums/{id}", albumHandler.Update)
 			r.With(middleware.RequireScope("write")).Delete("/albums/{id}", albumHandler.Delete)
 
-			// Strategies (available to user's group)
-			r.Get("/strategies", adminStrategyHandler.List)
+			// Strategies the caller may upload to. Configs stay admin-only:
+			// they hold bucket credentials and WebDAV passwords.
+			r.Get("/strategies", adminStrategyHandler.ListAvailable)
 		})
 
 		r.Group(func(r chi.Router) {

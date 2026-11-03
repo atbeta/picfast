@@ -135,7 +135,15 @@ type AdminGroupDetailResponse struct {
 	StrategyIDs []int64 `json:"strategy_ids"`
 }
 
-// Admin - Strategies
+// Strategies
+
+// AvailableStrategyResponse is the user-facing strategy shape. Configs is
+// deliberately omitted: it holds bucket credentials and WebDAV passwords.
+type AvailableStrategyResponse struct {
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	StrategyType string `json:"strategy_type"`
+}
 
 type AdminStrategyResponse struct {
 	ID           int64           `json:"id"`

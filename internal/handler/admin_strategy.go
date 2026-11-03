@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"github.com/atbeta/picfast/internal/service/storage"
 	"github.com/atbeta/picfast/internal/sqlc"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type AdminStrategyHandler struct {
@@ -32,6 +34,49 @@ func (h *AdminStrategyHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	Success(w, strategies)
+}
+
+// ListAvailable is the user-facing counterpart of List. It never exposes
+// configs: those hold bucket credentials and WebDAV passwords that must stay
+// admin-only. Non-admin callers only see the strategies bound to their group.
+func (h *AdminStrategyHandler) ListAvailable(w http.ResponseWriter, r *http.Request) {
+	var (
+		strategies []sqlc.Strategy
+		err        error
+	)
+	if role, _ := r.Context().Value(domain.ContextKeyRole).(domain.UserRole); role == domain.RoleAdmin {
+		// Admins may target any strategy on upload, so keep the full set.
+		strategies, err = h.db.ListStrategies(r.Context())
+	} else {
+		strategies, err = h.db.GetGroupStrategies(r.Context(), groupIDFromContext(r.Context()))
+	}
+	if err != nil {
+		Fail(w, http.StatusInternalServerError, "failed to list strategies")
+		return
+	}
+
+	out := make([]AvailableStrategyResponse, 0, len(strategies))
+	for _, s := range strategies {
+		out = append(out, AvailableStrategyResponse{
+			ID:           s.ID,
+			Name:         s.Name,
+			StrategyType: s.StrategyType,
+		})
+	}
+	Success(w, out)
+}
+
+// groupIDFromContext reads the group id stored by the auth middlewares. JWT
+// sessions store an int64 while API tokens store a pgtype.Int8, so accept both.
+func groupIDFromContext(ctx context.Context) int64 {
+	switch v := ctx.Value(domain.ContextKeyGroupID).(type) {
+	case int64:
+		return v
+	case pgtype.Int8:
+		return domain.PgInt8Val(v)
+	default:
+		return 0
+	}
 }
 
 func (h *AdminStrategyHandler) Get(w http.ResponseWriter, r *http.Request) {

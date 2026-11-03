@@ -197,13 +197,12 @@ export async function deleteApiToken(id: number): Promise<void> {
 // Strategies (user-facing)
 // ============================================================
 
+// Strategies the caller may upload to. The server deliberately omits configs
+// (they hold storage credentials), so they are not part of this shape.
 export interface Strategy {
   id: number
   name: string
   strategy_type: string
-  configs: Record<string, unknown>
-  created_at: string
-  updated_at: string
 }
 
 export async function getStrategies(): Promise<Strategy[]> {
