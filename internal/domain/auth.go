@@ -21,11 +21,12 @@ type AuthTokens struct {
 type ContextKey string
 
 const (
-	ContextKeyUserID       ContextKey = "user_id"
-	ContextKeyRole         ContextKey = "role"
-	ContextKeyGroupID      ContextKey = "group_id"
-	ContextKeyScopes       ContextKey = "scopes"
-	ContextKeyOriginalAddr ContextKey = "original_addr"
-	ContextKeyDeletedBy    ContextKey = "deleted_by"
+	ContextKeyUserID          ContextKey = "user_id"
+	ContextKeyRole            ContextKey = "role"
+	ContextKeyGroupID         ContextKey = "group_id"
+	ContextKeyScopes          ContextKey = "scopes"
+	ContextKeyTokenStrategyID ContextKey = "token_strategy_id"
+	ContextKeyTokenAlbumID    ContextKey = "token_album_id"
+	ContextKeyOriginalAddr    ContextKey = "original_addr"
+	ContextKeyDeletedBy       ContextKey = "deleted_by"
 )
-

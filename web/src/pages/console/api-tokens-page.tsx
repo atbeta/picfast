@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { Calendar, Clock, CheckCircle2, History, Trash2, Copy, KeyRound, Plus } from 'lucide-react'
-import { createApiToken, deleteApiToken, listApiTokens } from '../../lib/console-api'
+import { createApiToken, deleteApiToken, getStrategies, listAlbums, listApiTokens, type ApiToken } from '../../lib/console-api'
 import { extractErrorMessage } from '../../lib/error-handler'
 import { copyToClipboard } from '../../lib/clipboard'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -37,11 +37,21 @@ export function ApiTokensPage() {
     queryKey: ['api-tokens'],
     queryFn: listApiTokens,
   })
+  const { data: strategies } = useQuery({
+    queryKey: ['strategies'],
+    queryFn: getStrategies,
+  })
+  const { data: albums } = useQuery({
+    queryKey: ['albums', 'token-picker'],
+    queryFn: () => listAlbums(1, 100),
+  })
   // Create
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const [newExpires, setNewExpires] = useState<string | undefined>(undefined)
   const [newScopes, setNewScopes] = useState<string[]>(['read', 'write'])
+  const [newStrategyID, setNewStrategyID] = useState('default')
+  const [newAlbumID, setNewAlbumID] = useState('default')
   const [creating, setCreating] = useState(false)
   const [createdToken, setCreatedToken] = useState<{ name: string; token: string } | null>(null)
 
@@ -53,6 +63,10 @@ export function ApiTokensPage() {
         newName.trim(),
         newExpires,
         newScopes,
+        {
+          strategyId: newStrategyID === 'default' ? undefined : Number(newStrategyID),
+          albumId: newAlbumID === 'default' ? undefined : Number(newAlbumID),
+        },
       )
       if (result.token) {
         setCreatedToken({ name: result.name, token: result.token })
@@ -61,13 +75,35 @@ export function ApiTokensPage() {
       setNewName('')
       setNewExpires(undefined)
       setNewScopes(['read', 'write'])
+      setNewStrategyID('default')
+      setNewAlbumID('default')
       await qc.invalidateQueries({ queryKey: ['api-tokens'] })
     } catch (err: unknown) {
       toast.error(extractErrorMessage(err, t('tokens.createFailed')))
     } finally {
       setCreating(false)
     }
-  }, [newName, newExpires, newScopes, qc, t])
+  }, [newName, newExpires, newScopes, newStrategyID, newAlbumID, qc, t])
+
+  const resetCreateForm = () => {
+    setShowCreate(false)
+    setNewName('')
+    setNewExpires(undefined)
+    setNewScopes(['read', 'write'])
+    setNewStrategyID('default')
+    setNewAlbumID('default')
+  }
+
+  const targetLabel = (tk: ApiToken) => {
+    const strategyName = tk.strategy_id
+      ? strategies?.find((item) => item.id === tk.strategy_id)?.name ?? `#${tk.strategy_id}`
+      : t('tokens.strategyDefault')
+    const albumName = tk.album_id
+      ? albums?.items.find((item) => item.id === tk.album_id)?.name ?? `#${tk.album_id}`
+      : t('tokens.albumNone')
+    if (!tk.strategy_id && !tk.album_id) return t('tokens.targetDefault')
+    return `${strategyName} · ${albumName}`
+  }
 
   // Delete
   const [deleting, setDeleting] = useState<number | null>(null)
@@ -199,6 +235,57 @@ export function ApiTokensPage() {
             </div>
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">{t('tokens.strategy')}</label>
+              <Select
+                value={newStrategyID}
+                onValueChange={(val) => setNewStrategyID(String(val))}
+                items={{
+                  default: t('tokens.strategyDefault'),
+                  ...(strategies ?? []).reduce<Record<string, string>>((acc, item) => {
+                    acc[String(item.id)] = item.name
+                    return acc
+                  }, {}),
+                }}
+              >
+                <SelectTrigger className="w-full bg-background/50 border-border/50">
+                  <SelectValue placeholder={t('tokens.strategyDefault')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">{t('tokens.strategyDefault')}</SelectItem>
+                  {(strategies ?? []).map((item) => (
+                    <SelectItem key={item.id} value={String(item.id)}>{item.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">{t('tokens.album')}</label>
+              <Select
+                value={newAlbumID}
+                onValueChange={(val) => setNewAlbumID(String(val))}
+                items={{
+                  default: t('tokens.albumNone'),
+                  ...(albums?.items ?? []).reduce<Record<string, string>>((acc, item) => {
+                    acc[String(item.id)] = item.name
+                    return acc
+                  }, {}),
+                }}
+              >
+                <SelectTrigger className="w-full bg-background/50 border-border/50">
+                  <SelectValue placeholder={t('tokens.albumNone')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">{t('tokens.albumNone')}</SelectItem>
+                  {(albums?.items ?? []).map((item) => (
+                    <SelectItem key={item.id} value={String(item.id)}>{item.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div className="flex items-center gap-3 pt-4 border-t border-border/50">
             <Button
               size="lg"
@@ -210,7 +297,7 @@ export function ApiTokensPage() {
             <Button
               variant="outline"
               size="lg"
-              onClick={() => { setShowCreate(false); setNewName(''); setNewExpires(undefined); setNewScopes(['read', 'write']) }}
+              onClick={resetCreateForm}
             >
               {t('tokens.cancel')}
             </Button>
@@ -250,8 +337,8 @@ export function ApiTokensPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-foreground">{tk.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {t('tokens.namePlaceholder', { defaultValue: '名称' })}
+                        <p className="truncate text-xs text-muted-foreground">
+                          {t('tokens.uploadTarget')}: {targetLabel(tk)}
                         </p>
                       </div>
                     </div>
@@ -343,7 +430,12 @@ export function ApiTokensPage() {
                     <td className="px-4 py-3 font-medium text-foreground">
                       <div className="flex min-w-0 items-center gap-2">
                         <KeyRound className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="truncate">{tk.name}</span>
+                        <div className="min-w-0">
+                          <p className="truncate">{tk.name}</p>
+                          <p className="truncate text-xs font-normal text-muted-foreground">
+                            {t('tokens.uploadTarget')}: {targetLabel(tk)}
+                          </p>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">

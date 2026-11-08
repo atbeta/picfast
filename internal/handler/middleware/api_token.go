@@ -54,9 +54,7 @@ func APITokenAuth(db *sqlc.Queries) func(http.Handler) http.Handler {
 			// Update last used (best effort)
 			go db.UpdateAPITokenLastUsed(context.Background(), row.ID)
 
-			ctx = context.WithValue(ctx, domain.ContextKeyUserID, row.UserID)
-			ctx = context.WithValue(ctx, domain.ContextKeyRole, domain.UserRole(row.Role))
-			ctx = context.WithValue(ctx, domain.ContextKeyGroupID, domain.PgInt8Val(row.GroupID))
+			ctx = withAPITokenIdentity(ctx, row)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

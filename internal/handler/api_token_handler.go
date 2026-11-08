@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -24,19 +25,23 @@ func NewAPITokenHandler(db *sqlc.Queries) *APITokenHandler {
 }
 
 type createAPITokenRequest struct {
-	Name      string   `json:"name"`
-	ExpiresIn string   `json:"expires_in"` // e.g. "30d", "90d", "1y", "never"
-	Scopes    []string `json:"scopes"`
+	Name       string   `json:"name"`
+	ExpiresIn  string   `json:"expires_in"` // e.g. "30d", "90d", "1y", "never"
+	Scopes     []string `json:"scopes"`
+	StrategyID *int64   `json:"strategy_id"`
+	AlbumID    *int64   `json:"album_id"`
 }
 
 type apiTokenResponse struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	Token     string    `json:"token,omitempty"` // only shown on creation
-	Scopes    []string  `json:"scopes"`
-	LastUsed  time.Time `json:"last_used_at,omitempty"`
-	ExpiresAt time.Time `json:"expires_at,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
+	ID         int64     `json:"id"`
+	Name       string    `json:"name"`
+	Token      string    `json:"token,omitempty"` // only shown on creation
+	Scopes     []string  `json:"scopes"`
+	StrategyID *int64    `json:"strategy_id,omitempty"`
+	AlbumID    *int64    `json:"album_id,omitempty"`
+	LastUsed   time.Time `json:"last_used_at,omitempty"`
+	ExpiresAt  time.Time `json:"expires_at,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 func (h *APITokenHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +77,11 @@ func (h *APITokenHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if len(req.Scopes) == 0 {
 		req.Scopes = []string{"read", "write"}
 	}
+	strategyID, albumID, err := h.resolveTokenUploadTarget(r.Context(), userID, req.StrategyID, req.AlbumID)
+	if err != nil {
+		Fail(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	scopes, err := json.Marshal(req.Scopes)
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to encode token scopes")
@@ -84,11 +94,13 @@ func (h *APITokenHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token, err := h.db.CreateAPIToken(r.Context(), sqlc.CreateAPITokenParams{
-		UserID:    userID,
-		Name:      req.Name,
-		TokenHash: tokenHash,
-		Scopes:    scopes,
-		ExpiresAt: expiresAtTz,
+		UserID:     userID,
+		Name:       req.Name,
+		TokenHash:  tokenHash,
+		Scopes:     scopes,
+		ExpiresAt:  expiresAtTz,
+		StrategyID: strategyID,
+		AlbumID:    albumID,
 	})
 	if err != nil {
 		Fail(w, http.StatusInternalServerError, "failed to create token")
@@ -101,18 +113,22 @@ func (h *APITokenHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := apiTokenResponse{
-		ID:        token.ID,
-		Name:      token.Name,
-		Token:     plainToken, // ONLY shown once on creation
-		Scopes:    scopeList,
-		CreatedAt: token.CreatedAt,
+		ID:         token.ID,
+		Name:       token.Name,
+		Token:      plainToken, // ONLY shown once on creation
+		Scopes:     scopeList,
+		StrategyID: domain.PgInt8PtrVal(token.StrategyID),
+		AlbumID:    domain.PgInt8PtrVal(token.AlbumID),
+		CreatedAt:  token.CreatedAt,
 	}
 	if token.ExpiresAt.Valid {
 		resp.ExpiresAt = token.ExpiresAt.Time
 	}
 	writeAuditLog(h.db, r, "api_token.create", "api_token", fmt.Sprintf("%d", token.ID), token.Name, map[string]any{
-		"scopes":     scopeList,
-		"expires_at": token.ExpiresAt.Time,
+		"scopes":      scopeList,
+		"expires_at":  token.ExpiresAt.Time,
+		"strategy_id": domain.PgInt8PtrVal(token.StrategyID),
+		"album_id":    domain.PgInt8PtrVal(token.AlbumID),
 	})
 
 	Created(w, resp)
@@ -138,10 +154,12 @@ func (h *APITokenHandler) List(w http.ResponseWriter, r *http.Request) {
 			scopeList = []string{"read", "write"}
 		}
 		items[i] = apiTokenResponse{
-			ID:        t.ID,
-			Name:      t.Name,
-			Scopes:    scopeList,
-			CreatedAt: t.CreatedAt,
+			ID:         t.ID,
+			Name:       t.Name,
+			Scopes:     scopeList,
+			StrategyID: domain.PgInt8PtrVal(t.StrategyID),
+			AlbumID:    domain.PgInt8PtrVal(t.AlbumID),
+			CreatedAt:  t.CreatedAt,
 		}
 		if t.LastUsedAt.Valid {
 			items[i].LastUsed = t.LastUsedAt.Time
@@ -178,6 +196,60 @@ func (h *APITokenHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	writeAuditLog(h.db, r, "api_token.delete", "api_token", fmt.Sprintf("%d", id), "", nil)
 
 	SuccessMessage(w, "token deleted")
+}
+
+func (h *APITokenHandler) resolveTokenUploadTarget(ctx context.Context, userID int64, strategyID, albumID *int64) (pgtype.Int8, pgtype.Int8, error) {
+	var strategy, album pgtype.Int8
+	if strategyID == nil && albumID == nil {
+		return strategy, album, nil
+	}
+
+	user, err := h.db.GetUserByID(ctx, userID)
+	if err != nil {
+		return strategy, album, fmt.Errorf("user not found")
+	}
+
+	if strategyID != nil {
+		if *strategyID <= 0 {
+			return strategy, album, fmt.Errorf("invalid strategy_id")
+		}
+		if _, err := h.db.GetStrategyByID(ctx, *strategyID); err != nil {
+			return strategy, album, fmt.Errorf("strategy not found")
+		}
+		if user.Role != string(domain.RoleAdmin) {
+			if !user.GroupID.Valid {
+				return strategy, album, fmt.Errorf("strategy not available for your group")
+			}
+			strategies, err := h.db.GetGroupStrategies(ctx, user.GroupID.Int64)
+			if err != nil {
+				return strategy, album, fmt.Errorf("strategy not available for your group")
+			}
+			found := false
+			for _, item := range strategies {
+				if item.ID == *strategyID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return strategy, album, fmt.Errorf("strategy not available for your group")
+			}
+		}
+		strategy = domain.PgInt8(*strategyID)
+	}
+
+	if albumID != nil {
+		if *albumID <= 0 {
+			return strategy, album, fmt.Errorf("invalid album_id")
+		}
+		record, err := h.db.GetAlbumByID(ctx, *albumID)
+		if err != nil || record.UserID != userID {
+			return strategy, album, fmt.Errorf("album not found")
+		}
+		album = domain.PgInt8(*albumID)
+	}
+
+	return strategy, album, nil
 }
 
 // parseTokenExpiry converts an expiry string to an optional time.

@@ -2483,6 +2483,14 @@ components:
         created_at:
           type: string
           format: date-time
+        strategy_id:
+          type: integer
+          format: int64
+          description: Optional storage strategy used when an upload does not set strategy_id.
+        album_id:
+          type: integer
+          format: int64
+          description: Optional album used when an upload does not set album_id. The album stays a label and does not choose storage.
 
     CreateAPITokenRequest:
       type: object
@@ -2493,6 +2501,14 @@ components:
         expires_in:
           type: string
           description: 'Examples: 30d, 90d, 1y, 24h, never.'
+        strategy_id:
+          type: integer
+          format: int64
+          description: Optional. Must be a strategy the user can upload to. Omit to keep the account default.
+        album_id:
+          type: integer
+          format: int64
+          description: Optional. Must belong to the token owner. Omit to leave the upload unassigned.
         scopes:
           type: array
           description: 'Token scopes. read = list/get/stats and resources. write = upload/delete.'

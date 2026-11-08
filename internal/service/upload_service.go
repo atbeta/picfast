@@ -107,9 +107,13 @@ type UploadResult struct {
 
 func (s *UploadService) Store(ctx context.Context, params UploadParams) (*UploadResult, error) {
 	params = s.applyDefaultTTL(params)
+	params = applyTokenUploadTarget(ctx, params)
 
 	identity, err := s.resolveIdentity(ctx, params)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.ensureAlbumOwner(ctx, params); err != nil {
 		return nil, err
 	}
 
@@ -387,6 +391,36 @@ func (s *UploadService) Store(ctx context.Context, params UploadParams) (*Upload
 
 func (s *UploadService) getStorage(strategy sqlc.Strategy) (storage.Storage, error) {
 	return s.newStorage(strategy)
+}
+
+// applyTokenUploadTarget fills an API token's optional storage strategy and
+// album when the request did not set them. An explicit request value wins.
+func applyTokenUploadTarget(ctx context.Context, params UploadParams) UploadParams {
+	if params.StrategyID == nil {
+		if id, ok := ctx.Value(domain.ContextKeyTokenStrategyID).(int64); ok && id > 0 {
+			params.StrategyID = &id
+		}
+	}
+	if params.AlbumID == nil {
+		if id, ok := ctx.Value(domain.ContextKeyTokenAlbumID).(int64); ok && id > 0 {
+			params.AlbumID = &id
+		}
+	}
+	return params
+}
+
+func (s *UploadService) ensureAlbumOwner(ctx context.Context, params UploadParams) error {
+	if params.AlbumID == nil {
+		return nil
+	}
+	if params.UserID == nil {
+		return fmt.Errorf("album_id requires authentication")
+	}
+	album, err := s.db.GetAlbumByID(ctx, *params.AlbumID)
+	if err != nil || album.UserID != *params.UserID {
+		return fmt.Errorf("album not found")
+	}
+	return nil
 }
 
 func (s *UploadService) applyDefaultTTL(params UploadParams) UploadParams {

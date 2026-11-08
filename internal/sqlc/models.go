@@ -30,6 +30,8 @@ type ApiToken struct {
 	LastUsedAt pgtype.Timestamptz `json:"last_used_at"`
 	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt  time.Time          `json:"created_at"`
+	StrategyID pgtype.Int8        `json:"strategy_id"`
+	AlbumID    pgtype.Int8        `json:"album_id"`
 }
 
 type AuditLog struct {

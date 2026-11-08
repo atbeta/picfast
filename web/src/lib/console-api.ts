@@ -171,6 +171,8 @@ export interface ApiToken {
   name: string
   token?: string
   scopes: string[]
+  strategy_id?: number
+  album_id?: number
   last_used_at?: string
   expires_at?: string
   created_at: string
@@ -181,10 +183,17 @@ export async function listApiTokens(): Promise<ApiToken[]> {
   return res.data.data
 }
 
-export async function createApiToken(name: string, expiresIn?: string, scopes?: string[]): Promise<ApiToken> {
+export async function createApiToken(
+  name: string,
+  expiresIn?: string,
+  scopes?: string[],
+  target?: { strategyId?: number; albumId?: number },
+): Promise<ApiToken> {
   const body: Record<string, unknown> = { name }
   if (expiresIn) body.expires_in = expiresIn
   if (scopes) body.scopes = scopes
+  if (target?.strategyId) body.strategy_id = target.strategyId
+  if (target?.albumId) body.album_id = target.albumId
   const res = await api.post<ApiResponse<ApiToken>>('/api-tokens', body)
   return res.data.data
 }

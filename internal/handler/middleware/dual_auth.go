@@ -49,12 +49,22 @@ func apiTokenAuth(r *http.Request, db *sqlc.Queries) (context.Context, []string,
 		scopes = []string{"read", "write"}
 	}
 
-	ctx := r.Context()
+	ctx := withAPITokenIdentity(r.Context(), row)
+	ctx = context.WithValue(ctx, domain.ContextKeyScopes, scopes)
+	return ctx, scopes, true
+}
+
+func withAPITokenIdentity(ctx context.Context, row sqlc.GetAPITokenByHashRow) context.Context {
 	ctx = context.WithValue(ctx, domain.ContextKeyUserID, row.UserID)
 	ctx = context.WithValue(ctx, domain.ContextKeyRole, domain.UserRole(row.Role))
 	ctx = context.WithValue(ctx, domain.ContextKeyGroupID, domain.PgInt8Val(row.GroupID))
-	ctx = context.WithValue(ctx, domain.ContextKeyScopes, scopes)
-	return ctx, scopes, true
+	if row.StrategyID.Valid && row.StrategyID.Int64 > 0 {
+		ctx = context.WithValue(ctx, domain.ContextKeyTokenStrategyID, row.StrategyID.Int64)
+	}
+	if row.AlbumID.Valid && row.AlbumID.Int64 > 0 {
+		ctx = context.WithValue(ctx, domain.ContextKeyTokenAlbumID, row.AlbumID.Int64)
+	}
+	return ctx
 }
 
 // DualAuth accepts either a JWT access token or an API token (img_...).
