@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.0](https://github.com/atbeta/picfast/compare/v0.26.4...v0.27.0) (2026-11-08)
+
+
+### Features
+
+* **auth:** let API tokens pin storage and album ([ce83a70](https://github.com/atbeta/picfast/commit/ce83a70a42445f521e5c37b706e4df5ca8baa64b))
+
 ## [0.26.4](https://github.com/atbeta/picfast/compare/v0.26.3...v0.26.4) (2026-11-03)
 
 
